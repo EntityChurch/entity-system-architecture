@@ -1,0 +1,477 @@
+[project]
+name   = "Entity System Architecture"
+slug   = "entity-system-architecture"
+repo   = "entity-system-architecture"
+github = "https://github.com/EntityChurch/entity-system-architecture"
+intro  = """
+The optional layer on top of the core protocol: all the EXTENSION-* specs
+(tree, registry, discovery, relay, encryption, identity, content, compute, ...), the SDK
+operation specs, the application-layer conventions, and the implementer guides. The
+"agree-with-us and you interoperate" surface — divergence is allowed; convergence is the
+payoff. Depends on entity-core-protocol.
+"""
+
+# ── Overview ──────────────────────────────────────────────────────────────────
+[[doc]]
+path  = "README.md"
+title = "Entity System Architecture"
+blurb = "What entity-system-architecture is — the optional extension / SDK / application layer on top of the core protocol."
+group = "Overview"
+
+# ── Extensions ────────────────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/extensions/EXTENSION-ATTESTATION.md"
+title = "Attestation Extension — Normative Specification"
+blurb = "The attestation primitive — \"Peer A asserts that B has property X\" — is the edge type in the system's signed graph."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-CLOCK.md"
+title = "Clock Extension — Normative Specification"
+blurb = "The clock extension provides a unified timing mechanism for the entity system."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-COMPUTE.md"
+title = "Compute Extension — Normative Specification"
+blurb = "The compute extension defines a minimal expression language embedded in the entity type system."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-CONTENT.md"
+title = "Content Extension — Normative Specification"
+blurb = "The content extension defines a universal pattern for storing and transferring binary content within the entity system."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-CONTINUATION.md"
+title = "Continuation Extension — Normative Specification"
+blurb = "The continuation extension enables execution chaining — determining what happens when a result arrives at a path."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-DISCOVERY.md"
+title = "EXTENSION-DISCOVERY"
+blurb = "REGISTRY (sibling extension EXTENSION-REGISTRY.md) answers \"given a name, where is this peer?\" (lookup, name→peer)."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-DURABILITY.md"
+title = "Durability Extension — Exploratory Reference Specification"
+blurb = "A receiver MAY expose the durability levels it supports and the zone characteristics under which it provides them (e.g."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-ENCRYPTION.md"
+title = "EXTENSION-ENCRYPTION"
+blurb = "The original conceptual core (entity-level framing, three-mode split, don't-reuse-identity-key, encryption-as-defense-in-depth-with-capabilities) is preserved v"
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-GROUP.md"
+title = "Group Extension — Normative Specification"
+blurb = "A group is an identity that represents multiple individuals collectively."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-HISTORY.md"
+title = "System History Extension"
+blurb = "This extension provides path-level transition recording for the entity tree."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-IDENTITY.md"
+title = "Identity Extension — Normative Specification"
+blurb = "The identity extension provides multi-peer identity management on top of V7."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-INBOX.md"
+title = "Inbox Extension — Normative Specification"
+blurb = "The inbox extension enables asynchronous result delivery."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-NETWORK.md"
+title = "Network Extension — Normative Specification"
+blurb = "The network extension manages persistent peer relationships: maintaining connections, detecting failures, reconnecting, restoring subscriptions, and draining pe"
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-QUERY.md"
+title = "Query Extension — Normative Specification"
+blurb = "The query extension adds secondary indexes and a compositional query mechanism to the entity system."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-QUORUM.md"
+title = "Quorum Extension — Normative Specification"
+blurb = "K-of-N consensus over an entity is a primitive authorization pattern, not an identity-specific feature."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-REGISTRY.md"
+title = "EXTENSION-REGISTRY"
+blurb = "A registry is a function: name → (peerid, bootstrapendpoints, attestations, trustanchor, ttl)."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-RELAY.md"
+title = "EXTENSION-RELAY"
+blurb = "A relay is an intermediary that carries opaque, signed, capability-bearing envelopes between two endpoints."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-REVISION.md"
+title = "System Revision Extension"
+blurb = "This extension provides versioning, merge, and peer-to-peer synchronization for entity trees."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-ROLE.md"
+title = "Role Extension — Normative Specification"
+blurb = "The role extension provides named grant bundles and context-scoped peer authorization."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-ROUTE.md"
+title = "EXTENSION-ROUTE"
+blurb = "EXTENSION-ROUTE is a storage plane: it holds a peer's routing table — a set of"
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-SUBSCRIPTION.md"
+title = "Subscription Extension — Normative Specification"
+blurb = "The subscription extension enables peers to receive notifications when entity tree paths change."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-SUBSTITUTE.md"
+title = "EXTENSION-SUBSTITUTE"
+blurb = "A peer that misses on a local system/content:get SHOULD be able to consult an ordered chain of substitute sources before returning the terminal miss."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-TRANSACTION.md"
+title = "Transaction Extension — Normative Specification"
+blurb = "The transaction extension provides multi-path atomic operations — grouping multiple tree bindings into a single logical unit."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-TREE.md"
+title = "System Tree Extension"
+blurb = "This extension builds on the entity tree defined in ENTITY-CORE-PROTOCOL.md §1.7 and §6.3."
+group = "Extensions"
+
+[[doc]]
+path  = "specs/extensions/EXTENSION-TYPE.md"
+title = "Type Extension — Normative Specification"
+blurb = "The type extension adds value-level constraint validation and type analysis operations to the entity type system."
+group = "Extensions"
+
+# ── SDK specs ─────────────────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/sdk/SDK-EXTENSION-OPERATIONS.md"
+title = "SDK Extension Operations — Draft"
+blurb = "Every extension operation is an execute() call to the extension's handler."
+group = "SDK specs"
+
+[[doc]]
+path  = "specs/sdk/SDK-IDENTITY-INFRASTRUCTURE.md"
+title = "SDK Identity Infrastructure — Specification"
+blurb = "This document specifies the SDK surface for the identity stack — the set of operations, helpers, and on-disk conventions that SDK implementations expose so appl"
+group = "SDK specs"
+
+[[doc]]
+path  = "specs/sdk/SDK-OPERATIONS.md"
+title = "SDK Operations — Normative Specification"
+blurb = "The SDK manages one or more local peers."
+group = "SDK specs"
+
+# ── Applications ──────────────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/applications/APP-CONVENTION-EMBED.md"
+title = "APP-CONVENTION-EMBED — the generic rich-content typed node — v0.2.3 DRAFT"
+blurb = "This convention defines format: the Embed input entity (§3), the EmbedOutput structured value (§4 — the"
+group = "Applications"
+
+[[doc]]
+path  = "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md"
+title = "APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5 DRAFT"
+blurb = "CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always"
+group = "Applications"
+
+[[doc]]
+path  = "specs/applications/CHARTER.md"
+title = "`applications/` — the L5 Application-Convention domain — CHARTER"
+blurb = "A home for cross-impl, application-layer (L5) conventions — standards that let independent applications and"
+group = "Applications"
+
+# ── Domain patterns ───────────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/domains/DOMAIN-LOCAL-FILES.md"
+title = "Local Files Domain — Normative Specification"
+blurb = "The local files domain maps a host filesystem subtree into the entity tree, making filesystem content accessible through the entity protocol."
+group = "Domain patterns"
+
+# ── System & architecture ─────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md"
+title = "Architecture: Identity, Authority, and Deployment Infrastructure"
+blurb = "The architecture-side work on identity, authority, and deployment patterns has produced a substantial body of artifacts — multiple specs across the layered stac"
+group = "System & architecture"
+
+[[doc]]
+path  = "specs/ENTITY-SYSTEM-REFERENCE.md"
+title = "Entity System — Condensed Working Reference"
+blurb = "This document is the minimum context needed to work with the entity system: make requests, build handlers, understand responses, and reason about security."
+group = "System & architecture"
+
+[[doc]]
+path  = "specs/SYSTEM-ARCHITECTURE.md"
+title = "Entity System — Architecture Overview"
+blurb = "This is the navigable map of the entity system's architecture."
+group = "System & architecture"
+
+[[doc]]
+path  = "specs/SYSTEM-COMPOSITION.md"
+title = "System Composition Guide"
+blurb = "This document describes cross-extension emergent properties — the behaviors that arise when multiple system extensions compose through the emit pathway."
+group = "System & architecture"
+
+[[doc]]
+path  = "specs/SYSTEM-IDENTITY-COMPOSITION.md"
+title = "System Identity Composition — Navigation Doc"
+blurb = "The identity layer is composed of three extensions (per the landed proposal stack):"
+group = "System & architecture"
+
+# ── Guides ────────────────────────────────────────────────────────────────────
+[[doc]]
+path  = "guides/GUIDE-ATTESTATION.md"
+title = "Attestation: User Guide"
+blurb = "An attestation is \"Peer A asserts that B has property X.\" It's the edge type in the system's signed graph: hash-addressable entities are nodes; signed claims ar"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-CAPABILITIES.md"
+title = "Capabilities: User Guide"
+blurb = "A capability is a signed entity (system/capability/token) that authorizes an EXECUTE to run."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-COMPUTE-PROGRAMMING.md"
+title = "Compute: Programming Guide"
+blurb = "You write expressions (entities of type compute/literal, compute/lookup/, compute/apply, etc.) and you ask the compute handler to do one of two things with them"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-COMPUTE.md"
+title = "Compute Extension: User Guide"
+blurb = "The compute extension embeds an expression language in the entity type system."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-CONFORMANCE.md"
+title = "GUIDE-CONFORMANCE — How conformance is verified across implementations"
+blurb = "The conformance gate exists because two impl-time encoder bugs (Rust receive-side re-encode 2026-05; Python's cbor2 float16 minimization 2026-05) made it throug"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-CORE-COMPUTATIONAL-ARCHITECTURE.md"
+title = "Core Computational Architecture"
+blurb = "Everything in the compute arc is a facet of this single sentence."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-CROSS-PEER-MESSAGING.md"
+title = "GUIDE: Cross-Peer Messaging (Delivery, Durability, Tracking)"
+blurb = "Synchronous request-response does not survive a slow, busy, or disconnected receiver, and a request you wanted preserved can vanish silently if the receiver doe"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-EMIT-PIPELINE-IMPLEMENTATION.md"
+title = "Emit Pipeline Implementation Guide"
+blurb = "Cross-impl conversations have been confused by the same words meaning different things to spec, implementation, and operations audiences."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-ENTITY-WORKBENCH-APP.md"
+title = "Guide: Entity Workbench App"
+blurb = "This is a general-purpose application namespace convention built around app/{app-id}/...."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-EXTENSION-BUILDER.md"
+title = "Guide: Building an Extension — When, Why, and How"
+blurb = "An extension is a coherent surface — types, handlers, conventions, conformance — that composes onto the entity core protocol (ENTITY-CORE-PROTOCOL.md) withou"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-EXTENSION-DEVELOPMENT.md"
+title = "Guide: Extension Development"
+blurb = "Before writing or proposing an extension, read ENTITY-CORE-PROTOCOL.md end to end."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-GC.md"
+title = "GUIDE-GC — Storage cleanup in entity-core"
+blurb = "GC posture per §10."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-GROUP.md"
+title = "Groups: User Guide"
+blurb = "Two terms recur."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-IDENTITY-SDK.md"
+title = "Guide: Identity SDK"
+blurb = "How to use the identity-stack SDK surface from application code."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-IDENTITY.md"
+title = "Identity: User Guide"
+blurb = "V7 alone gives you per-peer authorization: each peer is its own root, signs caps for its own resources, and every cap chain bottoms out at a peer-identity entit"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-IMPL-DISCIPLINE.md"
+title = "Guide: Implementation Discipline"
+blurb = "Implementation disciplines that apply across implementation teams (not just SDK consumers)."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-INSPECTABILITY.md"
+title = "GUIDE-INSPECTABILITY — Observing what flows through an entity-core peer"
+blurb = "A peer can be wire-conformant with zero inspection ergonomics — accept dispatches, store entities, emit responses."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-MULTISIG.md"
+title = "Multi-Signature Capabilities: User Guide"
+blurb = "A multi-signature capability is a root cap whose granter field names a group of K-of-N peers instead of a single peer."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-NETWORKING-MODEL.md"
+title = "GUIDE: The networking model — how information travels & how to deploy"
+blurb = "This is the map."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-OPERATIONAL-STATE.md"
+title = "Operational State: User Guide"
+blurb = "The design choice that distinguishes operational state from how most systems model the same information: everything is entities written to the tree through the"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-PEER-COMPOSITIONS.md"
+title = "GUIDE: Peer Compositions and Topologies"
+blurb = "A peer is not a role."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md"
+title = "Guide: Peer Concerns and Namespace Conventions"
+blurb = "How to think about what a peer is, what defines it, and how to organize its tree."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-PERSISTENCE.md"
+title = "Guide: Persistence"
+blurb = "How peers persist on disk."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-QUORUM.md"
+title = "Quorum: User Guide"
+blurb = "A system/quorum is the K-of-N node primitive — a special node in the signed graph whose \"signature\" is K signatures from N constituent peers, rather than a sing"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-RESOLUTION.md"
+title = "GUIDE-RESOLUTION — how a name becomes bytes"
+blurb = "Both normative (V7 §1.4, §1.7; PRIMER):"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-RESTART-AND-PERSISTENCE.md"
+title = "Guide: Restart and Persistence"
+blurb = "The protocol takes a simple position: the tree is the state."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-REVISION-AUTO-VERSION.md"
+title = "Revision Extension: Auto-Version User Guide (Exploratory)"
+blurb = "The revision extension turns a tree subtree into a content-addressed version DAG — a git-like history of structural states."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-REVISION.md"
+title = "Revision Extension: User Guide"
+blurb = "The revision extension turns a subtree of the entity tree into a content-addressed version DAG."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-ROLE.md"
+title = "Roles: User Guide"
+blurb = "The core protocol gives you per-peer authorization: each peer is a root authority, each peer signs caps, every cap chain bottoms out at a peer-identity entity."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-SDK-PATTERNS.md"
+title = "Guide: SDK Patterns"
+blurb = "Patterns for building applications on the entity system SDK."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-SERVING-MODE.md"
+title = "GUIDE — Serving mode (a live peer as its own CDN origin)"
+blurb = "A live peer additionally exposes http-poll routes (GET /content/{hex33(H)}, GET {tree-prefix}/{path}) from its own store, on the same HTTP listener as its http"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-SHELL-FRAMING.md"
+title = "Guide: Shell Framing"
+blurb = "The shell is a named layer above the SDK that exposes the entity system's coordination primitives — tree operations, handler dispatch, capability and identity m"
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-TRANSACTION.md"
+title = "Transaction Extension: Developer Guide (Exploratory)"
+blurb = "The entity system's tree provides per-path atomic writes."
+group = "Guides"
+
+# ── Authoring standards ───────────────────────────────────────────────────────
+[[doc]]
+path  = "specs/SPECIFICATION-FORMAT.md"
+title = "Entity System — Normative Specification Format"
+blurb = "This document defines the format for normative specifications in the entity system."
+group = "Authoring standards"
+
+[[doc]]
+path  = "specs/STYLE-NAMING-CONVENTIONS.md"
+title = "Entity System — Identifier Naming Conventions"
+blurb = "These names are part of the wire contract."
+group = "Authoring standards"
+
+# ── Roadmap ───────────────────────────────────────────────────────────────────
+[[doc]]
+path  = "ROADMAP-APPLICATIONS.md"
+title = "Applications (L5) — Domain Roadmap (canonical, living)"
+blurb = "An APP-CONVENTION- spec defines FORMAT and only format — the entity-type vocabulary"
+group = "Roadmap"
+
+[[doc]]
+path  = "ROADMAP-EXTENSIONS.md"
+title = "Extensions — Domain Roadmap (canonical, living)"
+blurb = "The core floor never requires any of these (except TREE's get/put, which lives in core) — they"
+group = "Roadmap"
+
+[[doc]]
+path  = "ROADMAP-SDK.md"
+title = "SDK — Domain Roadmap (canonical, living)"
+blurb = "The SDK specs sit at M2 by design: they are conventions, not protocol — their gate is"
+group = "Roadmap"
