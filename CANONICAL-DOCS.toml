@@ -18,6 +18,12 @@ title = "Entity System Architecture"
 blurb = "What entity-system-architecture is — the optional extension / SDK / application layer on top of the core protocol."
 group = "Overview"
 
+[[doc]]
+path  = "docs/status/STATUS.md"
+title = "Status"
+blurb = "Current project status — where the project is, recent work, backlog, and what's next."
+group = "Overview"
+
 # ── Extensions ────────────────────────────────────────────────────────────────
 [[doc]]
 path  = "specs/extensions/EXTENSION-ATTESTATION.md"
