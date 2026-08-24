@@ -76,6 +76,18 @@ Step 7 is the key integration point. The inbox handler uses write-ahead processi
 
 ### 2.1 Inbox Delivery
 
+> **⚠ PROVISIONAL rename — pending the workstream-C ruling (2026-08-02).** This type was renamed from
+> `system/protocol/inbox/delivery` (strip the mis-homing `protocol/` prefix). It **fails the
+> `SPECIFICATION-FORMAT.md` §8.4.4 data-at-rest test on condition 1 only**: §7 / §2 above make the inbox a
+> **persistent mailbox** and `EXTENSION-DURABILITY.md` §108 reads *stored* deliveries — so a peer holding
+> undelivered mail across the rename would **silently stall** its continuation (no loud error; the §3.2
+> silent-drop class). But **condition 2 = no** (no `delivery` `content_hash` is referenced elsewhere), and unlike
+> the reverted `system/encrypted` this is a *defective* name being corrected, not a correct grandfathered flat
+> name being disturbed — so it is **not symmetric with encryption**, and a consistent §8.4.4 ruling may let this
+> rename stand. The narrow open question is whether durable-mailbox-at-rest blocks a rename in a
+> **no-installed-base** world — routed to the extension owners + core-go
+> (`PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §C OPEN RULING). Until ruled this name is **not ratified.**
+
 ```
 system/inbox/delivery := {
   fields: {

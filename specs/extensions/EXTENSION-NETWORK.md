@@ -806,7 +806,7 @@ Back-compatibility: existing single-`primary` deployments and lex-fallback deplo
 |---|---|---|---|
 | `tcp` | full-duplex | yes | ONE connection, reused both ways |
 | `websocket` | full-duplex | yes — *incl. to a non-listening client (browser)* | ONE connection, reused both ways |
-| `webrtc` (future) | full-duplex | yes — *NAT-traversing* | ONE connection, reused both ways |
+| `webrtc` | full-duplex | yes — *NAT-traversing* | ONE connection, reused both ways *(negotiated, not dialed — §6.5.2d)* |
 | `http` | half-duplex | no | each side runs a listener (two connections), OR poll-fallback |
 | `http-poll` | one-way fetch | no (no session) | consumer polls; publisher never dials |
 
@@ -884,6 +884,35 @@ data: {
 The normal protocol over HTTP request/response: POST an EXECUTE envelope; the response body is the EXECUTE-RESPONSE. **POST-only** (nothing in the protocol is idempotent — no GET sub-mode). **Half-duplex per connection** — a single HTTP connection is connector-driven (client POSTs, server responds) and carries no server→client push. This does **not** block subscription / async / peer-initiated delivery: such delivery is a *fresh* EXECUTE from the source to the **target's** inbox (EXTENSION-INBOX.md §2 — the source dials the target), so what it requires is that the *target be reachable* — publish a live profile (`tcp`, `http`, or `websocket` listener) the source can dial — not that any connection be duplex. A target running an HTTP listener receives deliveries over an ordinary half-duplex source→target POST; two peers that each run an HTTP listener form a full-duplex *pair* across two independent connections. Reachability is per-peer and asymmetric: a delivery B→A consults A's profiles, A→B consults B's, so "B reaches A over HTTP while A reaches B over TCP" is the ordinary case, not a special one. `websocket` (§6.5.2b) is distinguished only in that it *additionally* pushes to a **non-listening** target (e.g. a browser page) down that target's own outbound socket. A target that can neither listen nor hold a duplex socket falls to the poll-fallback (Phase-2 — source-hosted queue the target drains via `TREE_GET`; see §6.5.1b). A **wrapper, NOT BRIDGE-HTTP** — the bytes on the wire ARE entity envelopes (Mechanism A), not foreign content. The browser linchpin (a browser can POST but has no raw socket).
 
 **Body framing (MUST).** The HTTP request and response body is the **bare ECF-encoded envelope** (ENTITY-CORE-PROTOCOL.md §5.3). HTTP message framing — `Content-Length` or `Transfer-Encoding: chunked` — delimits it. The ENTITY-CORE-PROTOCOL.md §1.6 **TCP length prefix MUST NOT be applied**: that 4-byte prefix is *stream-transport framing* (TCP delimiting a medium with no message boundaries), and ENTITY-CORE-PROTOCOL.md §1.6 states framing is per-transport — "other transports define their own framing." HTTP is message-oriented and frames the body natively, so an inner prefix is redundant and creates two conflicting length authorities. This keeps the body a clean CBOR document that composes with `fetch`/`curl`/CDNs/proxies — the browser-and-ecosystem reachability that is the `http` profile's entire reason to exist. (Contrast `websocket` §6.5.2b, which *does* reuse the ENTITY-CORE-PROTOCOL.md §1.6 prefix per its explicit V7 v7.13 blessing — that reuse is stated, not a default, and does not extend to HTTP.) A bad body decode is the substrate-level `400` (entity-protocol errors instead travel *inside* the response envelope under a `200`).
+
+#### 6.5.2d Profile: `system/peer/transport/webrtc` (live — negotiated data channel)
+
+The browser's peer-to-peer transport, filling the §6.5.1b reserved slot (folded 2026-08-02). It is a durable **advertisement** that this peer accepts a WebRTC data channel — and, unlike every other live profile, it carries **no dial `endpoint`**: a WebRTC channel is never dialed, it is *negotiated* through signaling (`EXTENSION-SIGNALING.md` §6.5), so the profile declares the capability + negotiation parameters, not an address.
+
+```
+type: "system/peer/transport/webrtc"
+data: {
+  peer_id:        <peer_id>,
+  transport_type: "webrtc",
+  supported_ops:  ["EXECUTE"],           ; full duplex; carries server-push
+  freshness:      "live",
+  nonce_required: true,
+  cap_flow:       "both",
+  negotiation: {
+    signaling_schema: "webrtc-sdp-ice/1",  ; the EXTENSION-SIGNALING §6.5 schema version this peer speaks
+    ice_policy?:      "all",               ; OPTIONAL; "relay" forces TURN (no host-candidate leak); default "all"
+    dtls_role?:       "auto"               ; OPTIONAL; "auto" = the SDP offer/answer decides
+  },
+  priority?:      100,                   ; OPTIONAL; default 100 (§6.5.1a, Amendment 8 Q1)
+  advertised_at?: <time>                 ; OPTIONAL
+  ; NO endpoint — a WebRTC channel is negotiated, not dialed (contrast §6.5.1a D4)
+}
+```
+
+- **Profile vs channel `[do not conflate]`.** The published profile is a **durable advertisement** ("a direct WebRTC path to me exists"). The **established data channel** is a **session-scoped §10.3 connection** — never itself published as a durable `system/peer/transport/*` profile (per Amendment 14 the §10.3 result is an ordinary transport, session-scoped, and MUST run keepalive). The profile advertises that a punch is *possible*; the channel is its result.
+- **Reachability class.** A peer publishing a `webrtc` profile is reachable as a **punch-substrate class** at the §10.3 `establish_live` seam — not a `full_duplex_listener` (nothing is listening). Resolving such a peer, the §10 dispatcher escalates to §10.3 and drives the `EXTENSION-SIGNALING.md` §6.5 negotiation instead of dialing. No new dispatch branch and **no new reachability class** (the Amendment-14 seam).
+- **Once open, it is ordinary.** The channel carries **bare ECF envelopes** like any live transport; framing is the data channel's own message boundaries (message-oriented, like `http` — it does **NOT** apply the ENTITY-CORE-PROTOCOL.md §1.6 TCP length prefix). The §10 dispatcher, held-capability model (§6.6), and session state (`system/peer/session/*`) apply unchanged.
+- **Who publishes it.** A **native** peer MAY publish a `webrtc` profile to be punchable by browser peers (§14 / `EXTENSION-SIGNALING.md` §7.3.1); until a native WebRTC terminator exists that MAY is latent. Whether a **browser** peer publishes one — versus only ever initiating, its reachability being rendezvous/session-scoped — is open (`PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` open item #1) and gates the later browser↔native-direct milestone, not the browser↔browser S5 gate.
 
 The framing *mechanism* (Content-Length/chunked, no length-prefix) is shared by `http` and `http-poll`; the body *payload* differs by route: the `http` EXECUTE route carries a MaterializedEnvelope (`{root, included}`); the `http-poll` `CONTENT_GET` route carries a single bare-hashable entity `ECF({type, data})` per §6.5.3, the `TREE_GET` **leaf** route carries a `system/hash` pointer `ECF({type: "system/hash", data: H})` (the bound hash, two-hop — §6.5.3.1, Amendment 6; NOT the dereferenced entity), and the `TREE_GET` **listing** route carries a `system/tree/listing` wire entity `ECF({type, data, content_hash})`.
 
@@ -1085,7 +1114,7 @@ data: {
 **Field semantics:**
 
 - **`held_capability`** (REQUIRED) — the capability the *remote* granted *this peer* at handshake. §10 dispatch reads this to authenticate an outbound EXECUTE and skip re-handshake. `chain` is an array of `system/hash` pointers, **leaf→root, length ≥ 1** (33-byte hashes per the ENTITY-CORE-PROTOCOL.md §3.5 wire form), resolved through the content store at reuse — entities are referenced by hash, never inlined (ENTITY-CORE-PROTOCOL.md §1.7 dedup model). `chain` carries **only** `system/capability/token` content-hashes — no signature/identity/granter padding (a verification bundle does not belong here; the verifier resolves the chain from the content store).
-- **`minted_capability`** (OPTIONAL) — the *connection-handshake* cap *this peer* issued *to the remote*, recorded for R3a idempotency (a re-dial returns the same cap rather than minting a churny new one) and for revocation. **It is NOT a reverse-delivery cap.** In a bidirectional pair, A's `minted_capability` for B is the *same cap entity* as B's `held_capability` from A — one cap, recorded from both ends. Back-direction **delivery** authorization is the per-delivery `deliver_token` (granted at subscribe/continuation time, EXTENSION-INBOX / EXTENSION-SUBSCRIPTION), unchanged by this amendment. The session entity moves ONLY the handshake cap; it MUST NOT be built to solve generic back-direction dispatch.
+- **`minted_capability`** (OPTIONAL) — the *connection-handshake* cap *this peer* issued *to the remote*, recorded for R3a idempotency (a re-dial returns the same cap rather than minting a churny new one) and for revocation. **It is NOT a reverse-delivery cap.** In a bidirectional pair, A's `minted_capability` for B is the *same cap entity* as B's `held_capability` from A — one cap, recorded from both ends. Back-direction **delivery** authorization is the per-delivery `deliver_token` (granted at subscribe/continuation time, EXTENSION-INBOX / EXTENSION-SUBSCRIPTION), unchanged by this amendment. The session entity moves ONLY the handshake cap; it MUST NOT be built to solve generic back-direction dispatch. **Carve-out — symmetric establishment.** This one-directional mint is the *asymmetric* case (dial-by-address). A **§6.5 (b) symmetric rendezvous** establishment (`EXTENSION-SIGNALING.md` §6.5) adds one reciprocal grant — the *dialer* mints the acceptor's mirror of this cap — yielding bidirectional authority *by design*, which is not the generic back-direction dispatch this MUST NOT forbids but a match to the establishment's own symmetry (back-direction-authority taxonomy, `guides/GUIDE-CAPABILITIES.md` §4a). That reciprocal grant is **connection-scoped** and is deliberately **not** recorded here (it is establishment-scoped, drop-on-disconnect; a stale grant reused on reconnect without re-meeting at the key would authorize outside its establishment). Reaching a profile-less peer by reusing a connection it opened (the V7 §6.11 reentry seam surfacing in §10 dispatch; `GUIDE-CONFORMANCE.md` §7a.2a) is **resolution, not authority**: a dispatch over it still needs a row-1/2/3 cap, and a *generic* dispatch to a profile-less peer over an asymmetric connection is authorized by its trigger's `deliver_token` where one exists and **fails closed** otherwise — the prohibition holds for every asymmetric connection.
 - **`granted_at`** — handshake time. There is deliberately **no** `last_active` field: per-message liveness is `system/peer/status.last_seen`'s job (keepalive-updated, ENTITY-CORE-PROTOCOL.md §3.13); putting it here would force a tree write per message (write amplification → subscription/revision/history fan-out) on the auth record.
 - There is deliberately **no** `status` field: connection lifecycle is `system/peer/status`'s job, and cap validity is derivable from `expires_at` (+ revocation check). The auth record needs no separate status.
 - **`remote_public_key`** (OPTIONAL) — a denormalization. `peer_id` is a *hash* of the key, not the key, so the pubkey is not trivially derivable without the identity entity; 32 bytes for signature-verify-without-fetch is cheap. Peers MAY omit it and dereference `remote_identity_hash`.
@@ -1635,6 +1664,7 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 | `system/peer/session` | Per-peer session auth record: held/minted capability + handshake bookkeeping (§6.6, R6) |
 | `system/peer/transport/tcp` | Live TCP transport profile (§6.5.2a) |
 | `system/peer/transport/websocket` | Live WebSocket transport profile — browser-capable (§6.5.2b) |
+| `system/peer/transport/webrtc` | Live WebRTC data-channel transport profile — negotiated, no dial endpoint (§6.5.2d) |
 | `system/peer/transport/http` | Live HTTP transport profile — EXECUTE over POST (§6.5.2c) |
 | `system/peer/transport/http-poll` | Static HTTP transport profile — CDN/static hosting (§6.5.3) |
 | `system/peer/transport/quic` | Live QUIC transport profile — aspirational (§6.5.2) |

@@ -8,7 +8,7 @@ substrate; the SDK defines the bindings; this domain is the home for "a content-
 convention that all front-ends agree to render the same way."
 
 > **Canonical & living.** Updated as the L5 conventions move; the content/papers projects pull
-> from it. Maturity (M0–M6) is defined in **`STATUS-RELEASE-SURFACE-AND-MATURITY-CANONICAL.md`**;
+> from it. Maturity (M0–M6) is defined in **`docs/status/STATUS-RELEASE-SURFACE-AND-MATURITY-CANONICAL.md`**;
 > this is the forward, stage/phase view.
 
 **Owning workstream:** W1 (Outer Limits / application).

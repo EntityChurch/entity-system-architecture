@@ -431,7 +431,7 @@ How identity, authority, and membership are managed above raw key-pair identity.
 
 | Member | Status | Role |
 |---|---|---|
-| `EXTENSION-IDENTITY` | Stable v3.6 | Peer identity, controllers, rotation. |
+| `EXTENSION-IDENTITY` | Stable v3.10 | Peer identity, controllers, rotation. |
 | `EXTENSION-ATTESTATION` | Stable v1.2 | Substrate primitive *within the operational tier* — generic attestation graph consumed by IDENTITY, QUORUM, ROLE, GROUP. |
 | `EXTENSION-QUORUM` | Stable v1.2 | K-of-N node primitive within the operational tier. |
 | `EXTENSION-ROLE` | Draft v2.0 | Role-based authority. |

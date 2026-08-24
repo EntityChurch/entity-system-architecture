@@ -13,7 +13,7 @@ The identity layer is composed of three extensions (per the landed identity prop
 
 - **EXTENSION-ATTESTATION v1.2** — substrate primitive (signed-claim entity type + helpers)
 - **EXTENSION-QUORUM v1.2** — K-of-N node primitive
-- **EXTENSION-IDENTITY v3.5** — structured composition layer over the substrate primitives
+- **EXTENSION-IDENTITY v3.10** — structured composition layer over the substrate primitives
 
 Reading three specs cold without orientation is a cost. This doc is the orientation: what each extension is, why it exists, how they compose, and what to read first depending on what you're trying to do.
 
@@ -141,7 +141,7 @@ EXTENSION-IDENTITY does NOT own:
 2. `core-protocol-domain/specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md` v1.0 — architecture overview with the layered picture (graduated from the v4.2 identity-infrastructure proposal)
 3. `EXTENSION-ATTESTATION.md` v1.2 — the substrate (originating proposal: `proposals/implemented/PROPOSAL-EXTRACT-ATTESTATION-PRIMITIVE.md`)
 4. `EXTENSION-QUORUM.md` v1.2 — K-of-N node primitive (originating proposal: `proposals/implemented/PROPOSAL-EXTRACT-QUORUM-PRIMITIVE.md`)
-5. `EXTENSION-IDENTITY.md` v3.5 — the structured composition layer (originating proposal: `proposals/implemented/PROPOSAL-MINIMIZE-EXTENSION-IDENTITY.md`)
+5. `EXTENSION-IDENTITY.md` v3.10 — the structured composition layer (originating proposal: `proposals/implemented/PROPOSAL-MINIMIZE-EXTENSION-IDENTITY.md`)
 
 **If you're authoring a new extension that needs signed claims:**
 1. This doc §6.1 (what attestation owns) and §6.2 (what quorum owns)

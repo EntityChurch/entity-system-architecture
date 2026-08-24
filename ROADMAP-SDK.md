@@ -9,7 +9,7 @@ mandating one API. Not the protocol; the ergonomic contract above it.
 
 > **Canonical & living.** Updated as the SDK surface tracks extension landings; the
 > content/papers projects pull from it. Maturity (M0–M6) is defined in
-> **`STATUS-RELEASE-SURFACE-AND-MATURITY-CANONICAL.md`**; this is the forward, stage/phase view.
+> **`docs/status/STATUS-RELEASE-SURFACE-AND-MATURITY-CANONICAL.md`**; this is the forward, stage/phase view.
 
 **Owning workstream:** W1 (SDK/app). workbench-go owns the SDK
 reference surface; the specs ratify the empirical baseline as a cross-impl target.
@@ -20,7 +20,7 @@ reference surface; the specs ratify the empirical baseline as a cross-impl targe
 
 | spec | version | hdr | maturity | scope |
 |---|---|---|---|---|
-| `SDK-OPERATIONS` | 1.10 | Draft | **M2** (working draft, tracks V7) | core SDK surface: put/get, dispatch, connection, handler registration |
+| `SDK-OPERATIONS` | 1.11 | Active | **M2** (tracks V7; §11.6.9 service-owning handlers folded) | core SDK surface: put/get, dispatch, connection, handler registration |
 | `SDK-EXTENSION-OPERATIONS` | 0.9 | Working draft | **M2** | per-extension SDK surface: Content closure (`EnsureClosure`), Continuation assembly, Subscription, Revision, Compute (expression builder + lowering toolkit) |
 | `SDK-IDENTITY-INFRASTRUCTURE` | 0.5 | Draft | **M2** | identity-stack tooling: bundle wire-shape, Bootstrap-vs-Restore, role/identity SDK surface |
 | **Guides** (7) | — | — | doc | `GUIDE-SDK-PATTERNS`, `GUIDE-IDENTITY-SDK`, `GUIDE-PERSISTENCE`, `GUIDE-SHELL-FRAMING`, `GUIDE-PEER-CONCERNS-AND-NAMESPACES`, `GUIDE-IMPL-DISCIPLINE`, `GUIDE-ENTITY-WORKBENCH-APP` |

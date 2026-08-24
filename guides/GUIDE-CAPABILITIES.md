@@ -174,6 +174,20 @@ Yes. The two-cap structure is uniform across local and cross-peer subscriptions.
 
 Because the engine and the subscriber may be different peers, and the caller cap might not cover the subscriber's inbox, or might not even be wieldable by the engine. The deliver_token is the subscriber's explicit "yes, deliver here" — split out so that the subscriber controls the delivery scope independently of how broad their subscribe authorization happened to be.
 
+## 4a. Back-direction authority: who may originate to whom
+
+*"What lets peer B originate a dispatch to peer A?"* has one shape at the floor — B needs a capability granted **by** A (A owns its handlers; `verify_request` roots the chain at A). Which mechanism supplies that cap depends on **why** B is originating, and there are three, each with a distinct granter, trigger, and normative home. They are not interchangeable; reaching for the wrong one is how back-direction authority gets over-broad.
+
+| # | Need | Granter → grantee | Granted at | Scope | Normative home |
+|---|---|---|---|---|---|
+| 1 | **Dialer invokes acceptor** | acceptor → dialer | connection handshake | default connection grant | `EXTENSION-NETWORK.md` §6.6 |
+| 2 | **Scoped reentry delivery** — subscription notify, continuation advance, inbox | subscribee → subscriber | subscribe / continuation time | one delivery target | `deliver_token` — `EXTENSION-INBOX` / `EXTENSION-SUBSCRIPTION` |
+| 3 | **Symmetric spontaneous origination** — rendezvous peers | dialer → acceptor (adds the §6.6 mirror) | §6.5 (b) establishment | default connection grant, policy-attenuable | `EXTENSION-SIGNALING.md` §6.5 |
+
+**The load-bearing distinction is establishment *symmetry*.** Row 1 is one-directional because a dial-by-address is asymmetric — a client contacted a server, and nothing entitles the server to reach back. Row 3 is bidirectional because a rendezvous is symmetric — both peers brought the same §3 key out of band, and that joint bringing *is* the mutual-authorization act. Connection-authority direction follows the establishment's symmetry, not who sent the first handshake byte, and **not the substrate** (a NAT-hole punch that meets at a `pair_key` is symmetric and mints; a direct dial to a resolved `tcp`/`http` endpoint is not).
+
+**Resolution is not authority.** Reaching a peer that has no dialable transport profile by reusing a connection it opened (the V7 §6.11 reentry seam; `GUIDE-CONFORMANCE.md` §7a.2a; `EXTENSION-NETWORK.md` §10 dispatch) is a *resolution* mechanism; it confers no authority of its own. A dispatch over such a reused endpoint is authorized by the same three rows as any dispatch. In particular, a generic spontaneous dispatch to a profile-less peer over an *asymmetric* connection is **not** row 3 — it is authorized by its trigger's row-2 delivery token where one exists, and **fails closed** where none does (`EXTENSION-NETWORK.md` §6.6's prohibition on solving generic back-direction dispatch at the handshake). Row 3 is reserved for the symmetric rendezvous case. *(A relay hop is a further distinction: the forwarder authors its outer forward EXECUTE under its own **row-1** connection authority to the next hop, while the inner chain the payload carries authorizes the final destination — "pass-through" describes the payload, not the hop.)*
+
 ---
 
 ## 5. Per-extension coherent capability checklist

@@ -159,7 +159,7 @@ The SDK exposes three access levels to a local peer. All three are always availa
 
 **Level 1 — Local handler dispatch.** `execute()` on the local peer. Resolves the handler (longest-prefix match), builds execution context (handler grant, caller capability, scoped tree access), dispatches. The handler processes the operation and returns a result. Capability attenuation applies for handler-to-handler sub-dispatch.
 
-**Level 2 — Remote dispatch.** Same `execute()` call, but the URI targets a different peer_id. The local peer resolves the transport address from `system/peer/transport/{remote_peer_id}`, gets or creates a connection (dial + handshake if first time), constructs a signed EXECUTE envelope with the capability token from the handshake, sends it on the wire, receives the response.
+**Level 2 — Remote dispatch.** Same `execute()` call, but the URI targets a different peer_id. The local peer resolves the target and gets or creates a connection by walking the EXTENSION-NETWORK.md §10 reachability-class ladder (§2.8 — active connection → held-capability reconnect-skip → transport-profile resolution → §10.3 traversal → §10.2 store-and-forward), constructs a signed EXECUTE envelope with the capability token (from the durable `system/peer/session/{peer}` entity on reconnect, or from a first-time handshake), sends it on the wire, receives the response.
 
 **The application doesn't choose the level for execute().** The same `execute()` function handles both Level 1 and Level 2. If the peer_id in the URI matches the local peer, it's Level 1. If it's different, it's Level 2. Peer-relative paths always resolve to local.
 
@@ -249,7 +249,11 @@ peer.connect("192.168.1.5:9100")
 
 **Transport addresses are entities.** Remote peer addresses live at `system/peer/transport/{peer_id}` in the local tree. The execute function resolves them on demand. The `connect()` operation can also store the transport address after handshake. See SDK-EXTENSION-OPERATIONS.md §9 (network extension) for automated lifecycle management via continuation pipelines.
 
-**Connection failure.** If a cached connection fails during a remote dispatch, the operation returns a transport error (500) to the caller. The connection pool removes the failed connection. The SDK does not automatically retry — reconnection is either explicit (`connect()` again) or automated by the network extension (`maintain-peer` builds reconnection continuation pipelines). No silent retry at the pool level.
+**Outbound dispatch is a reachability-class ladder (EXTENSION-NETWORK.md §10, Amendments 8/11/14).** When a remote dispatch has no live pooled connection, the network extension's §10 dispatcher does not simply "dial + handshake." It walks a normative ladder — active connection → **held-capability reconnect** (skip the handshake by reading `system/peer/session/{peer}:held_capability`, §6.6) → durable transport-profile resolution by reachability class (`(priority asc, profile-id lex)`) → **§10.3 `establish_live(ctx, peer_id)`** (step 3b traversal seam: NAT punch / WebRTC, returns a *connection* that re-enters ordinary dispatch and is pooled) → **§10.2 `dispatch_fallback(peer_id, execute)`** (step 4 store-and-forward when the peer cannot be reached now) → terminal queue/502. Ordering is a MUST: live first, store-and-forward last. `establish_live` is deliberately internal to one peer and unpinned (the connection type + handshake boundary are impl-idiomatic) — the SDK does **not** expose it as an operation; it only surfaces on the pooled connection the ladder yields. `dispatch_fallback` and the traversal seam are `null`/no-op unless the RELAY / SIGNALING extensions are installed, in which case behavior is byte-identical to the pre-seam ladder.
+
+**Sessions outlive connections; the durable session entity is the reconnect authority (EXTENSION-NETWORK.md §6.6, Amendment 8).** Per-peer auth state — the capability this peer holds to dispatch to the remote and the handshake cap it minted in return — is a durable tree entity at `system/peer/session/{remote_peer_id}` (`held_capability` + handshake bookkeeping), **not** per-connection memory. Because it lives in the tree it survives a connection drop and (for a persisted identity) a process restart, enabling handshake-skip / zero-RTT reconnect: the ladder reads `held_capability` instead of re-running AUTHENTICATE. The entity is NOT deleted on disconnect — that persistence is the point (§6.6, §6.3 held-cap reconnection).
+
+**Connection failure.** If a cached connection fails during a remote dispatch, the operation returns a transport error (500) to the caller. The connection pool removes the failed connection. The SDK does not automatically retry at the pool level — reconnection is either explicit (`connect()` again) or automated by the network extension (`maintain-peer` builds reconnection continuation pipelines). Because the durable `system/peer/session/{peer}` entity (above) outlives the dropped connection, a subsequent dispatch re-enters the §10 ladder and reuses the held capability rather than re-handshaking.
 
 ---
 
@@ -657,6 +661,21 @@ After connect, the local peer can dispatch operations to the remote peer using t
 
 The grants we issue to the remote peer come from the local peer's connection grant configuration (§8.1 `grants` in PeerConfig). The grants we receive are what the remote peer chose to give us — they determine what operations we can dispatch to that peer.
 
+**Connection auth is durable, not just pool state (EXTENSION-NETWORK.md §6.6, Amendment 8).** The `Connection` object above models the *live* connection, but the authoritative auth state is the durable tree entity `system/peer/session/{remote_peer_id}` (`held_capability` = the cap the remote granted us; plus the handshake cap we minted in return). That entity — not the in-memory `Connection` — is what survives a drop and enables handshake-skip reconnect (§2.8). An SDK **SHOULD** treat the `Connection.grants` slot as a live-connection view over that durable session entity, not the source of truth.
+
+> **SDK-GAP (2026-08-05): the `grants` slot conflates two distinct authorities.** EXTENSION-SIGNALING.md §6.5(b) establishes a *second*, distinct grant: the **connection-scoped reciprocal originating grant** minted at live-establishment (dialer mints for acceptor; grantee = the acceptor's identity-entity content hash per §11.2; the cap is signed by the granter identity). It is **connection-scoped** — held with the live connection, **not** written to `system/peer/session/{peer}` — and it governs *origination* authority, distinct from the durable `held_capability`'s *reconnect-skip* authority. **Precedence is normative: where both exist, the connection-scoped reciprocal grant wins over the durable `held_capability`** (a durable cap can predate the live establishment and MUST NOT shadow it), and origination MUST gate on the reciprocal grant *after it is received*. The `Connection` object needs two differentiated slots — first pass:
+>
+> ```
+> Connection := {
+>   ...
+>   grants:              [GrantEntry]   ; durable-session view (held_capability; §6.6)
+>   reciprocal_grant:    Grant?         ; connection-scoped originating authority (SIGNALING §6.5(b));
+>                                       ;   wins over held_capability for origination; gate-on-grant-received
+> }
+> ```
+>
+> Left as a GAP because the reciprocal-grant flow rides the §10.3 `establish_live` traversal seam (unbuilt, S3), so the exact SDK carriage is not yet designed. Pin the two-slot model + precedence now; refine the surface when the seam lands.
+
 ### 7.2 listen
 
 ```
@@ -688,6 +707,26 @@ connected_peers() → [PeerInfo]
     direction: string       ; "inbound" | "outbound"
   }
 ```
+
+### 7.4 Reentry Authority Carriage
+
+The concurrency floor above lets a handler originate an outbound EXECUTE **back to the caller over the same inbound connection** while still servicing the caller's frame — the §6.11 reentry seam (GUIDE-CONFORMANCE.md §7a.2a; V7 §6.13(b)). That reentry direction (this peer → caller) can only be authorized by a capability valid *at the caller*, so the caller must hand the reentry authority over as part of the request. The SDK is the surface for carrying it.
+
+**In-band params carriage (ratified — GUIDE-CONFORMANCE.md §7a.2a shape (a)).** The reentry authority travels as three in-band fields nested in the request params, **not** via the envelope `included` set:
+
+```
+; Caller side — hand reentry authority to a handler that will call back
+peer.execute(target, operation, {
+  ...operation_params,
+  reentry_capability:    Hash,   ; the cap authorizing this-peer → caller, rooted at the caller
+  reentry_granter:       Hash,   ; the caller's granter identity (identity-entity content hash)
+  reentry_cap_signature: bytes,  ; signature over the reentry cap
+})
+```
+
+Shape (a) — in-band, nested in params — is the ratified carriage: it is self-contained, transport-agnostic, and does not depend on the session API exposing the `included` set. All three keystone reference peers implement it. An SDK exposing a reentry-capable handler surface **SHOULD** marshal these three fields into params and, on the handler side, hand them to the reentry sender that originates the callback.
+
+> **SDK-GAP (2026-08-05): first-pass shape only.** GUIDE-CONFORMANCE §7a.2a records (a) as ratified but notes the final Go validator-side ruling as the one open item; the three field names above are pinned, but the SDK-level ergonomic wrapper (a typed `reentry` handle vs. raw params fields) is not yet designed. Pin the carriage convention now; refine the wrapper when the origination-extension SDK surface is specified.
 
 ---
 
@@ -903,11 +942,13 @@ GrantScope := {
 **SDK operations for capability management:**
 
 ```
-create_grant(scope: GrantScope, grantee?: PeerID) → Grant
-delegate_grant(parent: Grant, attenuated_scope: GrantScope, grantee: PeerID) → Grant
+create_grant(scope: GrantScope, grantee?: Hash) → Grant   ; grantee = identity-entity content hash, NOT the peer-id
+delegate_grant(parent: Grant, attenuated_scope: GrantScope, grantee: Hash) → Grant   ; grantee = identity-entity content hash
 revoke_grant(grant: Grant) → ()
 inspect_grants(connection?: PeerID) → [GrantInfo]
 ```
+
+**Grantee is the identity-entity content hash, not the peer-id (normative, #67 id-encoding contract).** A capability grantee **MUST** be the `system/hash` content hash of the grantee's `system/peer` identity entity — the value the core verify contract resolves and compares against the cap author — **NOT** the Base58 `system/peer-id`. The two have different preimages — the identity-entity content hash is `0x00 || SHA256(ECF(system/peer entity))`, whereas the peer-id is a self-describing multikey whose Ed25519 digest **is** the public key (`EXTENSION-SIGNALING.md` §6.3 — *not* a SHA-256 of it) — so conflating them mints a cap that fails `grantee_mismatch` at verification and cannot be resolved cross-peer. See EXTENSION-SIGNALING.md §6.5 (the reciprocal-grant mint) and EXTENSION-ROLE.md §744 (`grantee` field encoding, normative); the id-encoding hazard is the #67 contract (`ROUTING-2026-08-03-id-encoding-contract-to-arch`). `inspect_grants` still keys on `PeerID` because that is a query filter, not a cap field.
 
 These dispatch to the `system/capability` handler. An application instantiated with a scoped grant can further attenuate and delegate within its scope but cannot escalate beyond it.
 
@@ -1581,6 +1622,7 @@ The SDK wraps these into an application-facing interface. The types referenced i
 
 ## 19. Document History
 
+- **v1.11:** Service-owning handlers (new §11.6.9) — opt-in lifecycle (start after tree writes / before dispatch; stop before dispatch-unregister) for handlers that own a resource living *between* calls (listener, background loop, watcher), a mandatory tree declaration at `system/runtime/owned-services/{handler-pattern}` (closed `kind`/`exposure` enums + free-form descriptor), and the declared-not-gated boundary rule (declaring a service makes the hole visible; it does not capability-check its traffic). Two audit-story MUSTs: `unmediated-public` services publish their bind address/port; unrecognized enum values surface as **unassessable** (deliberate departure from MUST-ignore-unknowns, right for auditing). Entity-native handlers MUST NOT be service-owning. Touches no core-protocol type (the declaration is a `system/runtime/` entity, not a field on core's `system/handler`); additive (absent a declaration, behavior is exactly as today). Folds `PROPOSAL-SDK-HANDLER-OWNED-SERVICES` incl. its §6.1 field-shape ruling (2026-07-29).
 - **v1.10:** Godot intake clarifications per the Godot intake-clarifications proposal. §2.7 L1-default / L0-carve-out pin paragraph (Amendment G); §9.1 `HandlerInfo.pattern` advertisement-only semantics cross-ref to V7 §6.6 + GUIDE-EXTENSION-DEVELOPMENT §4.9 (Amendment D); §9.2 storage-shape-vs-typed-output cross-ref to ENTITY-NATIVE-TYPE-SYSTEM §4.1 / §4.2 + §2.5 documentation-field prohibition (Amendment F); new §9.3 cross-impl conformance subsection — ordering, membership, encoding equivalence (Amendment E). Companion Amendments A + B touch core-protocol-domain (V7 §3.7; EXTENSION-QUERY §4.1 / §5.4) and remain Workstream 2 sign-off. No SDK API redesign. Trigger: Godot β-track-close intake (commit `eae8d4b`) — Q1 / Q3 / Q4 / D2 discipline.
 - **v1.6:** Absorbed IA26 from PROPOSAL-IDENTITY-ARC-FIXES. New §11.2B "Rotation Re-issuance Helper" — `rotation_reissue_outstanding_grants(rotated_peer, new_authority)` SDK helper for the rotating peer to re-issue still-needed long-lived caps from a new authority on rotation, so consuming extensions (subscription, inbox, continuation, compute) stay rotation-agnostic. Documents the cross-cutting property (long-lived third-party-held caps die on issuer rotation by V7 chain validity + rotation) and assigns mitigation to the rotating peer. Conformance: SHOULD for SDKs targeting deployments with long-lived cross-peer flows. Source: PROPOSAL-IDENTITY-ARC-FIXES IA26.
 - **v1.5:** Coherent capability authority alignment. New §2.7.2 "Kernel-vs-handler principle" — normative guidance that application grants should cover handler create operations (continuation install, subscription subscribe, role assign, compute install) rather than raw `tree:put` to handler-managed namespaces. §11.2A Level 1: added load-bearing type grant guidance. Source: PROPOSAL-COHERENT-CAPABILITY-AUTHORITY (adopted), PROPOSAL-SDK-AND-GUIDE-COMPUTE-ALIGNMENT.

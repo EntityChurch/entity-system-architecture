@@ -81,6 +81,16 @@ The subscription entity is the source of truth. Internal subscription registries
 
 The params type for a notification inbox EXECUTE:
 
+> **⚠ PROVISIONAL rename + re-home — pending the workstream-C ruling (2026-08-02).** Renamed from
+> `system/protocol/inbox/notification` and re-homed INBOX→SUBSCRIPTION. Like its `system/inbox/delivery` sibling
+> it is **delivered into the persistent inbox mailbox**, so it fails the `SPECIFICATION-FORMAT.md` §8.4.4
+> data-at-rest test on **condition 1 only** (condition 2 = no — no `notification` `content_hash` is referenced).
+> This is **not symmetric with the reverted `system/encrypted`** — encryption's `content_hash` is cross-peer
+> wire-referenced and its name is correct/grandfathered, whereas this corrects a *defective* prefix — so a
+> consistent §8.4.4 ruling may let this rename stand; the narrow open question is durable-at-rest in a
+> **no-installed-base** world (`PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §C OPEN RULING; owners + core-go).
+> Until ruled, this name and its ownership move are **not ratified.**
+
 ```
 ; CANONICAL — owned here by EXTENSION-SUBSCRIPTION (re-homed 2026-08-02 from
 ; system/protocol/inbox/notification; owner-not-problem-domain, SPECIFICATION-FORMAT §8.4.2/§8.4.4).

@@ -839,6 +839,8 @@ These wrappers are L3 ergonomic surface; they do not change the protocol contrac
 **Handler:** `system/network`
 **What it does:** Peer lifecycle management — keepalive, reconnection, subscription restoration.
 
+> **Reachability-class dispatch + durable sessions (EXTENSION-NETWORK.md §10 / §6.6, Amendments 8/11/14).** The operations below drive the network extension's outbound-dispatch machinery; they do not redefine it. Outbound dispatch is a normative reachability-class **ladder** (§10): active connection → held-capability reconnect-skip → durable transport-profile resolution → §10.3 `establish_live` traversal seam (step 3b; NAT punch / WebRTC; returns a pooled connection) → §10.2 `dispatch_fallback` store-and-forward (step 4) → terminal. Per-peer auth is a **durable tree entity** at `system/peer/session/{remote_peer_id}` (`held_capability`; §6.6), so reconnection is handshake-skip / zero-RTT — `maintain-peer`'s reconnect leg reuses the held cap rather than re-handshaking, and the session entity survives connection drops and process restarts. See SDK-OPERATIONS.md §2.8 and §7.1 for the base-layer surface.
+
 ### Operations
 
 **maintain-peer** — Start managing a peer relationship.

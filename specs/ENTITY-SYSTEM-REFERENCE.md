@@ -72,7 +72,8 @@ Paths are UTF-8 strings typed as `system/tree/path` (extends `primitive/string`)
 
 ```
 KeyPair = Ed25519 (32-byte seed, 32-byte public key)
-PeerID  = Base58(0x01 || 0x01 || SHA-256(public_key))    # 46 characters, typed as system/peer-id
+PeerID  = Base58(varint(key_type) || varint(hash_type) || digest)   # self-describing multikey (V7 §1.5); typed as system/peer-id
+        # Ed25519: key_type 0x01, hash_type 0x00 (identity-multihash) — digest IS the public key, no SHA-256. Ed448: hash_type 0x01 = SHA-256(pubkey). Derivation: EXTENSION-SIGNALING §6.3.
 ```
 
 ---
@@ -550,7 +551,7 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 | `system/type/field-spec` | Field shape specification (type_ref: `system/type/name`, array_of, map_of, union_of, type_param + modifiers) |
 | `system/tree/path` | Tree path — naming-space address (`primitive/string`). Handler patterns, URIs, resource targets. |
 | `system/type/name` | Type name — type-space address (`primitive/string`). Type references, extends, field type_ref. |
-| `system/peer-id` | Peer identifier — identity-space address (`primitive/string`). Base58, 46 chars, self-describing. |
+| `system/peer-id` | Peer identifier — identity-space address (`primitive/string`). Base58, self-describing multikey (V7 §1.5; length varies by key/hash type — no fixed size). |
 | `system/capability/path-scope` | Scope for path-valued grant dimensions: `handlers`, `resources` ({include, exclude}) |
 | `system/capability/id-scope` | Scope for identifier-valued grant dimensions: `operations`, `peers` ({include, exclude}) |
 
@@ -598,7 +599,7 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 - **ECF rules**: sorted map keys (by encoded length then lexicographic), minimal integers, definite lengths, shortest floats, no duplicate keys
 - **Hash**: `0x00` + SHA-256 of ECF-encoded `{type, data}` = 33 bytes
 - **Signature**: Ed25519 over full hash bytes (33 bytes including format code)
-- **PeerID**: Base58(0x01 || 0x01 || SHA-256(public_key)) = 46 characters
+- **PeerID**: Base58(varint(key_type) || varint(hash_type) || digest) — self-describing multikey (Ed25519: hash_type 0x00, digest = public key, no SHA-256; no fixed length). Derivation: EXTENSION-SIGNALING §6.3
 
 ---
 
