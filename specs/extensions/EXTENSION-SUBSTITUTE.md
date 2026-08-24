@@ -1,6 +1,6 @@
 # EXTENSION-SUBSTITUTE
 
-**Version**: 1.1
+**Version**: 1.2
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-CONTENT.md (v3.6+) — this extension exists to be consulted on CONTENT's local-miss path and hooks it at §5; without CONTENT there is no miss to substitute for. (The dependency is one-directional: not installing this leaves CONTENT's 404 behavior unchanged, §1.)
 **Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); EXTENSION-BRIDGE-HTTP (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above)
@@ -241,6 +241,18 @@ violating anything written, which is why this is a spec defect and not a peer's 
 > publisher never asked this handler to perform. "The orchestrator routes correctly, so handlers may
 > assume it" is a true statement about the *orchestrator* and an unsafe assumption for a handler that can
 > also be dispatched to directly. **The safe direction is the one that does nothing.**
+
+**The vector MUST read the `code`, not the status `[MUST]` `[added v1.2, 2026-08-14]`.** `400` is shared
+by every malformed-entry refusal on this handler, so a status-only assertion cannot tell *"refused
+because it names another convention"* from *"refused because the entry was garbage"* — and a caller that
+branches on the two needs them distinguishable. Recorded because **this section shipped the defect it is
+warning about, one day old**: v1.1 pinned `wrong_substitute_type` and the reference check gated on
+`status != 400` alone, so the pinned code was a value nothing asserted — `GUIDE-CONFORMANCE` §5.2b.2's
+shape exactly, and the third member of the family §6a.9 opened. Live divergence it was hiding, source-read
+2026-08-14: `entity-core-py` `14775ce` refuses correctly and **before any fetch** (its test asserts the
+fetcher was never called, which is the load-bearing half) but answers **`invalid_entry`**, the generic
+code it uses for three different refusals. **Python's behaviour conforms; its code does not, and nothing
+could see that.** A dated observation — re-read the tree before citing it (D8).
 
 ---
 

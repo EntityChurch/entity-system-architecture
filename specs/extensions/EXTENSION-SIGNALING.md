@@ -1,10 +1,12 @@
 # Signaling Extension — Normative Specification
 
-**Version**: 1.0
+**Version**: 1.1
 
 **Status**: Draft
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.9+), EXTENSION-NETWORK.md (v1.6+ — §6.7 reachability facts, §10.3 live-establishment seam)
-**Optional**: EXTENSION-REGISTRY.md (v1.2+) — service advertisement for reflector/signaling pools; EXTENSION-RELAY.md (v1.2+) — Mode-F as an alternate carrier, Mode-C/S as fallbacks
+**Optional**: EXTENSION-REGISTRY.md (**v1.5+** — §3b service advertisement, the deployment-wide reflector/signaling/relay pools this spec's §4.5.1 complements per-node); EXTENSION-RELAY.md (v1.2+) — Mode-F as an alternate carrier, Mode-C/S as fallbacks
+
+> **v1.1 — `advertise` publishes the node's own reflection listener (§4.5, new §4.5.1).** §9.1 gives this service two listeners and §4.5 advertised only one, so **a node running §9.3 STUN could not say so and a peer could not ask.** Additive and MUST-ignore-safe: absent decodes to the already-legal no-reflection state, and no deployment window is needed. Conformance is conditional — reflection stays a MAY (§11.3), but a node that *does* serve it MUST now publish it, on **both** surfaces (§2.2). Raised by `entity-browser-rust` `ROUTING-2026-08-14`: every browser peer negotiates on host candidates only, because nothing in the ecosystem fills its ICE server list. **What v1.1 deliberately does not close** is the TURN half and the read-once-at-boot consumption model — those are design work, named as §13 item 5 and tracked in `PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME`, not silently folded here.
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
 ---
@@ -242,13 +244,16 @@ Returns the blobs at a key, **oldest first** (§5 pin 4). Non-destructive (§5 p
 
 ### 4.5 Advertise
 
-Announces the endpoint, its rate and TTL limits, and — if it overrides the default — its `lobby` constant, for pool membership (`EXTENSION-REGISTRY.md` service advertisement).
+Announces the endpoint, its rate and TTL limits, **which of its two §9.1 listeners it serves**, and — if it overrides the default — its `lobby` constant, for pool membership (`EXTENSION-REGISTRY.md` §3b service advertisement).
 
 ```
 system/signaling/advertise-result := {
   fields: {
     endpoint: {type_ref: "primitive/string"}
     limits:   {type_ref: "system/signaling/limits"}
+    reflection_endpoints: {array_of: {type_ref: "primitive/string"}}
+              ; OPTIONAL — this node's OWN §9.3 STUN listener(s). Absent/empty
+              ; means it serves no reflection (§4.5.1). Never another node's.
   }
 }
 
@@ -264,6 +269,17 @@ system/signaling/limits := {
 ```
 
 **Clients read the limits rather than assuming them.** A limit the client does not know is a cross-implementation reject boundary: one peer offers 64 KiB at a service that stops at 4 KiB, and the failure presents as a rendezvous miss.
+
+#### 4.5.1 `reflection_endpoints` — a node describing its own second listener `[added v1.1]`
+
+§9.1 gives this service **two listeners**: the mailbox (TCP, §9.2) and reflection (STUN/UDP, §9.3). Before v1.1 this operation published the mailbox `endpoint` and said nothing about the other one, so **a node that runs §9.3 reflection had no way to say so** — and a peer that reached the node had no way to ask. That is a hole in this operation on its own terms, independent of any one consumer: §9.1 names the later QUIC substrate as reflection's other consumer, and `GUIDE-REFERENCE-DEPLOYMENT.md` §3.2/§5 **co-locate the reflector and the signaling relay on one Tier-1 VM**, so in the reference deployment the advertising node *is* the reflector.
+
+- **It is the node's own listener, never a directory.** A node publishes here only what it itself serves. It is not a place to relay third-party STUN servers, and a peer MUST NOT read it as one — deployment-wide infrastructure sets are `EXTENSION-REGISTRY.md` §3b's job, and that entity is signed by the deployment identity precisely because it vouches for infrastructure it does not run.
+- **Absent and empty are the same thing, and both are valid** — this node serves no reflection. §11.3 keeps reflection a MAY, and this field does not change that; it only lets the answer be discovered instead of assumed.
+- **No credentials, by construction.** §9.3 forbids a reflector requiring authentication, so this field carries endpoints and nothing else. **There is no credential here to expire**, which is why a client may read it once at connect time without a staleness problem — see §13 item 5 for the case where that stops being true.
+- **A consumer merges rather than replaces `[SHOULD]`.** A peer that also holds an `EXTENSION-REGISTRY.md` §3b set treats these as **additional** reflector-pool members, deduplicated by **endpoint bytes exactly as published** (the §3.3 / §3b.3 byte-exactness rule — no normalization, no case-folding, no default-port canonicalization). Merging is safe because §9.3 already requires consulting **several** reflectors and requiring agreement, so more sources strictly improves the NAT-type conclusion; a single reflector is advisory and never trusted, whichever field it arrived in.
+
+> **Why this is additive and needs no flag day.** `advertise-result` is decoded by reading named fields out of a map and ignoring the rest, so an old client sees a field it does not know and skips it ([ADR-0002], MUST-ignore). **Absent decodes to empty, which is the already-legal no-reflection state** — the same absent-never-null discipline `lobby_constant` follows above. Unlike §13 item 1's namespace change, nothing is renumbered and no deployment window is needed.
 
 ## 5. Bucket Semantics `[single-implementation server — MUST pin]`
 
@@ -626,7 +642,11 @@ Whether the two share a port is an implementation detail; they cannot share a *t
 ```
 { ok: true }                                    ; offer
 { ok: true, messages: [bstr, ...] }             ; collect — oldest first (§5 pin 4)
-{ ok: true, endpoint: tstr, limits: { ... } }   ; advertise — §4.3
+{ ok: true, endpoint: tstr, limits: { ... },
+  ? reflection_endpoints: [tstr, ...] }         ; advertise — §4.5; the reflection
+                                                ; field is OPTIONAL and absent ⇒ empty,
+                                                ; and is REQUIRED here whenever the
+                                                ; wrapped surface carries it (§2.2)
 { ok: false, error: tstr }                      ; any — closed enum below
 ```
 
@@ -691,11 +711,12 @@ The **client role** is the conformance surface (§2.1). A conformant implementat
 - Honors the limits published by `advertise` rather than assuming them (§4.5)
 - For a **trigger-(b) symmetric establishment** (§6.5 (b)): mints the reciprocal grant as the **assembled inbound-dialer grant** (floor ∪ policy, advertisement-filtered — *not* the flat floor), installs it connection-scoped, **and serves dialer-side reentry** (V7 §6.11(b)) so the counterpart's reach-back reaches a handler. Both the mint and the serve — a peer that mints but serves reentry only server-side has built half the establishment, and it is loopback-invisible (§6.5 (b) Contents / Reach-back serving)
 
-A peer that offers a **server role** additionally implements §5's six bucket semantics exactly, and §8.2 rate limiting if it exposes the unwrapped surface.
+A peer that offers a **server role** additionally implements §5's six bucket semantics exactly, and §8.2 rate limiting if it exposes the unwrapped surface — and, **if it serves §9.3 reflection, publishes its own listener(s) in `advertise`'s `reflection_endpoints` on every surface it offers** (§4.5.1). Serving reflection while advertising nothing is non-conformant as of v1.1: it is the state that made the reflector undiscoverable, and §2.2 already forbids a verb that answers differently on the two surfaces.
 
 ### 11.2 SHOULD Implement
 
 - Consulting several reflectors and requiring agreement before concluding a NAT type (§9.3)
+- Merging an advertised `reflection_endpoints` into the reflector pool rather than replacing it, deduplicated by endpoint bytes as published (§4.5.1)
 - Retry with a fresh nonce, up to a small bounded count, before abandoning to a fallback (§7.2)
 - Dropping the carrier once the direct transport is live, retaining it only against link loss (§7.1 step 5)
 
@@ -772,3 +793,4 @@ A peer that offers a **server role** additionally implements §5's six bucket se
 | 2 | **Rate-limit thresholds** (§8.2) | **Needs a deployment call before a public unwrapped surface is exposed.** The mechanism and error code are pinned; the numbers are not. |
 | 3 | **TLS / linkability** (§8.5) | Accepted for v1 with the cost stated. Revisit if a deployment's threat model makes rendezvous-key metadata unacceptable. |
 | 4 | **Out-of-band carrier** (QR / short-code) | The zero-infrastructure human-present case. Kept as a secondary carrier under review; message framing would be a `connect-request` / `-response` pair encoded into a QR or short code. |
+| 5 | **ICE provisioning lifetime + the TURN half** `[opened 2026-08-14]` | **Not closed by §4.5.1, deliberately.** §4.5.1 gives a peer this node's own credential-free STUN listener, which is all a boot-time read can safely carry. Three things remain open and are **design work, not wording**: (a) **consumption model** — a consumer reading provisioning once at initialization cannot hold a rotating credential, so a TURN source needs re-reading before each negotiation rather than a boot snapshot; (b) **the TURN half** — TURN is *not* a surface this service serves, so it does not belong in this operation at all; `EXTENSION-REGISTRY.md` §3b's `data_relay` (with its `open`/`members`/`metered` policy) is its home, and what is unresolved is the peer that reaches a carrier **by direct URL and never performs a registry resolve**; (c) **merge precedence** beyond §4.5.1's dedup-by-bytes SHOULD, once two sources can disagree. Tracked in `PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME`. Raised by `entity-browser-rust` `ROUTING-2026-08-14`, whose §6 states (a) more sharply than we had. |

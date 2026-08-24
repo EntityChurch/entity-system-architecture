@@ -1,6 +1,6 @@
 # System Revision Extension
 
-**Version**: 3.9
+**Version**: 3.10
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
@@ -198,6 +198,25 @@ Stored at `system/revision/config/merge/path/{name}` (per-path) or `system/revis
 | `lww` | Last-write-wins — compare version timestamps, take the newer one |
 | `keep-both` | Store both versions (local at path, remote at `{path}.keep-both-{hash_prefix}`) |
 | `manual` | Always create a conflict entity, even for auto-resolvable changes |
+
+**`lww` is accepted and MUST NOT resolve `[ruled 2026-08-14, v3.10]`.** Routed by `entity-core-go` while
+building v3.9's write-time validation, who observed that `lww` and `handler` are offered by this table
+and dispatched by no implementation. Splitting their pair, because the two are not the same kind of gap:
+
+| Row | Kind of gap | Ruling |
+|---|---|---|
+| `lww` | **spec gap.** §5.2's arm read `lww_resolve(local_hash, remote_hash)` — a helper **defined nowhere in this corpus** — over a comparison basis this document's own `deletion_resolution` rejection says is unavailable: *"real LWW requires commit-metadata not currently spec'd."* The table therefore offered a strategy the spec elsewhere says it cannot support | **Stays in the vocabulary; MUST degrade to a conflict entity.** An operator may write it and `400 invalid_strategy` does not fire, so the pinned rejection contract does not churn. **Waits on:** a specified comparison basis. Deliberately **not invented here** — a guessed basis is a per-implementation convergence bug, and application-layer LWW is available today through `handler` |
+| `handler` | **implementation gap, not a spec gap.** §5.3 fully specifies the delegation (`merge-request` → `merge-response`) and §5.2 has always carried a working dispatch arm for it. Nothing has built it | **No spec change.** It is dispatchable as written; the cohort owes the build |
+
+- **An accepted-but-unresolvable strategy MUST degrade to a conflict entity `[MUST]`.** It MUST NOT
+  auto-resolve on an unspecified basis, and it MUST NOT be swept into an unknown-strategy default arm.
+  Whether a peer writes a conflict entity or silently picks a side is directly cross-peer-observable,
+  and it is the difference between a recorded divergence and lost data.
+- **The named arm is the point, and it is not a style preference.** v3.9's defect survived because a
+  config carrying this spec's own documented default reached a silent `default` arm; a strategy that
+  falls into `default` is indistinguishable from a strategy nobody has heard of. *(Argument routed by
+  `entity-core-go` and adopted; the `lww`/`handler` split above is arch's, and it means their `handler`
+  arm can dispatch rather than degrade whenever they build §5.3.)*
 
 **KeepBoth path naming.** The `keep-both` strategy creates a second binding at `{path}.keep-both-{hash_prefix}` where `hash_prefix` is the first 8 hex characters of the second entity's content hash. The hash prefix provides a deterministic, unique suffix independent of peer identity. Under deterministic merge ordering, "local" and "remote" are assigned by hash comparison, not by peer — using peer IDs in the path name would be misleading. The `.keep-both-` infix distinguishes these entries from conflict entities (which use `system/revision/conflicts/`). KeepBoth only applies to edit-vs-edit conflicts (both sides non-null). Delete-vs-edit conflicts fall through to conflict entities — "keeping both" when one side is a deletion is not meaningful.
 
@@ -2780,8 +2799,6 @@ apply_strategy(strategy, base_hash, local_hash, remote_hash, path, handler_path)
     return {resolved: true, hash: remote_hash}
   elif strategy == "target-wins":
     return {resolved: true, hash: local_hash}
-  elif strategy == "lww":
-    return {resolved: true, hash: lww_resolve(local_hash, remote_hash)}
   elif strategy == "three-way":
     ; v3.9: this branch read `strategy == "field-level"`, which is the name of
     ; the *algorithm* (§5.2 field-level comparison), not of the strategy. The
@@ -2794,6 +2811,15 @@ apply_strategy(strategy, base_hash, local_hash, remote_hash, path, handler_path)
     return null
   elif strategy == "manual":
     return null    ; always a conflict entity, even when auto-resolvable (§2.3)
+  elif strategy == "lww":
+    ; v3.10: NAMED and deliberately NOT resolving — never swept into the `else`
+    ; arm below. This branch previously read
+    ;   return {resolved: true, hash: lww_resolve(local_hash, remote_hash)}
+    ; and `lww_resolve` is defined nowhere in the corpus, over a comparison basis
+    ; §2.3 says is not spec'd ("real LWW requires commit-metadata not currently
+    ; spec'd"). An auto-resolve on an undefined comparison is a convergence bug
+    ; per impl; a conflict entity records the divergence instead. See §2.3.
+    return null
   elif strategy == "keep-both":
     ; KeepBoth only applies to edit-vs-edit conflicts (both non-null).
     ; Delete-vs-edit conflicts (one side null) fall through to conflict —

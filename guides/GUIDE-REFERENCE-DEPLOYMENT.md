@@ -68,7 +68,7 @@ justify their meter.
 - **This is the budget risk** — it relays *every byte* of the connections that fall back to it, for their
   lifetime. Treat it as metered.
 - **Minimize demand:** maximize punch success (good reflection + candidate ordering) so few connections need it;
-  the prefer-cheap-path rule (`PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT` §3) ensures peers try it last.
+  the prefer-cheap-path rule (`EXTENSION-REGISTRY.md` §3b.4 — a SHOULD) means peers try it last.
 - **Bound the spend:** `policy: metered`/`members` on the advertised relay; per-session bandwidth + duration
   caps; per-peer quotas; drop-or-degrade on budget exhaustion (the valid floor: a dropped relay = "that
   symmetric-NAT peer must be online-and-punchable or fall to store-and-forward," not a broken system).
@@ -89,8 +89,9 @@ A fresh peer is connected with **zero live infrastructure** via the preloaded se
 - the **pinned registry identity** (trust root — "like a root CA shipped with an OS");
 - a **resolver-config** pointing at the registry's static `http-poll` endpoint;
 - **precedes** — pre-cached signed bindings (the deployed "CDN trio") so first run works offline;
-- and (this proposal) the **`service-advertisement`**, so the first resolve also teaches the peer the reflector +
-  signaling endpoints — the whole cheap core path in one static fetch.
+- and the **`service-advertisement`** (`EXTENSION-REGISTRY.md` §3b), so the first resolve also teaches the peer
+  the reflector + signaling endpoints — the whole cheap core path in one static fetch. *(Specified as of
+  2026-08-14; **implemented in no peer yet** — the endpoints are still out-of-band configuration in practice.)*
 
 ## 5. A worked budget deployment (the recommended minimum)
 
@@ -109,8 +110,9 @@ degrades gracefully as budget flexes, and scales the cheap tiers effectively wit
 
 - `ANALYSIS-CONNECTION-FLOWS-AND-MINIMAL-INFRA-FOOTPRINT.md` (the flows, the state/cost table, the tier
   economics), `EXPLORATION-FULL-STACK-DISCOVERY-INFRA-AND-ENTITY-CHAT.md` §B (the pattern),
-  `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md` (the advertised service set + prefer-cheap-path).
-- Specs: `EXTENSION-REGISTRY.md` §7/§7.4 (seed, coral reef), `EXTENSION-RELAY.md` §3.5 (MX), §3.2 (Mode S static),
+  `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md` (design record — **ratified + folded 2026-08-14** as
+  `EXTENSION-REGISTRY.md` §3b, which is the citable source for the service set and prefer-cheap-path).
+- Specs: `EXTENSION-REGISTRY.md` §3b (the advertised service set, selection, prefer-cheap-path), §7/§7.4 (seed, coral reef), `EXTENSION-RELAY.md` §3.5 (MX), §3.2 (Mode S static),
   §3.4/§11.1 (Mode C), `EXTENSION-DISCOVERY.md` §3 (mDNS), `EXTENSION-NETWORK.md` §10 (reachability classes).
 - Adjacent: `GUIDE-PEER-COMPOSITIONS.md` (named compositions), `GUIDE-NETWORKING-MODEL.md` (the how-it-fits
   narrative), `GUIDE-CROSS-PEER-MESSAGING.md` §6 (durable-messaging roles).

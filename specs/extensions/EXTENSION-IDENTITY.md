@@ -545,6 +545,9 @@ The active certification primitive. Confers a function (controller / agent / ide
 | `agent` | any of the four | per use case | `internal` default per privacy-first; `public` for service infrastructure; `per-relationship` for selective disclosure; `embedded` for cap-hand-off scenarios. |
 | `identifier` (4-key only) | `"internal"` only | `"internal"` | Cert itself is internal; identifier peer's KEY is the contact-facing handle, surfaced via the agent certs the identifier signs. |
 | `<app-defined>` | per app convention | per app | App SHOULD document valid modes for its function values. Default: `"internal"`. |
+| `encryption` *(app-defined; registered)* | `"internal"`, `"public"`, `"per-relationship"` | `"public"` for the discoverable handle | **Registrant: `EXTENSION-ENCRYPTION` Tier C** (§4.3/§4.4), its sole owner. `embedded` has no tree path and is out of scope. Certs land at the ordinary mode-derived `system/identity/{audience}/cert/{h}` — ENCRYPTION defines **no** path under `system/identity/` and a sender finds an encryption cert by **filtering `properties.function == "encryption"`**, never by a path segment. |
+
+**Registered app-defined function values.** `<app-defined>` is an open vocabulary, which means two extensions can adopt the same string with different semantics and nothing detects it. Values in use by a landed extension are therefore recorded above, with their registrant. `encryption` is the first *(registered 2026-08-09 with the ENCRYPTION namespace ruling; landed here 2026-08-14 — it was routed and then carried by nothing, which is its own lesson about where an owed item lives)*.
 
 Function-specific semantics:
 - **`controller`**: authority to delegate; issues other certs. Top-level (attesting=quorum_id) or sub-controller (attesting=another controller's key).

@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.4
+**Version**: 1.5
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -12,7 +12,7 @@
 >
 > **✅ Landed + implemented (v1):** resolver substrate (§2–§5); local-name backend (§6); peer-issued resolve + curated registration (§6a.1–§6a.8).
 >
-> **🟡 Design folded, build in flight / deferred:** peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — ruled 2026-08-13 (v1.3), corrected 2026-08-14 (v1.4). Built in all three within a day of the ruling and measured green: `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6`; go's `registry_issuer` oracle 27/27 against each sibling, 0F. Source-read in each tree 2026-08-14, not carried from a report — a dated observation, not a standing fact: re-read the peers' trees before citing it (`docs/DOCTRINE-COHORT-STATE-TRACKING.md` D8).** The four gaps the builds exposed — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability — are **ruled in v1.4** and are the remaining fold for all three); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
+> **🟡 Design folded, build in flight / deferred:** **service advertisement (§3b — ratified + folded 2026-08-14 (v1.5), from `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT`, DRAFT since 2026-07-22). The `system/registry/service-advertisement` entity and the §3b.1 `services` field are built in NO tree — source-read in all three 2026-08-14 (`entity-core-go` `8765e1f`, `entity-core-rust` `cc6cb56`, `entity-core-py` `808d9e6`); a dated observation, not a standing fact. What IS built three-way is §3b.2/§3b.3's rendezvous-hash *selection function over a caller-supplied pool* (`ext/signaling/pool.go`, `extensions/signaling/src/pool.rs`, `signaling/pool.py`) — so all three select correctly from a pool nothing can yet deliver. The build ask is the entity + the resolve field; the selection half is already green.** Peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — ruled 2026-08-13 (v1.3), corrected 2026-08-14 (v1.4). Built in all three within a day of the ruling and measured green: `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6`; go's `registry_issuer` oracle 27/27 against each sibling, 0F. Source-read in each tree 2026-08-14, not carried from a report — a dated observation, not a standing fact: re-read the peers' trees before citing it (`docs/DOCTRINE-COHORT-STATE-TRACKING.md` D8).** The four gaps the builds exposed — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability — are **ruled in v1.4** and are the remaining fold for all three); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
 >
 > **🔴 NOT yet designed — outstanding work before this extension is "done":**
 > - **`domain-control` DNS-challenge format** (§6a.9.1) — must be ONE mechanism shared with the web-native `dns-txt`/`well_known_url` backends; settles with *that* proposal, not here.
@@ -64,7 +64,10 @@ system/registry:invalidate-cache(name | null) → ()    ; null = flush all
   trust_anchor:  <variant identifying which backend resolved>,
   ttl:           <ms-since-epoch duration | null>,      ; positive-result cache hint
   neg_ttl:       <ms-since-epoch duration | null>,      ; OPTIONAL negative-cache hint on not_found / chain_exhausted; SHOULD per backend
-  backend_id:    <peer_id_hash | identifier>            ; which backend produced this
+  backend_id:    <peer_id_hash | identifier>,           ; which backend produced this
+  services:      <system/registry/service-advertisement | absent>
+                                                        ; OPTIONAL — the deployment's shared infrastructure
+                                                        ; set (§3b). Absent is a valid floor (§3b.1).
 }
 ```
 
@@ -219,6 +222,161 @@ data: {
 The revocation's authenticating `system/signature` entity is carried per the same target-matching + invariant-pointer contract as bindings (§3): `data.target == revocation.content_hash`, `data.signer == authority` (same authority as the revoked binding), and reachable at `system/signature/{hex(revocation.content_hash)}`.
 
 `:resolve` MUST check for a `system/registry/revocation` targeting a candidate binding before returning `status: "resolved"`. If a revocation is found and verifies against the same authority as the binding, the binding is excluded and meta_resolve advances to the next chain entry. Subscription-driven cache invalidation is the MAY path on top.
+
+---
+
+## §3b The service-advertisement entity
+
+A binding answers *who a name is and how to reach them*. It does not answer **what shared
+infrastructure a deployment offers** — the STUN reflector and signaling/rendezvous carrier a peer
+needs to *establish* a direct connection, and the optional relay fallbacks. Before this section
+that infrastructure was out-of-band configuration, and the consequence was concrete: all three
+implementations built §3b.2's pool-selection rule and had no protocol way to learn a pool to select
+from (`entity-browser-rust` `ROUTING-2026-08-14` reports the browser-leg face of it — a browser peer
+negotiating with host candidates only, because nothing fills its ICE server list).
+
+A deployment publishes **one signed, static-served `system/registry/service-advertisement`** in its
+registry zone, alongside its bindings. It is the entity-native SRV-analog to §3's A-record and
+`EXTENSION-RELAY.md` §3.5's MX — the same one-signed-zone pattern, one more record type.
+
+```
+system/registry/service-advertisement := {
+  deployment: <peer_id>,        ; the deployment/registry identity this set belongs to
+  services: {
+    reflector:    [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint}]   ; STUN — core path
+    signaling:    [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint}]   ; rendezvous carrier — core path
+    ? data_relay: [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint,
+                      policy: "open" / "members" / "metered"}]                  ; TURN / RELAY Mode-C — optional
+    ? inbox_relay:[+ {peer_id: <peer_id>, priority: uint}]                      ; RELAY Mode-S — optional
+  },
+  ttl: uint                     ; ms since Unix epoch, per §2.1
+}
+```
+
+It **MUST** carry a `system/signature` at the invariant-pointer path (V7 §3.5), verified against the
+pinned deployment identity **exactly as a binding is** (§6a.4). A tampered or expired advertisement
+**fails closed** — it is discarded entire, never partially honored and never silently downgraded to
+"no services." Absence and rejection are distinguishable to the peer; only absence is a valid floor.
+
+**Service semantics.**
+
+- **`reflector`** — a STUN-role endpoint echoing a peer's observed public address
+  (`EXTENSION-NETWORK.md` §6.7.1 is the native operation; `EXTENSION-SIGNALING.md` §9.3 is the
+  unwrapped STUN listener). Stateless, core path.
+- **`signaling`** — a rendezvous endpoint carrying offers/candidates between two peers
+  (`EXTENSION-SIGNALING.md` §4). Transient per-handshake state only, core path. The payload MAY be
+  ENCRYPTION-opaque; the carrier need not read it.
+- **`data_relay`** *(optional)* — a TURN / RELAY Mode-C endpoint relaying the **data path** when a
+  punch fails (symmetric NAT). `policy` declares who may use it and is **the budget lever**: a
+  `metered` relay bills its operator for every byte, for the lifetime of every connection that falls
+  back to it. Absent ⇒ the deployment offers no data-relay, and symmetric-NAT peers fall to
+  store-and-forward or do not connect. **This is the field that answers "whose credential, and who
+  pays"** for the browser leg's TURN half (§3b.4).
+- **`inbox_relay`** *(optional)* — a deployment-shared Mode-S mailbox for offline delivery.
+  **Distinct from a peer's own `system/peer/inbox-relay` MX**, which is per-peer; this is
+  deployment-shared infrastructure a peer MAY adopt.
+
+**Why deployment-scoped and not per-peer.** Reflector and signaling are *shared* infrastructure, not
+attributes of any one peer; advertising them once per deployment rather than once per peer matches
+both reality and cost. A peer MAY still override per-peer where it genuinely differs — and the
+connector-entered-by-URL path, which never performs a resolve at all, is served by
+`EXTENSION-SIGNALING.md` §4.5 rather than by this entity.
+
+### §3b.1 The `services` field on `ResolutionResult`
+
+When the resolved zone carries a `service-advertisement`, `:resolve` returns it in the OPTIONAL
+`services` field of `ResolutionResult` (§2.1). **The whole cheap core path is therefore learned in
+the resolve a peer already performs** — no extra round-trip and no second lookup surface.
+
+The field is **OPTIONAL and MUST-ignore when absent**: a Tier-0 static registry that advertises no
+live services resolves normally with `services` absent, and that is a valid floor, not a degraded
+result.
+
+### §3b.2 Intra-pool selection is per-service-type `[cross-peer seam — MUST]`
+
+Each service entry is a **pool**, so a deployment can scale a service horizontally. **How a peer
+selects within a pool differs by service type, and getting `signaling` wrong is a silent cross-peer
+bug** — so the rule is pinned per type, never left to "lowest priority wins."
+
+| Service | Intra-pool selection | Why |
+|---|---|---|
+| **`reflector`** | **any member; SHOULD consult several and require agreement** (`EXTENSION-NETWORK.md` §6.7.1; `EXTENSION-SIGNALING.md` §9.3 states the same MUST). `priority` is a preference/failover hint only. | Every reflector independently yields the same fact. No pair-convergence needed. |
+| **`signaling`** | **client-side rendezvous-hash (MUST)** — both peers compute the §3b.3 weight over the pool and independently select the **same** member. **NOT lowest-`priority`, and never a round-robin load balancer.** | Two peers must meet at the *same* carrier for the seconds of the handshake. Priority-order or an LB **splits the pair across servers and the punch never completes** — a silent never-meet, exactly like a key-derivation mismatch. |
+| **`data_relay`**, **`inbox_relay`** | **priority-order failover (MX semantics)** — lowest `priority` first, next on failure. | Any relay carries the data; the *sender* alone picks. For a mailbox the recipient's MX **is** the shard map. |
+
+**Signaling scales with zero shared state:** pool capacity is the sum of its members, each owning a
+shard of the key space; a hot key is one handshake rather than a hot shard, and no member needs any
+other's state.
+
+### §3b.3 The weight function, pinned to the byte `[cross-peer seam — MUST]`
+
+**"Highest-random-weight" is a family, not a function** — operand order, the digest, what identifies
+a member, and how weights compare are all free variables, and **two implementations can each write
+textbook-correct HRW and split every pair.**
+
+> For a pool member advertised at `endpoint`:
+>
+> ```
+> weight(k, endpoint) = SHA-256( k ‖ endpoint_bytes )
+> member              = argmax over the pool, weights compared lexicographically
+> ```
+>
+> - **`k`** is the 33-byte rendezvous key **exactly as derived** (`EXTENSION-SIGNALING.md` §3.1) —
+>   the same bytes that go on the wire, never a re-hash of them.
+> - **`endpoint_bytes`** are the advertised endpoint string's bytes **exactly as published** — no
+>   normalization, no case-folding, no scheme or default-port canonicalization. Both peers read the
+>   *same* advertisement, so byte-preservation makes them agree without either running a URL
+>   canonicalizer — and a canonicalizer is precisely where two implementations drift apart
+>   (`EXTENSION-SIGNALING.md` §3.3 is the same rule for the key's own string inputs).
+> - **No separator between the two, because `k` is fixed at 33 bytes**, which makes the
+>   concatenation unambiguous by construction. Recorded explicitly so it is not read as the
+>   missing-separator defect the `pair` key derivation had to fix.
+> - **Highest weight wins**; ties break to the **lower `endpoint_bytes`**. A tie is a SHA-256
+>   collision away and will never be observed, but `argmax` alone is not a total order and an
+>   implementer must not have to invent the rest.
+> - It is a **plain SHA-256, not the substrate content-hash primitive.** This weight is a comparison
+>   scalar: it never appears on the wire and addresses no content, so the ECF `{data, type}` envelope
+>   would be ceremony — and a *format-carrying* digest would reintroduce the home-format divergence
+>   the key derivation exists to pin away.
+
+**`priority` partitions; it does not weight.** Select the **lowest `priority` tier present in the
+pool, then rendezvous-hash within that tier.** "Weight the hash" is explicitly **not** the rule: a
+weighting function is itself unpinned bytes, and stacking a second invented rule on the first is
+worse than not tiering at all. Both peers read the same advertisement, so both land in the same tier
+before the hash runs.
+
+**Stale-pool skew (SHOULD).** Two peers holding slightly different advertisements may hash to
+different members. Each peer SHOULD try its **top-2** choices, which covers a single-member pool
+delta cheaply. A "looking-for-you" beacon forwarded within the pool is the heavier mitigation and is
+**not** v1 — add it only under measured skew.
+
+> **`[§11.5-class]` — not validatable by a single-member pool.** `argmax` over one member returns
+> that member whatever the weight computes, so **every** construction agrees and a green gate says
+> nothing. The conformance vector MUST use a **two-member pool**. This is the same
+> single-impl-invisibility as `EXTENSION-SIGNALING.md` §7.2 `fire_at`, and it is why this pin went
+> unnoticed while three implementations built the selection function.
+
+### §3b.4 Prefer the cheap path `[SHOULD]`
+
+A peer establishing a connection SHOULD attempt, in order: **direct dial → reflector + signaling
+punch → `data_relay` → store-and-forward via an `inbox_relay`.** This is simultaneously the correct
+latency order and the budget-preserving one — a metered relay is touched only after the free path
+fails.
+
+> **Stated SHOULD, not MUST, and the reason is the MAY/SHOULD test.** Two peers ordering their paths
+> differently still connect: the divergence costs the operator money, it does not split a pair or
+> corrupt a seam, so it is not the latent interop bug a MUST exists to foreclose (contrast §3b.2,
+> where a wrong choice silently never-meets and is therefore MUST). No conformance test can fail a
+> peer for dialing a relay first without knowing the deployment's intent. Its **source proposal
+> wrote MUST**; the fold downgraded it deliberately and this note records that, so the change is not
+> read as a transcription slip.
+
+### §3b.5 Trust of advertised infrastructure
+
+A deployment **vouches for the infrastructure it advertises** — that is what signing the set means.
+A peer MAY additionally pin or allow-list specific reflector / relay identities on top. Cross-deployment
+shared community relays compose with the aggregator federation pattern (§8.2) and are **deferred with
+it**, not resolved here.
 
 ---
 
@@ -1092,6 +1250,9 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 - Forward-compatible unknown `backend_kind` handling per §4.2.
 - Local-name backend (§6) — all five handler operations (`:resolve`, `:bind`, `:unbind`, `:list`, `:update-transports`); bind/unbind/supersede semantics; local-only storage; substrate's resolver-handler contract per §2.
 - Peer-issued backend (§6a) — `peer_issued.resolve` per §6a.4 over transport-agnostic reads; signature-verify against the pinned trust root; by-name index (§6a.3); by-target revocation index (§6a.6); ttl + fail-closed (no pin-downgrade). Conformance vectors `REG-PEERISSUED-{RESOLVE,VERIFY-FAIL,REVOKED,EXPIRED,PRECEDE,OFFLINE-NOTFOUND}-1` — all six landed 3-way GREEN (Go/Rust/Python), injected-reader. The signed manifest (§6a.7) is NOT a v1 MUST (format pinned, impl deferred); `REG-PEERISSUED-MANIFEST{,-ABSENCE}-1` gate it when an impl ships it.
+- Service advertisement (§3b) — `system/registry/service-advertisement` entity: signature-verify against the pinned deployment identity, fail-closed on tamper/expiry (§3b), the OPTIONAL `services` field on `ResolutionResult` with **absent as a valid floor** (§3b.1), and the §3b.2 per-service-type selection rules including the §3b.3 byte-pinned rendezvous-hash for `signaling`.
+  - **Vectors.** Publish a signed advertisement → `resolve` returns it in `services`; a tampered and an expired advertisement each fail closed with no silent downgrade; a Tier-0 zone carrying no advertisement resolves normally with `services` absent. **The selection vector MUST use a two-member pool** — a one-member pool makes every construction agree and proves nothing (§3b.3).
+
 (Resolution-log is SHOULD per §11.2 — moved out of MUST to avoid the write-amplification hot-path issue surfaced by the cohort review.)
 
 ### §11.2 SHOULD implement
@@ -1166,6 +1327,9 @@ data: {
 - `proposals/implemented/PROPOSAL-EXTENSION-REGISTRY-SUBSTRATE.md` — landed-into source proposal (substrate)
 - `proposals/implemented/PROPOSAL-EXTENSION-REGISTRY-PETNAME.md` — landed-into source proposal (local-name backend = §6 of this spec)
 - `proposals/implemented/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md` — landed-into source proposal (peer-issued backend = §6a of this spec; Part B.live registration deferred)
+- `docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md` — landed-into source proposal (service advertisement = §3b of this spec; §3b.4 folded SHOULD where the proposal wrote MUST, per the note there)
+- `specs/extensions/EXTENSION-SIGNALING.md` — §4 the rendezvous carrier and §9.3 the STUN reflector, the two core-path services §3b advertises; §3.1 supplies the 33-byte key `k` that §3b.3 hashes
+- `guides/GUIDE-REFERENCE-DEPLOYMENT.md` — the operator-facing tier model these services are priced in (§3.2 reflector, §3.3 signaling, §3.4 data-relay, §5 the worked budget)
 - `proposals/PROPOSAL-EXTENSION-DISCOVERY.md` — sibling-but-distinct (peer-finding, not name-binding); DRAFT
 - `proposals/PROPOSAL-EXTENSION-RELAY.md` — RELAY proposal (compositions referenced §8)
 - `proposals/PROPOSAL-STATIC-PEER-HOSTING-UMBRELLA.md` — names REGISTRY as dependency; this spec fulfills
