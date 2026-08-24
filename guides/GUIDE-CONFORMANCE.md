@@ -103,6 +103,43 @@ Class B vectors compose Class A — a Class A failure for an impl typically casc
 
 The `signature` category uses fixed Ed25519 seeds named in the `.diag` as 32-byte hex literals. Ed25519 (RFC 8032) signing is deterministic — given a seed and a message, the signature is fixed — so vectors are reproducible across impls without per-impl key generation. Seeds are arbitrary; they exist only to make the test reproducible. Do not reuse seeds across vector ids — give each `signature.N` vector its own seed so a failure points cleanly at one input.
 
+### §2.4a Every check of a guarded operation MUST assert the negative half `[MUST] [added 2026-08-11]`
+
+**A check that asserts an operation was *accepted*, and nothing about the authority or the encoding behind it, certifies the absence of the guard.** A peer that skips the work scores at least as well as one that does it — and better, because the work can only cost it a failure.
+
+> **The rule.** Where a normative rule says an operation is permitted **only** under some condition — a signature, a capability, a policy admission, a format — the vector set MUST contain **both halves**:
+>
+> 1. **the positive half** — satisfying the condition is accepted; and
+> 2. **the negative half** — *failing* the condition is refused **and produces no state change and no publication.**
+>
+> A category that has only positive checks is **not** partial coverage of that rule. It is coverage of the *unguarded* behavior, and a correctly-guarded peer **fails** it.
+
+**This is not a new idea; it is an existing rule that was only ever written one section at a time.** `EXTENSION-REGISTRY` §6a.9.1 already has it — `policy_manual_publishes_nothing`, `policy_allowlist_unlisted_publishes_nothing` — and those are exactly the checks nobody's registry failed. **The sections where nobody wrote it are precisely where all three implementations shipped the same hole:** §6a.9 named `REG-REGISTER-PROOF-1` for register and nothing for `revoke`/`renew`, and go, rust and py all three shipped those two ops with no verification at all. *The vector list, not the prose, is what gets implemented against.*
+
+**Four defects in the 2026-08-11 cycle were the same shape, and every one was found by a peer rather than by the tooling:**
+
+| Defect | How it was found |
+|---|---|
+| go's unauthenticated `revoke`/`renew` — its own checks asserted `200`/`202` with no proof, so a correct peer *failed* them | **core-py refused to converge** and reported instead of matching to 16/16 |
+| go's containment boundary (`/srv/peerroot` ⊃ `/srv/peerroot-backup`) | auditing what **rust's report pointed at** — not the report |
+| rust's second symlink escape (wrong-inode `lstat`) | rust's own audit; its note: *"our vector can't see that one; it would survive a green run in all three impls"* |
+| rust's and py's round-trip tests passing a **deliberate mutation** | both sides shared an encoder, so the test compared a thing to itself |
+
+**Two corollaries worth stating as rules.**
+
+- **A sibling's refusal to converge is signal, not friction.** py's two red checks were worth more this cycle than rust's sixteen green ones. An implementation that reports a disagreement instead of matching the cohort is doing the job the cohort exists to do; **treat a lone red as a finding to investigate before treating it as a defect to fix.**
+- **A round-trip check whose two sides share an encoder measures the encoder against itself.** It must be gated by a deliberate mutation that it is required to *catch* — a check that cannot be made to fail has not been shown to measure anything (§5.2b's twin, one layer up).
+
+**The negative half MUST probe the state, not the response `[MUST] [added 2026-08-11-b]`.** §2.4a's three conjuncts are *refused* **and** *no state change* **and** *no publication*. **Asserting the status and the code satisfies only the first.** For any guarded operation that writes, a check MUST additionally read back the surface the operation would have written and assert it is absent or unchanged — a peer that answers `403` and performs the write anyway satisfies a status-only assertion completely.
+
+> **Where this concentrates, and it is not per-vector forgetfulness.** It pools in **shared deny helpers**. core-go's 2026-08-11 audit of its own suite found two — `sendAndExpectAuthzDeny` (8 callers, asserts `status == 403` and nothing else) and the `extractStatusAndCode` path — and because `sendScopeTest` tail-calls the first, **every scope check inherits status-only assertion regardless of which operation it drives.** Four of those instances drive writes (`system/tree:put`, `subscription:subscribe`, `capability:request`, `role:delegate`). One helper, eight callers, four real holes, and nothing in any individual vector is wrong.
+>
+> **So a new vector family built on a fresh `expect_X_refused(...)` helper reproduces this hole by construction, even with both halves nominally present** — the helper asserts the code and stops. When authoring a matrix for a *new* security predicate, write the state probe into the helper first, before it has callers. It is the cheapest moment it will ever be.
+
+**Corollary — do not audit for this by grepping declaration strings.** The declaration is not the check, and name-grepping scores it wrong in *both* directions: core-go's `authz` category scores **0/11** on a refusal-word grep while *being* the negative halves, and `encryption`'s `sender_auth_peer` reads as a single positive declaration while carrying two tamper vectors. **Read the implementation.** An audit that reports coverage from category names has measured its own vocabulary.
+
+This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, and **§2.4a is a surface the suite reaches and scores backwards.**
+
 ---
 
 ## §3 The harness

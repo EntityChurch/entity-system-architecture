@@ -81,15 +81,28 @@ The subscription entity is the source of truth. Internal subscription registries
 
 The params type for a notification inbox EXECUTE:
 
-> **⚠ PROVISIONAL rename + re-home — pending the workstream-C ruling (2026-08-02).** Renamed from
-> `system/protocol/inbox/notification` and re-homed INBOX→SUBSCRIPTION. Like its `system/inbox/delivery` sibling
-> it is **delivered into the persistent inbox mailbox**, so it fails the `SPECIFICATION-FORMAT.md` §8.4.4
-> data-at-rest test on **condition 1 only** (condition 2 = no — no `notification` `content_hash` is referenced).
-> This is **not symmetric with the reverted `system/encrypted`** — encryption's `content_hash` is cross-peer
-> wire-referenced and its name is correct/grandfathered, whereas this corrects a *defective* prefix — so a
-> consistent §8.4.4 ruling may let this rename stand; the narrow open question is durable-at-rest in a
-> **no-installed-base** world (`PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §C OPEN RULING; owners + core-go).
-> Until ruled, this name and its ownership move are **not ratified.**
+> **RATIFIED 2026-08-10 — the rename stands, and it is in the same cut round as `delivery`.** This type was
+> renamed from `system/protocol/inbox/notification` (strip the mis-homing `protocol/` prefix) and re-homed
+> INBOX→SUBSCRIPTION (owner-not-problem-domain, `SPECIFICATION-FORMAT.md` §8.4.2). The §8.4.4 data-at-rest test
+> was applied and **passes, on the same two legs as its `system/inbox/delivery` sibling** (`EXTENSION-INBOX.md`
+> §2.1): **condition 2 — no** (no `notification` `content_hash` is referenced by anything, the leg on which
+> `system/encrypted` failed), and **condition 1 — durable by design, factually empty** in a no-installed-base
+> ecosystem. The narrow question this banner reserved — durable-at-rest with no installed base — is the one the
+> `delivery` ruling answered generally; there is no ground on which these two types diverge.
+>
+> > **Coordinated cohort cut `[MUST]` — one round, two strings.** `system/inbox/delivery` and
+> > `system/subscription/notification` cut **together**. There is no dual-kind acceptance window for either
+> > (`AGENTS.md`: no back-compat, no migration windows), and a peer holding undelivered mail at cut time MUST
+> > drain it first — a notification written under the old string is not matched by an upgraded handler and
+> > stalls its continuation **silently** (the §3.2 silent-drop class, no loud error).
+>
+> **Correcting the record, because the sequencing was ours.** `EXTENSION-INBOX.md` §2.1 and the 2026-08-10
+> release-catchup both reasoned *from* this re-home as already settled while this banner still read "not
+> ratified" — the ratification edited INBOX and never came back here, and this file went untouched from
+> `4fe5348` (2026-08-04) through both 08-10 packets. core-go read the two correctly as contradictory, cut
+> `delivery` alone, and declined to cut a string the canonical spec marked unratified. **That was the right
+> call on our text**, and the half-cut cohort it risked is exactly what §2.1's own argument invokes against
+> leaving a sibling behind.
 
 ```
 ; CANONICAL — owned here by EXTENSION-SUBSCRIPTION (re-homed 2026-08-02 from

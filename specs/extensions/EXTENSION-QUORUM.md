@@ -473,6 +473,8 @@ system/quorum/
 
 **Hash-segment encoding.** All hash-typed segments encode as the lowercase hex string of the full `system/hash` byte sequence (algorithm-byte prefix + digest).
 
+**Hash-segment disposition (`SPECIFICATION-FORMAT.md` §8.4.6, `[normative]`).** Both segments above are **`[hold-and-fetch]` — format-free.** `{quorum_id_hex}` is the quorum entity's own `content_hash` and `{hash_hex}` is the attestation's; a consumer reaches this subtree holding the hash already (from `peer-config.trusts_quorum`, from the attestation that arrived, or from the entity it just fetched). **Use them verbatim at whatever width their own format byte implies** — do not re-derive either under the local format, and do not state or assume a width. Neither is a value two parties compute independently, so neither is pinned: a quorum running a non-floor home format addresses its own events in its own space, coherently.
+
 Consumer extensions reference `system/quorum/{quorum_id_hex}` directly when they need to point at a quorum (e.g., identity's `peer-config.trusts_quorum` field).
 
 The `system/quorum/{quorum_id_hex}/event/...` subtree holds the quorum's self-event attestations. EXTENSION-QUORUM's storage convention (per the principle in `EXTENSION-ATTESTATION.md` §7 that consumers choose paths). This subtree is the canonical location for `current_signer_set` to walk.

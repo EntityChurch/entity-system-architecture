@@ -89,16 +89,20 @@ Step 7 is the key integration point. The inbox handler uses write-ahead processi
 >   question of fact about data that exists, and in a no-installed-base ecosystem the answer is no. What it
 >   does change is *how the rename lands*:
 >
-> > **Coordinated cohort cut `[MUST]`.** All implementations change this string in **one round**; there is no
-> > dual-kind acceptance window (`AGENTS.md`: no back-compat, no migration windows). A peer holding
-> > undelivered mail at cut time MUST drain it first — a delivery written under the old string is not matched
-> > by an upgraded handler and stalls its continuation **silently** (the §3.2 silent-drop class, no loud error).
+> > **Coordinated cohort cut `[MUST]` — one round, two strings.** All implementations change this string
+> > **and `system/subscription/notification`** (`EXTENSION-SUBSCRIPTION.md` §2.2, ratified the same day) in
+> > **one round**; there is no dual-kind acceptance window for either (`AGENTS.md`: no back-compat, no
+> > migration windows). A peer holding undelivered mail at cut time MUST drain it first — a delivery written
+> > under the old string is not matched by an upgraded handler and stalls its continuation **silently** (the
+> > §3.2 silent-drop class, no loud error).
 >
 > **Why the cohort's convergence on the old name does not save it.** All three implementations ship
 > `system/protocol/inbox/delivery` — but they converged there *because the mis-homing prefix misled them*, which
 > is the defect §8.4.2 exists to correct; convergence on a defect is not a reason to keep it. The sibling
-> `notification` already re-homed to `EXTENSION-SUBSCRIPTION` on identical grounds (§2.2). Leaving `delivery`
-> behind would strand the corpus half-corrected on a rule that admits no exception.
+> `notification` re-homed to `EXTENSION-SUBSCRIPTION` on identical grounds and is **ratified alongside this one**
+> (`EXTENSION-SUBSCRIPTION.md` §2.2 — its provisional banner outlived its ruling by one packet; see the
+> correction recorded there). Leaving either behind would strand the corpus half-corrected on a rule that
+> admits no exception.
 
 ```
 system/inbox/delivery := {

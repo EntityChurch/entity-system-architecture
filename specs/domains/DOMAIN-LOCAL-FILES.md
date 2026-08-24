@@ -858,16 +858,29 @@ Filesystem path: /home/alice/shared/src/main.rs
 
 ### 8.3 Path Security
 
-The handler MUST validate that the resolved filesystem path is within the configured root directory. Two classes of escape MUST be defended against: parent-traversal via `..` segments, and same-component escape via a symlink at the resolved target.
+**The containment invariant (MUST) — state this first; the defenses below are ways of achieving it `[RULED 2026-08-11]`.**
+
+> **The resolved absolute filesystem path MUST be the configured root itself, or lie beneath it at a path-component boundary — and symlink resolution MUST NOT be able to move it outside that set.**
+
+The defenses that follow are the known ways this invariant is broken. **They are not the definition and they are not a complete list**: an escape that satisfies every enumerated defense and still violates the invariant is a defect, and the invariant is what a new implementation and a new audit are measured against. *(Written this way because three implementations shipped three different halves of one rule — see the note at the end of this section.)*
 
 **Parent-traversal defense (MUST).** Path traversal attacks using `..` segments MUST be rejected:
 
 ```
 validate_path(root, relative_path):
-  canonical = canonicalize(root.filesystem_root + relative_path)
-  if not canonical starts with canonicalize(root.filesystem_root):
+  canonical      = canonicalize(root.filesystem_root + relative_path)
+  canonical_root = canonicalize(root.filesystem_root)
+  if not is_within(canonical, canonical_root):
     return error(403, "path_traversal_rejected")
+
+; component-boundary containment — NOT a string prefix test
+is_within(path, root):
+  return path == root or path starts with (root + PATH_SEPARATOR)
 ```
+
+**Component-boundary containment (MUST).** The containment comparison MUST be made **on path components, not on the raw string.** A bare prefix test (`path.startswith(root)`, `strings.HasPrefix`) matches mid-component, so a root of `/srv/peerroot` "contains" the unrelated sibling `/srv/peerroot-backup`. **Both other defenses pass this case on purpose** — every component resolves cleanly and the leaf is an ordinary file — and it is reachable two ways: a symlink planted inside the root pointing at the prefix-sharing sibling, or a bare `../peerroot-backup/x` join. Sibling directories that extend a root's name are ordinary in real deployments (`-backup`, `.old`, `2`, `-staging`).
+
+> *This rule exists because §8.3's own reference pseudocode prescribed the defect — it read `if not canonical starts with canonicalize(root.filesystem_root)`, and an implementation that followed it exactly was exposed. Corrected above. The finding is core-go's (`e91817f`, proved with a throwaway probe before it was claimed, then pinned by regression tests); the cost was not three careless teams, it was one wrong line here.*
 
 **Leaf-symlink defense (MUST).** Implementations MUST reject leaf symlinks at the resolved target path. The parent-traversal check above defends against `..` segments and parent-component symlinks (when the resolver canonicalizes the parent); it does NOT defend against a symlink at the leaf itself. An authenticated writer with `local/files/shared/* write` capability could otherwise have a symlink at the target path — placed by a prior write through the same handler, or by an attacker with concurrent access to the configured root — and the subsequent open would follow it to anywhere on disk.
 
@@ -884,7 +897,7 @@ A property-level non-atomic mitigation (`Lstat` the resolved path; reject if sym
 
 **Normative error code (MUST).** Both the parent-traversal defense and the leaf-symlink defense MUST surface failure as **HTTP-style status 403 with error code `path_traversal_rejected`**. The mechanism varies by platform (`O_NOFOLLOW`, `openat2(RESOLVE_BENEATH)`, `cap-std`, `FILE_FLAG_OPEN_REPARSE_POINT`); the wire response shape is uniform. Validate-suite cross-impl behavioral gates assert the specific code. This pin lets sibling impls converge on the same error surface without re-litigation.
 
-**All path-resolving callsites MUST apply both defenses.** The two defenses above MUST be applied at every callsite that resolves a tree path to a filesystem path — `read`, `write`, `list`, `delete`, the watcher's debounce-flush ingest, and the reverse-write / reverse-delete handlers. A common error surfaced by Go's L5 audit (and likely affecting Rust + Python as well, pending their audit): reverse-write and reverse-delete using bare path-join to derive the FS path, bypassing the canonical resolver entirely and skipping both the parent-traversal and leaf-symlink checks. Reverse-write is the more critical path (input is incoming sync content, not local user action); the defenses MUST apply.
+**All path-resolving callsites MUST satisfy the invariant.** The three defenses above MUST be applied at every callsite that resolves a tree path to a filesystem path — `read`, `write`, `list`, `delete`, the watcher's debounce-flush ingest, and the reverse-write / reverse-delete handlers. A common error surfaced by Go's L5 audit (and likely affecting Rust + Python as well, pending their audit): reverse-write and reverse-delete using bare path-join to derive the FS path, bypassing the canonical resolver entirely and skipping both the parent-traversal and leaf-symlink checks. Reverse-write is the more critical path (input is incoming sync content, not local user action); the defenses MUST apply.
 
 **Implicit dependency on the tree layer (informative).** The local-files path defenses derive the relative path from the tree path via `strings.TrimPrefix(tree_path, root.prefix)` (or equivalent). The defenses assume the tree path itself is free of traversal segments — `./` and `../` rejected by ENTITY-CORE-PROTOCOL.md §1.4 + `CleanPath` discipline. If a future V7 change introduces a `..`-permitting path form (directory-relative resolution has come up), the local-files defenses silently weaken. Implementations and reviewers SHOULD treat the tree-layer traversal rejection as a load-bearing dependency.
 
@@ -929,7 +942,10 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Response envelope `included` on `read` and `write`: blob always (CONTENT v3.5 §5.2 MUST); chunks when `total_size ≤ MIN_CHUNK_SIZE` (CONTENT v3.5 §4.3 SHOULD applied as MUST at this surface so the cross-impl inline-include boundary is deterministic).
 - Reverse write via subscription on configured root mapping prefixes (§5). **Reverse-write fires eventually after the producing tree-write commits; implementations MAY satisfy this synchronously or asynchronously. The producing tree-write's emit cascade MUST NOT be blocked on filesystem work — synchronous implementations dispatch the FS work in a way that does not stall the cascade (executor, thread pool, task queue, dedicated goroutine driven by a buffered channel); asynchronous implementations post a notification and complete the FS write when the executor reaches it.** Both shapes are conformant. The §10.2 stat-cache SHOULD makes the FS-work cost cheap in the common case but is not normatively prerequisite for the MUST — the non-blocking property holds regardless of cache presence.
 - Blob-hash comparison for loop prevention (§5.5).
-- Path traversal prevention (§8.3) — parent-traversal AND leaf-symlink defense, both required, both MUST be applied at every path-resolving callsite including reverse-write / reverse-delete.
+- Path traversal prevention (§8.3) — the containment **invariant**, via parent-traversal, leaf-symlink and component-boundary defense; all required at every path-resolving callsite including reverse-write / reverse-delete.
+- **`LF-CONTAIN-BOUNDARY-1` (new, 2026-08-11).** Root `/x/root` with a sibling `/x/root-backup`; reach the sibling both by an in-root symlink and by a bare `../root-backup/f` join, with the leaf an ordinary file. Both MUST be `403 path_traversal_rejected`. **This evidence is a per-impl local test, not a wire probe** — see below.
+
+> **The containment class, and why the shared probe cannot gate it.** Three distinct escapes in this one rule have now been found, each in a **different** implementation, none by review, none visible to the shared V4/V4a probe: a symlinked **parent directory** passing a leaf-only check (py, then go's watcher); a leaf-symlink check `lstat`-ing the **wrong inode** when a trailing slash resolves the final component (rust `64f2516`); and the **component-boundary** comparison above (go `e91817f`). The probe drives `read`/`write`/`list`/`delete` over the wire and every one of these needs a **planted fixture on the peer's own filesystem** — so it is structurally blind to all three. **An implementation MUST NOT read "V4a green" as "containment audited."** Conformance evidence for §8.3 is a per-impl local test against the invariant; `containment_test.go` (go) and rust's `64f2516` are the working shape. Each of the three was found by a human-directed audit following another implementation's report, which is not a repeatable process — the invariant statement above exists so the next gap reads as a hole in one property rather than an item missing from a list.
 - Capability enforcement per standard dispatch chain (§7).
 - Handler `internal_scope` covers the four grants in §3.1.
 - Root mapping configuration via `system/config/local/files/*` entities (§2.5).

@@ -626,6 +626,19 @@ system/registry/peer-issued:register-request(request) → binding_hash | rejecti
   5. on queue:   status "pending_review"                  ; manual mode
 ```
 
+**Statuses `[MUST]` `[RATIFIED 2026-08-11]`.** §6a.9 pinned the reject *codes* and left the *statuses* open, the way §6a.9.2 later pinned `400` / `501`. Three implementations converged on the same answers with no MUST to point at — go first, rust and py by deference — which is agreement that drifts, so it is now text:
+
+| Outcome | Status | Code |
+|---|---|---|
+| layer-1 proof absent / wrong signer | **401** | `signature_invalid` |
+| manual mode — queued for review | **202** | `pending_review` |
+| name already bound | **409** | `name_taken` |
+| layer-2 admission refused | **403** | `not_entitled` \| `policy_rejected` |
+
+401 (not 403) for layer 1 follows V7 §5.2a's discriminator: an unverifiable signer is an **authentication** failure, and §4.2/§4.4's F32 ruling already put that class at 401. The `409` / `403` rows are **derived** from V7 §3.3's class rules rather than measured — the cohort converged on the first two rows only, so treat these two as new and report a divergence rather than assuming it is yours.
+
+**Error *strings* are free; codes are the contract.** The `code` values above are normative and are what a peer branches on. Human-readable messages accompanying them are impl-local and MAY differ — **a conformance check MUST NOT assert on message text.** *(py observed the strings diverging three ways and left them deliberately, correctly noting no check reads them. Stated here so "no check reads them" stays a design choice rather than becoming a latent expectation.)*
+
 Two follow-on ops, with explicit schemas (the design fold left these as bare "follow-on ops"; cohort impl surfaced the gap — each impl guessed a different shape, so they are pinned here):
 
 - **`:renew-request` — replay-defended (carries `nonce` + `issued_at`).** Extends a binding's lifetime via the supersedes-chain. Signed by `target_peer_id` (layer-1).
@@ -635,12 +648,18 @@ Two follow-on ops, with explicit schemas (the design fold left these as bare "fo
   ```
   Renew has a **non-idempotent state effect** — each accepted renew extends the binding's expiry — so a captured renew can be **replayed to keep a binding alive past the registrant's intended lapse.** It therefore carries the same `nonce` + `issued_at` replay defense as `register-request` (§6a.9.1).
 
-- **`:revoke-request` — NOT replay-defended.** Revokes a binding (by registrant or operator; emits a §3.1 revocation). Signed by `target_peer_id` or the operator.
+- **`:revoke-request` — NOT replay-defended.** Revokes a binding (emits a §3.1 revocation). **Signed by `target_peer_id` (layer-1).**
   ```
   type: "system/registry/revoke-request"
   data: { binding_hash: <system/hash>, reason: <string | null> }
   ```
   Revocation is **monotonic and target-pinned** — it acts on one content-addressed `binding_hash`, cannot be undone, and cannot target a later re-issued binding (different hash) — so replay is a provable no-op. `nonce` / `issued_at` are **not** part of the schema (they would be harmless but add no security and break cohort convergence).
+
+> **Layer 1 binds all three write ops `[MUST]` — this was the hole `[RULED 2026-08-11]`.** `register-request`, `renew-request` and `revoke-request` each **MUST** verify the layer-1 signature by `target_peer_id` (for revoke/renew, the `target_peer_id` of the binding named by `binding_hash`) **before any state change and before any publication.** A request failing layer 1 MUST be refused **and MUST publish nothing** — no revocation, no superseding binding, no queue entry. *All three implementations shipped `revoke` and `renew` with no verification at all: any peer that could reach a registry could permanently revoke any binding in it, and revocation is monotonic, so there is no undo. It was found because core-py declined to converge and reported instead (go `e91817f`).* **Replay defense is not authorization** — `renew`'s `nonce`/`issued_at` stops a *captured* request being re-run while leaving a *fresh unsigned* one accepted, which reads as authorization at a glance and is not.
+>
+> **"Or the operator" is not a second wire credential — ruled local-only.** The prior text read "signed by `target_peer_id` or the operator" and the corpus defines **no operator identity, no operator key, no capability for the inbound act, and no request field an operator could populate**. The operator's authority in this extension is defined entirely as a **local** capability over a **local** act — `system/capability/registry-issue-binding`, §6a.9.1, "held by the policy logic / operator only." So an operator revokes by acting on its own registry directly; the *wire* surface accepts `target_peer_id` proof **exclusively**. This is the intersection of the three readings an implementer could have taken, and it is chosen deliberately for the op where guessing permissively is unrecoverable: a registry that widens later un-accepts nothing, while one that guessed wide has already handed out permanent denial-of-name. *(core-go implemented exactly this reading as its interim and routed the ambiguity rather than picking — `2026-08-11-revoke-names-an-operator-with-no-proof-shape.md`.)*
+>
+> **Conformance — `REG-REVOKE-PROOF-1` / `REG-RENEW-PROOF-1` (new).** Each requires **both halves**: a valid layer-1 proof is accepted, **and** an absent-or-wrong-signer proof is refused **and publishes nothing**. §6a.9 previously named `REG-REGISTER-PROOF-1` and nothing for the other two ops, and **all three implementations skipped layer 1 on exactly the two ops with no named vector** — the vector list, not the prose, is what got read. See `GUIDE-CONFORMANCE.md` §2.4a: a check that asserts only acceptance certifies the hole.
 
 #### §6a.9.1 Issuer policy — the registry's own admission decision
 
@@ -673,16 +692,18 @@ Two separable proof layers:
 | Operation | Input | Output | Gate |
 |---|---|---|---|
 | `set-issuer-policy` | `system/registry/issuer-policy` | `system/registry/issuer-policy` (the stored policy, as written) | `system/capability/registry-manage-issuer-policy` |
-| `get-issuer-policy` | — | `system/registry/issuer-policy`, or `404 not_found` when unset | `system/capability/registry-manage-issuer-policy` |
+| `get-issuer-policy` | none — the §3.2 empty-params shape | `system/registry/issuer-policy`, or `404 not_found` when unset | `system/capability/registry-manage-issuer-policy` |
 
 - **`set-issuer-policy` replaces the policy whole `[MUST]`** — it is not a partial merge. An absent optional field means *unset*, not *unchanged*; a merge semantics would make the resulting policy depend on write order, which two peers cannot reconstruct.
 - **Resolution order is store-first `[MUST]`.** The issuer reads `system/registry/issuer-policy` from its tree; out-of-band arming (a CLI flag, an operator write) is a **seed for that entity**, never a parallel source consulted at request time. *(This order is load-bearing and predates the operations: it is what lets a conformance run drive all three modes against a **single** peer by writing the entity, which is how `registry_issuer` reached 12 checks — core-go `559f44c`. An implementation that let a flag shadow the stored entity would make that untestable.)*
 - **Unset is not a mode.** With no policy entity stored, the registry does not run live registration at all (§6a.9's handler is unregistered) — it is a conformant curated-only registry per §6a.8. `get-issuer-policy` returns `404`; it MUST NOT synthesize a default `open`, which would silently turn a curated registry into a first-come-first-serve one.
 - **`domain-control` remains deferred** (§6a.9.1) — `set-issuer-policy` MUST reject `mode: "domain-control"` with `400 unsupported_mode` until the challenge format lands, rather than storing a policy it cannot enforce.
+- **A stored `domain-control` policy fails closed with `501` `[MUST]`** *(ratified 2026-08-10 (b); core-go read it this way and asked)*. The `400` above binds `set-issuer-policy`, which refuses to *store* the mode; it does not answer what a registry does when the entity is already there — seeded out-of-band, written directly to the tree, or predating the refusal. **The registry MUST answer live registration `501 unsupported_mode` and MUST NOT fall back to `open`, `manual`, or an unset-style `404`.** Falling back to `open` turns an operator's unenforceable curation into first-come-first-serve, which is the §6a.9 threat model exactly inverted; falling back to `404` reports "no policy" while a policy is stored. This is a cross-impl-observable answer with four plausible codes, so it is pinned rather than left to converge.
+- **`get-issuer-policy` takes no params content**, so callers send the `ENTITY-CORE-PROTOCOL.md` §3.2 **empty-params shape** — a `primitive/any` entity whose `data` is canonical-CBOR `a0`. It is **not** a zero-value entity (rejected `400 invalid_params` at the envelope layer, before the handler) and **not** a `primitive/map` (a handler SHOULD reject a mismatched params *type* with `400 unexpected_params`). *Stated here because a unit test that calls the handler directly never crosses the envelope layer and cannot see either failure — core-go found both on first contact with a live peer.*
 
 **Replay defense (normative discriminator).** A signed request carries `nonce` + `issued_at` (the registry tracks seen `nonce`s per requester within an `issued_at` window; a replayed request is rejected) **iff replay has a non-idempotent state effect.** This holds for `register-request` (replay can roll a name back to a superseded binding) and `renew-request` (replay can extend a binding's life past intended lapse). It does **not** hold for `revoke-request`, which is monotonic on a content-addressed target (replay cannot un-revoke and cannot reach a later re-issued binding) — so revoke omits `nonce` / `issued_at`. The discriminator, not the op name, decides: future ops are replay-defended exactly when their replay mutates state.
 
-**Conformance:** `REG-REGISTER-PROOF-1` (signature not by `target_peer_id` → rejected), `REG-REGISTER-POLICY-1` (allowlist reject → `not_entitled`; allow-listed → issued + resolvable), `REG-REGISTER-REPLAY-1` (seen nonce → rejected). `REG-REGISTER-DOMAINCTRL-1` gates the deferred `domain-control` mode.
+**Conformance:** `REG-REGISTER-PROOF-1` (signature not by `target_peer_id` → rejected), `REG-REGISTER-POLICY-1` (allowlist reject → `not_entitled`; allow-listed → issued + resolvable), `REG-REGISTER-REPLAY-1` (seen nonce → rejected). `REG-REGISTER-DOMAINCTRL-1` gates the deferred `domain-control` mode; **`REG-ISSUER-DOMAINCTRL-STORED-1`** gates the fail-closed `501` above (write the policy entity directly, then attempt live registration — the `set-issuer-policy` refusal cannot be the only thing standing between a stored unenforceable mode and an open registry).
 
 **Implementation status:** the **design is pinned here**; the `open` / `allowlist` / `manual` modes are buildable now (no external dependency); `domain-control` waits on the web-native domain-proof co-design. A registry shipping curated-only (§6a.8) is conformant — it simply does not run the handler.
 

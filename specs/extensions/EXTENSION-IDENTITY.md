@@ -698,6 +698,11 @@ system/identity/                                  ← identity-extension paths
    peer-config                                      ← per-agent local config
 ```
 
+**Hash-segment dispositions (`SPECIFICATION-FORMAT.md` §8.4.6, `[normative]`).** Every hash segment above is one of the two dispositions, and this section states which:
+
+- **`{contact_id_hex}` is `[derive-to-meet]` — pinned to the ECFv1-SHA-256 floor**, whatever any peer's home format. It is the contact's `system/peer` identity hash, and `relationships/{contact_id_hex}/` is a path the **named contact must construct for itself** (§5.2's bilateral tier). A home-format derivation would have the two ends of one relationship build different paths and never meet, silently. Pinned by the same ruling that pins the identity entity itself (§8.4.6's second worked example).
+- **`{quorum_id_hex}`, `{hash_hex}`, `{published_handle_hex}` are `[hold-and-fetch]` — format-free.** Each is read off an entity that travelled: the quorum entity, the attestation, and `quorum-publish.published_handle` respectively. Use them verbatim at whatever width their own format byte implies; do not re-derive them and do not assume a width.
+
 `identity-cert (function=agent)` attestations also appear embedded inside cap envelopes (mode=embedded; per §4.2a); not at any tree path.
 
 The v3.0 `system/identity/quorum/...` subtree is gone. Top-level controller certs route to `internal/cert/{h}` or `public/cert/{h}` per their handle-bearing status.
