@@ -549,6 +549,16 @@ For `system/tree/path` fields: resolve the path to an entity (tree lookup), chec
 
 **A constraint that must match one level only MUST enumerate the types it accepts** (or use `one_of`). §5.4's vocabulary is exact / subtree / match-all, and it deliberately carries no depth-limited form — a type-pattern is a validation constraint, and an author who wants a narrow set is better served naming it than approximating it with a wildcard.
 
+> **This is not the only pattern grammar in the extension family, and the two are not interchangeable.**
+> `EXTENSION-REGISTRY` §4's `name_format_dispatch` matches **names**, not type paths, and it is a
+> different matcher: `*` is a wildcard **anywhere in the pattern** and **crosses `/`** (`x*z` matches
+> `x/y/z`), while `?` and `[…]` are **literal characters** with no special meaning
+> (`REG-DISPATCH-GRAMMAR-1`). `matches_pattern` above has no mid-string wildcard at all — `x*z` is an
+> exact match here and a glob there. **Neither grammar is a superset of the other**, so a matcher
+> implemented once and reused at both sites is wrong at one of them, and it is wrong silently: the
+> patterns that discriminate the two are ordinary-looking, and every pattern without a mid-string `*`
+> behaves identically under both.
+
 **Resolution failure:** If the referenced entity cannot be resolved (hash not in content store, path not bound), validation SHOULD pass with a warning. The `type_pattern` constraint validates the type of reachable entities, not their existence. Existence checking is a separate concern (referential integrity Level 3, implementation-defined).
 
 **Content store access:** Resolving a hash for `type_pattern` validation may require content store access. The default model is tree-scoped — the hash must be resolvable through a tree-bound entity. The layered access model (tree-scoped default, explicit allowance for full content store access, content extension namespaces for granular access) parallels EXTENSION-QUERY.md §5.1 and the landed compute content-store-scoping model (EXTENSION-COMPUTE.md v3.7+, originally proposed as `proposals/implemented/PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md` D3–D6). The same model applies to type validation: without an explicit content store access allowance, `type_pattern` can only validate entities reachable through tree paths covered by the caller's capability.

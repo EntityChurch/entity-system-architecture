@@ -1,7 +1,22 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.26
+**Version**: 3.27
 **Status**: Active
+**v3.27 — the contained set is a RULE, not a count; and eval limits are not ordinary errors**
+(§3.5, §2.3, §7.1): v3.26 pinned the contained set as *"exactly three positions."* That enumeration was
+taken over the four v3.25 primitives; `map`, `filter` and `fold` predate that table and also place
+closure results into outputs. **It is five.** The count is replaced by the rule that generates it —
+a position is **contained** when the primitive places the value without reading it, **consumed** when
+it reads it to decide control flow, ordering, membership or a write location — so a new primitive adds
+a row by applying the rule rather than amending a number. Two consequences are pinned with it: a
+`compute/error` behaves **identically however it was produced**, minted or value-form (a restatement of
+§2.4, not a new rule); and the three **evaluation-limit** codes are separated on whether their counter
+survives an element — `depth_exceeded` **contains** (restored on unwind, §5.1), `budget_exhausted` and
+`cascade_limit` **short-circuit** everywhere (cumulative and chain-wide respectively; containing either
+reports a value for an evaluation that was aborted, at a split point no rule pins). `concat-args`
+carries **one hash of an expression**, uniform with every sibling collection argument. And §7.1's
+dependency walk is corrected to reach references inside containers, which its own conservative-collection
+rule already required and its pseudocode did not do.
 **v3.26 — a CONTAINED `compute/error` has a boundary form** (§2.3, §3.5): v3.25's data positions made
 v3.23 ruling B's premise false — *"an error is never placed into the data"* was true until `assoc`'s
 `value`, `concat`'s elements and `group-by`'s `members` existed. Ruling B is **scoped, not reversed**:
@@ -44,7 +59,7 @@ code-only per this §2.4, and a corpus vector that materializes an error *into a
 (This §2.4 is the canonical home for `compute/error`; `ENTITY-CORE-MACHINE-SPEC.md` is a *derived* condensed
 summary and is downstream — regenerate-or-retire is the protocol maintainer's hygiene, not a gate here.)
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
-**Source**: PROPOSAL-COMPUTE-AMENDMENTS.md (implemented — C1-C10), PROPOSAL-COMPUTE-AMENDMENTS-V2.md (implemented — V1-V32 + V6/V7/V7'), PROPOSAL-COMPUTE-AMENDMENTS-V3.md (implemented — C1-C4 core helpers + E1-E3 compute fixes), PROPOSAL-COMPUTE-SPEC-AMBIGUITIES.md (implemented — A1-A4, B1, C1, D1, D2), PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md (implemented — D3-D6), PROPOSAL-COMPUTE-TAIL-CALL-OPTIMIZATION.md (implemented — T1-T3, R1-R2), PROPOSAL-ENTITY-NATIVE-HANDLER-DISPATCH.md (implemented — E1-E4), PROPOSAL-COMPUTE-APPLY-RESOURCE-CEILING.md (implemented — F1-F5, H2-H3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (implemented — CP1, CP2), PROPOSAL-COMPUTE-LOOKUP-TREE-LOCAL-QUALIFICATION.md (implemented — S8)
+**Source**: PROPOSAL-COMPUTE-AMENDMENTS.md (implemented — C1-C10), PROPOSAL-COMPUTE-AMENDMENTS-V2.md (implemented — V1-V32 + V6/V7/V7'), PROPOSAL-COMPUTE-AMENDMENTS-V3.md (implemented — C1-C4 core helpers + E1-E3 compute fixes), PROPOSAL-COMPUTE-SPEC-AMBIGUITIES.md (implemented — A1-A4, B1, C1, D1, D2), PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md (implemented — D3-D6), PROPOSAL-COMPUTE-TAIL-CALL-OPTIMIZATION.md (implemented — T1-T3, R1-R2), PROPOSAL-ENTITY-NATIVE-HANDLER-DISPATCH.md (implemented — E1-E4), PROPOSAL-COMPUTE-APPLY-RESOURCE-CEILING.md (implemented — F1-F5, H2-H3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (implemented — CP1, CP2), PROPOSAL-COMPUTE-LOOKUP-TREE-LOCAL-QUALIFICATION.md (implemented — S8), PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE.md (implemented — D1-D8)
 
 ---
 
@@ -491,7 +506,7 @@ system/compute/scope-binding :=
 - **N1 — reference, don't duplicate (one rule, three boundaries).** Wherever an entity- or `compute/closure`-valued thing is placed into another entity's data — **scope bindings, `compute/construct` fields, and `compute/apply` args** — it is referenced by content hash into the content store and tagged with its kind, never inlined. This is the materialized-subtree model (V7 §3) applied uniformly; `compute/apply` args' `input_type` consultation (V30) is the typed-encoding case of the same rule.
   > **`compute/error` is deliberately not in that list `[corrected v3.23]`.** It was, and it was wrong at all three sites: an error reaching any of them **short-circuits** (§4.1 `is_error`, and the short-circuit `[MUST]` in §7.2 names all three), so it is never placed into the data and N1 never applies to it. The listing was unreachable, and it is where one implementation's reading of the construct branch came from. **An error materializes where it is *written* — the §7.2 `result_path` and SA-9 `store` — never where it is *consumed*.**
   >
-  > **Scoped, not reversed `[v3.26]`.** The sentence above is a **consumption-site** invariant, and its premise — *"it is never placed into the data"* — was true when written and stopped being true at v3.25. §3.5's collection primitives created **data positions**, where an error is **contained in a value** rather than consumed, so N1 **does** apply to it there: `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`, and **only** those three. In a contained position the error materializes **code-only, by bare `system/hash`** (§3.5). Everywhere else — `compute/construct`, `field`, `arithmetic`, `compare`, `logic`, `apply`'s consumed operands, `if`'s condition — the §7.2 short-circuit is unchanged, and **an error reaching materialization from any of those is still the defect this note names.** An implementation guarding that path should add the carve-out, not remove the guard.
+  > **Scoped, not reversed `[v3.26]`.** The sentence above is a **consumption-site** invariant, and its premise — *"it is never placed into the data"* — was true when written and stopped being true at v3.25. §3.5's collection primitives created **data positions**, where an error is **contained in a value** rather than consumed, so N1 **does** apply to it there. **Which positions those are is decided by §3.5's places-without-reading rule, not by an enumeration kept here** `[v3.27]` — today `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`, `map`'s output element and `fold`'s accumulator, and §3.5's table is the single home for that list. In a contained position the error materializes **code-only, by bare `system/hash`** (§3.5), except where §3.5's evaluation-limit rule short-circuits instead. Everywhere else — `compute/construct`, `field`, `arithmetic`, `compare`, `logic`, `apply`'s consumed operands, `if`'s condition — the §7.2 short-circuit is unchanged, and **an error reaching materialization from any of those is still the defect this note names.** An implementation guarding that path should add the carve-out, not remove the guard.
 - **N3 — navigation is by kind, not by shape.** `compute/field`/`compute/index`/`compute/length` on a `kind:"entity"` value navigate its `.data`; on a `kind:"value"` (record) value navigate it flat. Implementations **MUST NOT** distinguish entity-vs-record by inspecting keys (e.g. presence of `type`/`data`/`content_hash`) — such heuristics misfire on legitimate records. (This pins the N.5 disambiguation deferred from v3.19a; it resolves a symmetric cross-impl divergence — flat-read was wrong for entity envelopes, envelope-peel wrong for records — for all implementations.)
 - **N4 — binding resolution inherits the closure's authorization.** When `load_scope` (§4.3) resolves a binding's `entity_hash`, the resolve rides the authorization already granted to the closure; the binding entity need **not** be `is_compute_type` (§4.2) or in the sealed set. The closure was authorized at creation, and its bindings are structurally part of it.
 - **N4a — resolution is eager (normative; ratified 3/3 cross-impl).** `load_scope` resolves **all** `kind:"entity"` bindings at apply time (when the scope is loaded), **not** lazily on first access. Consequently an unresolvable binding surfaces as `scope_unreachable` (N8) at apply time regardless of whether the closure body reads it — whole-scope validity is checked up front. ("At apply time" throughout this model means eager. The earlier "lazy" lean was a mis-attribution; all three impls resolve eagerly, and the eager reading is what the "at apply time" wording elsewhere in this section already implies.)
@@ -1107,7 +1122,7 @@ system/compute/group := {
 }
 
 system/compute/concat-args := {
-  fields: { collections: {array_of: {type_ref: "system/hash"}} }   ; Hashes of array expressions
+  fields: { collections: {type_ref: "system/hash"} }   ; Hash of an expression evaluating to an array of arrays — v3.27
 }
 
 system/compute/assoc-args := {
@@ -1122,10 +1137,12 @@ system/compute/assoc-args := {
 **Observable semantics (normative, pinned).**
 
 - **`range(n)`** returns the array `[0 … n-1]`, empty when `n` is `0`. **Single-argument form only** — a start offset is expressed inside the lambda, not as a second parameter. It exists because `map`/`filter`/`fold` pass an element and not its index, so every program that needs an index carries a static index array and indexes back into its data. **A negative `n`, or an `n` exceeding the maximum representable array length, is a `count_out_of_range` error-as-value `[MUST, v3.25]`** — *not* `type_mismatch`, on §2.2's ruled reasoning that `int`/`uint` are annotations rather than distinct value types, so any integer bit-pattern is a well-formed *argument* and an out-of-domain **magnitude** is not a type error. It is likewise not clamped to the empty array: `n` is a loop bound, so a silent `[]` propagates through every downstream `map`/`filter`/`fold` and yields a well-formed wrong answer carrying no error.
-- **`group-by(collection, fn)`** applies `fn` to each element to derive a key and returns the elements grouped by that key in **one pass**. **The result is an array of `system/compute/group`, each carrying its `key` and its `members` `[MUST, v3.25]`** — the key is part of the result and is not dropped, because the shapes this primitive exists to serve (a histogram, a bucketed aggregation, a router) are exactly the ones whose output is unreadable without its labels. Within each group, elements retain their input index order; **groups are ordered by first appearance of their key** — not by key sort order, which would require a total order over arbitrary key types that this extension does not define. Key **equality** is byte-identity over the canonical ECF encoding of the derived key — the protocol's own value identity, which is defined for every key type `fn` may return. The prior expression — a filter per candidate key — is `O(B·N)`. *(`partition-by` is subsumed by this and is not separately adopted: a two-way partition is `group-by` with a boolean key.)*
+- **`group-by(collection, fn)`** applies `fn` to each element to derive a key and returns the elements grouped by that key in **one pass**. **The result is an array of `system/compute/group`, each carrying its `key` and its `members` `[MUST, v3.25]`** — the key is part of the result and is not dropped, because the shapes this primitive exists to serve (a histogram, a bucketed aggregation, a router) are exactly the ones whose output is unreadable without its labels. Within each group, elements retain their input index order; **groups are ordered by first appearance of their key** — not by key sort order, which would require a total order over arbitrary key types that this extension does not define. Key **equality** is byte-identity over the canonical ECF encoding of the derived key — the protocol's own value identity, which is defined for every key type `fn` may return. **For an entity-valued key that is the encoding of its MATERIALIZED form `[MUST, v3.27]`** — the bare-entity bytes, never the in-flight value. The in-flight representation of an entity-valued key is kind-tagged in some implementations (§2.3 N1 confines kind-tagging to `compute/scope`), so encoding it would make an implementation-private representation byte-load-bearing in a group's identity — the same thing §2.4 forbids for the in-flight form generally, and the same failure mode v3.26 ruled for contained errors one subsection over. The prior expression — a filter per candidate key — is `O(B·N)`. *(`partition-by` is subsumed by this and is not separately adopted: a two-way partition is `group-by` with a boolean key.)*
 
   > **`system/compute/group` is a pinned type *name*, not a type-extension registration.** Per §2.3 N1 and §4.1's materialization rule, a constructed entity is encoded **by the runtime kind of the evaluated value, never by the constructed type's declared schema** — so a peer with no type extension produces byte-identical groups. The cost of the key-carrying shape is one agreed string.
 - **`concat(...collections)`** joins arrays **order-preserving, one level** — it does not flatten recursively. Element types MUST match; a mismatch is a `type_mismatch` **error-as-value**, not a fault. **A `compute/error` element is type-transparent to that check `[MUST, v3.25]`**: it neither matches nor mismatches, and flows through untouched. Per §1.5 an error is *"the same model as NaN propagation in IEEE 754"* — a poisoned value **of** the array's element type, not a value of a different type — and §7.2 scopes `concat` to consuming its `collections`, never their elements, so inspecting elements for errors is the one behaviour it must not have. `concat()` with no arguments is the empty array; `concat(a)` is `a`. There is otherwise no way to join k arrays: `fold` cannot (the accumulator step needs the append that does not exist), `map` yields k arrays, and `construct` changes the entity shape, which boundary equivalence forbids.
+
+  > **`collections` is ONE hash of an expression, not a literal array of hashes `[MUST, v3.27]`.** It is uniform with every sibling collection argument — `map-args.collection`, `filter-args.collection`, `fold-args.collection`, `group-by-args.collection` and `assoc-args.collection` are each a scalar hash of an expression that evaluates to an array — and the uniformity is load-bearing rather than cosmetic: **a literal array of hashes freezes `concat`'s arity at authoring time.** A `concat` over a computed number of collections — over the output of a `map`, over a `group-by`'s `members`, over anything whose length is not known when the IR is written — is inexpressible under the literal shape, which would make the one primitive adopted to join k arrays the one primitive whose k is a constant. *(v3.24 and v3.25 declared `{array_of: {type_ref: "system/hash"}}`. The §3.5 short-circuit row is unaffected by the change: the outer array's items are the collections, which are consumed, and items **of** a sub-collection are elements, which are contained. Both shapes express that distinction, so it does not discriminate between them.)*
 - **`assoc(collection, index, value)`** returns a new array identical to `collection` except at `index`, which carries `value`. **An out-of-range `index` — negative, or ≥ the collection's length — is an `index_out_of_range` error-as-value `[MUST, v3.25]`**, the same code and the same condition as `compute/index` (§2.2). *(v3.24 said `type_mismatch` here. That contradicted §2.2's ruling — reached on the compute corpus's first cross-impl run — that an out-of-bounds magnitude is not a type error, and it is corrected rather than carried: one document must not answer one malformed program with two codes depending on which array operation it reached.)* **`assoc` MUST NOT be an implicit lowering target `[MUST]`** — `map` and `fold` are never lowered onto it. It is an explicit author choice, because an indexed update buys scatter at the cost of sharding: a program written as a sequence of `assoc` updates is inherently sequential, where the same computation expressed as a fold over a read-only input shards. **A lowering pass that "optimizes" a fold into `assoc` would silently remove the parallelism**, which is why the choice stays the author's.
 
 **Error-as-value flow-through is governed by §7.2, not by a rule of its own `[v3.25]`.** An error already present in an input is not a new question for these four primitives: §7.2's short-circuit `[MUST]` binds *"all expression types that **consume values**"* and its `store` worked example already settles the other side — *"a builtin's write payload is not a consumed operand."* Applied here, so that no implementer re-derives it:
@@ -1139,10 +1156,46 @@ system/compute/assoc-args := {
 | `assoc` | `value` | placed into the output — the SA-9 `store` case | contain |
 | `concat` | each `collection` | consumed — its length is read to copy | **short-circuit** |
 | `concat` | element | copied into the output | contain |
+| `map` | element (bound into the closure) | not read by `map` — bound into closure scope | pass through; the closure's own operators short-circuit *inside* the closure |
+| **`map`** | **output element (the closure's result)** | **not read — placed into the output array** | **contain** — `[v3.27]` |
+| `filter` | element (bound into the closure) | not read by `filter` — bound | pass through |
+| **`filter`** | **predicate result** | **consumed — read for truthiness (§4.5) to decide inclusion** | **short-circuit** — `[v3.27]` |
+| `fold` | element / accumulator (bound into the closure) | not read by `fold` — bound | pass through |
+| **`fold`** | **the accumulator, at every step and as the result** | **not read — bound into the next invocation, then returned** | **contain** — `[v3.27]` |
 
 A `compute/error` **key** short-circuits even though the key now has an output position (`system/compute/group.key`), because key equality is byte-identity over the canonical encoding: grouping by an error would make its message string structurally load-bearing, so two failures worded differently would become two groups and one reworded message would change the result's shape.
 
-**How a CONTAINED error materializes `[MUST, v3.26]`.** Where the table above says **contain**, the error is present in the value when that value crosses a materialization boundary (§2.3 N1). It materializes **code-only** — content-hashed over `code` alone per §2.4, with `message`/`at`/`expression` excluded as in-flight diagnostics — and is **referenced by a bare `system/hash`** like any other entity-valued element. **The code-only form is load-bearing, not tidiness:** if the contained element carried `message`, two conformant peers whose diagnostics differ would produce **different bytes for the containing array**, so the array's content hash would fork cross-impl on a string no spec pins. **The contained set is exactly three positions** — `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`. An error reaching materialization from anywhere else remains the §4.1 defect it has always been.
+**Handing a value to a closure is a BINDING, not a consumption. A primitive consumes only what it reads itself `[MUST, v3.27]`.** That is the distinction the three collection builtins turn on, and each of the three falls out of it:
+
+- **`map`'s output element contains.** `map` never reads the closure's result; it places it. That is structurally the same position as `concat`'s element and `assoc`'s `value` — the §7.2 write-payload case. It is also what §1.5's model requires: *"the same model as NaN propagation in IEEE 754"* is **element-wise**, so `map(f, [1,2,3])` where `f` fails only on element 2 yields `[a, E, c]`. Short-circuiting the whole array is exception semantics, which §1.5 explicitly declined.
+- **`filter`'s predicate result short-circuits.** It is read for truthiness, which makes it a consumed operand by §7.2's plain terms — the identical case to `group-by`'s derived key. Containing it fails the same way: an error has no truth value, and coercing it to false **silently drops the element**, a well-formed wrong answer carrying no error. That is the reasoning §3.5 already used to refuse clamping a negative `range(n)` to `[]`.
+- **`fold`'s accumulator contains, and a closure that ignores it RECOVERS.** `fold` binds the accumulator into the next invocation and never reads it. An error accumulator — arriving as `initial` or as a previous step's result — is passed onward as an ordinary bound value, so a closure that does not consult its accumulator returns a non-error and the fold recovers. **`fold` MUST NOT abort on an error accumulator.** This is the one position where the two readings produce a **different value** rather than a different cost.
+
+**A `compute/error` behaves identically however it was produced `[MUST, v3.27]`.** Whether an error was **minted** by a failing operation or arrived as a **value** — a literal, or a `compute/lookup/*` resolving to a stored one, each returned unchanged by SA-1 — makes no difference to any disposition in this section. **This is a restatement of §2.4, not a new rule:** minted-versus-value-form is precisely an *in-flight representation*, and §2.4 already holds that only the materialized form is normative while the in-flight representation is implementation-private. §4.1's `is_error` is kind-based for the same reason. An implementation whose contained positions behave one way for a minted error and another for a value-form one is **non-conformant against §2.4**, and lets a private representation decide a boundary hash.
+
+**The contained set is defined by a rule, and its current extension is five positions `[v3.27]`.** A position is **contained** when the primitive **places** the value without reading it, and **consumed** when the primitive **reads** it to decide control flow, ordering, membership, or a write location. Today that is `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`, **`map`'s output element**, and **`fold`'s accumulator**. **A new primitive adds rows to the table above by applying the rule — never by amending a count.** An error reaching materialization from a position that is *consumed* remains the §4.1 defect it has always been.
+
+> *(v3.26 stated this as* "the contained set is exactly three positions" *. That enumeration was taken over the four v3.25 primitives, whose positions the table above enumerates; `map`/`filter`/`fold` are not in that table and predate it. The count was replaced rather than incremented because it read as a closed structural claim about the language and would be wrong again at the next primitive with an output position.)*
+
+#### Evaluation-limit codes — the counter decides, not the code's "limit-ness" `[MUST, v3.27]`
+
+`budget_exhausted`, `depth_exceeded` and `cascade_limit` (§9.1) are not ordinary errors-as-value in the contained positions, and they do not all behave alike. **The discriminator is whether the counter that produced the code is restored when an element finishes.**
+
+| Code | Counter | Disposition in a CONTAINED position |
+|---|---|---|
+| `depth_exceeded` | `depth` — decremented on entry, **restored on return** (§5.1, §4.1) | **contain**, exactly like any other error |
+| `budget_exhausted` | `operations` — decremented per `evaluate()`, **never restored** | **short-circuit**, in every position |
+| `cascade_limit` | the cascade counter — shared across the **entire causal chain** and tracked cross-peer (§7.3, SYSTEM-COMPOSITION.md §3) | **short-circuit**, in every position |
+
+**Why `depth_exceeded` contains.** §5.1 restores `depth` on return, so each element of a collection begins its evaluation at the same depth. Whether element *i* exceeds is a property of that element's own sub-expression and of nothing evaluated before it — so `map(f, xs)` where `f` recurses too deeply on one element yields `[a, E, c]`, identically at every peer. It is element-local, and the element-wise model applies unchanged.
+
+**Why `budget_exhausted` does not.** `operations` is cumulative and monotonic, so whether element *i* exhausts the budget depends entirely on what elements 1…*i*−1 cost — and **the cost accounting is not pinned**: §10.4 makes memoization table size and eviction policy implementation-defined, and a memoization hit skips an `evaluate()` call and therefore an `operations` decrement. Two conformant peers given identical IR, identical inputs and an identical budget may therefore exhaust at **different elements**. Contained, that is a different array per peer — different boundary bytes for the same program, which §8.1 and §11.1 (AE-1) both forbid. Short-circuited, every peer that exhausts answers with the one code. **Independently of determinism:** an array of contained `budget_exhausted` elements is a well-formed, readable result reported for an evaluation the peer **aborted**, which is the failure this section already refused when it declined to clamp a negative `range(n)` to the empty array.
+
+**Why `cascade_limit` does not.** Its counter is not merely shared across elements but across the whole causal chain, and reaching it **freezes the subgraph** (§7.3) — recovery is re-installation. A frozen subgraph that nonetheless emitted a well-formed array of element-wise `cascade_limit` values would be reporting a value for a computation that is structurally halted. §7.3 draws this line itself when it contrasts the freeze against budget exhaustion, which *"does NOT freeze… may be transient."*
+
+**The disposition is keyed on the `code`, in both arms `[MUST, v3.27]`.** A `budget_exhausted` or `cascade_limit` short-circuits whether it was minted by this evaluation or arrived as a **value-form** `compute/error` carrying that code. **The value form is not hypothetical: §7.3 requires its creation** — *"budget exhaustion during reactive re-evaluation writes a `compute/error` to the result_path"* — so a downstream expression reading that path through `compute/lookup/tree` receives one, produced by a conformant peer. **An implementation MUST NOT key this behaviour on how the error was produced.** Doing so reinstates exactly the provenance-dependence the `[MUST]` above forbids, and §2.4 settles it independently: two errors with the same `code` **are** the same materialized entity, so no rule may distinguish them. *(Consequence, stated so it is not read as an oversight: a program may store a literal `compute/error{code: "budget_exhausted"}` and thereby short-circuit a collection that would otherwise contain its errors. That is correct — the stored and the minted value are the same entity by the protocol's own identity rule, and an author could already halt an expression by placing an error in a consumed position.)*
+
+**How a CONTAINED error materializes `[MUST, v3.26]`.** Where the table above says **contain**, the error is present in the value when that value crosses a materialization boundary (§2.3 N1). It materializes **code-only** — content-hashed over `code` alone per §2.4, with `message`/`at`/`expression` excluded as in-flight diagnostics — and is **referenced by a bare `system/hash`** like any other entity-valued element. **The code-only form is load-bearing, not tidiness:** if the contained element carried `message`, two conformant peers whose diagnostics differ would produce **different bytes for the containing array**, so the array's content hash would fork cross-impl on a string no spec pins. **The contained set is defined by the places-without-reading rule above, and today extends to five positions** — `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`, `map`'s output element, and `fold`'s accumulator `[v3.27]`. An error reaching materialization from a **consumed** position remains the §4.1 defect it has always been.
 
 **Adopting `concat` does not bless an in-compute sharded step `[not ruled]`.** A self-dispatch fan-out rejoined by `concat` additionally requires the tick contract to state a fairness posture — either a bound on synchronous fan-out width, or a nested-eval yield guarantee. **Termination was never the question; occupancy of the serve loop is.** Adopting the primitive and blessing the pattern are two decisions and only the first is made here.
 
@@ -2095,19 +2148,49 @@ walk(entity, deps, root_path, visited, ctx):
     deps.append(path)
     return
 
-  ; Recursively walk all hash references in expression data
+  ; Recursively walk all hash references in expression data, wherever they sit.
+  ; v3.27: references are NOT always scalar field values — compute/apply.args is a
+  ; map of hashes and compute/let.bindings is an array of maps carrying one. A walk
+  ; that descends only into scalar fields registers nothing inside any function
+  ; argument or any let binding, which is most of every non-trivial expression.
   for field_value in entity.data.values():
-    if field_value is system/hash:
-      referenced = resolve(field_value, ctx)
-      if referenced is not null:
-        walk(referenced, deps, root_path, visited, ctx)
+    walk_value(field_value, deps, root_path, visited, ctx)
 
   ; For closures, walk captured environment
   if entity.type == "compute/closure" and entity.data.env is not null:
     env = resolve(entity.data.env, ctx)
     if env is not null:
       walk(env, deps, root_path, visited, ctx)
+
+walk_value(value, deps, root_path, visited, ctx):
+  if value is system/hash:
+    referenced = resolve(value, ctx)
+    if referenced is not null:
+      walk(referenced, deps, root_path, visited, ctx)
+  else if value is array:
+    for item in value:
+      walk_value(item, deps, root_path, visited, ctx)
+  else if value is map:
+    for member in value.values():
+      walk_value(member, deps, root_path, visited, ctx)
 ```
+
+**The completeness property is the normative one; this pseudocode is its illustration `[MUST, v3.27]`.**
+An implementation is measured against the rule — **every `compute/lookup/tree` reachable in the
+expression graph is registered** (see *Conservative static collection* below) — and never against the
+shape of the walker above. A walker that reaches every reference by a different traversal is
+conformant; one that misses a reachable reference is not, however closely it mirrors this listing.
+**The failure this pins is silent and no boundary-hash vector can observe it:** dependency
+registration produces no boundary, so a subgraph with an unregistered dependency evaluates correctly
+exactly once and is then never woken again.
+
+**Reference fields in the expression grammar are scalar `system/hash`, with two enumerated exceptions
+`[v3.27]`.** The exceptions are `compute/apply.args` (`map_of: system/hash`) and `compute/let.bindings`
+(an array of `{name, value: system/hash}`), both declared in §2.1. **A new expression or args type that
+places a reference inside a container is a defect unless it is added to that enumeration in the same
+edit** — the invariant exists so the traversal's obligations can be stated and checked rather than
+rediscovered, and it is what keeps a walker's coverage a property of the grammar instead of a list of
+shapes someone happened to enumerate.
 
 With the `compute/lookup/scope` vs `compute/lookup/tree` type split (§2.1), dependency collection is unambiguous — only `compute/lookup/tree` registers tree dependencies. Scope lookups (`compute/lookup/scope`) never produce tree dependencies.
 
@@ -2125,7 +2208,7 @@ Each pattern uses existing extensions. Compute does not need its own subtree pri
 
 **Relationship to `audit_subgraph` (§3.3).** `walk_tree_lookups` collects tree-read dependencies for the runtime dependency index. `audit_subgraph` collects read_paths, handler_targets, and write_paths for installation-time capability checking. Both walkers share cycle-detection structure and both walk closures' bodies and captured environments. Implementations MAY factor them into a single walker parameterized by visitor.
 
-**Conservative static collection.** `walk_tree_lookups` is conservative: all `compute/lookup/tree` paths reachable in the expression graph are registered, including paths behind untaken `compute/if` branches. The convergence check (§7.2) prevents spurious cascades — if a re-evaluation produces the same result hash, no tree write occurs. Implementations MAY refine this by recording only runtime-observed paths during the first evaluation, at the cost of potentially missing dependencies when conditional branches change. Static collection is the recommended default for simplicity and predictability.
+**Conservative static collection `[MUST]`.** `walk_tree_lookups` is conservative: **all `compute/lookup/tree` paths reachable in the expression graph are registered**, including paths behind untaken `compute/if` branches, and including paths reached only through a container-valued field (§2.1's `compute/apply.args`, `compute/let.bindings`). **This sentence is the conformance surface for dependency registration** — v3.27 promoted it from a description to the `[MUST]` because the pseudocode above previously implemented something strictly weaker than it, and an implementation written to the listing rather than to this rule can be complete for the grammar as it stands and silently incomplete for the next type added to it. The convergence check (§7.2) prevents spurious cascades — if a re-evaluation produces the same result hash, no tree write occurs. Implementations MAY refine this by recording only runtime-observed paths during the first evaluation, at the cost of potentially missing dependencies when conditional branches change. Static collection is the recommended default for simplicity and predictability.
 
 **Index persistence and rebuild.** The dependency index is a peer-local runtime structure. It is NOT required to be persisted as entities in the tree.
 
@@ -2482,6 +2565,12 @@ These peer-wide defaults apply when the capability's `constraints["system/comput
 - Eval can be invoked with pre-populated scope for entity-native handler dispatch (§3.2)
 - Builtin handler override prohibition — registration targeting `system/compute/builtins/*` MUST be rejected (§3.5)
 - Collection builtins `map`/`filter`/`fold` with the spec-pinned args types + observable semantics (§3.5)
+- The v3.24 collection primitives `range`/`group-by`/`concat`/`assoc` with their pinned args types, result shapes and error codes (§3.5) — `concat-args.collections` is **one** `system/hash` (v3.27)
+- The consumed/contained disposition table and the rule that generates it — placed-without-reading contains, read-to-decide consumes (§3.5) (v3.27 — D2)
+- A `compute/error` behaves identically minted or value-form; no disposition may key on how it was produced (§3.5, restating §2.4) (v3.27 — D1)
+- Evaluation-limit dispositions: `depth_exceeded` contains; `budget_exhausted` and `cascade_limit` short-circuit in every position, **keyed on the `code` in both arms** (§3.5) (v3.27 — D5/D6)
+- `group-by` entity-valued key equality is byte-identity over the **materialized** encoding (§3.5) (v3.27 — D4)
+- Dependency registration completeness — every `compute/lookup/tree` reachable in the expression graph is registered, **including references inside container-valued fields** (§7.1) (v3.27 — D8)
 - `store` builtin for tree writes, capability-gated per §6.3 (§3.5)
 - Entity-defined handler evaluation — handlers whose logic is a compute expression (`expression_path`, ENTITY-CORE-PROTOCOL.md §3.7)
 - Integer `add`/`sub`/`mul` sign-agnostic 64-bit two's-complement (truncate to 64 bits on arbitrary-precision hosts); `div`/`mod`/`compare` signed-default; integer results canonically encoded by their signed interpretation; `numeric-cast` eager / point-of-use (§2.2 rules 8–11)
@@ -2650,6 +2739,8 @@ the depth budget), **float-carrying** entities (canonical CBOR), and **cross-pee
   error-short-circuited `if` branch (AE-3).
 - `ae_metering_parity` — the `operations` decrement sequence matches per logical step (AE-4).
 - `ae_dependency_parity` — the reactive dependency set an engine registers matches the reference (AE-2 / §7.1).
+
+> **§7.1's completeness `[MUST]` is NOT satisfied by `ae_dependency_parity`, and the two must not be confused `[v3.27]`.** This row compares an alternate engine against **its own peer's reference walker**, so a peer whose reference walker misses a reachable reference passes it with both engines wrong in the same way. §7.1's rule is a property of the walker against the **grammar**, it is cross-impl-observable, and it belongs to the **`validate-peer` register** (`GUIDE-CONFORMANCE` §7.0's behavioral class) rather than to the differential corpus — **dependency registration produces no boundary**, which is precisely why a corpus vector cannot see it. The discriminating construction is a subgraph whose only `compute/lookup/tree` sits inside a `compute/apply` argument, since a walker that handles `compute/let.bindings` alone passes the `let` case.
 
 ### 11.7 Admission status
 

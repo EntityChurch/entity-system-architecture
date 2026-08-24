@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.20
+**Version**: 1.21
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -62,7 +62,8 @@ system/registry:invalidate-cache(name | null) → ()    ; null = flush all
   status:        "resolved" | "not_found" | "chain_exhausted",
   binding:       <hash of system/registry/binding entity>,
   peer_id:       <Base58 peer-id per V7 §1.5>,
-  transports:    [<endpoint per NETWORK §6.5>],         ; reachable endpoints, ordered
+  transports:    [<system/hash, BARE>],                 ; hashes of system/peer/transport/* profiles,
+                                                        ;   ordered; passed through from the binding (§3)
   attestations:  [<hash of supporting attestation entities>],
   trust_anchor:  <variant identifying which backend resolved>,
   ttl:           <ms duration | null>,                  ; positive-result cache hint (§3 is the canonical declaration)
@@ -169,7 +170,8 @@ data: {
                     | "out-of-band"
                     | "consensus-anchored",
   target_peer_id:     <Base58 peer-id per V7 §1.5>,  ; the identity, NOT a content-hash
-  transports:         [<endpoint per NETWORK §6.5>], ; preferred order
+  transports:         [<system/hash, BARE>],   ; hashes of system/peer/transport/* profile
+                                               ;   entities (NETWORK §6.5.1), preferred order
   issued_at:          <ms-since-epoch>,
   ttl:                <ms duration | null>,    ; null = sticky until revoked
   supersedes:         <system/hash, BARE | null>,  ; per ATTESTATION supersedes chain
@@ -180,7 +182,11 @@ data: {
 
 Stored at `system/registry/binding/{binding_hash}` (universal — every kind, including local-name bodies, lives here). Aggregators MAY re-publish at their own path (see §8). Local-name bindings ADDITIONALLY have a tree pointer at a name-keyed path (see §6.3).
 
-**Hash-field shape.** All bare-hash fields in this entity — `supersedes`, `issuer_attestation`, and `system/registry/revocation.revokes` — are **bare `system/hash`** values (format byte + digest — 33 bytes under `0x00`/SHA-256, 49 under `0x01`/SHA-384; **the length follows the format byte and MUST NOT be fixed**, `SPECIFICATION-FORMAT.md` §8.4.5), NOT wrapped in any envelope or object. Conformance: impls MUST NOT wrap or double-encode them. **The conformance claim here is the *shape* — bare and unwrapped — never the width**; a CBOR `bstr` is self-delimiting, so nothing downstream needs the length to parse the field.
+**`transports` carries hashes, not endpoint objects `[MUST, v1.21]`.** Each element is a **bare `system/hash`** naming a `system/peer/transport/*` profile entity (NETWORK §6.5.1). An implementation MUST NOT inline an endpoint object, a profile body, or any other map in this field, and MUST reject a non-byte-string element.
+
+**Why the reference and not the object.** REGISTRY does not define transport shapes — NETWORK does — and an inlined profile body makes this extension the de-facto definer of a structure it does not own. It also **discards the field NETWORK §6.5.1a D5 makes authoritative**: D5 binds `transport_type` to the entity-type suffix and requires decoders to fail closed on a mismatch, so a type-stripped inline map deletes the authoritative source and leaves only the field D5 demotes. And `transports` is a **cached hint, not the binding's substance** (§6.3) — §6a.1 puts choosing and performing transports in the transport layer — so a reference is the right encoding for a pointer into another layer's namespace. Content-addressing then stores one profile for the N names that share a target, instead of N copies.
+
+**Hash-field shape.** All bare-hash fields in this entity — `transports`' elements, `supersedes`, `issuer_attestation`, and `system/registry/revocation.revokes` — are **bare `system/hash`** values (format byte + digest — 33 bytes under `0x00`/SHA-256, 49 under `0x01`/SHA-384; **the length follows the format byte and MUST NOT be fixed**, `SPECIFICATION-FORMAT.md` §8.4.5), NOT wrapped in any envelope or object. Conformance: impls MUST NOT wrap or double-encode them. **The conformance claim here is the *shape* — bare and unwrapped — never the width**; a CBOR `bstr` is self-delimiting, so nothing downstream needs the length to parse the field.
 
 **`target_peer_id` is an identity, not a content-hash.** It is the Base58-encoded peer-id per V7 §1.5 multikey form (key_type ‖ hash_type ‖ digest, encoded). Self-certifying naming uses this string directly (`name == target_peer_id`), NOT `hex()` of a hash. This is the V7 §1.5 alignment pin.
 
@@ -828,7 +834,7 @@ data: {
   name:           <string>,                ; the local-name (user-chosen)
   kind:           "local-name",
   target_peer_id: <Base58 peer-id per V7 §1.5>,
-  transports:     [<endpoint per NETWORK §6.5>],  ; optional; cached from last contact
+  transports:     [<system/hash, BARE>],   ; optional; cached from last contact (§3 shape)
   issued_at:      <ms-since-epoch>,
   ttl:            null,                    ; local-names are sticky until user removes
   supersedes:     <system/hash, BARE | null>,  ; previous local-name for same name (rebound)
@@ -1016,11 +1022,22 @@ Two-layer storage, the direct analog of §6.3:
 
 **A `kind: "peer-issued"` binding MUST carry a non-empty `transports` `[MUST]`.** §4.1.2's *"transport resolution per NETWORK §6.5 finds reachable endpoints"* is sound for a pin and for a live target, and **has no static counterpart**: NETWORK §6.5.4 makes profile discovery out-of-band in v1, so for a statically published peer there is nothing to find. A consumer resolves a peer-id and stops. The §4.1.2 **pin carve-out is unchanged**, and the contrast is the reason: a pin is the *user's* assertion, so reaching the peer is the user's problem; an issued binding is the *registry's* assertion and is worth nothing operationally without a way to reach the target.
 
+**A publishing registry MUST serve what its bindings reference `[MUST, v1.21]`.** A registry that publishes bindings for consumption MUST make reachable, under the same endpoint that serves the bindings:
+
+- every `system/peer/transport/*` profile entity named by a published binding's `transports`, fetchable by its content hash; and
+- every binding's `system/signature/{hex(binding_hash)}` invariant pointer (§3), which §6a.4 step 3 fetches.
+
+**This is what makes `transports` a reference rather than a dead end.** The MUST above requires a non-empty `transports`, on the reasoning that profile discovery is out-of-band in v1 and *"for a statically published peer there is nothing to find"* — and a hash the consumer cannot resolve reinstates exactly that gap one indirection later, satisfying the rule in letter while delivering nothing. The consumer already reaches this endpoint by hash for the binding body itself; the obligation is that the referents are there too.
+
+`EXTENSION-NETWORK.md` §6.5.2 states the publisher-side form of the same rule for a signed root — *"MUST upload … the transitive hash-linked closure … plus the `published-root` entity itself and its `system/signature` entity."* **The failure mode is identical and is the reason both are MUSTs: a missing referent and a withheld one are byte-identical at the consumer**, so a publishing mistake is diagnosed as the origin acting in bad faith.
+
 #### §6a.3a Enumerating a registry — the walk is the authority, the listing is a menu
 
 **The authenticated form of *"what names does this registry carry"* is a walk of the published trie from `published-root.root_hash`** (`EXTENSION-TREE.md` §3.1, §3.5). Trie leaves are `[key, value_hash]` — **the key is in the node** — so walking every node from the signed root yields the complete key set the signature commits to. No new mechanism is required and none is added.
 
-A registry intending to be browsable **SHOULD** publish at `prefix: "system/registry/binding/by-name/"`, so the trie's key set **is** the name set. This is the same per-purpose tracked-prefix ruling `EXTENSION-TREE.md` §3.3a already gives for any other published extent.
+A registry intending to be browsable **SHOULD** publish a prefix under which `system/registry/binding/by-name/` is enumerable, so the trie's key set **is** the name set. This is the same per-purpose tracked-prefix ruling `EXTENSION-TREE.md` §3.3a already gives for any other published extent.
+
+**The published prefix MUST also cover the signature location `[MUST, v1.21]`.** A binding's signature lives at `system/signature/{hex(binding_hash)}` — V7 §5.2's invariant pointer, required by §3 and fetched by §6a.4 step 3 — which is **outside every `system/registry/…` prefix.** A registry publishing `system/registry/binding/by-name/` alone enumerates every name correctly and then **fails to resolve any of them**, at step 3, with a 404 the consumer cannot distinguish from a withholding origin. Publishing `system/` satisfies both; so does any prefix set covering `system/registry/binding/by-name/` and `system/signature/`. *(Earlier revisions recommended the narrow prefix. That recommendation was unimplementable and is corrected, not deprecated.)*
 
 **A served listing artifact (`{path}{tree_listing_suffix}`) is a transport-trusted convenience and MUST NOT be presented as the registry's authoritative contents.** Keep it — it is one fetch instead of O(N) and it is the right first-paint artifact — but resolve every listed name through the signed root before presenting it as a binding. **The asymmetry is the point:** a hostile origin can omit an entry from a served listing undetectably, and **cannot omit a node from the walk without the walk failing.** *Silently hidden* becomes *visibly incomplete*, which is the strongest completeness property a static origin admits of.
 
@@ -1119,7 +1136,7 @@ type: "system/registry/register-request"
 data: {
   name:           <string>,                  ; name-path safety per §6.3
   target_peer_id: <Base58 peer-id, V7 §1.5>, ; what the name resolves to
-  transports:     [<endpoint per NETWORK §6.5>],
+  transports:     [<system/hash, BARE>],      ; §3 shape — profile hashes, never inline objects
   requested_ttl:  <ms | null>,
   nonce:          <bytes>,                    ; anti-replay
   issued_at:      <ms-since-epoch>
@@ -1376,7 +1393,7 @@ type: "system/registry/pending-binding"
 data: {
   name:           <string>,                  ; name-path safety per §6.3
   target_peer_id: <Base58 peer-id, V7 §1.5>,
-  transports:     [<endpoint per NETWORK §6.5>],
+  transports:     [<system/hash, BARE>],      ; §3 shape
   requested_ttl:  <ms | null>,
   queued_at:      <ms-since-epoch>,
   status:         "pending_review" | "approved" | "denied",
@@ -1701,6 +1718,15 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
   - **`REG-PEERISSUED-NAME-SUBSTITUTION-1`** — a **validly signed, current, unrevoked** binding for name *X*, served at `by-name/{Y}`. The resolver MUST refuse and advance the chain (§6a.4 `binding.name == norm`). Contrast with `REG-PEERISSUED-VERIFY-FAIL-1`, which covers a binding signed by a **non-pinned key** — the origin forging its own binding, which every implementation already refuses. Substitution requires no forgery at all.
   - **`REG-PEERISSUED-NULL-TTL-1`** — a peer-issued binding with `ttl: null`; the resolver MUST refuse and advance (§6a.3, §6a.4).
   - **`REG-ISSUER-NULLTTL-POLICY-1`** — two-stage, matching `REG-ISSUER-DOMAINCTRL-STORED-1`: `set-issuer-policy` with a live mode and `default_ttl: null` MUST be refused `400`; then write that policy entity **directly** and attempt live registration with a request omitting `requested_ttl` — MUST refuse `403 policy_rejected` and publish nothing.
+
+- **`REG-BINDING-TRANSPORTS-SHAPE-1` (§3, §6a.3) `[v1.21]` — the cross-peer decode check.** **Class: `validate-peer` behavioral check** (`GUIDE-CONFORMANCE.md` §7.0) — over the wire, oracle-authored, driven against a peer serving a `peer-issued` binding. Two rows, and the pair is the point:
+  - **(a)** A binding whose `transports` elements are **bare `system/hash`** byte strings → the resolver decodes it and returns a `ResolutionResult` carrying those hashes. **A peer that only accepts inline maps fails here.**
+  - **(b)** A binding whose `transports` carries an **inline map** → the resolver MUST refuse the binding rather than accept it. **A peer permissive in both directions passes (a) and fails (b)**, which is what makes this a discriminator instead of a smoke test — a liberal decoder is indistinguishable from a conformant one on (a) alone.
+  - **Satisfaction mode (§5.2b.1).** Constructible today: the state each row needs is a published binding, which any conformance client can author and serve statically. No new operation and no harness capability is required.
+
+  > **This check exists because the surface it covers was never exercised.** The shape was prose-typed for the whole of v1 and no vector read it, so conformant-looking implementations diverged on the field that every resolution traverses, and the divergence was found by a consumer rather than by the suite.
+
+- **`REG-PUBLISH-CLOSURE-1` (§6a.3, §6a.3a) `[v1.21]` — the serving obligation.** **Class: `validate-peer` behavioral check.** Against a publishing registry: for each published binding, its `transports` profile entities resolve by hash **and** `system/signature/{hex(binding_hash)}` resolves. **The discriminating row is enumeration-succeeds-then-resolve-fails** — a registry publishing only `system/registry/binding/by-name/` passes every enumeration assertion and fails this one, which is exactly the shape that otherwise reports as the origin withholding.
 
 (Resolution-log is SHOULD per §11.2, not MUST: one log write per top-level `meta_resolve` puts a write on the resolution hot path, and resolution is the highest-frequency operation this extension defines.)
 
