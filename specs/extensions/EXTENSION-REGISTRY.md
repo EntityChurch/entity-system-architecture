@@ -983,7 +983,7 @@ When the target identity rotates per EXTENSION-IDENTITY §4.3/4.4, the local-nam
 
 ## §6a Peer-issued backend (v1)
 
-The peer-issued backend is the second v1 concrete backend. Where local-name (§6) trusts the **user themselves**, peer-issued trusts a **remote registry peer whose key the resolver has pinned** — turning a name into a *verified* binding ("the registry signed this, and I checked it against the key shipped with my build") rather than a *pinned* one ("the distro hard-asserts it"). It is the sibling of §6: **same reads, different trust source.** Full design rationale + the cohort spec-doubt rulings (P1–P7) live in `proposals/implemented/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md`; the normative contract is here.
+The peer-issued backend is the second v1 concrete backend. Where local-name (§6) trusts the **user themselves**, peer-issued trusts a **remote registry peer whose key the resolver has pinned** — turning a name into a *verified* binding ("the registry signed this, and I checked it against the key shipped with my build") rather than a *pinned* one ("the distro hard-asserts it"). It is the sibling of §6: **same reads, different trust source.** Full design rationale + the cohort spec-doubt rulings (P1–P7) live in `docs/proposals/implemented/extensions/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md`; the normative contract is here.
 
 ### §6a.1 Concept — trust logic over transport-agnostic reads
 
@@ -1801,7 +1801,7 @@ data: {
 
 - `proposals/implemented/PROPOSAL-EXTENSION-REGISTRY-SUBSTRATE.md` — landed-into source proposal (substrate)
 - `proposals/implemented/PROPOSAL-EXTENSION-REGISTRY-PETNAME.md` — landed-into source proposal (local-name backend = §6 of this spec)
-- `proposals/implemented/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md` — landed-into source proposal (peer-issued backend = §6a of this spec; Part B.live registration deferred)
+- `docs/proposals/implemented/extensions/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md` — landed-into source proposal (peer-issued backend = §6a of this spec; Part B.live registration deferred)
 - `docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md` — landed-into source proposal (service advertisement = §3b of this spec; §3b.4 folded SHOULD where the proposal wrote MUST, per the note there)
 - `specs/extensions/EXTENSION-SIGNALING.md` — §4 the rendezvous carrier and §9.3 the STUN reflector, the two core-path services §3b advertises; §3.1 supplies the 33-byte key `k` that §3b.3 hashes
 - `guides/GUIDE-REFERENCE-DEPLOYMENT.md` — the operator-facing tier model these services are priced in (§3.2 reflector, §3.3 signaling, §3.4 data-relay, §5 the worked budget)

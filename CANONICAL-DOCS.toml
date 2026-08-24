@@ -91,6 +91,57 @@ title = "CLAUDE.md — agent entry point"
 blurb = "The entry point that sends any agent to AGENTS-STANDARD.md (ecosystem conventions) and AGENTS.md (this repo's specifics). Guidance is written for any agent, not only Claude."
 group = "Community health"
 
+# ── Product trees ─────────────────────────────────────────────────────────────
+# `[[keep_tree]]` declares a DIRECTORY as product rather than dev history
+# (entity-core-devops `6df7994`, built on this repo's ask). Everything prose under
+# it survives `canon-filter` without a per-file entry.
+#
+# Why arch needs it and most repos do not: for a code repo, `docs/` really is dev
+# history and the filter's default is right. Here the output IS prose. Most of it
+# is `specs/` and `guides/`; the rest is the design record that makes those
+# legible. Same directory name, different function — which is the filter's own
+# stated lesson, written about .cbor vectors: "location is not function."
+#
+# The structural argument, and it is the one that matters: this repo's central
+# authoring rule is that a specification does NOT carry its own rationale — no
+# seat names, no dated measurements, no commit hashes — because that material is
+# rationale, and rationale lives in the proposal. It is enforced by a ratcheted
+# baseline. Publishing the specs without the proposals would mean deliberately
+# stripping derivation out of the normative text and then not shipping the place
+# we put it: MUSTs with no reachable reason for any of them.
+#
+# NOT declared per-file, deliberately. 119 hand-written entries is not a
+# mechanism, and it regenerates with every new proposal — the same "re-breaks by
+# being used as intended" argument [ADR-0031] used against sweeping status docs.
+[[keep_tree]]
+path = "docs/proposals"
+why  = "the design record — the ratifiable unit, and where this repo's rules send every spec's rationale"
+
+[[keep_tree]]
+path = "docs/research/explorations"
+why  = "the design-space studies the specs are ruled inside of; L11 makes reading them a precondition of ruling"
+
+# The index and the lifecycle README sit ONE LEVEL ABOVE that keep_tree, so they were
+# stripped while the 35 documents they describe published — caught by meta at the cut,
+# 2026-08-24. Declared individually rather than widening the keep_tree to `docs/research`,
+# which would drag in `reviews/` (22 files we drop on purpose).
+#
+# It is worth naming what this defect was: a reader would have received a flat directory
+# of 35 explorations and nothing saying what they are. That is `entity-core-keystone`'s
+# 0.8.2 defect with the halves swapped — there the index shipped and the evidence did not;
+# here the evidence shipped and the index did not. Same seam, opposite side, one week apart.
+[[doc]]
+path  = "docs/research/INDEX.md"
+title = "Research index — what has already been studied, and where it is"
+blurb = "The inventory of the design record: what exists and what each document establishes. Read it before opening a design question — it is the enforcement point for the rule that you check what exists before building it."
+group = "Working here"
+
+[[doc]]
+path  = "docs/research/README.md"
+title = "Research workspace — the exploration → proposal → review → fold lifecycle"
+blurb = "How work moves through this repo: an exploration maps a design space, a proposal is the ratifiable unit, a review absorbs a peer's findings, and the fold is the spec edit that lands it."
+group = "Working here"
+
 # ── Working here ──────────────────────────────────────────────────────────────
 # Declared because PUBLISHED documents already cite them, and a keep-list that
 # drops a cited target ships broken links on the public surface:

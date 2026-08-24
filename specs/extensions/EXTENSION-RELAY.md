@@ -629,4 +629,4 @@ Circuit relay for NAT traversal is structurally distinct (bidirectional virtual 
 - `explorations/EXPLORATION-RELAY-AND-AGGREGATOR-PATTERN.md` — landscape + primitive extraction.
 - `EXTENSION-INBOX.md` (v5.9), `EXTENSION-CONTINUATION.md` (v1.20), `EXTENSION-NETWORK.md` (Amdt 10), `EXTENSION-REGISTRY.md` (v1.0), `EXTENSION-DISCOVERY.md` (v1.0), `EXTENSION-ROUTE.md` (v1, routing plane) — composition surfaces.
 - `proposals/implemented/PROPOSAL-RELAY-SOURCE-ROUTED-MULTIHOP-AND-ROUTING-BOUNDARY.md` — v1.1 source-route fold; `explorations/EXPLORATION-INFORMATION-TRAVEL-RELAY-ROUTING-GOSSIP.md` — the relay/routing/gossip taxonomy that grounds the boundary.
-- `proposals/PROPOSAL-EXTENSION-STORAGE-SUBSTITUTE-HTTP.md`, `proposals/PROPOSAL-EXTENSION-BRIDGE-HTTP.md`, `proposals/PROPOSAL-EXTENSION-ENCRYPTION.md`, `proposals/PROPOSAL-STATIC-PEER-HOSTING-UMBRELLA.md` — in-flight dependencies.
+- `proposals/PROPOSAL-EXTENSION-STORAGE-SUBSTITUTE-HTTP.md`, `proposals/PROPOSAL-EXTENSION-BRIDGE-HTTP.md`, `docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md`, `proposals/PROPOSAL-STATIC-PEER-HOSTING-UMBRELLA.md` — in-flight dependencies.

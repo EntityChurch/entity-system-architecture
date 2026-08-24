@@ -1206,7 +1206,7 @@ A byte-equality failure is therefore an **absorption signal**: it locates the AA
 readings disagree, and the spec resolves it. It is not a defect report against whichever seat differs.
 
 *(The authoring cycle that produced the currently-pinned values is recorded in
-`proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md` §2.)*
+`docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md` §2.)*
 
 ### §16.6 `ENC-RESOLVE-ORDER-1` — a MUST with no wire surface
 
