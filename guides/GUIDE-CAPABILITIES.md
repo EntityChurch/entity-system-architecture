@@ -97,6 +97,17 @@ R0 says "use the handler." R1 says "and here's what the handler must enforce." E
 - **Grantee** (of the leaf) — the *wielder*: whoever authors the EXECUTE that presents the cap. V7 §5.2 hard-denies `grantee != author`.
 - **In-chain granters** — every party that attenuated, *including any installer/minter that pre-mints a cap for later use*. The R1 install check below asks only that the writer appears as a granter **anywhere in the chain** — **not** that the chain roots at the writer.
 
+**The audience of a grant is the `grantee`. It is never the `peers` scope.** This is the most-repeated
+error in this area, so it gets its own line: `peers` is the **network** dimension — *which peer the grant may
+be used against* — and `check_permission` matches it against the peer extracted from the request URI, not
+against the wielder. **For a grant over your own peer's resources, omit `peers` entirely**; absent, it
+defaults to `{include: [local_peer_id]}`, which is already what you want. Populating it with your intended
+audience does not merely fail to help — it makes every cross-peer presentation DENY `403 capability_denied`,
+with nothing indicating which dimension was wrong. (Two different things are also both informally called a
+"peer pattern": the `system/capability/policy/{peer_pattern}` path segment, which *is* a legitimate audience
+carrier, and the `peers:` IdScope inside a grant entry, which is not. V7 §6.2's namespace-disambiguation note
+covers why they collide only in the name.)
+
 **Locally these three collapse onto one identity** (a peer mints from its own authority and immediately wields it), which is why local-only reasoning silently omits the other two slots — the documented root cause of the EXTENSION-CONTINUATION §3.1a (in-chain) and §4.2 case 3 (grantee) corrections. Whenever a flow crosses peers, fill all three explicitly.
 
 ### 3.1 The in-chain check, concretely
@@ -452,7 +463,7 @@ Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4:
 Per §9 #7: capability state has **two distinct cross-peer surfaces:**
 
 - **Chain-bundled (normative, by design):** Authority chains travel cross-peer in EXECUTE envelopes' `included` map per V7 §3.1 + EXTENSION-CONTINUATION §4.3 (cross-peer dispatch capability). This is the only sanctioned cross-peer propagation of capability material. Receiver re-verifies via V7 §5.2.
-- **Local-namespace:** Subscription-based propagation of `system/capability/**` MUST be refused. A `system/capability/*` subscription would let a downstream peer harvest signatures + tokens that were never explicitly delegated to it. Subscription handlers SHOULD reject patterns under `system/capability/` regardless of granted scope unless the scope explicitly enumerates a narrower path with operator-class authority.
+- **Local-namespace:** Subscription-based propagation of `system/capability/*` MUST be refused. A `system/capability/*` subscription would let a downstream peer harvest signatures + tokens that were never explicitly delegated to it. Subscription handlers SHOULD reject patterns under `system/capability/` regardless of granted scope unless the scope explicitly enumerates a narrower path with operator-class authority.
 
 **L3 application-UX implication.** Per `GUIDE-INSPECTABILITY.md` v1.2 §5.2 (promoted to required), inspect tooling and L3 surfaces MUST NOT render token bodies, grant entities, or signature material outside the operator role. Default renderer behavior:
 - **sensitive** entries NEVER render to L3 surfaces; even operator-class surfaces require explicit "show key material" toggle with audit logging.
@@ -490,11 +501,11 @@ fn explicitly_enumerates(resource_pattern, target):
            target.startswith(resource_pattern + '/')
 ```
 
-**Why this shape:** matches the threat model. Wildcard tokens proliferate via delegation chains; explicit grants don't. Sensitive prefixes (`system/capability/**`, `system/runtime/**`, `system/continuation/**`) should require operator-explicit grants, not accidental wildcard match from intermediate delegations. Uses existing `resources` field on V7 §5 grant scope — no new capability machinery; checkable in linear cap-chain walk. Symmetric to V7 §5.6 `is_attenuated`: "operator-class" is a property of the chain's *explicitness*, not a new authority tier.
+**Why this shape:** matches the threat model. Wildcard tokens proliferate via delegation chains; explicit grants don't. Sensitive prefixes (`system/capability/*`, `system/runtime/*`, `system/continuation/*`) should require operator-explicit grants, not accidental wildcard match from intermediate delegations. Uses existing `resources` field on V7 §5 grant scope — no new capability machinery; checkable in linear cap-chain walk. Symmetric to V7 §5.6 `is_attenuated`: "operator-class" is a property of the chain's *explicitness*, not a new authority tier.
 
 **Implications across the spec corpus:**
 - **GUIDE-CAPABILITIES §10** (above) — capability surface refusal contract uses this definition.
-- **GUIDE-INSPECTABILITY v1.2 §3.4.1** — `system/runtime/**`, `system/continuation/**` subscription refusal uses this definition.
+- **GUIDE-INSPECTABILITY v1.2 §3.4.1** — `system/runtime/*`, `system/continuation/*` subscription refusal uses this definition.
 - **EXTENSION-CONTINUATION §6.5, EXTENSION-SUBSCRIPTION §7.4, EXTENSION-INBOX §11, EXTENSION-REVISION §12** — each invokes "operator-class authority" for prefix-refusal exceptions; this definition is what those subsections check against.
 - **Impl-side enforcement** — both extension-level (subscription engine; e.g., entity-core-rust `extensions/subscription/src/lib.rs:196`) and SDK-tier (e.g., `entity-sdk` subscription wrappers per egui-entity-core-rust §4.4) check this. Defense-in-depth: SDK refuses at app-tier; extension refuses at substrate-tier. Either alone is sufficient; both is the audit-recommended posture.
 

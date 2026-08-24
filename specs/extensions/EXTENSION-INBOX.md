@@ -506,11 +506,11 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 
 ## 11. Privacy + cross-peer observability
 
-Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: write-ahead entities at `system/inbox/**`, `system/inbox/delivery` results, and `system/subscription/notification` params are **capability-controlled** — bodies carry application-defined delivery payloads + identity references. Payloads MAY carry hash references to **sensitive** types (e.g., `deliver_token` referencing `system/capability/token` per ENTITY-CORE-PROTOCOL.md §5); transitive classification applies — the hash reference itself is `capability-controlled` (reveals "a capability of this hash authorizes delivery here") but a hash without the entity is not bearer.
+Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: write-ahead entities at `system/inbox/*`, `system/inbox/delivery` results, and `system/subscription/notification` params are **capability-controlled** — bodies carry application-defined delivery payloads + identity references. Payloads MAY carry hash references to **sensitive** types (e.g., `deliver_token` referencing `system/capability/token` per ENTITY-CORE-PROTOCOL.md §5); transitive classification applies — the hash reference itself is `capability-controlled` (reveals "a capability of this hash authorizes delivery here") but a hash without the entity is not bearer.
 
 Per §9 #7:
 - **Transport-only** for the arrival hop — a `receive` EXECUTE arrives FROM a remote peer per §3.1; the cross-peer hop IS the propagation surface for the arrival event.
-- **Local-namespace** for stored write-ahead entities at `system/inbox/**` after arrival. Subscription-based propagation of `system/inbox/**` MUST be refused at the subscription handler unless the caller's scope explicitly enumerates a per-recipient narrower path with operator-class authority (the "secondary inbox aggregator" pattern, application-defined). The default subscription posture for `system/inbox/**` is refusal — a subscription on the broad inbox prefix would let a third party harvest all inbound traffic.
+- **Local-namespace** for stored write-ahead entities at `system/inbox/*` after arrival. Subscription-based propagation of `system/inbox/*` MUST be refused at the subscription handler unless the caller's scope explicitly enumerates a per-recipient narrower path with operator-class authority (the "secondary inbox aggregator" pattern, application-defined). The default subscription posture for `system/inbox/*` is refusal — a subscription on the broad inbox prefix would let a third party harvest all inbound traffic.
 
 Chain-error markers bound on inbox dispatch failures per §3.6 are themselves **local-namespace** per EXTENSION-CONTINUATION.md §6.5 (the canonical home for chain-error marker locality).
 

@@ -382,7 +382,7 @@ Stripping leading and trailing slashes matches the leaf-binding convention (the 
 
 The binding at `system/tree/root/{P}` is a direct pointer: its value is the content_hash of the root trie node entity (type `system/tree/snapshot/node`, defined in §3.3). Consumers read the tracked root with a single lookup — `tree.get(storage_path)` returns the hash, `content_store.get(hash)` returns the trie node entity with `entries` and optional `binding` fields. No wrapper entity is interposed.
 
-This matches the single-pointer convention used elsewhere in the system (`system/revision/head/{prefix}` points directly at a `system/revision/entry`; `system/revision/branches/**` and `system/revision/tags/**` point directly at version entities). Implementations MUST NOT interpose a `system/hash`-typed wrapper entity.
+This matches the single-pointer convention used elsewhere in the system (`system/revision/head/{prefix}` points directly at a `system/revision/entry`; `system/revision/branches/*` and `system/revision/tags/*` point directly at version entities). Implementations MUST NOT interpose a `system/hash`-typed wrapper entity.
 
 **Operational state.** Track the root in peer-local state (not in the entity tree). This avoids the tree write for the root update but makes the root non-discoverable and non-syncable.
 
@@ -392,7 +392,7 @@ For prefixes with active versioning, the tree path approach is RECOMMENDED — t
 
 **History tracking.** Root tracking paths (`system/tree/root/*`) are subject to normal history recording. Implementations SHOULD NOT exclude them by default. The history chain preserves prior trie roots that would otherwise be unrecoverable — each transition records the previous root hash, the replacement root hash, the timestamp, and the chain_id of the write that triggered the update. This provides inter-commit rollback granularity: the version DAG (EXTENSION-REVISION.md) captures trie roots at commit points, while history captures every intermediate root between commits. Users MAY exclude these paths via history configuration if write volume is a concern.
 
-**Revision exclude.** Root tracking paths `system/tree/root/**` MUST be excluded from versioned bindings when the root tracking path falls under a versioned prefix. The trie root hash depends on all bindings under the prefix — including it in the versioned bindings creates a circular dependency (the root hash would include itself). This exclusion is not a loss: the version entry's `root` field already captures the trie root at each commit point. Implementations using the tree-path approach SHOULD include `system/tree/root/**` in the revision configuration's `exclude` patterns (EXTENSION-REVISION.md §2.4). Alternatively, use operational state storage to avoid the circularity entirely.
+**Revision exclude.** Root tracking paths `system/tree/root/*` MUST be excluded from versioned bindings when the root tracking path falls under a versioned prefix. The trie root hash depends on all bindings under the prefix — including it in the versioned bindings creates a circular dependency (the root hash would include itself). This exclusion is not a loss: the version entry's `root` field already captures the trie root at each commit point. Implementations using the tree-path approach SHOULD include `system/tree/root/*` in the revision configuration's `exclude` patterns (EXTENSION-REVISION.md §2.4). Alternatively, use operational state storage to avoid the circularity entirely.
 
 #### 3.4.1a Configuration
 

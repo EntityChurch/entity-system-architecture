@@ -26,11 +26,11 @@ data:
   auto_version: true
   merge_order: "deterministic"         # DO NOT pick caller-perspective (§3)
   exclude:
-    - "system/**"                      # covers all engine-owned paths
-    - "**/*.tmp"
-    - "**/cache/**"
+    - "system/*"                      # covers all engine-owned paths
+    - "*.tmp"
+    - "*.cache"
   exclude_types:
-    - "your-app/ephemeral/**"          # transient entities you don't want in history
+    - "your-app/ephemeral/*"          # transient entities you don't want in history
 ```
 
 This config is safe to deploy on any number of peers. They will converge.
@@ -167,8 +167,8 @@ The version entry captures the tracked subtree's full structural state as a Merk
 
 **What's NOT in the snapshot:**
 - Content-store entities that aren't bound in the tree. If you write an entity to the content store and never reference it from a tracked tree path, it's not versioned.
-- The revision extension's own metadata (`system/revision/**`). Always excluded.
-- Engine state paths (`system/clock/**`, `system/history/**`, etc.). Required excludes.
+- The revision extension's own metadata (`system/revision/*`). Always excluded.
+- Engine state paths (`system/clock/*`, `system/history/*`, etc.). Required excludes.
 - Anything under `exclude` or `exclude_types` per your config.
 
 **Common mistake:** setting `exclude_types: ["system/revision/entry"]` thinking it'll exclude your version entries from versioning. It won't — version entries live in the content store, not at tracked paths. `exclude_types` only filters entities bound *at tracked paths*.
@@ -220,7 +220,7 @@ Each pattern below shows the revision config. Cross-peer sync (where applicable)
 prefix: "docs/{doc_id}/"
 auto_version: true
 merge_order: "deterministic"
-exclude: ["system/**", "**/cursor/**"]   # exclude cursor positions, etc.
+exclude: ["system/*", "your-app/cursors/*"]   # exclude cursor positions, etc.
 ```
 
 Every keystroke (assuming your editor debounces to tree writes) produces a version. Each collaborator subscribes to the others' `system/revision/head/docs/{doc_id}` paths; a continuation on the subscription inbox dispatches **`revision:pull`** (`fetch` + incremental `fetch-entities` content walk + `merge` in one op — EXTENSION-REVISION §4.4.8) — this is the **DAG-mirror** case, since collaborators want each other's version history integrated, not just content. Collaborators converge. DAG is fine-grained; your UI collapses adjacent intermediates. (If a collaborator only needs the latest *content* and not the others' DAGs, the lighter content-mirror recipe — `revision:fetch-diff → tree:merge`, §4 — applies instead.)
@@ -233,7 +233,7 @@ Every keystroke (assuming your editor debounces to tree writes) produces a versi
 prefix: "projects/{name}/"
 auto_version: true
 merge_order: "deterministic"
-exclude: ["system/**", "build/**", "**/*.o", "**/*.tmp"]
+exclude: ["system/*", "build/*", "*.o", "*.tmp"]
 ```
 
 Local workspace is continuously versioned. CI or the user does `revision/push` at known-good points. Local DAG stays detailed; remote DAG gets coarse tags via manual commits or selective pushes. No standing subscription — sync is one-shot, caller-invoked.
@@ -244,7 +244,7 @@ Local workspace is continuously versioned. CI or the user does `revision/push` a
 prefix: "audit/"
 auto_version: true
 merge_order: "deterministic"
-exclude: ["system/**"]
+exclude: ["system/*"]
 ```
 
 Writes are expected to be append-only (new paths, no mutations). Auto-version produces one entry per log write. For remote peers to stream the log, each remote sets up a subscription on `system/revision/head/audit` with a fetch continuation. Merges are rare (would indicate concurrent writes to the same path — check your usage).

@@ -138,11 +138,15 @@ share-follow = {
   data: {
     publisher: peer-id,              ; whose share this follows
     record:    content-hash,         ; the followed app/share/record
-    strategy:  tstr,                 ; delivery strategy — see §5, OPEN
-    ? since:   content-hash          ; last applied state, strategy-interpreted
+    ? strategy: tstr,                ; NOT LOCKED — see §5. Peers converge; arch records.
+    ? since:   content-hash          ; last state this consumer applied, if it tracks one
   }
 }
 ```
+
+**The follow surface is NOT LOCKED.** `strategy` is optional and its vocabulary is undefined here on
+purpose — see §5. Everything else in this document is settled; this part is not, and an implementation
+should not read the rest of the spec's firmness as extending to it.
 
 ---
 
@@ -219,21 +223,32 @@ convention; the entity graph is coherence.* What must converge is the **type tag
 
 ---
 
-## 5. OPEN — the follow strategy discriminator
+## 5. NOT LOCKED — the follow surface awaits peer convergence
 
-`app/share/follow.strategy` is an **open string with no closed vocabulary in v0.1**, deliberately.
+**This is not arch's call and it is not ruled here.** Whether `app/share/follow` carries a delivery
+`strategy` at all, and what its values are if it does, is for the **implementing peers to converge on**. Arch
+records what they land on; it does not pick for them.
 
-Two delivery forms are in the field and both are legitimate: a **revision-free closure** form, which
-transfers a self-contained bundle and depends on no version state; and a **diff-from-last-seen** form, which
-carries only the delta and requires both sides to agree on a base. The `strategy` field is the extension
-point that lets both be expressed without this convention picking one. **The closure form's
-reliable-delivery caveat bears on the choice and has not been assessed.**
+**What is known.** Two delivery forms are in the field and both work: a **revision-free closure transfer**,
+and a **diff from a last-seen version**. There is no evidence yet that one should be the convention's, and
+the reliable-delivery characteristics of the closure form have not been assessed by anyone.
 
-**v0.1 does not close this vocabulary, and no implementation should read the absence of a closed list as
-permission to assume its own form is universal.** Closing it requires a design pass this document has not
-done. **`[OPEN-CONVENTION-1]`.**
+**The genuine open question, for the peers.** Is retrieval a term of the *cross-impl contract* — something
+two impls must agree on to interpret each other's follow records — or is it application-local mechanics that
+does not belong in a shared entity type? **That question has a real answer and this document does not know
+it.** It bears directly on whether the field exists.
 
----
+**Until they converge:** `strategy` is OPTIONAL, uninterpreted by this convention, and **no implementation
+should treat its own form as universal or read another peer's value as meaningful.** `since` is separate and
+is not in question — progress is meaningful to any reader.
+
+**`[OPEN-CONVENTION-1]`** — resolved by peer convergence, then recorded here. **Not by an arch ruling.**
+
+### 5.1 Also deliberately out of scope
+
+**Rendering, share UX, front-end wiring** — charter #2: format is the contract; presentation is per
+front-end and lives in the application. **When enforcement tightens** — nothing here says when a
+development-mode open-grants shortcut comes off; that is the consumer's call.
 
 ## 6. Floor (charter #4)
 
@@ -241,8 +256,7 @@ A peer with no group extension, no revision extension and no subscription engine
 
 - It authors `app/share/record` with a `direct` audience and mints one token per member.
 - It serves the shared bytes over the ordinary read path; the grant is the only authorization.
-- It follows another peer's share by re-reading the record and target on demand, with
-  `strategy` naming a poll form.
+- It follows another peer's share by re-reading the record and target on demand.
 
 Capability **adds** — group audiences, diff-based follow, subscription-driven invalidation. None is assumed.
 

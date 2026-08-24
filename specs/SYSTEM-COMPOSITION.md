@@ -315,7 +315,7 @@ A peer implementing only the core protocol (no system extensions) has zero synch
 
 Some extension engines belong in Phase 2 (async broadcast) rather than Phase 1 (sync hooks). The distinguishing criterion: does the consumer need to participate in the causal cascade, or does it benefit from observing settled state?
 
-**Revision — two consumer categories.** The revision extension's auto-version consumer is Phase 1 (position 7) — see §2.2. It produces a version entry per tree write to a tracked prefix, participating in the synchronous cascade so that subscribers observing version-DAG paths (`system/revision/head/**`) see settled post-version state. Application-level revision observers (UI, SDK, sync orchestrators) that want settled state after the full cascade completes register as Phase 2 consumers, using the post-return broadcast. Both patterns are valid; they serve different consumer needs.
+**Revision — two consumer categories.** The revision extension's auto-version consumer is Phase 1 (position 7) — see §2.2. It produces a version entry per tree write to a tracked prefix, participating in the synchronous cascade so that subscribers observing version-DAG paths (`system/revision/head/*`) see settled post-version state. Application-level revision observers (UI, SDK, sync orchestrators) that want settled state after the full cascade completes register as Phase 2 consumers, using the post-return broadcast. Both patterns are valid; they serve different consumer needs.
 
 **Application UI/SDK** consumers are Phase 2. They observe settled state for rendering or caching.
 

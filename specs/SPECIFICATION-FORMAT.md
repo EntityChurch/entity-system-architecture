@@ -386,7 +386,7 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 
 **The alternative, stated once so it is never re-derived.** A non-qualifying extension composes exactly as NETWORK / RELAY / ROUTE / SIGNALING already do: **its own types, plus a seam the substrate exposes** (`dispatch_fallback`, `establish_live`, `resolve_next_hop`). Seams are additive, removable, and carried only by peers that install the extension. **This section restricts one mechanism precisely because a better one is already in universal use.**
 
-**Namespace claims are a different act and are not governed here.** Defining a type *inside* a core-owned namespace (e.g. `system/protocol/**`) without adding a field to a core type is a separate question with a different cost; see §8.4.2.
+**Namespace claims are a different act and are not governed here.** Defining a type *inside* a core-owned namespace (e.g. `system/protocol/*`) without adding a field to a core type is a separate question with a different cost; see §8.4.2.
 
 #### 8.4.2 Types inside another spec's namespace `[normative]`
 
@@ -400,7 +400,7 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 - **Never restate the field list.** Reference it. If a reader needs the fields inline for the passage to make sense, that is a signal the passage belongs in the owning spec.
 - **A behavioral note about someone else's type is fine**; a definition of it is not. "This handler rejects a `delivery` whose `status` is absent" is a behavioral claim about the local handler; re-declaring `system/protocol/inbox/delivery := {...}` is a competing definition.
 
-**Ownership decides *who may define*; it does not decide *where the type goes*.** These are two questions and conflating them produces circular reasoning — *"it is in `system/protocol/**` because core put it there, and core may put things there, so it belongs there."* That argument justifies any placement whatsoever and is therefore not an argument. **Placement is a separate, falsifiable claim: the type must satisfy what the namespace means.**
+**Ownership decides *who may define*; it does not decide *where the type goes*.** These are two questions and conflating them produces circular reasoning — *"it is in `system/protocol/*` because core put it there, and core may put things there, so it belongs there."* That argument justifies any placement whatsoever and is therefore not an argument. **Placement is a separate, falsifiable claim: the type must satisfy what the namespace means.**
 
 > **A namespace means something, and the meaning is fixed by its existing members — not by who owns it.** Before placing a type, enumerate the namespace's current contents and state the property they share. **If the new type lacks that property, it does not belong there, however legitimate the author's authority to put it there.** A namespace whose members share no property is not a namespace; it is a prefix, and it should be split.
 

@@ -545,7 +545,9 @@ For `system/hash` fields: resolve the hash to an entity (content store or tree),
 
 For `system/tree/path` fields: resolve the path to an entity (tree lookup), check that the entity's `type` field matches the glob pattern. Path validation is temporal — the entity at the path can change. Validated at write time, not continuously.
 
-**Glob matching:** `*` matches any single path segment. `**` matches zero or more segments. Pattern `system/capability/*` matches `system/capability/grant-entry` but not `system/capability/path-scope/foo`.
+**Glob matching:** the pattern is evaluated with `matches_pattern` (`ENTITY-CORE-PROTOCOL.md` §5.4) — the protocol's single pattern rule, applied here to the entity's **type name** rather than to a tree path. `pattern/*` is a **subtree prefix match**, so `system/capability/*` matches `system/capability/grant-entry` **and** `system/capability/path-scope/foo`; bare `*` matches any type; anything else is an exact match. There is no segment-scoped wildcard and no `**`.
+
+**A constraint that must match one level only MUST enumerate the types it accepts** (or use `one_of`). §5.4's vocabulary is exact / subtree / match-all, and it deliberately carries no depth-limited form — a type-pattern is a validation constraint, and an author who wants a narrow set is better served naming it than approximating it with a wildcard.
 
 **Resolution failure:** If the referenced entity cannot be resolved (hash not in content store, path not bound), validation SHOULD pass with a warning. The `type_pattern` constraint validates the type of reachable entities, not their existence. Existence checking is a separate concern (referential integrity Level 3, implementation-defined).
 

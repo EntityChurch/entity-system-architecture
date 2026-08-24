@@ -1500,9 +1500,9 @@ A standing continuation (`remaining_executions: null`) at a path with no active 
 
 ### 6.5 Privacy + cross-peer observability
 
-Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: `system/continuation/**` entities (forward, join, suspended) and `system/runtime/chain-errors/**` markers are **capability-controlled** — bodies carry dispatch capability hash references, captured params (which may transitively reference sensitive entities), target + operation call shapes, and chain causality. The `install-result` operational echo is **public**.
+Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: `system/continuation/*` entities (forward, join, suspended) and `system/runtime/chain-errors/*` markers are **capability-controlled** — bodies carry dispatch capability hash references, captured params (which may transitively reference sensitive entities), target + operation call shapes, and chain causality. The `install-result` operational echo is **public**.
 
-Per §9 #7: **local-namespace** for both `system/continuation/**` and `system/runtime/chain-errors/**`. These path families are per-peer operational state and MUST NOT propagate via subscriptions or revision sync. Cross-peer observation requires explicit operator-grant on `system/inspect/*` (per `GUIDE-INSPECTABILITY.md` §8). Subscription handlers SHOULD refuse subscriptions on these prefixes unless the caller's scope explicitly enumerates a narrower path with operator-class authority.
+Per §9 #7: **local-namespace** for both `system/continuation/*` and `system/runtime/chain-errors/*`. These path families are per-peer operational state and MUST NOT propagate via subscriptions or revision sync. Cross-peer observation requires explicit operator-grant on `system/inspect/*` (per `GUIDE-INSPECTABILITY.md` §8). Subscription handlers SHOULD refuse subscriptions on these prefixes unless the caller's scope explicitly enumerates a narrower path with operator-class authority.
 
 This subsection is the canonical declaration that resolves the cross-peer propagation question for `system/runtime/chain-errors/*` markers raised in the inspectability cycle's closing memo. Other extensions inheriting the chain-error marker convention from §3.10 inherit this local-namespace declaration; see EXTENSION-SUBSCRIPTION.md §7.4, EXTENSION-INBOX.md §11, EXTENSION-REVISION.md §12 for the parallel extension-side declarations.
 

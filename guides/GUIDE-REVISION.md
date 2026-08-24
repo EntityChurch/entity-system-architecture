@@ -387,9 +387,9 @@ data:
   auto_version: false              # manual commits (true = auto, see advanced guide)
   merge_order: "deterministic"     # always use this for multi-peer
   exclude:                         # path patterns to skip (glob)
-    - "system/**"
-    - "**/*.tmp"
-    - "**/cache/**"
+    - "system/*"
+    - "*.tmp"
+    - "*.cache"
   exclude_types:                   # entity types to skip
     - "your-app/ephemeral"
   oscillation_depth: 4             # DAG levels to check for merge cycling (default 4)
@@ -410,7 +410,7 @@ EXECUTE system/revision  operation: "config"
         prefix: "project/",
         auto_version: true,
         merge_order: "deterministic",
-        exclude: ["system/**"]
+        exclude: ["system/*"]
       }
     }
   }
@@ -422,7 +422,7 @@ The handler validates before writing:
 |------|---------------|
 | V1 | `prefix` is a valid absolute path |
 | V2 | Auto-version excludes include all required system patterns (see §9.2) |
-| V3 | Auto-version excludes include `system/tree/root/**` when prefix encompasses it |
+| V3 | Auto-version excludes include `system/tree/root/*` when prefix encompasses it |
 | V4 | `merge_order` is `"deterministic"` or `"caller-perspective"` |
 | V5 | `oscillation_depth` >= 2 |
 
@@ -433,11 +433,11 @@ To delete a config: `action: "delete"`. For optimistic concurrency, pass `expect
 ### 9.2 Required excludes
 
 When `auto_version: true`, certain system paths MUST be excluded to prevent reentrancy:
-- `system/revision/**` — version metadata
-- `system/tree/root/**` — trie root hashes (circular dependency)
-- `system/tree/tracking-config/**` — auto-version tracking state
-- `system/history/**` — history transitions
-- `system/clock/**` — clock state
+- `system/revision/*` — version metadata
+- `system/tree/root/*` — trie root hashes (circular dependency)
+- `system/tree/tracking-config/*` — auto-version tracking state
+- `system/history/*` — history transitions
+- `system/clock/*` — clock state
 
 The config handler rejects invalid configs at write time.
 

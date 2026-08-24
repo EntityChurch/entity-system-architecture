@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.6
+**Version**: 1.7
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -511,9 +511,11 @@ data: {
 
 Stored at `system/registry/resolver-config` (peer-local; not synced).
 
-**`name_format_dispatch` is an ORDERED list, first-match-wins (MUST).** Two entries in any realistic configuration match the same name — a catch-all matches everything, and a domain-shaped pattern and a bare `authority` pattern overlap on every dotted authority — so an unordered reading does not merely under-specify the config, it routes the overlap to whichever entry the implementation visits first. Evaluation stops at the first matching entry. A name matching no entry is treated as matching the catch-all (§4.1a).
+**`name_format_dispatch` is a filter, not a routing table, and it expresses no precedence.** Two entries in any realistic configuration match the same name — a catch-all matches everything, and a domain-shaped pattern and a bare `authority` pattern overlap on every dotted authority. A name matching several entries is eligible at the **union** of their `backend_kinds`; evaluation does not stop at the first matching entry. **Precedence is `resolver_chain[].priority`** — the filtered backends are consulted in ascending priority order (§4.1 step 3) and the first validated hit wins (§4.1.1). A name matching no entry is treated as matching the catch-all (§4.1a). What bounds a broad pattern is therefore not its position in the list but **what it is permitted to name** — §4.1 step 2's catch-all MUST.
 
-**`pattern` grammar.** The `name_format_dispatch[].pattern` field is a **POSIX shell-glob**, matched against the user-facing name string. This deliberately reuses the same glob grammar already chosen for BRIDGE-HTTP §4-RES.2 (URL patterns) rather than introducing a second matcher language. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
+**`pattern` grammar.** The `name_format_dispatch[].pattern` field matches against the **user-facing name string** — not against a tree path — and it is therefore a **registry-local matcher**, scoped to this field. `*` matches any run of characters within the name, including none. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
+
+**This is not `ENTITY-CORE-PROTOCOL` §5.4 and MUST NOT be read as it.** §5.4 governs *paths*, where `pattern/*` is a subtree prefix match; a name is a flat string with no segment structure and no peer-id head, so the path matcher's forms (`/*/` peer strip, trailing `/*` subtree) have nothing to bind to here. The two are separate matchers over separate domains, and neither confers a reading on the other. **No `**` token exists in either.**
 
 ### §4.1 Precedence order on resolution
 
@@ -530,8 +532,9 @@ The local-name backend (§6) participates as a resolver-chain entry like any oth
 
 ### §4.1a The recommended default dispatch list
 
-A distribution **SHOULD** ship the ordered list below; the catch-all rule inside it is a **MUST**
-(§4.1 step 2). It realizes the four name shapes of `guides/GUIDE-RESOLUTION.md` §6.1 as routing.
+A distribution **SHOULD** ship the list below; the catch-all rule inside it is a **MUST**
+(§4.1 step 2). It realizes the four name shapes of `guides/GUIDE-RESOLUTION.md` §6.1 as eligibility.
+The `#` column numbers the rows for reference; it is **not** an evaluation order (§4).
 
 | # | `pattern` | `backend_kinds` | Shape |
 |---|---|---|---|
@@ -542,10 +545,13 @@ A distribution **SHOULD** ship the ordered list below; the catch-all rule inside
 | 5 | `*@*` | `["peer-issued"]` | registry-scoped — **undotted** handle |
 | 6 | `*` | `["local-name", "pinned"]` | catch-all — **local only (MUST)** |
 
-**Rule 4 precedes rule 5, and the ordering is the discriminator.** A POSIX glob cannot express
-"undotted", so `*@*` is necessarily broad and the dotted form must be taken first. Reversed, every
-domain-scoped name routes to the peer-issued backend, fails to resolve there, and falls through
-toward a catch-all that must not see it either.
+**Rules 4 and 5 overlap, and `priority` resolves it — not the row order.** A POSIX glob cannot
+express "undotted", so `*@*` necessarily also matches a dotted authority: `alice@example.org` is
+eligible at `dns-txt`, `well-known-url` **and** `peer-issued`. The dispatch list does not choose
+between them; `resolver_chain[].priority` orders them and §4.1.1 returns the first validated hit.
+A deployment that does not want a dotted name reaching its peer-issued registry expresses that by
+**priority**, or by narrowing rule 5 to its own registry handle (`*@entity-church`) — never by
+relying on the order of the rows above.
 
 **Entries naming a backend that is not in the resolver-chain are inert, not harmful.** Rules 1–4
 name backends that are not yet built; a dispatch entry narrowing to an absent backend yields the

@@ -263,7 +263,7 @@ system/revision/config := {
                    ; write via standard path resolution (V7 §5.4).
     exclude:      {array_of: {type_ref: "primitive/string"}, optional: true}
                    ; Glob-style path patterns relative to `prefix`.
-                   ; Examples: `ephemeral/**`, `**/*.cache`.
+                   ; Examples: `ephemeral/*`, `*.cache`.
     exclude_types: {array_of: {type_ref: "primitive/string"}, optional: true}
                    ; Entity types to exclude from versioned tries and transfer.
                    ; E.g., ["app/temp/scratch", "system/protocol/*"].
@@ -273,7 +273,7 @@ system/revision/config := {
                    ; path-pattern `exclude` (see §6.1 "Reentrancy"). Setting
                    ; `exclude_types: ["system/revision/entry"]` has no effect,
                    ; because version entries are stored in the content store and
-                   ; referenced by hash from `system/revision/head/**`, not bound
+                   ; referenced by hash from `system/revision/head/*`, not bound
                    ; at tracked paths.
     auto_version: {type_ref: "primitive/bool", optional: true}
                    ; Create versions automatically on writes. Default: false.
@@ -321,21 +321,83 @@ paths, and it is not re-decided here.
    reaches `system/revision/head/{prefix_hash}/…` at any depth. **No second wildcard token is required
    for it**, and implementations MUST NOT infer one from the examples below.
 2. The one thing §5.4's vocabulary genuinely cannot express is **matching by filename or extension at
-   arbitrary depth** (`**/*.cache`) — a narrow, revision-local need arising from `exclude` being an
+   arbitrary depth** (`*.cache`) — a narrow, revision-local need arising from `exclude` being an
    ignore-list over a versioned prefix. An extension MAY define a matcher for its own domain-specific
    need; this is that case.
 3. **That matcher is scoped to `exclude` and `exclude_types` in this document and nowhere else.** It
    confers no reading on `*` anywhere in the protocol, and a `*` appearing outside these two fields —
    including elsewhere in this spec — is §5.4's `*`.
 
-**The token collision is an open defect, not a settled design.** Spelling the depth-suffix matcher with
-`*`/`**` gives one syntax two meanings in one system, which is hash-determining here (the matcher decides
-trie membership, membership decides the version `root`, and `root` is the version entry's identity — two
-peers on different readings produce different hashes for identical content, with no error anywhere).
-Resolution — including whether the depth-suffix form gets a distinct spelling that cannot be confused
-with §5.4 — is tracked in
-`docs/proposals/active/extensions/PROPOSAL-REVISION-AUTO-VERSION-EXCLUDE-PARITY.md`. Until it lands, the
-exclude examples in this document are illustrative of intent, not a pinned matcher.
+**`glob_match` semantics (normative, and hash-determining — the pattern grammar is CLOSED).** The matcher
+used by `exclude`, `exclude_types` and auto-version dispatch has **exactly four forms and no others.** It is
+pinned here because it decides trie membership, membership decides the version `root`, and `root` is the
+version entry's identity — two peers reading a pattern differently would produce **different version hashes
+for identical content, with nothing failing anywhere.** That is the reason to pin it, not a reason to defer.
+
+`subject` is the **prefix-relative path** (§6.1) for `exclude`, and the **entity type name** for
+`exclude_types`. Forms are tested in this order:
+
+```
+glob_match(pattern, subject):
+  ; 1. MATCH-ALL
+  if pattern == "*":
+      return true
+
+  ; 2. SUBTREE PREFIX — identical to ENTITY-CORE-PROTOCOL §5.4 `matches_pattern`.
+  ;    The `*` crosses `/`. This is the protocol's rule, not a revision-local one.
+  if pattern ends with "/*":
+      return starts_with(subject, pattern without trailing "*")   ; the "/" is retained
+
+  ; 3. TRAILING LITERAL — a byte-suffix comparison over the WHOLE subject.
+  ;    `/` is NOT special here. This is the one form beyond §5.4's vocabulary.
+  if pattern starts with "*":
+      return ends_with(subject, pattern without leading "*")
+
+  ; 4. EXACT
+  return subject == pattern
+```
+
+| Form | Example | Matches | Does NOT match |
+|---|---|---|---|
+| `*` | `*` | everything | — |
+| `<literal>/*` | `system/revision/*` | `system/revision/head/{H}/deep` — **any depth** | `system/revisionary` |
+| `*<literal>` | `*.cache` | `a/b/foo.cache`, `.cache` | `a/cache/b`, `foo.cache.tmp` |
+| `<literal>` | `docs` | `docs` | `docs/x` |
+
+**There is no `**`, and there is no segment-scoped `*`.** Form 2 is the protocol's own subtree match, which
+already reaches any depth — so §6.1's Reentrancy exclusion is satisfied by `system/revision/*`, and no
+second wildcard token is needed for it or for anything else in this document. Form 3 is the **only**
+addition to §5.4's vocabulary, it exists because an ignore-list over a versioned prefix genuinely wants
+match-by-extension, and it is scoped to this document's two exclude fields.
+
+**Any pattern outside the four forms is INVALID and MUST be rejected at config write** (§4.4.17 V6) — this
+is what makes the matcher deterministic rather than merely specified. A valid pattern contains **at most one
+`*`**, and that `*` is either the whole pattern, the final character preceded by `/`, or the first
+character. **`**`, `a/**/b`, `a*b` and `*a*` are all rejected `400 config/invalid-exclude-pattern`.**
+Implementations MUST NOT fall back to a standard-library glob for any form, and MUST NOT accept a pattern
+they cannot evaluate under the four rules above.
+
+*No infix form is provided.* Excluding "anything containing a `cache` segment" is not expressible and is
+deliberately not supported: put ephemeral state under a known prefix and exclude the prefix, or adopt a
+filename suffix. If a real use case ever requires infix matching it gets added deliberately, with vectors.
+
+**Conformance vectors (REQUIRED — this surface is hash-determining, so it is not validated by prose).**
+
+| Vector | Config | Assert |
+|---|---|---|
+| `REV-GLOB-PREFIX-1` | `exclude: ["system/revision/*"]`, write at `system/revision/head/{H}/deep/x` | **excluded** — form 2 crosses `/` at any depth; this is the §6.1 Reentrancy case and it needs no second wildcard |
+| `REV-GLOB-PREFIX-2` | `exclude: ["system/revision/*"]`, write at `system/revisionary/x` | **not excluded** — the retained `/` prevents the sibling-prefix false positive |
+| `REV-GLOB-SUFFIX-1` | `exclude: ["*.cache"]`, writes at `a/b/foo.cache` and `.cache` | **both excluded** — form 3 is a whole-subject byte suffix |
+| `REV-GLOB-SUFFIX-2` | `exclude: ["*.cache"]`, writes at `a/cache/b` and `foo.cache.tmp` | **neither excluded** — `/` is not special and the suffix must terminate the subject |
+| `REV-GLOB-EXACT-1` | `exclude: ["docs"]`, writes at `docs` and `docs/x` | `docs` **excluded**, `docs/x` **not** — form 4 is exact, not a prefix |
+| `REV-GLOB-ALL-1` | `exclude: ["*"]` | every write excluded |
+| `REV-GLOB-REJECT-1` | `exclude: ["**"]` | `400 config/invalid-exclude-pattern` — **the vector that keeps the token out** |
+| `REV-GLOB-REJECT-2` | `exclude: ["a/**/b"]`, `["a*b"]`, `["*a*"]` | each `400 config/invalid-exclude-pattern` |
+| `REV-GLOB-TYPES-1` | `exclude_types: ["app/*"]` vs `["*-draft"]` | the same four forms apply to the type-name subject |
+
+**`REV-GLOB-REJECT-1` is the load-bearing one.** A matcher that merely *omits* `**` from its spec and a
+matcher that *rejects* it are indistinguishable until a config carries one — and the divergence this whole
+surface risks is only closed by rejecting at write time, not by silence.
 
 **Exclude patterns.** When computing bindings for a version, paths matching any `exclude` pattern are omitted. When syncing, excluded paths are not transferred. This is the entity equivalent of `.gitignore` — but stored as typed configuration, not a text file.
 
@@ -346,7 +408,7 @@ system/revision/{H}/config := {
   type: "system/revision/config"
   data: {
     prefix:       "/{peerA}/project/"
-    exclude:      ["ephemeral/**", "**/*.cache"]
+    exclude:      ["ephemeral/*", "*.cache"]
     exclude_types: ["app/temp/scratch"]
     auto_version: false
   }
@@ -355,11 +417,11 @@ system/revision/{H}/config := {
 
 **Type-based exclude.** `exclude_types` filters by entity type rather than path. When computing bindings, entities whose type matches any `exclude_types` pattern are omitted regardless of path. This handles transient entity types that shouldn't be versioned regardless of where they appear.
 
-**Version metadata exclude.** When `auto_version` is enabled for a prefix that encompasses the revision extension's metadata paths (`system/revision/**`), `exclude` MUST include `"system/revision/**"` along with the other required excludes enumerated in §6.1 "Reentrancy". The `revision/config` operation (§4.4.17) rejects invalid configs before writing — see §4.4.17 V2 for the exclude-validation rule.
+**Version metadata exclude.** When `auto_version` is enabled for a prefix that encompasses the revision extension's metadata paths (`system/revision/*`), `exclude` MUST include `"system/revision/*"` along with the other required excludes enumerated in §6.1 "Reentrancy". The `revision/config` operation (§4.4.17) rejects invalid configs before writing — see §4.4.17 V2 for the exclude-validation rule.
 
 **Config writes go through the handler.** Prefix config writes (`system/revision/{H}/config`) MUST go through the `revision/config` operation (§4.4.17), not direct tree.put. The operation validates the config entity (§4.4.17 V1-V5), resolves the prefix to absolute, computes the prefix hash, and coordinates tracking-config writes (§6.1) within a single handler invocation. Direct tree.put to `system/revision/*/config` from external callers is gated by capability — the revision handler's grant holds write access; external callers do not. See §4.3.
 
-**Trie root exclude.** When a versioned prefix encompasses `system/tree/root/`, the exclude patterns SHOULD include `system/tree/root/**`. Trie root hashes are derived state — including them in versioned bindings creates a circular dependency (the trie root hash depends on all bindings under the prefix, including itself). The version entry's `root` field already captures the trie root at each commit point, making the tracked root path redundant for version purposes. See EXTENSION-TREE.md §3.4.1 for the full rationale.
+**Trie root exclude.** When a versioned prefix encompasses `system/tree/root/`, the exclude patterns SHOULD include `system/tree/root/*`. Trie root hashes are derived state — including them in versioned bindings creates a circular dependency (the trie root hash depends on all bindings under the prefix, including itself). The version entry's `root` field already captures the trie root at each commit point, making the tracked root path redundant for version purposes. See EXTENSION-TREE.md §3.4.1 for the full rationale.
 
 **Exclude applies to trie building — on EVERY path that emits a version, not only `commit`.** The `compute_versioned_bindings` call applies the exclude filters; §6.1's auto-version path performs the identical computation (see §6.1). A version entry's `root` is exclude-filtered regardless of which path emitted it:
 
@@ -446,7 +508,7 @@ system/revision/{H}/branches/feature-login     → V4_x (feature branch)
 
 Committing advances the current head AND the active branch pointer. Checkout switches the working head to a different branch's version (applying its trie content to the tree).
 
-**Subscribing to all revision state.** A single subscription on `system/revision/{H}/**` tracks all state changes for a prefix — head advances, branch creation/deletion, tag creation, conflict state, remote updates.
+**Subscribing to all revision state.** A single subscription on `system/revision/{H}/*` tracks all state changes for a prefix — head advances, branch creation/deletion, tag creation, conflict state, remote updates.
 
 ### 3.1.1 Path Inventory
 
@@ -675,7 +737,7 @@ Version operations require capability for the `system/revision` handler plus cap
 
 For cross-peer operations (fetch, pull, push), the caller also needs capability for the remote peer connection.
 
-**Config path ownership.** The revision handler's grant includes `put` access to `system/revision/**`. External callers SHOULD NOT hold direct `put` grants for `system/revision/*/config` — config writes route through the `revision/config` operation (§4.4.17), which validates before writing. If an implementation's capability model cannot restrict direct tree.put to handler-owned paths, the §6.1 emit-consumer check serves as defense-in-depth.
+**Config path ownership.** The revision handler's grant includes `put` access to `system/revision/*`. External callers SHOULD NOT hold direct `put` grants for `system/revision/*/config` — config writes route through the `revision/config` operation (§4.4.17), which validates before writing. If an implementation's capability model cannot restrict direct tree.put to handler-owned paths, the §6.1 emit-consumer check serves as defense-in-depth.
 
 ### 4.4 Operations
 
@@ -2304,7 +2366,7 @@ EXECUTE system/revision  operation: "config"
         type: "system/revision/config"
         data: {
           prefix:       "project/"
-          exclude:      ["system/**"]
+          exclude:      ["system/*"]
           auto_version: true
           merge_order:  "deterministic"
         }
@@ -2347,9 +2409,10 @@ system/revision/config-result := {
 |----|------|------------|--------|
 | V1 | `prefix` is a valid absolute path | `config/invalid-prefix` | 400 |
 | V2 | Auto-version excludes include all §6.1 required patterns | `config/missing-required-exclude` | 400 |
-| V3 | Auto-version excludes include `system/tree/root/**` when prefix encompasses it | `config/missing-trie-root-exclude` | 400 |
+| V3 | Auto-version excludes include `system/tree/root/*` when prefix encompasses it | `config/missing-trie-root-exclude` | 400 |
 | V4 | `merge_order` is `"deterministic"` or `"caller-perspective"` | `config/invalid-merge-order` | 400 |
 | V5 | `oscillation_depth` >= 2 | `config/oscillation-depth-below-minimum` | 400 |
+| V6 | Every `exclude` / `exclude_types` pattern is one of §2.4's four forms — at most one `*`, positioned as the whole pattern, the final character after `/`, or the first character | `config/invalid-exclude-pattern` | 400 |
 | CAS | `expected_hash` matches current binding | `config/concurrent-modification` | 409 |
 
 **Tracking-config coordination (set action):**
@@ -2812,9 +2875,9 @@ When the version merge encounters a leaf conflict (same path, both sides changed
 
 Merge behavior is configured, not auto-discovered. There is no implicit type → handler lookup. To enable custom merge for a type, an explicit merge config entry must exist. This keeps the merge framework extensible without requiring infrastructure for type-handler discovery.
 
-**Path argument scope.** The `path` argument throughout the merge cascade is trie-relative — it is the path within the version trie, not the absolute tree path. Merge configs stored at `system/revision/config/merge/path/{name}` are global (not prefix-scoped), but their `pattern` field matches against trie-relative paths. A config with `pattern: "*"` matches all paths within any merge, regardless of prefix. A config with `pattern: "docs/**"` matches `docs/` subtrees under any prefix. This is by design — merge strategies are typically path-pattern concerns (e.g., "all `.lock` files use source-wins"), not prefix-specific. Per-type config (step 1) is inherently path-independent.
+**Path argument scope.** The `path` argument throughout the merge cascade is trie-relative — it is the path within the version trie, not the absolute tree path. Merge configs stored at `system/revision/config/merge/path/{name}` are global (not prefix-scoped), but their `pattern` field matches against trie-relative paths. A config with `pattern: "*"` matches all paths within any merge, regardless of prefix. A config with `pattern: "docs/*"` matches `docs/` subtrees under any prefix. This is by design — merge strategies are typically path-pattern concerns (e.g., "all `.lock` files use source-wins"), not prefix-specific. Per-type config (step 1) is inherently path-independent.
 
-**Wildcard scope is a peer-wide change — review accordingly (v7.70 Amendment 1; guidance).** The global-vs-prefix design above was reasoned for the *path-pattern* case; the safety of broad wildcards was not. A wildcard config (`pattern: "*"` or `"**"`) with a conflict-suppressing strategy (`keep-both`, `source-wins`, `target-wins`) **silently rewires conflict resolution for every prefix and every future merge on the peer, including prefixes that do not exist yet.** Two consequences operators must account for: (1) installing such a config is a **peer-wide configuration change** and SHOULD be reviewed with the same care as any other peer-config write (a left-behind config behaves identically to an operator-introduced silent regression); (2) **there is no audit signal today** — a config that resolves a conflict via a non-default strategy produces a merge result byte-identical to a genuinely conflict-free merge (`status: merged`, empty `conflicts`), so a subscriber / sync chain / downstream verifier cannot tell a clean merge from a config-suppressed one. Making config-resolved conflicts observable (a merge-result field reporting which configs resolved which paths) is the intended direction but is **not yet specified** — tracked for a holistic pass (WORKSTREAMS W2). No behavior change in this version; this paragraph documents the footgun and the audit-signal gap so implementers and operators are aware while the fix is designed. Wildcard patterns are **not** rejected (a fully-automated peer using `pattern: "*"` + a single strategy is legitimate); the gap is observability, not the knob.
+**Wildcard scope is a peer-wide change — review accordingly (v7.70 Amendment 1; guidance).** The global-vs-prefix design above was reasoned for the *path-pattern* case; the safety of broad wildcards was not. A wildcard config (`pattern: "*"` or `"*"`) with a conflict-suppressing strategy (`keep-both`, `source-wins`, `target-wins`) **silently rewires conflict resolution for every prefix and every future merge on the peer, including prefixes that do not exist yet.** Two consequences operators must account for: (1) installing such a config is a **peer-wide configuration change** and SHOULD be reviewed with the same care as any other peer-config write (a left-behind config behaves identically to an operator-introduced silent regression); (2) **there is no audit signal today** — a config that resolves a conflict via a non-default strategy produces a merge result byte-identical to a genuinely conflict-free merge (`status: merged`, empty `conflicts`), so a subscriber / sync chain / downstream verifier cannot tell a clean merge from a config-suppressed one. Making config-resolved conflicts observable (a merge-result field reporting which configs resolved which paths) is the intended direction but is **not yet specified** — tracked for a holistic pass (WORKSTREAMS W2). No behavior change in this version; this paragraph documents the footgun and the audit-signal gap so implementers and operators are aware while the fix is designed. Wildcard patterns are **not** rejected (a fully-automated peer using `pattern: "*"` + a single strategy is legitimate); the gap is observability, not the knob.
 
 When the config specifies `strategy: "handler"`, the revision handler dispatches to the named handler with a `system/revision/merge-request` and expects a `system/revision/merge-response` (§5.3). The handler can implement any algorithm — field-level merge, text diff3, CRDT, or domain-specific semantics.
 
@@ -2949,7 +3012,7 @@ This complements the per-path merge config. Type-based config takes priority ove
 
 **Merge handlers can maintain their own state.** The `merge-request` provides base, local, and remote entity hashes. A handler can store operation logs, merge metadata, or convergence state as separate entities in the tree — the merge handler has full tree access through its dispatch context. This supports both stateless merge (compute result from three inputs) and stateful merge (maintain state across merges, e.g., CRDT convergence data, text diff history, schema migration records).
 
-**Commutativity requirement for custom handlers.** Custom merge handlers registered via `system/revision/config/merge/type/**` or `system/revision/config/merge/path/**` MUST satisfy one of: (a) commutativity — `merge(A, B, ancestor) == merge(B, A, ancestor)` for all valid inputs; OR (b) be used only on prefixes configured with `merge_order: "deterministic"`. Non-commutative handlers under `caller-perspective` ordering produce cross-peer divergence and are non-conformant. Implementations SHOULD detect and reject configurations that pair a known non-commutative handler type with `caller-perspective` ordering; operators are responsible for declaring commutativity of their custom handlers.
+**Commutativity requirement for custom handlers.** Custom merge handlers registered via `system/revision/config/merge/type/*` or `system/revision/config/merge/path/*` MUST satisfy one of: (a) commutativity — `merge(A, B, ancestor) == merge(B, A, ancestor)` for all valid inputs; OR (b) be used only on prefixes configured with `merge_order: "deterministic"`. Non-commutative handlers under `caller-perspective` ordering produce cross-peer divergence and are non-conformant. Implementations SHOULD detect and reject configurations that pair a known non-commutative handler type with `caller-perspective` ordering; operators are responsible for declaring commutativity of their custom handlers.
 
 Built-in merge strategies (three-way, last-write-wins, concat, etc.) are commutative by construction; the requirement applies only to user-registered handlers.
 
@@ -3405,28 +3468,28 @@ Auto-version does not trigger push to remotes. Cross-peer propagation is not the
 
 Version entries carry only structural identity: `root` and `parents`. Per-version timing (when the version was created, by whom, under what capability) is recoverable from the history transition for the write that produced the version — history already records execution context (`clock`, `author`, `capability`, `chain_id`, `parent_chain_id`) per transition. Adding these fields to the version entry itself would cause structurally-identical commits from different peers to produce different content hashes (two peers doing the "same commit" at different clocks would create DAG duplicates). Version identity is therefore kept purely structural; observability metadata lives in history.
 
-**Reentrancy (structural).** Auto-version's own writes target `system/revision/entry/...` (via content_store) and `system/revision/head/**`, `system/revision/branches/**`, `system/revision/active-branch/**` (via tree.put). Configurations MUST include these paths in `exclude` when they would otherwise fall under a tracked prefix, OR auto-version MUST be scoped to prefixes that do not encompass `system/revision/**`. The most common case — auto-version enabled on application prefixes distinct from `system/**` — is self-excluding by construction.
+**Reentrancy (structural).** Auto-version's own writes target `system/revision/entry/...` (via content_store) and `system/revision/head/*`, `system/revision/branches/*`, `system/revision/active-branch/*` (via tree.put). Configurations MUST include these paths in `exclude` when they would otherwise fall under a tracked prefix, OR auto-version MUST be scoped to prefixes that do not encompass `system/revision/*`. The most common case — auto-version enabled on application prefixes distinct from `system/*` — is self-excluding by construction.
 
 When auto-version is configured for a prefix that encompasses system-owned engine paths (e.g., `"/"` for universal-tree versioning, per EXTENSION-TREE.md §3.4.1a), `exclude` MUST include the following patterns to prevent reentrancy cascades and meaningless versioning of engine state:
 
-- `system/revision/**` — auto-version's own entries, head, branches, active-branch, tags, remotes, conflicts, and config paths.
-- `system/tree/root/**` — structural-summary consumer's tracked-root outputs (written on every tree write to a tracked prefix; versioning these creates a self-feeding loop).
-- `system/tree/tracking-config/**` — tracking config entities (meta-config; should not be versioned as data).
-- `system/history/**` — history transition entities (versioning every transition is wasteful and creates compounding growth).
-- `system/clock/**` — clock state advances (high-frequency, meaningless to version).
+- `system/revision/*` — auto-version's own entries, head, branches, active-branch, tags, remotes, conflicts, and config paths.
+- `system/tree/root/*` — structural-summary consumer's tracked-root outputs (written on every tree write to a tracked prefix; versioning these creates a self-feeding loop).
+- `system/tree/tracking-config/*` — tracking config entities (meta-config; should not be versioned as data).
+- `system/history/*` — history transition entities (versioning every transition is wasteful and creates compounding growth).
+- `system/clock/*` — clock state advances (high-frequency, meaningless to version).
 
 **SHOULD excludes (in addition to MUST).** When the corresponding extension is active on the peer, these paths SHOULD be added to the exclude list:
 
-- `system/inbox/**` — incoming deliveries from subscription fan-out, continuation chains, and async results. High frequency; content-non-unique (many entities per path).
-- `system/subscription/**` — subscription configs and token refresh writes.
-- `system/continuation/**` — continuation entities, join state, advance-request entities.
-- `system/compute/**` — compute process state and reactive result paths.
+- `system/inbox/*` — incoming deliveries from subscription fan-out, continuation chains, and async results. High frequency; content-non-unique (many entities per path).
+- `system/subscription/*` — subscription configs and token refresh writes.
+- `system/continuation/*` — continuation entities, join state, advance-request entities.
+- `system/compute/*` — compute process state and reactive result paths.
 
-These are engine-owned state paths written at high frequency during normal operation. Versioning them produces DAG growth without user-meaningful content. They don't create auto-version feedback loops (inbox writes don't trigger auto-version's own work), but they do produce tens or hundreds of entries per minute on an active peer. The `system/**` shorthand already covers these; the explicit SHOULD list helps operators who use finer-grained exclude configurations.
+These are engine-owned state paths written at high frequency during normal operation. Versioning them produces DAG growth without user-meaningful content. They don't create auto-version feedback loops (inbox writes don't trigger auto-version's own work), but they do produce tens or hundreds of entries per minute on an active peer. The `system/*` shorthand already covers these; the explicit SHOULD list helps operators who use finer-grained exclude configurations.
 
 The rule of thumb: exclude any path written by a system extension's engine as part of its normal operation. User-application data under `system/` (rare by convention) may be kept included if the operator explicitly wants it versioned.
 
-A shorthand RECOMMENDED exclude for universal-tree auto-version: `system/**`. This over-excludes slightly (versioning opportunities in custom application paths under `system/` are lost) but is safe by construction. Implementations **MUST reject at config-write time** any `system/revision/config` with `auto_version: true` whose `prefix` encompasses the required-exclude paths (enumerated above) when those paths are NOT covered by the config's `exclude` list. Rejection is a fail-closed validator, not a runtime check — config writes that would cause cascades are denied at the handler boundary. Implementations MAY offer an explicit operator override flag (warning-with-acceptance) but the default MUST be rejection. This replaces the runtime reentrancy guard from prior drafts — structural exclusion is strictly simpler and has no failure modes.
+A shorthand RECOMMENDED exclude for universal-tree auto-version: `system/*`. This over-excludes slightly (versioning opportunities in custom application paths under `system/` are lost) but is safe by construction. Implementations **MUST reject at config-write time** any `system/revision/config` with `auto_version: true` whose `prefix` encompasses the required-exclude paths (enumerated above) when those paths are NOT covered by the config's `exclude` list. Rejection is a fail-closed validator, not a runtime check — config writes that would cause cascades are denied at the handler boundary. Implementations MAY offer an explicit operator override flag (warning-with-acceptance) but the default MUST be rejection. This replaces the runtime reentrancy guard from prior drafts — structural exclusion is strictly simpler and has no failure modes.
 
 **Contention handling.** Auto-version's head advance (`tree.put("system/revision/" + prefix_hash + "/head", ...)`) may contend under concurrent writes. The data model stores a single head hash per prefix at `system/revision/{H}/head`, so two unmitigated concurrent advances would overwrite each other — producing an orphan (a version entry in the content store that no head references). Under the no-orphan invariant this is a conformance failure.
 
@@ -3475,7 +3538,7 @@ Implementations concerned about DAG growth from large merges may (a) use the `me
 
 **Emit ordering.** The auto-version consumer reads `system/tree/root/{prefix}`, which is maintained by the structural-summaries consumer at SYSTEM-COMPOSITION.md §2.2 position 6. Auto-version MUST fire after position 6; reading the tracked root before position 6 runs yields the pre-write root paired with a post-write head pointer, producing inconsistent version entries.
 
-Within the emit pipeline, auto-version is assigned dedicated position 7, and subscription shifts to position 8. The ordering matters: subscribers listening to `system/revision/head/**` or to paths under tracked prefixes would see ambiguous observations if subscription fired before auto-version — a head change without a corresponding DAG entry yet visible, or a path change with stale head. Placing auto-version strictly before subscription eliminates this race: when subscription fires at position 8, the version entry already exists in content store and head has already been advanced.
+Within the emit pipeline, auto-version is assigned dedicated position 7, and subscription shifts to position 8. The ordering matters: subscribers listening to `system/revision/head/*` or to paths under tracked prefixes would see ambiguous observations if subscription fired before auto-version — a head change without a corresponding DAG entry yet visible, or a path change with stale head. Placing auto-version strictly before subscription eliminates this race: when subscription fires at position 8, the version entry already exists in content store and head has already been advanced.
 
 Implementations MUST NOT register auto-version at positions ≤ 6 or at the same position as subscription.
 
@@ -3678,7 +3741,7 @@ Versioning applies to prefixes within this namespace. The choice of prefix deter
 | Own namespace | `/{self}/` | Local authority. Linear history unless collaborating. |
 | Single foreign namespace | `/{peerD}/` | Tracks local view of one peer's data. May aggregate from multiple sources. |
 | Domain subtree | `/{self}/project/` | Focused versioning for a specific concern. |
-| Full tree | `"/"` | Captures entire tree state. Requires `system/revision/**` exclude. |
+| Full tree | `"/"` | Captures entire tree state. Requires `system/revision/*` exclude. |
 
 **Per-peer-namespace versioning is the recommended default.** Each peer namespace has its own version DAG. Version metadata is naturally scoped — the head pointer for `/{peerD}/` lives at `/{self}/system/revision/{H}/head` (where `{H}` is the hash of the prefix `/{peerD}/`), outside the versioned prefix.
 
@@ -3836,7 +3899,7 @@ The revision handler interface MUST declare which conformance level is implement
 | Original entity MUST remain at its path during conflict | MUST |
 | Support `exclude` patterns in version configuration | SHOULD |
 | Structural reentrancy exclusion via `exclude` config when auto_version enabled | MUST |
-| Required-exclude patterns present (`system/revision/**`, `system/tree/root/**`, `system/tree/tracking-config/**`, `system/history/**`, `system/clock/**`) when tracked prefix encompasses those paths | MUST |
+| Required-exclude patterns present (`system/revision/*`, `system/tree/root/*`, `system/tree/tracking-config/*`, `system/history/*`, `system/clock/*`) when tracked prefix encompasses those paths | MUST |
 | Reject at config-write time any `auto_version: true` config missing the required excludes | MUST |
 | Tracking-config coordination (create/enable when auto_version on; remove/disable when off) | MUST |
 | Error from auto-version emit consumer when tracking-config is absent or disabled | MUST |
@@ -3940,7 +4003,7 @@ Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4:
 - Conflict side-channel entities (`system/revision/conflict`) are **capability-controlled** — bodies carry base/local/remote hashes + attempted strategy.
 
 Per §9 #7:
-- **Convergent:** version entities + trie state under the prefix + `head`/`active-branch`/`branches/*`/`tags/*` pointers propagate cross-peer via the revision transfer protocol (§7) and via cross-peer subscriptions on `system/revision/{H}/**`. Convergence model: `revision:fetch-diff` (§4.4.19) + `tree:merge` with CAS pinning (§3.4 divergence detection + §5 merge strategy framework + ENTITY-CORE-PROTOCOL.md §3.9 CAS).
-- **Local-namespace:** `system/revision/{H}/conflicts/{path}` (already declared peer-local in §2.2: "Conflicts are peer-local. They are NOT included in version snapshots and are NOT synced to other peers." — this subsection lifts that to the formal §9 #7 declaration position); `system/revision/{H}/remotes/{peer_id}` (collaboration-topology metadata); `system/revision/{H}/config` (per-prefix operator configuration); `system/revision/config/merge/**` (global merge configuration). These MUST NOT be carried in version snapshots; subscription-based propagation MUST be refused at the subscription handler (subscription pattern `system/revision/**` matches MUST explicitly carve out these subpaths, or grant scope MUST enumerate the included subpaths).
+- **Convergent:** version entities + trie state under the prefix + `head`/`active-branch`/`branches/*`/`tags/*` pointers propagate cross-peer via the revision transfer protocol (§7) and via cross-peer subscriptions on `system/revision/{H}/*`. Convergence model: `revision:fetch-diff` (§4.4.19) + `tree:merge` with CAS pinning (§3.4 divergence detection + §5 merge strategy framework + ENTITY-CORE-PROTOCOL.md §3.9 CAS).
+- **Local-namespace:** `system/revision/{H}/conflicts/{path}` (already declared peer-local in §2.2: "Conflicts are peer-local. They are NOT included in version snapshots and are NOT synced to other peers." — this subsection lifts that to the formal §9 #7 declaration position); `system/revision/{H}/remotes/{peer_id}` (collaboration-topology metadata); `system/revision/{H}/config` (per-prefix operator configuration); `system/revision/config/merge/*` (global merge configuration). These MUST NOT be carried in version snapshots; subscription-based propagation MUST be refused at the subscription handler (subscription pattern `system/revision/*` matches MUST explicitly carve out these subpaths, or grant scope MUST enumerate the included subpaths).
 
 Chain-error markers bound on `revision:fetch-diff` chain-dispatch failures per §4.4.19 are themselves **local-namespace** per EXTENSION-CONTINUATION.md §6.5 (the canonical home for chain-error marker locality).

@@ -295,13 +295,25 @@ Why: Base58 PeerID is the human-exchange surface (operators paste it; SDKs marsh
 
 Validate at proposal time: grep your spec for `{peer_id}` outside the three Base58 surfaces above. If you find any, rename to `{peer_id_hex}` and pin "lowercase hex of `system/hash`" in the path-segment normative paragraph.
 
-**Rule 2 — Reserved characters never appear as literal path segments.** V7 §1.4 (and Document History v7.18) reserves the following for system-level glob and relative-resolution semantics:
+**Rule 2 — Reserved characters never appear as literal path segments.** The following are reserved for system-level glob and relative-resolution semantics:
 
-| Token | Meaning | Reserved since |
+| Token | Meaning | Reserved by |
 |---|---|---|
-| `*` | Glob wildcard in dispatch / pattern contexts (V7 §6.6, §4.9 above) | v7.18 |
-| `**` | Globstar (future use) | v7.18 |
-| `./`, `../` | Directory-relative segments (future use) | v7.18 |
+| `*` | The glob wildcard. `pattern/*` is a **subtree prefix match** that crosses `/`; bare `*` matches all; `/*/` is the peer-id strip — the only segment-scoped form in the protocol | V7 §5.4 `matches_pattern`, §6.6 dispatch |
+| `./`, `../` | Directory-relative segments — rejected at canonicalization | V7 §5.4 `canonicalize` |
+
+> **`**` is NOT a reserved token and NOT part of the protocol.** An earlier version of this table listed it
+> as *"Globstar (future use)"*, attributed to "V7 §1.4 / Document History v7.18". **Neither exists:** §1.4
+> contains no reserved-token table, and neither `v7.18` nor the word *globstar* appears anywhere in the core
+> spec. The row was unsourced, and because its two neighbours are real it read as authoritative for months —
+> which is how `**` spread into six specs and two guides that had no need of it. **Removed; those uses are
+> now the §5.4 subtree form.**
+>
+> The **one** legitimate `**` in the corpus is `EXTENSION-REVISION`'s `exclude` / `exclude_types` fields,
+> where an ignore-list over a versioned prefix genuinely wants filename-at-depth matching. **That is a
+> domain-specific matcher for a domain-specific application, scoped to those two fields, and it confers no
+> reading on `*` anywhere else.** Do not generalize from it. If a second use case ever proves the need, `**`
+> gets adopted deliberately — it has not been.
 
 These tokens **MUST NOT** appear as literal path segments under your extension's namespace. If you want a "default" or "fallback" entry, use a literal word (`default`, `any`, `fallback`, etc.). If you want "match everything," that's a glob in the manifest's `pattern` field — not a stored entry. Common authoring pitfall: using `*` as a literal segment to mean "the default entry when no exact match exists" looks innocuous in prose but collides with `*`'s glob role everywhere else (`system/role/{context}/*` reads as "every entry under role's context" everywhere else in the system).
 

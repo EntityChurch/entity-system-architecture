@@ -789,7 +789,7 @@ Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4:
 - `system/subscription/redirect` `alternatives` field is **capability-controlled** and SHOULD be omitted in privacy-sensitive deployments (formalizes §2.6's MAY-omit convention).
 
 Per §9 #7:
-- **Local-namespace** for subscription entity state at `system/subscription/{id}` — held at the server peer; subscription enumeration via cross-peer subscription on `system/subscription/**` is NOT a sanctioned discovery mechanism. (Formalizes the §2.6 redirect-alternatives privacy posture as a declaration rather than a per-server option.)
+- **Local-namespace** for subscription entity state at `system/subscription/{id}` — held at the server peer; subscription enumeration via cross-peer subscription on `system/subscription/*` is NOT a sanctioned discovery mechanism. (Formalizes the §2.6 redirect-alternatives privacy posture as a declaration rather than a per-server option.)
 - **Convergent** for notification delivery — the cross-peer surface IS the propagation channel for the subscribed prefix's content. Observers see notifications targeted at their inbox path, not enumeration of all subscriptions. Convergence model: per-notification CAS-pinned application via the mirror recipe (§2.2).
 
 Outbound dispatch failures bind chain-error markers per §4.7; those markers are themselves **local-namespace** per EXTENSION-CONTINUATION.md §6.5 (the canonical home for chain-error marker locality).

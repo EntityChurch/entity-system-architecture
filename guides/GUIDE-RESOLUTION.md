@@ -89,7 +89,7 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 ## 6. Name syntax & semantics — "name at registry"
 
-**The mechanism is fixed; the syntax is a convention.** Every lookup is one call: `system/registry:resolve(name)`. Which backend answers is decided by `name_format_dispatch` (REGISTRY §4.1 step 2) — a list of **POSIX-glob → backend-kinds** rules matched against the name string — then by `resolver_chain` priority. So *the name's shape selects the naming authority*, and the substrate does not care what the shape is. This guide standardizes **four shapes** so apps, links, and registries all speak the same grammar. **No substrate change** — the grammar is realized by the default `name_format_dispatch` globs a distribution ships.
+**The mechanism is fixed; the syntax is a convention.** Every lookup is one call: `system/registry:resolve(name)`. Which backend answers is decided in two stages: `name_format_dispatch` (REGISTRY §4.1 step 2) — a list of **POSIX-glob → backend-kinds** rules matched against the name string — decides which backends are **eligible**, and then `resolver_chain` **priority** decides the order they are tried in, first validated hit winning (REGISTRY §4.1 step 3, §4.1.1). The dispatch list is a **filter**; it carries no precedence of its own. So *the name's shape selects the naming authority*, and the substrate does not care what the shape is. This guide standardizes **four shapes** so apps, links, and registries all speak the same grammar. **No substrate change** — the grammar is realized by the default `name_format_dispatch` globs a distribution ships.
 
 ### 6.1 The four shapes (recommended grammar)
 
@@ -97,13 +97,13 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 | Shape | Example | Means | Routes via glob (example) | Backend |
 |---|---|---|---|---|
-| **bare name** | `alice` | "resolve through my default chain" | `*` (catch-all) | local-name, then default registry |
+| **bare name** | `alice` | "resolve through my default chain" | `*` (catch-all) | local-name, pinned — **local only** (REGISTRY §4.1 step 2) |
 | **registry-scoped** (email-shaped) | `alice@entity-church` | "this name **at** this registry" | `*@entity-church` | peer-issued (the named registry) |
 | **domain-scoped** | `alice@example.org` | "resolve via this DNS domain" | `*@*.*` (dotted authority) | dns-txt / well-known-url |
 | **scheme-typed** | `did:web:example.org`, `did:key:z6Mk…`, `example.eth` | a naming system with its own syntax | `did:web:*`, `did:key:*`, `*.eth` | did-web / did-key / consensus |
 | **self-certifying** | `z6Mk…` (a Base58 peer_id) | the name **is** the key | decodes as V7 §1.5 peer-id | none — self-verifying |
 
-This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* the Entity Church Registry" — the `@authority` names *which* registry, the local part is the name *within* it. Bare `alice` works too when the Entity Church Registry is your default — `@authority` is for **disambiguation / explicit targeting**, not required for everyday use.
+This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* the Entity Church Registry" — the `@authority` names *which* registry, the local part is the name *within* it. Bare `alice` resolves against **your own local handles and pins** — the catch-all is local-only (REGISTRY §4.1 step 2), so reaching a registry is what the `@authority` form is *for*. `@authority` is not decoration: it is the user naming the authority they are willing to tell.
 
 ### 6.2 Why `@` (email-shaped) for the primary registry-scoped form
 
@@ -121,7 +121,7 @@ This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* 
 - **X is a registry handle / domain** → "resolve `name` *using* authority X" (targeting — §6.1).
 - **X is a Base58 peer_id** → "resolve `name` however my chain does, but the result **MUST equal** peer_id X" (verification pin — name for reach, peer_id for trust; the cross-publisher link form).
 
-Because peer_ids are Base58 multikey (V7 §1.5) and registry handles/domains are not, the resolver tells them apart by structure. This is the **recommended unification** and the cleanest answer to "reverse-lookup when clicking around": **links carry `name@peer_id`** — name to stay a *forward* registry resolve through the host-vouches rung, peer_id to verify the answer. **Open design point for cohort** (§11): confirm the dispatch-on-X rule and whether one separator should carry both meanings or they want distinct separators.
+Because peer_ids are Base58 multikey (V7 §1.5) and registry handles/domains are not, the resolver tells them apart by structure. This is the **recommended unification** and the cleanest answer to "reverse-lookup when clicking around": **links carry `name@peer_id`** — name to stay a *forward* registry resolve through the host-vouches rung, peer_id to verify the answer. **Landed:** one separator carries both meanings, decided structurally — `EXTENSION-REGISTRY` §4.1 step 1a makes the peer-id decode of `X` precede glob dispatch, so a name that pins is never sent to a registry to answer a question the consumer can answer locally.
 
 ### 6.4 Backend status — and where the community comes in
 
@@ -143,7 +143,7 @@ The grammar above names every backend the substrate is *designed* to carry. Most
 
 ### 6.4a What the grammar is NOT
 
-- **Not a new substrate surface.** It is `name_format_dispatch` globs + a documented convention — nothing in the kernel. **The defaults are now normative: `EXTENSION-REGISTRY` §4.1a carries the ordered list, §4.1 step 2 carries the catch-all MUST, and §4.1 step 1a carries the dispatch-on-X decode.** The table in §6.1 above is the teaching form of that list; §4.1a is its authority.
+- **Not a new substrate surface.** It is `name_format_dispatch` globs + a documented convention — nothing in the kernel. **The defaults are now normative: `EXTENSION-REGISTRY` §4.1a carries the default list, §4.1 step 2 carries the catch-all MUST, and §4.1 step 1a carries the dispatch-on-X decode.** The table in §6.1 above is the teaching form of that list; §4.1a is its authority. The list is a **filter** — it decides eligibility, never precedence; `resolver_chain` priority does that.
 - **The catch-all is the one part you may not vary.** `*` routes to local-only backends. A default that sends unscoped names to a remote registry discloses every bare name a user types, silently and irreversibly — see §7a.
 - **Not a global parser.** A deployment MAY ship different globs; the grammar is the *recommended interoperable default*, not a wire format. Two peers that ship the standard globs interoperate; one that doesn't simply routes its own way.
 
@@ -261,7 +261,7 @@ A resolution chain is also a capability chain — each peer-crossing rung is gat
 
 ## 11. Open questions
 
-1. **Name grammar (§6):** ratify the `@`/scheme/bare default globs + the §6.3 dispatch-on-X rule (registry-handle vs peer_id-pin) as a small proposal. Confirm one-separator-two-meanings vs distinct separators.
+1. ~~**Name grammar (§6):** ratify the default globs + the §6.3 dispatch-on-X rule.~~ **Closed** — `EXTENSION-REGISTRY` §4.1a (the default list), §4.1 step 2 (the catch-all MUST) and §4.1 step 1a (one separator, peer-id decode first). What remains open is narrower: whether a backend kind should declare itself *name-blind* (consultation does not transmit the name) so a catch-all may admit one.
 2. **Peer-issued registration (§8):** the unblock. Admission policy (registry's own cap surface) + ownership-proof challenge. Its own proposal.
 3. **`resolve()` SDK contract:** route the Draft to cohort; is the typed `Outcome` set (`NotFound`/`PolicyRejected`/`Unreachable`/`Denied`/`Pending`) complete + minimal across impls?
 4. **`Denied` vs `NotFound` confidentiality:** the SDK MUST surface the *peer's* status faithfully, never synthesize a more-informative `Denied` where the peer chose `NotFound` (V7 §5.5a). Confirm cross-impl.
