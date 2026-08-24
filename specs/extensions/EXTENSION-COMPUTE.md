@@ -1,7 +1,14 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.22
+**Version**: 3.23
 **Status**: Active
+**v3.23 — `is_error` is defined, and it is kind-based** (§4.1): the predicate the evaluator branches on
+39 times was used throughout and defined nowhere, so a `compute/error` reaching a `compute/construct`
+field embedded in one implementation, propagated in a second, and embedded-without-materializing in a
+third. `compute/error` is removed from §4.1's construct materialization set and from §2.3 N1's
+placement list — an error materializes where it is written (§7.2 `result_path`, SA-9 `store`), never
+where it is consumed. Worked example added at the short-circuit `[MUST]`.
+
 **v3.22 (2026-07-23) — §11 Alternate-Engine Admission** (AE-1 boundary-equivalence + AE-2–AE-6): folded from
 `PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` on its only gate being met — the first green **inproc** alternate-engine
 admission run (**Axis-1**, Go, `entity-core-go` report `2026-07-23-ae5-axis1-inproc-admission-GREEN`: 330/330
@@ -453,7 +460,8 @@ system/compute/scope-binding :=
 
 **The scope-binding value model (v3.19b).** A scope binding is **kind-tagged**: an inline value, or a hash reference to an entity. This makes the captured scope content-addressed and self-describing, and it is the canonical rule for navigation, capture, and (when needed) cross-peer transfer. (Replaces the v3.18 `primitive/any` bindings, under which a captured `entity.Entity` round-tripped to its envelope shape and broke field navigation / disambiguation.)
 
-- **N1 — reference, don't duplicate (one rule, three boundaries).** Wherever an entity- (or `compute/closure`-/`compute/error`-) valued thing is placed into another entity's data — **scope bindings, `compute/construct` fields, and `compute/apply` args** — it is referenced by content hash into the content store and tagged with its kind, never inlined. This is the materialized-subtree model (V7 §3) applied uniformly; `compute/apply` args' `input_type` consultation (V30) is the typed-encoding case of the same rule.
+- **N1 — reference, don't duplicate (one rule, three boundaries).** Wherever an entity- or `compute/closure`-valued thing is placed into another entity's data — **scope bindings, `compute/construct` fields, and `compute/apply` args** — it is referenced by content hash into the content store and tagged with its kind, never inlined. This is the materialized-subtree model (V7 §3) applied uniformly; `compute/apply` args' `input_type` consultation (V30) is the typed-encoding case of the same rule.
+  > **`compute/error` is deliberately not in that list `[corrected v3.23]`.** It was, and it was wrong at all three sites: an error reaching any of them **short-circuits** (§4.1 `is_error`, and the short-circuit `[MUST]` in §7.2 names all three), so it is never placed into the data and N1 never applies to it. The listing was unreachable, and it is where one implementation's reading of the construct branch came from. **An error materializes where it is *written* — the §7.2 `result_path` and SA-9 `store` — never where it is *consumed*.**
 - **N3 — navigation is by kind, not by shape.** `compute/field`/`compute/index`/`compute/length` on a `kind:"entity"` value navigate its `.data`; on a `kind:"value"` (record) value navigate it flat. Implementations **MUST NOT** distinguish entity-vs-record by inspecting keys (e.g. presence of `type`/`data`/`content_hash`) — such heuristics misfire on legitimate records. (This pins the N.5 disambiguation deferred from v3.19a; it resolves a symmetric cross-impl divergence — flat-read was wrong for entity envelopes, envelope-peel wrong for records — for all implementations.)
 - **N4 — binding resolution inherits the closure's authorization.** When `load_scope` (§4.3) resolves a binding's `entity_hash`, the resolve rides the authorization already granted to the closure; the binding entity need **not** be `is_compute_type` (§4.2) or in the sealed set. The closure was authorized at creation, and its bindings are structurally part of it.
 - **N4a — resolution is eager (normative; ratified 3/3 cross-impl).** `load_scope` resolves **all** `kind:"entity"` bindings at apply time (when the scope is loaded), **not** lazily on first access. Consequently an unresolvable binding surfaces as `scope_unreachable` (N8) at apply time regardless of whether the closure body reads it — whole-scope validity is checked up front. ("At apply time" throughout this model means eager. The earlier "lazy" lean was a mis-attribution; all three impls resolve eagerly, and the eager reading is what the "at apply time" wording elsewhere in this section already implies.)
@@ -464,7 +472,7 @@ system/compute/scope-binding :=
 
 **Construct materialization & read-back navigation (v3.19c, option α — ratified three-way).** The compute value model (kind-tags) is **compute-internal**; what crosses to the rest of the system is a **normal bare entity**. Two normative consequences:
 
-- **`compute/construct` materializes bare.** The materialized constructed entity — the form stored to the tree, returned from a handler, passed as a `compute/apply` arg, or sent on the wire (the four compute→non-compute crossings) — is a normal bare entity: an entity-/`compute/closure`-/`compute/error`-valued field is referenced by a **bare `system/hash`** (the value recursively materialized and stored, per V7 §1.4); a primitive/record field is inlined. Encoding is **by the runtime kind of the evaluated value, never the constructed type's declared schema** (keeping it type-extension-independent), so a constructed entity is byte-identical to the same entity built outside compute (`entity.NewEntity`) and identical across implementations. **No `kind` tags appear in materialized `data`** — kind-tagging is confined to `compute/scope` (the one typeless, round-tripped compute container). The *in-flight* representation is implementation-private; only the materialized form is normative (convergence is the `validate-peer` materialized-hash gate, == hand-built).
+- **`compute/construct` materializes bare.** The materialized constructed entity — the form stored to the tree, returned from a handler, passed as a `compute/apply` arg, or sent on the wire (the four compute→non-compute crossings) — is a normal bare entity: an entity-/`compute/closure`-valued field is referenced by a **bare `system/hash`** (the value recursively materialized and stored, per V7 §1.4); a primitive/record field is inlined. Encoding is **by the runtime kind of the evaluated value, never the constructed type's declared schema** (keeping it type-extension-independent), so a constructed entity is byte-identical to the same entity built outside compute (`entity.NewEntity`) and identical across implementations. **No `kind` tags appear in materialized `data`** — kind-tagging is confined to `compute/scope` (the one typeless, round-tripped compute container). The *in-flight* representation is implementation-private; only the materialized form is normative (convergence is the `validate-peer` materialized-hash gate, == hand-built).
 - **Read-back navigation returns the value (N3 clarification).** On a materialized bare entity, `compute/field`/`index`/`length` return a field's value **as-is**; a `system/hash` field yields the hash value — follow it explicitly with `compute/lookup/hash`. An implementation **MUST NOT** identify or auto-resolve a reference by its **byte-length or shape**: `system/hash` is variable-length with an extensible multicodec-style LEB128 varint format-code (§1.2; "33 bytes" is only today's `ecfv1-sha256` size), so a fixed-length test is both the shape-heuristic class N3 forbids *and* a crypto-agility bug (it breaks when the hash algorithm changes or a format code ≥ `0x80` widens the prefix). References are identified by **type** and handled by **structural deconstruction** (parse the varint format-code, then the digest — never assume a length). Navigation composes transparently **only where the kind is known** (in-flight typed values; kind-tagged `compute/scope` bindings); on a bare materialized entity, a reference is followed explicitly.
 
 ### 2.4 Result and Error Types
@@ -498,8 +506,8 @@ compute/error := {
 ```
 
 **Materialized `compute/error` is content-hashed over `code` alone (normative — cross-impl determinism; v3.21 provisional, `PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM`, validated intra-Go — cross-impl gate: Python+Rust materialize code-only + a materialized-error vector runs three-way).**
-When a `compute/error` **materializes** — written to a `result_path` (§7.2), placed in a `compute/construct`
-field, or sent on the wire as part of a materialized subtree (the compute→non-compute crossings, §2.3 N1) —
+When a `compute/error` **materializes** — written to a `result_path` (§7.2), stored via SA-9 `store`,
+or sent on the wire as part of a materialized subtree downstream of one of those writes (the compute→non-compute crossings, §2.3 N1) —
 its canonical content is exactly `{code}`. `message`, `at`, and `expression` are **diagnostic-only**: they MAY
 appear in the *in-flight / dispatch-boundary* representation of an error (the handler-dispatch status-200
 error-as-value return, §3.7 / the F10 surface; a debugging view), but they MUST **NOT** be part of the bytes
@@ -1072,6 +1080,29 @@ The underscore-prefixed binding names are a convention for "I don't care about t
 
 ### 4.1 Evaluation Algorithm
 
+#### `is_error(v)` — the predicate the whole evaluator branches on `[cross-peer seam — MUST]`
+
+The pseudocode below guards **every** sub-evaluation with `if is_error(x): return x`. That predicate
+is normative and it is **kind-based, not outcome-based**:
+
+> **`is_error(v)` is true if and only if `kind_of(v)` is `compute/error`. `[MUST]`**
+>
+> It does **not** mean "evaluation failed". A `compute/error` **value** that evaluated *successfully*
+> — a literal, or a `compute/lookup/hash` resolving to a stored one, each returned unchanged by
+> **SA-1** — **is an error for every purpose in this section.** SA-1 governs what `evaluate` returns;
+> this predicate governs what the consumer does with it, and the guard sits between them.
+
+**Why this is pinned rather than left to the obvious reading.** Both readings are self-consistent, so
+each is invisible to same-implementation testing, and the two split at the cross-peer seam. Under the
+outcome-based reading a `compute/error` reached by evaluation falls past the guard and is embedded
+and materialized into the consuming expression; under the kind-based reading it short-circuits. **The
+same input then yields an entity-kind boundary in one peer and an error-kind outcome in another** —
+observed three ways, no two alike, with the non-error control case byte-identical.
+
+**This predicate is local to `EXTENSION-COMPUTE`.** `EXTENSION-CONTINUATION` defines a different
+`is_error` over HTTP status (`status >= 400`); the two are unrelated and neither is a reference to the
+other. A reader grepping the corpus for one will find the other.
+
 ```
 evaluate(entity, scope, budget, ctx):
   if budget.depth <= 0:
@@ -1349,11 +1380,17 @@ evaluate_inner(entity, scope, budget, ctx):
         value = evaluate(value_target, scope, budget, ctx)
         if is_error(value): return value
         ; Materialize by RUNTIME KIND (v3.19c, option α) — never the declared type
-        ; schema (keeps it type-extension-independent). An entity/closure/error value
-        ; is recursively materialized to bare, stored, and referenced by a bare
+        ; schema (keeps it type-extension-independent). An entity/closure value is
+        ; recursively materialized to bare, stored, and referenced by a bare
         ; system/hash (V7 §1.4); a primitive/record value is inlined. No kind-tags in
         ; the materialized data — kind-tagging is confined to compute/scope (§2.3).
-        if kind_of(value) in {entity, compute/closure, compute/error}:
+        ;
+        ; compute/error is NOT in this set, and its absence is normative (v3.23).
+        ; The guard above returns first, so an error can never reach here — listing
+        ; it was unreachable text, and three implementations read the two lines in
+        ; two different orders. An error materializes where it is WRITTEN (§7.2
+        ; result_path, SA-9 store), never where it is CONSUMED.
+        if kind_of(value) in {entity, compute/closure}:
           result_fields[name] = ctx.content_store.put(materialize(value, ctx))
         else:
           result_fields[name] = value
@@ -2091,7 +2128,25 @@ re_evaluate(expression_uri, subgraph_path, emission_context):
 
 This is the same model as NaN propagation in IEEE 754 arithmetic — errors are values that flow through computation and are detectable at any point.
 
-**Error short-circuit normative.** Once a `compute/error` enters a value position, all expression types that consume values MUST short-circuit and propagate the error rather than attempting to read its fields. This includes `compute/arithmetic`, `compute/compare`, `compute/logic`, `compute/field`, `compute/construct`, `compute/apply` (both handler and closure modes), and `compute/if` (condition position — a `compute/error` condition short-circuits the `if` to the error, neither branch is evaluated). The §4.1 pseudocode enforces this via `if is_error(x): return x` after every sub-evaluation. Implementations MUST produce the same short-circuit behavior regardless of how they structure their evaluator.
+**Error short-circuit normative.** Once a `compute/error` enters a value position, all expression types that consume values MUST short-circuit and propagate the error rather than attempting to read its fields. This includes `compute/arithmetic`, `compute/compare`, `compute/logic`, `compute/field`, `compute/construct`, `compute/apply` (both handler and closure modes), and `compute/if` (condition position — a `compute/error` condition short-circuits the `if` to the error, neither branch is evaluated). The §4.1 pseudocode enforces this via `if is_error(x): return x` after every sub-evaluation, where **`is_error` is the kind-based predicate §4.1 defines** — a `compute/error` that evaluated *successfully* under SA-1 is still an error here. Implementations MUST produce the same short-circuit behavior regardless of how they structure their evaluator.
+
+> **Worked example — an error in a `compute/construct` field `[the case that diverged three ways]`.**
+> A `compute/error` literal is the `value` field of a `compute/construct`, construct as root.
+>
+> - **SA-1** returns it unchanged from `evaluate` — it did not *fail*, it *is* an error value.
+> - The construct branch's guard `if is_error(value): return value` **fires**, because the predicate
+>   is kind-based.
+> - **The construct's whole result is that error.** No entity boundary is produced, nothing is
+>   materialized, and the construct's other fields are irrelevant.
+>
+> **The two wrong answers, named so they are recognizable.** *Embedding* it — materializing a bare
+> code-only `compute/error` entity and referencing it by `system/hash` from the construct's field —
+> is what the old N1 listing and the old `kind_of` set read as licensing; that is now foreclosed.
+> *Embedding without materializing* leaves an in-flight value in a field, which reaches the encoder
+> and is a fault under any reading: **an unmaterialized value MUST NOT reach the wire encoder.**
+>
+> **Where an error does materialize:** only where it is written — the §7.2 `result_path` and SA-9
+> `store`. That is the sole surface §2.4's code-only content-hash rule governs.
 
 **Installation grant failure** is a special case. When the installation grant is revoked or expired, the error entity written to the result path has code `installation_grant_invalid`. The subgraph freezes — no further re-evaluations occur until a new installation grant is provided (via re-installation).
 
