@@ -1,7 +1,7 @@
 # Guide: Identity SDK
 
 **Status**: Active
-**Source:** `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` v0.1.
+**Source:** `SDK-IDENTITY-INFRASTRUCTURE.md` v0.1.
 
 ---
 
@@ -168,7 +168,7 @@ peer.connect(contact_handle.bootstrap_endpoints[0])
 
 Subsequent connections verify against the cached controller. If the contact rotates their controller (handoff or recovery), they publish the rotation attestation; your peer processes it via `:process_attestation` and updates the cache.
 
-**Cache-miss policy** is application-configurable: TOFU (default), explicit-confirmation, registry-only (no cache; verify every time). See `core-protocol-domain/guides/GUIDE-IDENTITY.md` §6 for trust model details.
+**Cache-miss policy** is application-configurable: TOFU (default), explicit-confirmation, registry-only (no cache; verify every time). See `GUIDE-IDENTITY.md` §6 for trust model details.
 
 ---
 
@@ -332,7 +332,7 @@ The SDK doesn't dictate; the application chooses based on threat model and conve
 
 ## 8. Pitfalls
 
-Cross-reference `core-protocol-domain/guides/GUIDE-IDENTITY.md` §13 (the architecture-spec deep guide's pitfalls section) for detailed treatment. Highlights:
+Cross-reference `GUIDE-IDENTITY.md` §13 (the architecture-spec deep guide's pitfalls section) for detailed treatment. Highlights:
 
 - **Don't leave quorum constituent private keys colocated with the runtime peer.** Bootstrap leaves them there transiently; distribute immediately. `get_quorum_distribution_status` is the gate.
 - **Don't share `peer-config` across identities on a multi-identity host.** Per `EXTENSION-IDENTITY.md` §3.8 — peer-configs MUST NOT share state across identities. Use separate `peers/{name}/` directories.
@@ -365,4 +365,4 @@ Cross-reference `core-protocol-domain/guides/GUIDE-IDENTITY.md` §13 (the archit
 
 ## 10. Document history
 
-- **v0.1 draft:** Initial Rev 6 companion guide. Lead with "Do you need identity?" decision tree (per the original Rev 5 §S13 design, refreshed for v3.5 vocabulary). Sections: provisioning (3-key + 4-key + V7→identity-aware migration); quorum custody patterns; pairing; connecting to contacts; agent operation; rotation (agent / retirement / controller handoff / `RotationReissueOutstandingGrants`); recovery (multi-step API; in-session adapter; scenarios; cold-key patterns); pitfalls; helper ↔ handler op reference. Companion: `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` (the SDK contract spec).
+- **v0.1 draft:** Initial Rev 6 companion guide. Lead with "Do you need identity?" decision tree (per the original Rev 5 §S13 design, refreshed for v3.5 vocabulary). Sections: provisioning (3-key + 4-key + V7→identity-aware migration); quorum custody patterns; pairing; connecting to contacts; agent operation; rotation (agent / retirement / controller handoff / `RotationReissueOutstandingGrants`); recovery (multi-step API; in-session adapter; scenarios; cold-key patterns); pitfalls; helper ↔ handler op reference. Companion: `SDK-IDENTITY-INFRASTRUCTURE.md` (the SDK contract spec).

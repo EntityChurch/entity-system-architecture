@@ -109,7 +109,7 @@ Five-step process (Godot's worked form):
 4. Package arch-team-facing extract under `docs/architecture/reviews/`.
 5. Record working position + keep moving (filing ≠ blocking).
 
-Architecture's paired RESPONSE convention: `RESPONSE-{IMPL}-{date}.md` under `entity-system-architecture/docs/architecture/v7.0-core-revision/reviews/`.
+Architecture's paired RESPONSE convention: `RESPONSE-{IMPL}-{date}.md` under `entity-system-architecture/docs/research/reviews/`.
 
 Standing convention for impl ↔ architecture interaction across the ecosystem.
 

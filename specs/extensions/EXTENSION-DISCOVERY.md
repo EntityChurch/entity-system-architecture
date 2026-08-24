@@ -4,7 +4,7 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
 **Related**: EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
-**Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
+**Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
 ---
@@ -256,7 +256,7 @@ Each is an additive backend under the §1 substrate + §2 prompt; none changes t
 
 ---
 
-## §7 GC posture (per `core-protocol-domain/guides/GUIDE-GC.md`)
+## §7 GC posture (per `GUIDE-GC.md`)
 
 - **`system/discovery/candidate` entities under `system/discovery/candidate/{backend}/*` (live watchable surface):** reaped per §3.0.1's liveness rule (mDNS goodbye → immediate; `last_seen + grace_window` → expired). NOT wall-clock retention. The reap discipline replaces the earlier 24h-wall-clock heuristic (which produced ghost peers in any live UI).
 - **Historical `system/discovery/candidate` entities (superseded chain history):** retain per `discovery-config.candidate_history_retention` (default 24h); operator MAY evict.
@@ -329,11 +329,11 @@ All retention windows are operator-configurable knobs; defaults conservative.
 ## §11 Cross-references
 
 - `proposals/implemented/PROPOSAL-EXTENSION-DISCOVERY.md` — landed-into source proposal
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-REGISTRY.md` — sibling extension (lookup; this extension is find)
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-NETWORK.md` — composition for connection post-admission
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-IDENTITY.md` — IDENTIFY against the admitted channel
+- `EXTENSION-REGISTRY.md` — sibling extension (lookup; this extension is find)
+- `EXTENSION-NETWORK.md` — composition for connection post-admission
+- `EXTENSION-IDENTITY.md` — IDENTIFY against the admitted channel
 - `proposals/implemented/extensions/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md` — DRAFT; the eventual transport for LAN mDNS-discovered peers
-- `core-protocol-domain/specs/ENTITY-CORE-PROTOCOL.md` §4.10 — resource bounds floor (referenced in §3.1)
+- `ENTITY-CORE-PROTOCOL.md` §4.10 — resource bounds floor (referenced in §3.1)
 
 ---
 

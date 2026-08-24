@@ -187,7 +187,7 @@ The detail sections below are the per-composition references. Each is grounded i
 
 **What it gives you.** Identity recovery without single-party trust — a K-of-N quorum of recovery peers can collectively rotate or recover an identity that would otherwise be lost on key loss.
 
-**Coupling.** Recovery peers hold quorum-attested-op caps granted at setup. Coordination is by quorum round, not by reactive subscription. (Companion: `core-protocol-domain/explorations/EXPLORATION-RECOVERY-CLUSTER-MECHANICS.md`.)
+**Coupling.** Recovery peers hold quorum-attested-op caps granted at setup. Coordination is by quorum round, not by reactive subscription. (Companion: `EXPLORATION-RECOVERY-CLUSTER-MECHANICS.md`.)
 
 **Mode.** Flat.
 
@@ -311,16 +311,16 @@ The layered home for each element, per proposal §10:
 
 ## 12. Cross-references
 
-- `core-protocol-domain/explorations/EXPLORATION-PEER-COMPOSITIONS.md` (v2) — the orientation doc; Part II/III (load-bearing spine: K1, the three axes, two-layer deadlock prevention), Part IV (this catalog's source), Part V (frontier).
-- `core-protocol-domain/explorations/EXPLORATION-PEER-COMPOSITIONS-LEGACY.md` (v1) — the append-wise research record; preserved verbatim for traceability.
+- `EXPLORATION-PEER-COMPOSITIONS.md` (v2) — the orientation doc; Part II/III (load-bearing spine: K1, the three axes, two-layer deadlock prevention), Part IV (this catalog's source), Part V (frontier).
+- `EXPLORATION-PEER-COMPOSITIONS-LEGACY.md` (v1) — the append-wise research record; preserved verbatim for traceability.
 - `proposals/deferred/PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` — the open proposal carrying the vocabulary and framing toward normative ratification; §11 = the ratification questions (Q1/Q2/Q4 adopted; Q5 K1 a/b/c scope is the one-pass sign-off gating K1 spec-text only).
-- `core-protocol-domain/guides/GUIDE-CROSS-PEER-MESSAGING.md` — the delivery/durability slice; one pattern *within* the framework here.
-- `core-protocol-domain/guides/GUIDE-RESTART-AND-PERSISTENCE.md` — per-peer restart-equivalence the composition restart pattern builds on.
-- `core-protocol-domain/guides/GUIDE-CAPABILITIES.md` — capability bootstrap patterns and the coherent capability principle the per-composition cap grants follow.
-- `core-protocol-domain/guides/GUIDE-IDENTITY.md` — per-peer identity provisioning the composition construction sequence calls.
-- `core-protocol-domain/guides/GUIDE-MULTISIG.md` — the K-of-N primitive recovery cluster (§5.5) builds on.
-- `core-protocol-domain/explorations/EXPLORATION-RECOVERY-CLUSTER-MECHANICS.md` — companion exploration for the recovery cluster.
-- `core-protocol-domain/explorations/EXPLORATION-DURABILITY-COMPARATIVE-ACTOR-SYSTEMS.md` — ten-system survey contextualizing the operational peer and the broader catalog against precedent.
+- `GUIDE-CROSS-PEER-MESSAGING.md` — the delivery/durability slice; one pattern *within* the framework here.
+- `GUIDE-RESTART-AND-PERSISTENCE.md` — per-peer restart-equivalence the composition restart pattern builds on.
+- `GUIDE-CAPABILITIES.md` — capability bootstrap patterns and the coherent capability principle the per-composition cap grants follow.
+- `GUIDE-IDENTITY.md` — per-peer identity provisioning the composition construction sequence calls.
+- `GUIDE-MULTISIG.md` — the K-of-N primitive recovery cluster (§5.5) builds on.
+- `EXPLORATION-RECOVERY-CLUSTER-MECHANICS.md` — companion exploration for the recovery cluster.
+- `EXPLORATION-DURABILITY-COMPARATIVE-ACTOR-SYSTEMS.md` — ten-system survey contextualizing the operational peer and the broader catalog against precedent.
 
 ---
 

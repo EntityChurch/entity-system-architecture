@@ -190,7 +190,7 @@ L0 (direct store access) is a well-defined access level — not a hack or debug 
 | Use case | L0 acceptable? | Why |
 |----------|---------------|-----|
 | Bootstrap (pre-handler tree writes) | Yes, required | No handlers exist yet to dispatch through |
-| Identity bootstrap (`:configure` first call, before local peer→controller cap exists) | Yes, **required** | Per `EXTENSION-IDENTITY.md` §6.5 startup boundary — no controller authority exists yet. SDK MUST route through the bootstrap helper library defined in `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §7. |
+| Identity bootstrap (`:configure` first call, before local peer→controller cap exists) | Yes, **required** | Per `EXTENSION-IDENTITY.md` §6.5 startup boundary — no controller authority exists yet. SDK MUST route through the bootstrap helper library defined in `SDK-IDENTITY-INFRASTRUCTURE.md` §7. |
 | Identity ops post-bootstrap (`:create_attestation`, `:supersede_attestation`, `:publish_attestation`, `:rotate_*`, etc.) | No | After local cap exists, dispatched EXECUTE under controller authority is the only conformant path. |
 | Peer-owner application code | Yes, explicit | Owner authority; naming discipline makes bypass visible |
 | Render-time reads (sync UI) | Yes, acceptable | Read-only; no security or semantic implications |
@@ -839,7 +839,9 @@ discover_handlers() → [HandlerInfo]
 
 **`HandlerInfo.pattern` semantics (normative).** The `pattern` field carries the manifest's advertisement pattern — which **MAY** include glob notation (e.g., `"system/type/constraint/*"`) per V7 §3.7. The dispatcher does NOT interpret this field; handler resolution is by V7 §6.6 longest-prefix walk against handler entities at literal prefix paths. Consumers building EXECUTE targets from `HandlerInfo.pattern` MUST handle the convention per V7 §6.6 / `GUIDE-EXTENSION-DEVELOPMENT.md` §4.9: strip trailing `/*` to obtain the dispatch prefix, or rely on the dispatcher's longest-prefix walk-back at execute time. The `pattern` is advertisement-only, NOT a dispatch URI.
 
-Implemented as: `list("system/handler/")` + reading each manifest/interface entity. The SDK **SHOULD** provide this as a typed helper.
+Implemented as: a **prefix scan** under `system/handler/` + reading each manifest/interface entity. The SDK **SHOULD** provide this as a typed helper.
+
+> **The scan MUST be recursive; a single-level `list` returns nothing useful here (0.8.1, SA-1).** A handler interface is stored at `system/handler/{pattern}`, and a pattern is itself a path — `system/tree` lives at `system/handler/system/tree`. §3.3's `list` is **single-level by conformance**, so `list("system/handler/")` returns the intermediate branch and **zero interfaces**, which violates §9.3's membership MUST two sections later. Implement this as a recursive walk over §3.3 `list`, or as an L0 location-index prefix scan where one is available; **both satisfy §9.3 and neither is the single-level operation this note previously named.** The failure mode of the literal reading is an empty result rather than an error — it looks like a peer with no handlers, not like a bug, which is why it survived review.
 
 ### 9.2 discover_types
 
@@ -890,7 +892,7 @@ The stored entity's envelope `type` is the canonical meta-type `system/type` (EN
 
 The `array_of` / `map_of` / `union_of` keys in field-spec are part of the public alphabet (§4.2). The exactly-one-of invariant applies. Open-types semantics (`ENTITY-NATIVE-TYPE-SYSTEM.md §2.4`) permit additional keys to be present without rejection, BUT `ENTITY-NATIVE-TYPE-SYSTEM.md §2.5` normatively forbids documentation fields (`description`, `doc`, etc.) in type entity `data` to prevent content-hash divergence across implementations. Implementations needing per-field documentation MUST keep it in companion entities, NOT in the canonical type entity.
 
-Implemented as: `list("system/type/")` + reading each type definition entity.
+Implemented as: a **recursive prefix scan** under `system/type/` + reading each type definition entity. The §9.1 note applies unchanged: a type name is a path (`system/tree/listing` lives at `system/type/system/tree/listing`), so a single-level `list` returns branches rather than definitions (0.8.1, SA-1).
 
 ### 9.3 Cross-impl conformance (normative)
 
@@ -918,7 +920,7 @@ Default configuration **SHOULD** favor higher security and capability-scoped acc
 
 The SDK's core job is managing grants and scoped access. This section covers what exists, what's needed, and what's not yet specified.
 
-> **Identity-aware peers.** When the identity, attestation, quorum, role, or group extensions are registered, an additional SDK surface is available — bootstrap helpers, identity-stack operations, rotation lifecycle hooks, and `rotation_reissue_outstanding_grants`. See `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` for the dedicated surface and `sdk-domain/guides/GUIDE-IDENTITY-SDK.md` for the application-developer walkthrough. The configuration-directory formalization (§15) covers the on-disk layout the helpers operate on.
+> **Identity-aware peers.** When the identity, attestation, quorum, role, or group extensions are registered, an additional SDK surface is available — bootstrap helpers, identity-stack operations, rotation lifecycle hooks, and `rotation_reissue_outstanding_grants`. See `SDK-IDENTITY-INFRASTRUCTURE.md` for the dedicated surface and `GUIDE-IDENTITY-SDK.md` for the application-developer walkthrough. The configuration-directory formalization (§15) covers the on-disk layout the helpers operate on.
 
 ### 11.1 Grant Lifecycle
 
@@ -1460,7 +1462,7 @@ The flat `identities/{name}/{public_key, private_key}` form is **legacy and load
 
 ### 15.2 Identity-aware mode
 
-For peers running the identity extension, the `identities/{name}/` entry becomes a directory bundle. See `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §8.4 for the full layout including quorum-constituent custody state, controller/agent/identifier keypairs, identity metadata, and the per-peer `identity.toml` referencing the bundle.
+For peers running the identity extension, the `identities/{name}/` entry becomes a directory bundle. See `SDK-IDENTITY-INFRASTRUCTURE.md` §8.4 for the full layout including quorum-constituent custody state, controller/agent/identifier keypairs, identity metadata, and the per-peer `identity.toml` referencing the bundle.
 
 **Three modes coexist:**
 1. **V7-only** (§15.1) — flat keypair files; no identity extension; absence of `peers/{name}/identity.toml`.

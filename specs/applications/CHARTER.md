@@ -2,7 +2,7 @@
 
 **Version**: 1.0
 **Status**: Draft
-`proposals/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`).
+**Proposal**: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`
 **Owning workstream:** W1 (Outer Limits / application), arch-chartered.
 
 ---
@@ -14,8 +14,8 @@ independent front-ends converge on **one shared format** instead of each reinven
 `APP-CONVENTION-EMBED` (the rich-content typed-node primitive) and `APP-CONVENTION-SEMANTIC-CONTENT-SITE` (its
 first consumer).
 
-This domain exists because the spec taxonomy had no home for it. The core protocol (`core-protocol-domain/`) and
-its extensions define the **substrate**; the SDK domain (`sdk-domain/`) defines the **bindings**; neither is the
+This domain exists because the spec taxonomy had no home for it. The core protocol (upstream, in `entity-core-protocol`) and
+its extensions define the **substrate**; the SDK specs (`specs/sdk/`) define the **bindings**; neither is the
 place for "a content-format convention that web, Godot, and terminal front-ends all agree to render the same
 way." Our standing stance (`GUIDE-EXTENSION-DEVELOPMENT` §3.5 — *"paths are convention; the entity graph is
 coherence"*) said app-layer conventions belong **outside** the core protocol, but never gave them a canonical,

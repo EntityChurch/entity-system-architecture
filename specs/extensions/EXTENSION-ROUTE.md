@@ -4,7 +4,7 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the table is ordinary tree-bound, cap-scoped `system/route` entities (§1).
 **Related**: EXTENSION-RELAY.md (the *consumer* — reads this table per §3 when a `forward-request` has no source route); EXTENSION-DISCOVERY.md / gossip backends (*producers* — ROUTE accepts cap-gated writes and prescribes no route-computation algorithm, §1)
-**Tier:** Operational — Tier 2b (network), sibling of RELAY / NETWORK / REGISTRY / DISCOVERY, per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
+**Tier:** Operational — Tier 2b (network), sibling of RELAY / NETWORK / REGISTRY / DISCOVERY, per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 **Companion:** `EXTENSION-RELAY.md` v1.1 (the consumer — reads this table when a `forward-request` has no source route, §3.1.1 source 3); `proposals/PROPOSAL-RELAY-SOURCE-ROUTED-MULTIHOP-AND-ROUTING-BOUNDARY.md` (names the resolver seam this spec demotes to the deferred computed-routing escape hatch).
 

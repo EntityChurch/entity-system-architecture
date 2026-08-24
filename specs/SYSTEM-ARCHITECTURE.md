@@ -1,6 +1,6 @@
 # Entity System — Architecture Overview
 
-**Version**: 0.3
+**Version**: 0.4
 **Status**: Active
 **Audience:** Architecture team, paper team, implementation teams (core + platform). Future audiences as scope expands: implementers getting started, spec reviewers, developers targeting the system, paper readers cross-referencing specs.
 
@@ -182,52 +182,50 @@ High-level only. Things will move. Use file search over this map for current sta
 
 ### 7.1 Architecture repository (this repo)
 
+*Post-split layout. The published surface is `specs/` + `guides/`; `docs/` is the authoring
+workspace and the archive, and does not ship with the release (§13.6).*
+
 ```
-docs/architecture/v7.0-core-revision/
-├── core-protocol-domain/
-│   ├── specs/                           ← L0-L2.5 normative specifications
-│   │   ├── ENTITY-CORE-PROTOCOL.md      ← L1 core protocol
-│   │   ├── ENTITY-CBOR-ENCODING.md          ← L0 canonical encoding
-│   │   ├── SYSTEM-COMPOSITION.md            ← L2 coordination layer
-│   │   ├── SYSTEM-ARCHITECTURE.md           ← this file
-│   │   ├── EXTENSION-TREE.md                ← tree extension
-│   │   ├── ENTITY-CORE-MACHINE-SPEC.md      ← machine/VM aspects
-│   │   ├── ENTITY-NATIVE-TYPE-SYSTEM.md     ← type system depth
-│   │   ├── ENTITY-SYSTEM-REFERENCE.md       ← cross-cutting reference
-│   │   ├── SPECIFICATION-FORMAT.md          ← spec authoring conventions
-│   │   └── extensions/                      ← L2.5 extension specs (13)
-│   └── guides/                          ← protocol-level composition patterns
-│       ├── GUIDE-REVISION-AUTO-VERSION.md
-│       └── GUIDE-TRANSACTION.md
-│
-├── sdk-domain/
-│   ├── specs/                           ← L3-L4 SDK specifications
-│   │   ├── SDK-OPERATIONS.md                ← core SDK interface
-│   │   └── SDK-EXTENSION-OPERATIONS.md      ← extension SDK surface
-│   └── guides/                          ← SDK usage patterns
-│       ├── GUIDE-PEER-CONCERNS-AND-NAMESPACES.md
-│       └── GUIDE-SDK-PATTERNS.md
-│
-├── guides/
-│   └── index.md                         ← root guide index (both domains)
-├── proposals/                           ← spec amendments; state = dir, tier = subdir
-│   ├── active/                              ← work is owed
-│   │   ├── core/                                ← V7 / wire / core types
-│   │   ├── extensions/                          ← EXTENSION-*
-│   │   ├── applications/                        ← SDK + L5 + the authoring stack
-│   │   └── process/                             ← gates, oracle, corpus, maturity
-│   ├── implemented/                         ← applied to specs (same four tiers)
-│   ├── deferred/                            ← parked on purpose
-│   └── superseded/                          ← retired without landing
-└── reviews/                             ← explorations and analysis
-    ├── core/                                ← core protocol explorations
-    ├── foundations/                          ← theoretical foundations
-    ├── network/                             ← networking explorations
-    ├── sync/                                ← sync/convergence explorations
-    ├── type/                                ← type system explorations
-    ├── overview/                            ← full system vision
-    └── EXPLORATION-SDK-ACCESS-MODEL.md      ← SDK access model grounding
+specs/                                   ← the published normative surface
+├── SYSTEM-ARCHITECTURE.md                   ← this file (arch-doc, informative)
+├── SYSTEM-COMPOSITION.md                    ← L2 coordination layer
+├── SYSTEM-IDENTITY-COMPOSITION.md           ← identity navigation doc (informative)
+├── ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md  ← identity architecture (informative)
+├── ENTITY-SYSTEM-REFERENCE.md               ← condensed working reference
+├── SPECIFICATION-FORMAT.md                  ← spec authoring standard
+├── STYLE-NAMING-CONVENTIONS.md              ← identifier naming standard
+├── extensions/                          ← L2.5 extension specs
+├── sdk/                                 ← L3-L4 SDK specifications
+├── applications/                        ← L5 conventions + the domain CHARTER
+└── domains/                             ← domain specs
+guides/                                  ← user-facing GUIDE-*.md
+ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md ← the living roadmaps
+docs/                                    ← workspace + archive; NOT published
+├── research/                                ← the design record
+│   ├── explorations/                            ← research and analysis
+│   ├── reviews/                                 ← cross-impl absorption
+│   └── INDEX.md                                 ← gated by `spec ledger`
+├── proposals/                               ← state = directory, tier = subdirectory
+│   ├── active/{core,extensions,applications,process}/   ← work is owed
+│   ├── implemented/                             ← the spec edit landed
+│   ├── deferred/                                ← parked on purpose
+│   ├── superseded/                              ← retired without landing
+│   └── INDEX.md                                 ← gated by `spec ledger`
+├── status/                                  ← dated handoffs / status; ephemeral
+├── archive/                                 ← closed docs, with an INDEX.md breadcrumb
+└── DISCIPLINE-CHARTER.md                    ← the discipline set + anti-pattern catalog
 ```
+
+**The upstream core spec is a sibling repo.** `ENTITY-CORE-PROTOCOL.md`,
+`ENTITY-CBOR-ENCODING.md`, `ENTITY-NATIVE-TYPE-SYSTEM.md` and
+`ENTITY-CORE-MACHINE-SPEC.md` live in `entity-core-protocol`, not here. Citations to them
+resolve only when an analyzer is given that root — see `AGENTS.md` on `spec address
+--namespace-root`.
+
+**Pre-split note.** This repo previously nested everything under
+`docs/architecture/v7.0-core-revision/` with `core-protocol-domain/` and `sdk-domain/`
+subtrees. Those prefixes appear in no post-split checkout; citations carrying them were
+normalized to the canonical `DOC.md` form (`SPECIFICATION-FORMAT.md` §11.2) on 2026-08-17.
 
 ### 7.2 Paper repository (sibling)
 
@@ -303,7 +301,7 @@ prototype → feedback → analyze → iterate → three impls → look for ambi
 
 **Emerging actors:**
 
-6. **SDK coordination** — SDK specs now exist (SDK-OPERATIONS.md, SDK-EXTENSION-OPERATIONS.md in `sdk-domain/specs/`). SDK work is cross-team — platform teams discover patterns, architecture team formalizes them. A dedicated SDK team may form as the specs stabilize and implementation feedback accumulates.
+6. **SDK coordination** — SDK specs now exist (SDK-OPERATIONS.md, SDK-EXTENSION-OPERATIONS.md in `specs/sdk/`). SDK work is cross-team — platform teams discover patterns, architecture team formalizes them. A dedicated SDK team may form as the specs stabilize and implementation feedback accumulates.
 7. **Application developers** — building L5 applications against the SDK + platform implementations. Currently platform teams are also building applications; segmentation happens as the SDK stabilizes.
 
 ### 9.2 Feedback channels
@@ -345,16 +343,16 @@ Candid internal material (extension-orthogonality pattern from the exploration �
 | Understand the pair-relationship framework | `papers/shared/notes/core/framework-synthesis.md` |
 | Understand the core protocol boundary | `papers/shared/notes/core/core-protocol-boundary.md` |
 | Review the architecture-side analysis | `reviews/core/EXPLORATION-PRIMITIVES-AND-PAIR-RELATIONSHIPS.md` |
-| Implement the core protocol | `core-protocol-domain/specs/ENTITY-CORE-PROTOCOL.md` |
-| Implement an extension | `core-protocol-domain/specs/extensions/EXTENSION-*.md` |
-| Author or propose a new extension | `core-protocol-domain/guides/GUIDE-EXTENSION-DEVELOPMENT.md` |
-| Understand how extensions compose | `core-protocol-domain/specs/SYSTEM-COMPOSITION.md` |
-| Build an SDK for a new language | `sdk-domain/specs/SDK-OPERATIONS.md` + `SDK-EXTENSION-OPERATIONS.md` |
+| Implement the core protocol | `ENTITY-CORE-PROTOCOL.md` |
+| Implement an extension | `specs/extensions/EXTENSION-*.md` |
+| Author or propose a new extension | `GUIDE-EXTENSION-DEVELOPMENT.md` |
+| Understand how extensions compose | `SYSTEM-COMPOSITION.md` |
+| Build an SDK for a new language | `SDK-OPERATIONS.md` + `SDK-EXTENSION-OPERATIONS.md` |
 | Understand the SDK access model | `reviews/EXPLORATION-SDK-ACCESS-MODEL.md` |
-| Understand SDK usage patterns | `sdk-domain/guides/GUIDE-SDK-PATTERNS.md` |
-| Understand peer organization | `sdk-domain/guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` |
-| Understand a protocol composition pattern | `core-protocol-domain/guides/` |
-| See what spec changes are in flight | `proposals/active/{core,extensions,applications,process}/` (owed) and `proposals/implemented/` (applied) |
+| Understand SDK usage patterns | `GUIDE-SDK-PATTERNS.md` |
+| Understand peer organization | `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` |
+| Understand a protocol composition pattern | `guides/` |
+| See what spec changes are in flight | `docs/proposals/active/{core,extensions,applications,process}/` (owed) and `docs/proposals/implemented/` (applied) |
 | See the cross-team convergence story | The full cross-team convergence synthesis (paper-team summary note) |
 
 ---
@@ -388,7 +386,7 @@ Active items the architecture team is working on or needs to work on.
 
 ## 13. Extension Classification and Stability Discipline
 
-*Added to consolidate the architecture team's working classification of extensions, the rationale for what belongs where, and the discipline that maintains the system's "we're going to be done at some point" trajectory. See `core-protocol-domain/explorations/EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md` for the full retrospective that motivated this section and `core-protocol-domain/guides/GUIDE-EXTENSION-BUILDER.md` for the pre-merge checklist that operationalizes it.*
+*Added to consolidate the architecture team's working classification of extensions, the rationale for what belongs where, and the discipline that maintains the system's "we're going to be done at some point" trajectory. See `EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md` for the full retrospective that motivated this section and `GUIDE-EXTENSION-BUILDER.md` for the pre-merge checklist that operationalizes it.*
 
 ### 13.1 Five-tier classification
 
@@ -460,7 +458,7 @@ Operational concerns above networking. Currently mostly gaps; this is where the 
 | Member | Status | Role |
 |---|---|---|
 | **GC (garbage collection)** | Spec gap; nature unsettled. | Operational storage management. **Borderline question:** is this an extension or implementation-management guidance? Theoretically with unbounded storage a peer never needs GC, so it's optional in a strict sense. The architecture team plans to outline it either way to set expectations; whether it lands as an extension or as a guide is a downstream decision. |
-| **Persistence** | Partial — `sdk-domain/guides/GUIDE-PERSISTENCE.md` covers the SDK side (configuration directory / per-peer state / runtime state in tree). No core-protocol-domain extension. | Local-storage substrate. SDK-side guidance exists; core-protocol-domain treatment is the gap. Overlap with GC is real and to be resolved when either lands. |
+| **Persistence** | Partial — `GUIDE-PERSISTENCE.md` covers the SDK side (configuration directory / per-peer state / runtime state in tree). No core-protocol-domain extension. | Local-storage substrate. SDK-side guidance exists; core-protocol-domain treatment is the gap. Overlap with GC is real and to be resolved when either lands. |
 | `PROPOSAL-EXTENSION-ENCRYPTION` | Early sketch — no Status header. | The user has confirmed encryption is required ("there's no way around it"). May belong in operational management or as its own tier. To be decided when the proposal lands. |
 
 These sub-tiers freeze in the second wave (§13.4), after substrate stabilizes in cross-impl.
@@ -488,7 +486,7 @@ Preserved reference design after a retraction or before a driver is identified. 
 
 Listed for context — these are not in the L2.5 extension layer but in the SDK and application layers above:
 
-- **SDK Layer 3** (per §2): per-language protocol facade. SDK domain is a separate concern (`sdk-domain/`).
+- **SDK Layer 3** (per §2): per-language protocol facade. SDK specs are a separate concern (`specs/sdk/`).
 - **SDK Layer 4** (per §2): shared patterns / standard-library user-space extensions. These are what the team pushes forward as standard-library conventions but they live above the system extensions — UI/UX, application-level conventions, deployment patterns.
 - **L5 applications** (per §2): combinatorial, problem-specific, out of scope.
 
@@ -630,6 +628,75 @@ A community implementation may eventually emerge that is faster, simpler, better
 
 **Implication for the team's signal interpretation.** Cross-impl ratification proves implementations agree on the spec text. It does *not* prove the spec text belongs. Three impl teams ratified durability Amendment 1 the week durability was retracted. That distinction — convergence on text vs. justification of text — is what the cold re-read step (`GUIDE-EXTENSION-BUILDER.md` §4) exists to enforce.
 
+### 13.5a Constraint regime and design divergence — two axes beside the tiers
+
+*Informative. §13.1's tiers sort by **how necessary** a surface is. That axis cannot express the thing
+the team keeps re-deriving as "the boundary is blurry": that a decision near the wire and a decision in
+the network family are **different kinds of decision**, reviewed correctly by different methods. Two
+further axes, kept here because they change how review is run. Full treatment:
+`docs/research/explorations/EXPLORATION-THE-THREE-CONSTRAINT-REGIMES.md`.*
+
+#### Axis A — constraint regime: what governs a *decision*
+
+| Regime | Governed by | Freedom | Whose complexity |
+|---|---|---|---|
+| **I — Substrate** | mathematics and computer science | none in structure | nobody's; irreducible. Simplifying it means being wrong |
+| **II — Design space** | coherence; we choose | real | **ours** — the only regime where complexity is fully ours to remove |
+| **III — Accumulated technology** | the deployed world (NAT, ICE, the browser sandbox, CDN semantics) | none, for a *contingent* reason | not ours, and not optional. It can be placed and quarantined, not deleted |
+
+**A regime applies to a decision, not to an extension.** Every extension is a mixture, and the two
+halves that matter are usually different: an extension's **structure** may be Regime II while its
+**motivation** is Regime III. `EXTENSION-RELAY` is the worked case — its mode set, envelope shape and
+capability model are ours to choose, while the fact that intermediaries are needed at all is forced by
+a world where reachability is not universal. *"Is RELAY core-like or network-like" is two questions.*
+
+Regime I structures routinely contain Regime II parameters. That a hash is collision-resistant is
+necessary; *which* hash is arbitrary — which is why hash agility and the `content-hash`
+`(format_code, digest)` shape exist, and why a fixed-width assumption is a lint error.
+
+**The standing rule: Regime III complexity is kept out of Regime I and II structure.** Transport
+profiles are entities rather than branches in a dispatcher; routing sits behind a resolver seam rather
+than inside relay; the reachability-class taxonomy turns the browser's inability to listen into one
+row of a dispatch table. Each is a place where an external fact was made into data so it could not
+become structure.
+
+#### Axis B — design divergence: how many defensible designs the landscape contains
+
+Where an *area's* centre of mass sits. This is the grouping the team means by "core plus standard
+extensions is one thing, and network and L5 are another."
+
+| Band | Area | What the landscape looks like | How to review it |
+|---|---|---|---|
+| **A — Convergent** | V7 core, Tier 0, Tier 1 standard extensions | Independent designers arrive at the same answers. Content addressing, Merkle structure, capability chains, three-way merge — a survey finds agreement, not variety | For **correctness**. A disagreement usually resolves to a fact, and one side is wrong. Conformance vectors are the gate; prose review does not catch these |
+| **B — Bounded choice** | Tier 2a — identity, attestation, quorum, role, group | Real alternatives, enumerable, trade-offs documented in the literature (K-of-N topologies, cert chains vs. webs of trust) | For **coherence with the choice already made**. A small number of defensible options; pick the one that composes with the rest |
+| **C — Divergent** | Tier 2b — network, relay, route, signaling, discovery, registry | **Wide, and every model in it works.** libp2p, Nostr, AT Protocol, Matrix, SMTP/NNTP, IPFS and Tor solve overlapping problems with genuinely different architectures | For **fit and landscape grounding**. A design is argued against the survey, not from first principles alone. Disagreement is data rather than defect, and closing a design space wrongly costs more than leaving a knob |
+| **D — Opinion-dominated** | Tier 4 — L5 application conventions | Taste, ecosystem and front-end reality dominate; several conventions coexist in every comparable ecosystem | For **the cross-impl contract only** — the bytes and the format. Rendering, UX and wiring are per-front-end and are not the spec's to settle |
+
+**Four things change as an area moves down the bands**, and they are why the same review method does
+not work throughout:
+
+1. **Degrees of freedom rise.**
+2. **A landscape survey gains value; a first-principles derivation alone loses it.** In Band A,
+   deriving the answer is sufficient. In Band C, deriving *an* answer proves only that it is
+   expressible — it says nothing about what the field has learned or what the system needs.
+3. **Legitimate disagreement rises.** In Band A a dispute usually has a right answer. In Band C it may
+   resolve to a preference, and forcing a resolution destroys options that were deliberately open.
+4. **The normative posture inverts.** Band A pins tightly — a `MAY` whose two conformant readings
+   diverge across a peer boundary is a latent interop bug. Band C exposes knobs and states trade-offs.
+
+**The tension this makes visible, rather than resolves.** The pin-the-cross-impl-observable-surface
+instinct is a Band A instinct, and it is right there. In Band C it still governs the *observable
+surface* but not the *model* — and the two are easy to conflate. The live instance is aggregation
+ordering: the order a consumer sees a union of sources in is cross-peer observable (so Band A logic
+applies), while the merge policy that produces it is design space (so Band C logic applies). **Naming
+the band does not settle such a case; it shows why two correct rules are pointing in opposite
+directions.**
+
+**The question this adds to review, asked before "is this right?":** *which band is this in, and which
+regime is the decision?* A Band A correctness argument applied to a Band C design space is how a
+design space gets pruned; a Band C "it is all trade-offs" applied to Band A is how a wire invariant
+gets negotiated.
+
 ### 13.6 Disposition for the next 3–4 weeks
 
 The work the architecture team should plan to complete before publishing:
@@ -644,7 +711,8 @@ The work the architecture team should plan to complete before publishing:
 
 ## 14. Document History
 
-- **v0.3:** Added §13 "Extension Classification and Stability Discipline" pulling together the four-tier extension classification (substrate / operational / extras / exploratory), the three legitimate reasons to spec (irreducible / operational / anti-fragmentation grounding), the V7-frozen-by-discipline rule, the publishing-horizon trajectory, the spec-vs-reference-implementation framing, and the disposition for the publishing window. Renumbered Document History to §14. The rationale and full retrospective backing this section live in `core-protocol-domain/explorations/EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md`; the operational checklist is `core-protocol-domain/guides/GUIDE-EXTENSION-BUILDER.md`. Motivated by the durability retraction and the surfacing of the recurring scope-overreach pattern.
+- **v0.4:** Added §13.5a "Constraint regime and design divergence" — two informative axes beside §13.1's tiers. Axis A (constraint regime: substrate / design space / accumulated technology) names what governs a decision and therefore whose complexity it is; a regime applies to a decision rather than to an extension, and an extension's structure and motivation routinely sit in different ones. Axis B (design divergence, bands A–D) names how many defensible designs the landscape contains for an area, and pairs each band with the review method that fits it — correctness for the convergent core, landscape grounding for the divergent network family, cross-impl contract only for L5. Added because the tier axis alone cannot express why a wire decision and a transport decision are different kinds of decision, which is the "the boundary is blurry" observation the team keeps re-deriving. Informative; no normative change. Full treatment in `docs/research/explorations/EXPLORATION-THE-THREE-CONSTRAINT-REGIMES.md`.
+- **v0.3:** Added §13 "Extension Classification and Stability Discipline" pulling together the four-tier extension classification (substrate / operational / extras / exploratory), the three legitimate reasons to spec (irreducible / operational / anti-fragmentation grounding), the V7-frozen-by-discipline rule, the publishing-horizon trajectory, the spec-vs-reference-implementation framing, and the disposition for the publishing window. Renumbered Document History to §14. The rationale and full retrospective backing this section live in `EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md`; the operational checklist is `GUIDE-EXTENSION-BUILDER.md`. Motivated by the durability retraction and the surfacing of the recurring scope-overreach pattern.
 - **v0.2:** Updated for SDK domain and directory reorganization. Repository map reflects core-protocol-domain/ and sdk-domain/ split. Implementation inventory updated (Go and Rust have all 7 standard extensions complete). SDK specs added to "Where to Look." Open threads reflect SDK work. Actor roles updated (SDK coordination emerging).
 - **v0.1:** Initial draft. Created to provide a navigable architecture map spanning core protocol, SYSTEM-COMPOSITION, extensions, and the SDK-track convergence.
 

@@ -4,7 +4,7 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
-**Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
+**Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
 > ## ⚠ COMPLETENESS — this extension is **v1, NOT finished**
@@ -12,7 +12,9 @@
 >
 > **✅ Landed + implemented (v1):** resolver substrate (§2–§5); local-name backend (§6); peer-issued resolve + curated registration (§6a.1–§6a.8).
 >
-> **🟡 Design folded, build in flight / deferred:** **service advertisement (§3b — ratified + folded 2026-08-14 (v1.5), from `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT`, DRAFT since 2026-07-22). The `system/registry/service-advertisement` entity and the §3b.1 `services` field are built in NO tree — source-read in all three 2026-08-14 (`entity-core-go` `8765e1f`, `entity-core-rust` `cc6cb56`, `entity-core-py` `808d9e6`); a dated observation, not a standing fact. What IS built three-way is §3b.2/§3b.3's rendezvous-hash *selection function over a caller-supplied pool* (`ext/signaling/pool.go`, `extensions/signaling/src/pool.rs`, `signaling/pool.py`) — so all three select correctly from a pool nothing can yet deliver. The build ask is the entity + the resolve field; the selection half is already green.** Peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — ruled 2026-08-13 (v1.3), corrected 2026-08-14 (v1.4). Built in all three within a day of the ruling and measured green: `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6`; go's `registry_issuer` oracle 27/27 against each sibling, 0F. Source-read in each tree 2026-08-14, not carried from a report — a dated observation, not a standing fact: re-read the peers' trees before citing it (`docs/DOCTRINE-COHORT-STATE-TRACKING.md` D8).** The four gaps the builds exposed — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability — are **ruled in v1.4** and are the remaining fold for all three); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
+> **🟡 Design folded, implementation deferred or partial:** **service advertisement** (§3b, folded v1.5) — the `system/registry/service-advertisement` entity and the §3b.1 `services` field are specified; §3b.2/§3b.3's rendezvous-hash **selection function over a caller-supplied pool** is a separable half and is the simpler build. **Peer-issued live registration** `open`/`allowlist`/`manual` (§6a.9); the **manual-approval path** (§6a.9.3, ruled v1.3, corrected v1.4) together with the four gaps v1.4 rules — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability. **Signed binding-manifest** (§6a.7) — format locked, implementation deferred.
+>
+> *Which peers have built which of these is deliberately not recorded here. A spec that carries build state goes stale silently and gets cited as authority while wrong; per-peer status lives in `ROADMAP-EXTENSIONS.md` and the cohort's own reports.*
 >
 > **🔴 NOT yet designed — outstanding work before this extension is "done":**
 > - **A credential channel for `data_relay`** (§3b.0a, **new in v1.6**) — §3b advertises where a relay is and whether a peer may use it, and specifies nothing that authenticates a peer to it. **`policy: open` is therefore the only interoperable data-relay deployment; `members` and `metered` are reserved shape, not usable capability.** Needs an issuer, a rotation model, and a delivery route for a secret — none of which the endpoint-shaped machinery of §3b extends to.
@@ -906,7 +908,7 @@ data: {
 
 > **Why this was a three-way divergence, and it is our defect `[2026-08-12]`.** The signature above previously read `→ binding_hash | rejection` — **two outcomes** — and then step 5 introduced a **third** in the pseudocode without extending the return type. `pending_hash` appeared **nowhere in this specification at all.** So each implementation invented a carrier: one a dedicated result type, one a result field, one `system/protocol/status`. **Three shapes is what an undeclared outcome produces**, and no implementation was wrong — there was nothing to be wrong against. **An operation whose declared return type does not enumerate every branch of its own pseudocode is an interop bug already in flight.**
 >
-> **`system/protocol/error` MUST NOT carry the 202.** An error entity denotes a *failed* operation; `202` denotes *accepted-pending*. Emitting one on the other makes the status line and the result type disagree by construction, and a client branching on result type reaches the opposite conclusion from one branching on status. *(Adopted from `entity-core-go`'s design argument, which stands on its own merits and not on how many implementations held it — see `GUIDE-CONFORMANCE` §4: the spec arbitrates, the cohort does not vote.)*
+> **`system/protocol/error` MUST NOT carry the 202.** An error entity denotes a *failed* operation; `202` denotes *accepted-pending*. Emitting one on the other makes the status line and the result type disagree by construction, and a client branching on result type reaches the opposite conclusion from one branching on status. *(Adopted from a design argument that stands on its own merits and not on how many implementations held it — see `GUIDE-CONFORMANCE` §4: the spec arbitrates, the cohort does not vote.)*
 >
 > **A generic status type is rejected on structure, not on taste.** The 200 must carry `binding_hash` and the 202 must carry a poll handle, so a carrier with no room for either forces the payload somewhere else and re-opens the divergence one field down. **`register-request` also MUST NOT borrow another operation's result type** because the payload happens to match — that coupling breaks silently the first time either operation's result grows a field.
 >
@@ -914,7 +916,7 @@ data: {
 
 **`pending_hash` `[MUST]` `[RULED 2026-08-12]` — it names the stored pending request entity, not the request the client sent.** It is the `content_hash` of the `system/registry/pending-binding` entity the registry stored at step 5 (§6a.9.3), resolvable by the ordinary `tree:get` / `content:get` machinery every other registry read uses (§6a.3). **A handle the client can already compute is not a handle** — echoing the request hash tells the requester nothing it did not have before sending, and nothing is fetchable at it. The divergence here was real and undecidable from the text: one implementation named the stored entity, another named the request.
 
-**Owed, named rather than invented `[2026-08-12]` — ✅ DISCHARGED `[2026-08-13]`, see §6a.9.3.** The manual-approval path itself — the `system/registry/pending-binding` schema, the by-request pointer a requester polls when it no longer holds the 202 response, and the operator's approve/deny operation — was **not specified anywhere in this document**, which is why step 5 could say "queue" and stop. That ruling pinned the cross-peer-observable surface (result type, status value, what `pending_hash` refers to) and deliberately stopped there. **Stopping there had a cost that is worth recording: it left `pending_hash` a `MUST` naming an entity with no schema**, so `entity-core-rust` withheld the value on principle while `entity-core-go`'s oracle failed peers for withholding it — the spec manufactured a conformance failure out of its own reserved section. **A `MUST` may not name a referent the corpus does not define**; if the referent must wait, the `MUST` waits with it. §6a.9.3 now defines it.
+**Owed, named rather than invented `[2026-08-12]` — ✅ DISCHARGED `[2026-08-13]`, see §6a.9.3.** The manual-approval path itself — the `system/registry/pending-binding` schema, the by-request pointer a requester polls when it no longer holds the 202 response, and the operator's approve/deny operation — was **not specified anywhere in this document**, which is why step 5 could say "queue" and stop. That ruling pinned the cross-peer-observable surface (result type, status value, what `pending_hash` refers to) and deliberately stopped there. **Stopping there had a cost that is worth recording: it left `pending_hash` a `MUST` naming an entity with no schema**, so one implementation withheld the value on principle while the reference oracle failed peers for withholding it — the spec manufactured a conformance failure out of its own reserved section. **A `MUST` may not name a referent the corpus does not define**; if the referent must wait, the `MUST` waits with it. §6a.9.3 now defines it.
 
 **Statuses `[MUST]` `[RATIFIED 2026-08-11]` `[RATIONALE CORRECTED 2026-08-12]`.** §6a.9 pinned the reject *codes* and left the *statuses* open, the way §6a.9.2 later pinned `400` / `501`. It is now text:
 
@@ -927,13 +929,9 @@ data: {
 
 > **The fourth column exists because its absence caused the divergence `[added 2026-08-12]`.** This table shipped with the third column headed **`Code`**, which is a category error on the `202` row: `pending_review` is a **status field value**, and §6a.9's own pseudocode said so (`on queue: status "pending_review"`) while the table said otherwise. **An implementation that trusted the table emitted an error entity on a 2xx** — a faithful reading, and the same failure shape as §5.4/§8.3, where the normative artifact and the prose disagreed and the artifact won. **A status table that names a value without naming what carries it is under-specified by exactly one column**, and the missing column is the one a wire implementer needs.
 
-401 (not 403) for layer 1 follows V7 §5.2a's discriminator: an unverifiable signer is an **authentication** failure, and §4.2/§4.4's F32 ruling already put that class at 401. The `409` / `403` rows are **derived** from V7 §3.3's class rules rather than measured — the cohort converged on the first two rows' **statuses** only (and *not* on their codes — see the correction below), so treat these two as new and report a divergence rather than assuming it is yours.
+401 (not 403) for layer 1 follows V7 §5.2a's discriminator: an unverifiable signer is an **authentication** failure, and §4.2/§4.4's F32 ruling already put that class at 401. The `409` / `403` rows are **derived** from V7 §3.3's class rules rather than observed in practice, so an implementer meeting a divergence on those two rows should report it rather than assume the defect is local.
 
-> **Correction `[2026-08-12]` — the ratification rationale was wrong, and the error is worth more than the fix.** This paragraph previously read *"Three implementations converged on the same answers with no MUST to point at — go first, rust and py by deference."* **That was never verified against py's tree, and it is false.** What the cohort converged on was the **status**; the **code** diverged and still does. Read live 2026-08-12: `entity-core-go` `419a715` answers `signature_invalid` (`RegistryErrSignatureInvalid`, `core/types/registry_peerissued.go`); `entity-core-rust` `21eb223` answers `signature_invalid` (`REG_ERR_SIGNATURE_INVALID`, `extensions/registry/src/registration.rs`, converged at `0caf911` **from** `invalid_signature` — so rust did not agree at ratification time either); **`entity-core-py` `2c1aa1b` answers `401 proof_failed`** at all three layer-1 sites (`_error(status, code, message)` in `entity_handlers/registry.py` — `proof_failed` is the *code* argument, not the message). py's own comment still reads *"The spec pins neither code; this converges on core-go"* — true when written, now wrong twice over: the spec does pin it, and py matched go's **status** while diverging from go's **code**.
->
-> **We asserted a cohort build-state fact inside a normative table without opening the tree** — the failure this repo's `AGENTS.md` foregrounds, this time committed by us, in the one place where a wrong build-state claim gets cited as authority. The rule stands unchanged (`signature_invalid` is normative and correct on its merits — see the 401 derivation above); only the claim that the cohort had already converged on it is retracted. **`entity-core-py` is non-conformant on this row and is owed that plainly.**
-
-**Error *strings* are free; codes are the contract.** The `code` values above are normative and are what a peer branches on. Human-readable messages accompanying them are impl-local and MAY differ — **a conformance check MUST NOT assert on message text.** *(py observed the strings diverging three ways and left them deliberately, correctly noting no check reads them. Stated here so "no check reads them" stays a design choice rather than becoming a latent expectation.)*
+**Error *strings* are free; codes are the contract.** The `code` values above are normative and are what a peer branches on. Human-readable messages accompanying them are impl-local and MAY differ — **a conformance check MUST NOT assert on message text.** Stated explicitly so that "no check reads them" remains a design choice rather than hardening into a latent expectation.
 
 **Conformance `[MUST]` `[RULED 2026-08-12]` — a check of a pinned row MUST assert the `code`, not the status alone.** A layer-1 refusal check that asserts only `401` cannot distinguish a conformant peer from one answering an unpinned code, so it scores the contract's *weaker* half and reports green on a divergence. This is not hypothetical: it is exactly why the py divergence above survived a full cohort cycle. In the cross-impl instrument that found it, the **layer-2** rows were asserted as `status != 403 || code != not_entitled` while every **layer-1** row was asserted as `status != 401` — the same file, two rows apart, one of them checking the contract and the other checking half of it. `REG-REGISTER-PROOF-1` / `REG-REVOKE-PROOF-1` / `REG-RENEW-PROOF-1` therefore assert **status + code + publishes-nothing**, all three.
 
@@ -1142,9 +1140,9 @@ What follows from it is a conformance obligation, not a schema change: **`REG-PE
 supersession half MUST vary a field the schema actually carries** (`requested_ttl` or `transports`), and
 an implementation MUST NOT rely on the returned `pending_hash` *changing* as its supersession signal.
 The observable invariant is the one stated above — **exactly one head reachable through the pointer for
-the pair** — which holds whether or not the two bodies collide. *(Raised by `entity-core-rust` while
-building the vectors; recorded because the next author to write a supersession test will reach for the
-nonce first.)*
+the pair** — which holds whether or not the two bodies collide. *(Recorded because the
+obvious supersession test reaches for the nonce first, and that test would assert on an artifact rather
+than on the invariant.)*
 
 **Retention `[SHOULD]`.** A decided pending-binding (`approved` / `denied`) is GC-eligible after a
 configured retention window; the body stays content-addressed and auditable independently of the
@@ -1171,11 +1169,7 @@ keeps the queue an operator's inbox rather than a log.)*
   carries (`requested_ttl` / `transports`), never the request `nonce` — see the observability ruling
   above, or the two bodies collide and the assertion is vacuous.
 
-**Outcome, measured `[2026-08-14]`.** All three implementations built this section within a day of the
-ruling — `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6` — and go's
-reference oracle reports **27/27, 0F for each of them** on `registry_issuer`. Rust's withheld
-`pending_hash` was the correct posture and is discharged; Python's remove-on-approve was corrected to a
-retained `approved` head. **The four items ruled above (`denied` in the enumeration, the un-typed
+**The four items ruled above (`denied` in the enumeration, the un-typed
 decision input, the superseded-head `404`, supersession observability) were each found by a build, not by
 review, and three of the four were reached independently by all three seats before anything was ruled** —
 which is the signal that the text was under-determined rather than misread, and the reason they are
@@ -1297,7 +1291,7 @@ When two upstream registries return different `target_peer_id` for the same `nam
 
 ---
 
-## §9 GC posture (per `core-protocol-domain/guides/GUIDE-GC.md`)
+## §9 GC posture (per `GUIDE-GC.md`)
 
 - **Resolved-binding cache:** subscription-driven; honor `ttl` on bindings; observed revocations propagated.
 - **Resolver-config:** persistent until explicitly changed; no GC.
@@ -1426,9 +1420,9 @@ data: {
 - `proposals/PROPOSAL-EXTENSION-DISCOVERY.md` — sibling-but-distinct (peer-finding, not name-binding); DRAFT
 - `proposals/PROPOSAL-EXTENSION-RELAY.md` — RELAY proposal (compositions referenced §8)
 - `proposals/PROPOSAL-STATIC-PEER-HOSTING-UMBRELLA.md` — names REGISTRY as dependency; this spec fulfills
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-NETWORK.md` — §6.5 transport profiles (`endpoint` shape consumed by §3 `transports` field)
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-IDENTITY.md` — peer-id substrate + identity publish surface
-- `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-ATTESTATION.md` — supersedes-chain discipline referenced in §3 / §6.5
+- `EXTENSION-NETWORK.md` — §6.5 transport profiles (`endpoint` shape consumed by §3 `transports` field)
+- `EXTENSION-IDENTITY.md` — peer-id substrate + identity publish surface
+- `EXTENSION-ATTESTATION.md` — supersedes-chain discipline referenced in §3 / §6.5
 
 ---
 

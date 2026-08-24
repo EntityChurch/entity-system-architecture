@@ -263,8 +263,8 @@ This question is the gate. Everything else in this guide is technique for answer
 
 ## 11. Cross-references
 
-- `core-protocol-domain/explorations/EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md` — the retrospective and triage this guide rests on.
-- `core-protocol-domain/specs/extensions/standard-peer-extensions/EXTENSION-DURABILITY.md` — the canonical anti-example, preserved as reference design.
+- `EXPLORATION-SCOPE-OVERREACH-RETROSPECTIVE.md` — the retrospective and triage this guide rests on.
+- `EXTENSION-DURABILITY.md` — the canonical anti-example, preserved as reference design.
 - `proposals/PROPOSAL-DELIVERY-AND-DURABILITY.md` — the retracted proposal, kept as design record.
 - `proposals/PROPOSAL-INDEPENDENT-ITEMS-CATCHUP.md` — board carries the scope-overreach watchlist row.
 

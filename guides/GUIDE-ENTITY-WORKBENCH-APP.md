@@ -27,7 +27,7 @@ Out of scope:
 
 - Renderer code, widget primitives, layout serialization (per-impl).
 - Cross-impl test harness for UI behavior.
-- Identity SDK shape (covered by `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md`).
+- Identity SDK shape (covered by `SDK-IDENTITY-INFRASTRUCTURE.md`).
 - Content-type catalog ratification — currently in flux pending extension-driven direction; the four content-types whose schemas are stable across the transition (`tree-browser`, `entity-detail`, `execute-console`, `event-log`) progress at T2 regardless.
 
 Cross-links: `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md`, `SDK-OPERATIONS.md` (especially §6.4 generation-counter, §6.5 notification access levels, §11.6 handler registration, §15 configuration directory), `GUIDE-SDK-PATTERNS.md`, `GUIDE-PERSISTENCE.md`, `ENTITY-NATIVE-TYPE-SYSTEM.md` §11.1 (type entity path convention).
@@ -425,12 +425,12 @@ External:
 
 Internal (this repo):
 
-- `core-protocol-domain/specs/ENTITY-NATIVE-TYPE-SYSTEM.md` §11.1 — type entity path convention.
-- `sdk-domain/specs/SDK-OPERATIONS.md` §2.7, §6.4, §6.5, §11.6, §15.
-- `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §8.4.
-- `sdk-domain/guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §3 (multi-peer-per-app variant), §4 (namespace conventions), §5 (application state).
-- `sdk-domain/guides/GUIDE-SDK-PATTERNS.md` — entity-backed state, reactive cycle, multi-peer composition.
-- `sdk-domain/guides/GUIDE-PERSISTENCE.md` — companion guide.
+- `ENTITY-NATIVE-TYPE-SYSTEM.md` §11.1 — type entity path convention.
+- `SDK-OPERATIONS.md` §2.7, §6.4, §6.5, §11.6, §15.
+- `SDK-IDENTITY-INFRASTRUCTURE.md` §8.4.
+- `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §3 (multi-peer-per-app variant), §4 (namespace conventions), §5 (application state).
+- `GUIDE-SDK-PATTERNS.md` — entity-backed state, reactive cycle, multi-peer composition.
+- `GUIDE-PERSISTENCE.md` — companion guide.
 - `proposals/implemented/PROPOSAL-GUIDE-ENTITY-WORKBENCH-APP.md` — proposal-track artifact this guide graduated from.
 
 Adjacent priors:

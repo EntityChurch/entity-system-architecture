@@ -3,7 +3,7 @@
 **Version**: 1.0
 **Status**: Active
 **Companion to**: SPECIFICATION-FORMAT.md (binding companion — identifier conformance)
-**Enforced by**: `tools/spec-style` (corpus is gate-clean as of the fold)
+**Enforced by**: the `spec style` analyzer (run `spec check`)
 
 ---
 
@@ -11,7 +11,7 @@
 
 `SPECIFICATION-FORMAT.md` governs how a normative spec *document* is laid out — section ordering, RFC 2119 keywords, type-definition notation. This document governs the **identifiers inside** those specs: entity types, fields, operations, error codes, and value vocabularies that an implementation must reproduce byte-for-byte to interoperate.
 
-These names are part of the wire contract. Once the protocol is released and downloaded, renaming any of them is a breaking change every implementation must absorb. This document exists so those names are **predictable, derivable, and consistent**, and so the linter (`tools/spec-style`) can mechanically verify conformance and reject unformatted contributions before review.
+These names are part of the wire contract. Once the protocol is released and downloaded, renaming any of them is a breaking change every implementation must absorb. This document exists so those names are **predictable, derivable, and consistent**, and so the linter (`spec style`) can mechanically verify conformance and reject unformatted contributions before review.
 
 ---
 
@@ -24,7 +24,7 @@ The protocol uses **two separators, chosen by what kind of token it is — never
 
 This split is **domain-invariant**: a field key is snake in *every* spec; a type path is kebab in *every* spec. The author never has to remember a per-context exception — the answer depends only on the locally-visible kind of token. In `{"peer_id": "system/peer/grant-entry"}` the key (left of the colon) is snake; the namespace value is kebab. You can *see* which you are writing; you never have to *recall* it.
 
-**Why this split, and not one separator everywhere.** A single separator is superficially simpler, but the established corpus already follows this split with very high consistency, and unifying would not be free: an audit (`tools/spec-style`, 2026-06) found that forcing kebab everywhere would rename **473 distinct field keys (3,314 occurrences) plus ~174 value / error-code tokens** (`type_ref`, `peer_id`, `content_hash`, `array_of`, `capability_denied`, …) — together ~620 distinct identifiers across ~3,600 occurrences, a total break of the wire data-contract across all implementations, the CBOR corpus, and every conformance vector. Field keys are CBOR **map keys**: canonical CBOR orders map keys by encoded bytes, so renaming one re-orders the map, changes every enclosing `content_hash`, and invalidates every signature and test vector in the corpus. All-kebab is not a string-replace; it is a re-genesis of the entire cryptographic conformance corpus, for zero interop gain (the names are arbitrary identifiers — they could be UUIDs). The split moves only type-*path* values and touches **zero map keys**. Ratifying the existing split instead leaves the wire contract untouched and reduces the whole core+extensions cleanup to a handful of true outliers. The coherence win comes from *writing the rule down and gating it mechanically*, not from churning identifiers. The data is the rationale: we ratify the pattern that is already established and already correct in the overwhelming majority of cases.
+**Why this split, and not one separator everywhere.** A single separator is superficially simpler, but the established corpus already follows this split with very high consistency, and unifying would not be free: an audit found that forcing kebab everywhere would rename **473 distinct field keys (3,314 occurrences) plus ~174 value / error-code tokens** (`type_ref`, `peer_id`, `content_hash`, `array_of`, `capability_denied`, …) — together ~620 distinct identifiers across ~3,600 occurrences, a total break of the wire data-contract across all implementations, the CBOR corpus, and every conformance vector. Field keys are CBOR **map keys**: canonical CBOR orders map keys by encoded bytes, so renaming one re-orders the map, changes every enclosing `content_hash`, and invalidates every signature and test vector in the corpus. All-kebab is not a string-replace; it is a re-genesis of the entire cryptographic conformance corpus, for zero interop gain (the names are arbitrary identifiers — they could be UUIDs). The split moves only type-*path* values and touches **zero map keys**. Ratifying the existing split instead leaves the wire contract untouched and reduces the whole core+extensions cleanup to a handful of true outliers. The coherence win comes from *writing the rule down and gating it mechanically*, not from churning identifiers. The data is the rationale: we ratify the pattern that is already established and already correct in the overwhelming majority of cases.
 
 The split is **configurable** in the linter (per-axis policy, see §5) so the standard can be retuned by a future proposal without rewriting tooling.
 
@@ -92,7 +92,7 @@ Casing is mechanical; *which word* is chosen is editorial and non-binding:
 
 Conformance authority is mechanical, not editorial:
 
-- `tools/spec-style` extracts every identifier from the spec corpus, classifies it by axis and separator, and reports every gated violation with `file:line`. Per-axis rules are config-driven (`--config`), so the standard can change by proposal without code changes.
+- The `spec style` analyzer extracts every identifier from the spec corpus, classifies it by axis and separator, and reports every gated violation with `file:line`. Per-axis rules are config-driven, so the standard can change by proposal without code changes.
 - A spec is **gate-clean** when the linter reports zero gated violations. Exit code is non-zero on violations, so it composes as a CI / pre-submit gate.
 - Contributors proposing a new extension spec or a core change MUST run the linter and submit gate-clean. Unformatted submissions are returned, not reviewed.
 - Post-V8, the linter runs as a conformance gate so a non-conforming identifier cannot land.
@@ -108,7 +108,7 @@ The linter favors **precision over recall** so the gate never wrongly blocks a c
 
 ## 6. Status & open items
 
-The **rule is normative** (ratified + folded in the v7.77 fold; the split above), validated against the corpus, and the corpus is **gate-clean** (`tools/spec-style` reports 0 violations — the document defining the rule is itself exempt from the corpus walk via `EXCLUDE_FILES`, since it must quote the non-conforming "before" forms to teach the rule). Remaining items:
+The **rule is normative** (ratified + folded in the v7.77 fold; the split above) and validated against the corpus. The document defining the rule is itself exempt from the corpus walk, since it must quote the non-conforming "before" forms to teach the rule. **Whether the corpus is gate-clean today is a build-state question this document does not answer** — run `spec check` and read its exit code. (This sentence carried a standing "0 violations" claim, which is the shape that goes stale silently: true when written, plausible forever, and refuted only by running the gate.) Remaining items:
 
 1. **SCREAMING_SNAKE wire-message-constant axis — RATIFIED** (§3). `HELLO` / `EXECUTE` / `CONTENT_GET` are an intentional, uniform convention; the linter may gate ALL_CAPS message constants rather than treat them as ungoverned. No rename either way.
 2. **The adjudication list — DONE (renamed in the v7.77 fold).** The audit's 9 true outliers (33 real occurrences) are renamed: the 7-member `system/type/constraint/*` snake family → kebab (ruled in §3.2; EXTENSION-TYPE v1.2); `system/peer_id` → `system/peer-id` (the lone core-spec straggler, a type-ref in SYSTEM-COMPOSITION v1.9); `system/content/frame_limit_respected` → kebab (EXTENSION-CONTENT v3.6 Amdt 4 + its validate-peer check label). 8 of 9 were in *extension* specs; none appeared in generated-peer source. Full impact + work-distribution: the V8 proposal (now in `proposals/implemented/`).

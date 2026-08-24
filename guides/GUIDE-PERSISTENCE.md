@@ -205,10 +205,10 @@ External:
 
 Internal (this repo):
 
-- `sdk-domain/specs/SDK-OPERATIONS.md` §15 (Configuration Directory — load-bearing on-disk layout); §11.6 / §11.6.6 (handler registration and re-registration); §16.4 (implementation-defined sections).
-- `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §8.0 (computation/I/O separation); §8.1 (`BootstrapFromExistingKeypair`); §8.4 (on-disk identity bundle layout).
-- `sdk-domain/guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §2.5 (storage dimension); §3 (archetypes — including multi-peer-per-app variant).
-- `sdk-domain/guides/GUIDE-ENTITY-WORKBENCH-APP.md` — companion guide; cross-references this for the persistent-vs-ephemeral line on application state.
-- `core-protocol-domain/specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md`.
+- `SDK-OPERATIONS.md` §15 (Configuration Directory — load-bearing on-disk layout); §11.6 / §11.6.6 (handler registration and re-registration); §16.4 (implementation-defined sections).
+- `SDK-IDENTITY-INFRASTRUCTURE.md` §8.0 (computation/I/O separation); §8.1 (`BootstrapFromExistingKeypair`); §8.4 (on-disk identity bundle layout).
+- `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §2.5 (storage dimension); §3 (archetypes — including multi-peer-per-app variant).
+- `GUIDE-ENTITY-WORKBENCH-APP.md` — companion guide; cross-references this for the persistent-vs-ephemeral line on application state.
+- `ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md`.
 - `proposals/PROPOSAL-OPERATIONAL-STATE-TYPES.md` — `system/transport`, `system/config`, `system/peer/*` types in the tree.
 - `proposals/implemented/PROPOSAL-GUIDE-PERSISTENCE.md` — proposal-track artifact this guide graduated from.

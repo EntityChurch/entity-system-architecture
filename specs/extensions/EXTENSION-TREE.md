@@ -302,7 +302,7 @@ Reference implementation: [go-hamt-ipld v3.4.1](https://github.com/filecoin-proj
 
 ### 3.3a The published root — `system/peer/published-root`
 
-*Landed here 2026-08-08 (`PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH` D1). Provenance: this type was defined as `NORMATIVE-LOCKED cgid-10-219` in `PROPOSAL-PEER-MANIFEST-STATIC-HANDSHAKE` §4, which lives in the **pre-split legacy archive** and never crossed into this corpus — while three landed MUSTs in `EXTENSION-NETWORK.md` (§6.5.3 `signed_pointer`, the `MANIFEST_GET` body, §6.5.6 Amendment 10) cited it as "(planned)". All three implementations built to that locked definition. This section supersedes it and is now the normative home; the legacy document is historical record only.*
+*This section is the normative home for `system/peer/published-root`; it supersedes any earlier definition. Rationale and provenance are in `PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH`.*
 
 A **published root** is a signed, mutable pointer to a trie root that a publisher commits to serving. It is the anchor of the walk-from-signed-root threat model: a consumer fetches it, verifies the signature, and walks the hash-chain from `root_hash` — never trusting paths the host claims outside that chain.
 

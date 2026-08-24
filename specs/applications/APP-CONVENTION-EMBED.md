@@ -7,7 +7,7 @@
 + **joint cross-team round folded** per the joint embed/site convergence synthesis (PF-2/5/6/7;
 spine locked three ways by workbench-go + godot + egui). Pairs with `APP-CONVENTION-SEMANTIC-CONTENT-SITE` v0.4.
 **Next: cut joint conformance vectors → ratify** (the three-substrate round was the high-yield sweep; the vector
-sprint is the lock). Proposal: `proposals/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`.
+sprint is the lock). Proposal: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`.
 **Domain:** `applications/` (first member — see `CHARTER.md`). **Charter class:** FORMAT-only.
 **Consumers:** `APP-CONVENTION-SEMANTIC-CONTENT-SITE` (first); workbench-go panels; Godot panels.
 

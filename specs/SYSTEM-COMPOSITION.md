@@ -731,7 +731,7 @@ Memory-only peers (peers with no durable storage) cannot satisfy this invariant:
 
 The mechanism that satisfies this invariant is the combination of §6.7.4.1 below (store-level hydration) plus the per-extension restart-consistency requirements already in place: EXTENSION-ATTESTATION.md §5.7 requires index lookups consistent with current tree state across restarts; EXTENSION-COMPUTE.md §7.1 requires dependency-index rebuild from `system/compute/processes/*` on restart; EXTENSION-SUBSCRIPTION states that the subscription entity is source of truth and internal indexes are caches over those entities. The blanket clause in §6.7.4.1 ("query indexes and other derived state rebuild after hydration completes") covers handlers whose extension specs don't restate the requirement.
 
-Patterns for satisfying this invariant — including the descriptive Class D/I/L vocabulary for canonical peer-internal entities and the handler-state rebuild patterns — live in `core-protocol-domain/guides/GUIDE-RESTART-AND-PERSISTENCE.md`. The patterns are advisory; this section's invariant is the normative requirement.
+Patterns for satisfying this invariant — including the descriptive Class D/I/L vocabulary for canonical peer-internal entities and the handler-state rebuild patterns — live in `GUIDE-RESTART-AND-PERSISTENCE.md`. The patterns are advisory; this section's invariant is the normative requirement.
 
 #### 6.7.4.1 Store-level hydration
 

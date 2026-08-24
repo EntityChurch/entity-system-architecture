@@ -139,7 +139,7 @@ EXTENSION-IDENTITY does NOT own:
 
 **If you're a new reader trying to understand the identity stack:**
 1. This doc (you're here)
-2. `core-protocol-domain/specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md` v1.0 — architecture overview with the layered picture (graduated from the v4.2 identity-infrastructure proposal)
+2. `ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md` v1.0 — architecture overview with the layered picture (graduated from the v4.2 identity-infrastructure proposal)
 3. `EXTENSION-ATTESTATION.md` v1.2 — the substrate (originating proposal: `proposals/implemented/PROPOSAL-EXTRACT-ATTESTATION-PRIMITIVE.md`)
 4. `EXTENSION-QUORUM.md` v1.2 — K-of-N node primitive (originating proposal: `proposals/implemented/PROPOSAL-EXTRACT-QUORUM-PRIMITIVE.md`)
 5. `EXTENSION-IDENTITY.md` v3.10 — the structured composition layer (originating proposal: `proposals/implemented/PROPOSAL-MINIMIZE-EXTENSION-IDENTITY.md`)

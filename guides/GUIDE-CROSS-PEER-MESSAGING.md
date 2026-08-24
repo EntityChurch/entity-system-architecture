@@ -4,7 +4,7 @@
 
 **Audience:** application developers and peer operators wiring cross-peer requests where the result may come back later, reliably, or through a peer too small to run extensions.
 
-**What this guide is — and is not.** This is *one pattern*: cross-peer messaging with delivery and durability options. It is **not** the peer-compositions concept. "Peer compositions" is the broader structural idea — you define a composition by the *set of extensions you install* plus the *topology/network shape* you wire peers into, and that framework accommodates *any* coupling pattern, of which this is one. The composition concept, the substrate kernel properties (liveness / path-scoped dispatch / bounded cascade), the named-composition catalog and the no-reactive-cycle topology discipline live in `core-protocol-domain/explorations/EXPLORATION-PEER-COMPOSITIONS.md` (v2) and the (deferred) `PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` thread, whose own guide deliverable is separate. This guide stays in its lane: the delivery/durability mechanics.
+**What this guide is — and is not.** This is *one pattern*: cross-peer messaging with delivery and durability options. It is **not** the peer-compositions concept. "Peer compositions" is the broader structural idea — you define a composition by the *set of extensions you install* plus the *topology/network shape* you wire peers into, and that framework accommodates *any* coupling pattern, of which this is one. The composition concept, the substrate kernel properties (liveness / path-scoped dispatch / bounded cascade), the named-composition catalog and the no-reactive-cycle topology discipline live in `EXPLORATION-PEER-COMPOSITIONS.md` (v2) and the (deferred) `PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` thread, whose own guide deliverable is separate. This guide stays in its lane: the delivery/durability mechanics.
 
 ---
 
@@ -34,7 +34,7 @@ The scenario matrix (§3) is the *delivery* layer and assumes the sender can alr
 
 ## 3. The scenario matrix (read this first)
 
-Every sender/receiver/knobs combination, concrete paths, and a verdict. Lifted from `core-protocol-domain/explorations/EXPLORATION-DELIVERY-DURABILITY-SCENARIO-MATRIX.md` §3 — the file:line-grounded backing **independently verified by entity-core-go and entity-workbench-go**. The exploration is the proof; this is the readable copy.
+Every sender/receiver/knobs combination, concrete paths, and a verdict. Lifted from `EXPLORATION-DELIVERY-DURABILITY-SCENARIO-MATRIX.md` §3 — the file:line-grounded backing **independently verified by entity-core-go and entity-workbench-go**. The exploration is the proof; this is the readable copy.
 
 **Legend:** **OK** = works today · **EXPL** = behavior described by the exploratory, optional `EXTENSION-DURABILITY.md`; not normative for V7 or for any peer that does not install that extension · **GUIDE** = a convention a deployment must arrange (not a spec gap).
 
@@ -167,7 +167,7 @@ These are deployment configuration. The same messaging pattern under different r
 
 ## 7. The durability contract — see EXTENSION-DURABILITY (exploratory, optional)
 
-The durability surface previously described in this section was retracted from the spec. The architecture team concluded the thread had broached too far into user-space semantics — it pattern-matched on log-system conventions (durability levels, status branching, advertisement) without an actual deployment driver. The lifted material is preserved as a standalone exploratory extension at `core-protocol-domain/specs/extensions/standard-peer-extensions/EXTENSION-DURABILITY.md`. It is **not normative for V7 or for any other extension**; no deployment is required to install it; EXTENSION-INBOX does not depend on it.
+The durability surface previously described in this section was retracted from the spec. The architecture team concluded the thread had broached too far into user-space semantics — it pattern-matched on log-system conventions (durability levels, status branching, advertisement) without an actual deployment driver. The lifted material is preserved as a standalone exploratory extension at `EXTENSION-DURABILITY.md`. It is **not normative for V7 or for any other extension**; no deployment is required to install it; EXTENSION-INBOX does not depend on it.
 
 If a peer installs `EXTENSION-DURABILITY`, that extension's §5 defines the response shape (status code + `durability` field, with `applied` = physically-in-place-now and `committed` = the async target on 202), §6 defines the lookup handle, and §8 defines the conformance obligations. If a peer does not install it, durability markers on requests are silently ignored — V7 v7.46's default behavior.
 
@@ -185,9 +185,9 @@ The open question on whether anything narrower (e.g. a one-line V7 rule requirin
 ## 9. Cross-references
 
 - `proposals/PROPOSAL-DELIVERY-AND-DURABILITY.md` — design history (Status: RETRACTED).
-- `core-protocol-domain/specs/extensions/standard-peer-extensions/EXTENSION-DURABILITY.md` — the exploratory standalone extension carrying the lifted §10 material.
-- `core-protocol-domain/explorations/EXPLORATION-DELIVERY-DURABILITY-SCENARIO-MATRIX.md` — file:line-grounded, independently verified backing for §3. (Still useful for the delivery-scenario portion; the durability verdicts in it correspond to the retracted spec text and now describe `EXTENSION-DURABILITY` behavior rather than V7 behavior.)
-- `core-protocol-domain/explorations/EXPLORATION-PEER-COMPOSITIONS.md` (v2) and the deferred `PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` — the **broader peer-compositions concept** (extension sets + topology; kernel properties; named-composition catalog).
+- `EXTENSION-DURABILITY.md` — the exploratory standalone extension carrying the lifted §10 material.
+- `EXPLORATION-DELIVERY-DURABILITY-SCENARIO-MATRIX.md` — file:line-grounded, independently verified backing for §3. (Still useful for the delivery-scenario portion; the durability verdicts in it correspond to the retracted spec text and now describe `EXTENSION-DURABILITY` behavior rather than V7 behavior.)
+- `EXPLORATION-PEER-COMPOSITIONS.md` (v2) and the deferred `PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` — the **broader peer-compositions concept** (extension sets + topology; kernel properties; named-composition catalog).
 - `EXTENSION-INBOX.md`; `EXTENSION-CONTINUATION.md`; `ENTITY-CORE-PROTOCOL.md` §1.4 / §3.2 / §3.3.
 - **Addressing/reachability layer (§3A):** the SMTP-model and generic-message-passing exploration (the SMTP cross-check); `EXTENSION-RELAY.md` v1.0 §3.5 (the MX-equivalent, folded; design record at `proposals/implemented/PROPOSAL-PEER-INBOX-RELAY-MX-EQUIVALENT.md`); `EXTENSION-RELAY.md` v1.0 (Mode S store-and-forward); `EXTENSION-REGISTRY.md` v1.0 (name→peer); `proposals/PROPOSAL-EXTENSION-BRIDGE-SMTP.md` (real-email interop, stub).
 

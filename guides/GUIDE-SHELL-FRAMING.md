@@ -13,7 +13,7 @@ This guide names that layer, pins what implementations must agree on, documents 
 
 It applies to any application that wraps the SDK in a verb surface — whether shipped as an interactive REPL (`dsh`, `entity-shell`), a one-shot CLI (`dls`, `dexec`), an embedded GUI window or panel, a command palette, a parameter form, or a library in a test driver. All are *render contexts* of the same shell.
 
-The exploration that feeds this guide (`core-protocol-domain/explorations/EXPLORATION-SHELL-FRAMING.md`) carries the reasoning, inheritance from prior shell traditions (Unix, Lisp REPL, IDE palette, Smalltalk image, structured shells), and the design-axis derivation. This guide carries only the conclusions.
+The exploration that feeds this guide (`EXPLORATION-SHELL-FRAMING.md`) carries the reasoning, inheritance from prior shell traditions (Unix, Lisp REPL, IDE palette, Smalltalk image, structured shells), and the design-axis derivation. This guide carries only the conclusions.
 
 ---
 
@@ -603,7 +603,7 @@ The following are deferred to future work and **MUST NOT** block adoption of thi
 
 ## 15. Companion Documents
 
-- `EXPLORATION-SHELL-FRAMING.md` (core-protocol-domain/explorations/) — the reasoning record this guide stands on. Part III (axes), Part IV (layering), Part VI (scoped apps + Python parity) are the load-bearing sections.
+- `EXPLORATION-SHELL-FRAMING.md` (pre-split legacy archive; not in this corpus) — the reasoning record this guide stands on. Part III (axes), Part IV (layering), Part VI (scoped apps + Python parity) are the load-bearing sections.
 - `PROPOSAL-CLI-ENTITY-TREE-TOOLS.md` (v5.0 proposals) — foundational verb vocabulary and dutils enumeration; predates and substantively aligns with this guide.
 - `GUIDE-ENTITY-WORKBENCH-APP.md` — §5.12 (CLI as render context). The principle that motivates the render-context normative pin (§3.6).
 - `GUIDE-SDK-PATTERNS.md` — the SDK surface the shell layer stands on.

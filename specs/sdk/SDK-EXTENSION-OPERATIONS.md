@@ -1068,7 +1068,7 @@ Type analysis operations (compare, converge, compatible, adopt, reconcile) are d
 
 > **Coherent Capability.** Role definition and assignment entities are load-bearing: creating either derives or scopes capability tokens. Use `system/role:define` and `system/role:assign` rather than direct `tree:put` to role-namespace paths. The handlers validate caller authority (RL2: caller cap covers proposed grants); direct `tree:put` bypasses these checks. See `EXTENSION-ROLE.md` §1.5.2 / §6.6.
 
-> **Identity composition.** When the identity extension is registered, the typical caller cap for role ops is the local peer→controller cap issued by `system/identity:configure`. See `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §7 for role↔identity composition (multi-role per (peer, context); multi-agent concurrent re-derive; bootstrap composition; member-to-member delegation chain depth).
+> **Identity composition.** When the identity extension is registered, the typical caller cap for role ops is the local peer→controller cap issued by `system/identity:configure`. See `SDK-IDENTITY-INFRASTRUCTURE.md` §7 for role↔identity composition (multi-role per (peer, context); multi-agent concurrent re-derive; bootstrap composition; member-to-member delegation chain depth).
 
 ### Operations (per role v2.0 + Amendments 1+2)
 
@@ -1168,7 +1168,7 @@ Per role v2.0 §5.5 — `:assign` may be called multiple times for the same (pee
 
 ### Initial grant policy (connect-time)
 
-The `system/role/initial-grant-policy` entity governs anonymous-allow / anonymous-deny / recognize-on-attestation behavior at the connection handler's grant-resolution step. Per role v2.0 PR-5 + §7, the resolver is an SDK seam, not a role-spec normative concern. SDK frameworks SHOULD provide a built-in role-aware resolver. See `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §7 for the role↔identity composition.
+The `system/role/initial-grant-policy` entity governs anonymous-allow / anonymous-deny / recognize-on-attestation behavior at the connection handler's grant-resolution step. Per role v2.0 PR-5 + §7, the resolver is an SDK seam, not a role-spec normative concern. SDK frameworks SHOULD provide a built-in role-aware resolver. See `SDK-IDENTITY-INFRASTRUCTURE.md` §7 for the role↔identity composition.
 
 ---
 
@@ -1242,12 +1242,12 @@ Extensions are independently registrable. Not every peer needs every extension. 
 | Network | Designed | Continuation, Subscription, Inbox | This doc §9 |
 | Content | Designed | None | This doc §11 |
 | Role | Stable (v2.0) | Capability system; identity (when registered) | This doc §13 |
-| **Attestation** | Stable (v1.2) | None | `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §5.1 |
-| **Quorum** | Stable (v1.2) | Attestation | `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §5.2 |
-| **Identity** | Stable (v3.5) | Attestation, Quorum | `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §6 |
-| Group | v1.5 sweep queued | Attestation, Quorum, Identity | `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md` §10 (placeholder) |
+| **Attestation** | Stable (v1.2) | None | `SDK-IDENTITY-INFRASTRUCTURE.md` §5.1 |
+| **Quorum** | Stable (v1.2) | Attestation | `SDK-IDENTITY-INFRASTRUCTURE.md` §5.2 |
+| **Identity** | Stable (v3.5) | Attestation, Quorum | `SDK-IDENTITY-INFRASTRUCTURE.md` §6 |
+| Group | v1.5 sweep queued | Attestation, Quorum, Identity | `SDK-IDENTITY-INFRASTRUCTURE.md` §10 (placeholder) |
 
-**Identity stack (attestation + quorum + identity, plus role-coherence aspects) is documented in `sdk-domain/specs/SDK-IDENTITY-INFRASTRUCTURE.md`** rather than per-extension subsections in this doc, because the surface composes across all three and includes a non-handler-op helper library (bootstrap, pairing, custody, rotation, recovery). The role section (§13) covers role's plain handler-ops surface; identity-coherence aspects (caller-cap composition, multi-agent re-derive, bootstrap composition, member-to-member delegation) live in the identity-infra spec.
+**Identity stack (attestation + quorum + identity, plus role-coherence aspects) is documented in `SDK-IDENTITY-INFRASTRUCTURE.md`** rather than per-extension subsections in this doc, because the surface composes across all three and includes a non-handler-op helper library (bootstrap, pairing, custody, rotation, recovery). The role section (§13) covers role's plain handler-ops surface; identity-coherence aspects (caller-cap composition, multi-agent re-derive, bootstrap composition, member-to-member delegation) live in the identity-infra spec.
 
 The standard peer configuration includes: subscription, continuation, inbox, history, query, clock, revision, transaction, and type. Identity-aware deployments add attestation + quorum + identity (and role; group when v1.5 lands). Compute, network, and content are designed — their SDK surfaces will solidify as implementations mature.
 

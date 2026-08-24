@@ -620,13 +620,13 @@ If you find yourself writing "deployments handle this" repeatedly, audit: are th
 
 | If you want to… | Start here |
 |---|---|
-| Understand the architecture | `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` |
-| Read the core protocol | `core-protocol-domain/specs/ENTITY-CORE-PROTOCOL.md` |
-| Understand layered composition / cascade | `core-protocol-domain/specs/SYSTEM-COMPOSITION.md` |
-| Understand the type system | `core-protocol-domain/specs/ENTITY-NATIVE-TYPE-SYSTEM.md` + `extensions/EXTENSION-TYPE.md` |
+| Understand the architecture | `SYSTEM-ARCHITECTURE.md` |
+| Read the core protocol | `ENTITY-CORE-PROTOCOL.md` |
+| Understand layered composition / cascade | `SYSTEM-COMPOSITION.md` |
+| Understand the type system | `ENTITY-NATIVE-TYPE-SYSTEM.md` + `extensions/EXTENSION-TYPE.md` |
 | See a clean substrate-extension example | `extensions/network-peer-extensions/EXTENSION-ATTESTATION.md`, `EXTENSION-QUORUM.md` |
 | See a composite-extension example | `extensions/network-peer-extensions/EXTENSION-IDENTITY.md` |
-| See a guide-format example | `core-protocol-domain/guides/GUIDE-ATTESTATION.md`, `GUIDE-QUORUM.md`, `GUIDE-IDENTITY.md` |
+| See a guide-format example | `GUIDE-ATTESTATION.md`, `GUIDE-QUORUM.md`, `GUIDE-IDENTITY.md` |
 | See a cross-impl validation matrix | `reviews/VALIDATION-MATRIX-IDENTITY-FOUNDATIONS.md` |
 | Look at recent extension-design lessons | the identity-stack audit review |
 | Cross-impl convergence loop in practice | the cross-impl ACME convergence retrospective |

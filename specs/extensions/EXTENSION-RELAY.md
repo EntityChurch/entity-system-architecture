@@ -4,7 +4,7 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
 **Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
-**Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
+**Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
 **Two prior arch rulings are load-bearing and unchanged by this landing:**
@@ -524,7 +524,7 @@ For Mode S to serve "current state of publisher's tree" use cases, a signed muta
 
 ---
 
-## §8 GC posture (per `core-protocol-domain/guides/GUIDE-GC.md`)
+## §8 GC posture (per `GUIDE-GC.md`)
 
 - **Mode F entries:** transient; GCed once forwarded (or after a small bounded retry window). No persistent state.
 - **Mode S entries:** persistent; honor `expires_at`; operator-configured `relay_store_retention` knob (default unlimited); per-namespace eviction policy optional.

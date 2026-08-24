@@ -3,7 +3,7 @@
 **Version**: 0.5
 **Status**: Active
 **Depends**: `SDK-OPERATIONS.md` (v1.6+); `EXTENSION-ATTESTATION.md` (v1.2+); `EXTENSION-QUORUM.md` (v1.2+); `EXTENSION-IDENTITY.md` (v3.5+); `EXTENSION-ROLE.md` (v2.0+).
-**Companion**: `sdk-domain/guides/GUIDE-IDENTITY-SDK.md` — application-developer-facing tutorial; sister to `core-protocol-domain/guides/GUIDE-IDENTITY.md`.
+**Companion**: `GUIDE-IDENTITY-SDK.md` — application-developer-facing tutorial; sister to `GUIDE-IDENTITY.md`.
 **Audience**: SDK implementers (Go peer team, Rust impl, Python impl, future impls). Cross-references for application developers building on top.
 
 ---
@@ -37,10 +37,10 @@ This document specifies the SDK surface for the identity stack — the set of op
 ## 2. Reading order
 
 1. **This spec (§3-§9)** — for SDK implementers building the surface.
-2. `sdk-domain/guides/GUIDE-IDENTITY-SDK.md` — application-developer-facing walkthroughs ("Do you need identity?"; provisioning; pairing; rotation; recovery).
-3. `core-protocol-domain/specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md` — architecture overview; the layered picture and decision log.
+2. `GUIDE-IDENTITY-SDK.md` — application-developer-facing walkthroughs ("Do you need identity?"; provisioning; pairing; rotation; recovery).
+3. `ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md` — architecture overview; the layered picture and decision log.
 4. `EXTENSION-IDENTITY.md` v3.5, `EXTENSION-ATTESTATION.md` v1.2, `EXTENSION-QUORUM.md` v1.2 — normative protocol behavior.
-5. `core-protocol-domain/guides/GUIDE-IDENTITY.md` — architecture-spec-language deep guide.
+5. `GUIDE-IDENTITY.md` — architecture-spec-language deep guide.
 
 ---
 
@@ -57,7 +57,7 @@ EXTENSION-IDENTITY       — structured composition layer: function (controller 
                            identifier / app-defined), recovery flows, publication modes
 ```
 
-Identity v3.5 introduces essentially two of its own entity types — `peer-config` (per-agent local state) and `identity-binding` (helper inner type) — and orchestrates the substrate primitives (`system/attestation`, `system/quorum`) into user-visible flows like `:configure`, `:create_attestation`, `:supersede_attestation`. See `core-protocol-domain/specs/SYSTEM-IDENTITY-COMPOSITION.md` for the navigation overview.
+Identity v3.5 introduces essentially two of its own entity types — `peer-config` (per-agent local state) and `identity-binding` (helper inner type) — and orchestrates the substrate primitives (`system/attestation`, `system/quorum`) into user-visible flows like `:configure`, `:create_attestation`, `:supersede_attestation`. See `SYSTEM-IDENTITY-COMPOSITION.md` for the navigation overview.
 
 **Three function values** discriminate identity-context attestations: `controller` (the persona managing the peer; published as the contact-side handle in 3-key default), `agent` (per-device daemon; attested by controller), `identifier` (4-key advanced — separates the published handle from the rotating controller key). App-defined functions are also permitted.
 
@@ -288,7 +288,7 @@ RevokePeer(runtime_peer, scope) → revocations
 
 ### 8.2 Quorum custody (transient-bootstrap → steady-state)
 
-Bootstrap necessarily generates K-of-N quorum constituent keypairs in one location — you can't K-of-N-sign without all K. Per `core-protocol-domain/guides/GUIDE-IDENTITY.md` §3.3 and §13.5, the design intent is that constituent private keys are immediately distributed across separate custody (paper, second device, trusted holder, hardware token) and removed from the original location. Leaving them colocated with the runtime peer is the catastrophic-loss surface.
+Bootstrap necessarily generates K-of-N quorum constituent keypairs in one location — you can't K-of-N-sign without all K. Per `GUIDE-IDENTITY.md` §3.3 and §13.5, the design intent is that constituent private keys are immediately distributed across separate custody (paper, second device, trusted holder, hardware token) and removed from the original location. Leaving them colocated with the runtime peer is the catastrophic-loss surface.
 
 Helpers make the two-phase pattern explicit:
 
@@ -441,7 +441,7 @@ Implementations MAY surface the boundary explicitly (separate sub-packages, dist
 
 ## 9. Rotation lifecycle hooks
 
-Per the rotation patterns in `EXTENSION-IDENTITY.md` §6 + `core-protocol-domain/guides/GUIDE-IDENTITY.md`, the SDK surfaces the following events to applications:
+Per the rotation patterns in `EXTENSION-IDENTITY.md` §6 + `GUIDE-IDENTITY.md`, the SDK surfaces the following events to applications:
 
 | Event | When it fires | What apps SHOULD do |
 |---|---|---|
@@ -483,4 +483,4 @@ Until v1.5 lands, applications use `EXTENSION-GROUP` v1.3 directly via `peer.exe
 
 - **v0.2 — egui-Rust review absorption:** Three additions per the egui-Rust team's SDK-identity-reconciliation review (a four-source reconciliation: architecture spec ↔ Go ↔ Rust SDK ↔ base SDK contract). **§5/§6 Request/result entity shapes pointer** (their §2.3 / §4.1) — clarifying note that wire schema is normatively defined at the protocol-side specs (EXTENSION-ATTESTATION/QUORUM/IDENTITY §6; EXTENSION-ROLE §4.2; V7 §3.7 type-registration convention); SDKs deserialize against those schemas. Cross-impl wire compatibility derives from the protocol-side schemas, not the SDK surface. **§8.0 Computation/I/O separation (normative for portability)** (their §2.5) — bootstrap helper library MUST structure as two layers: pure computation (in-memory bundle, no I/O, WASM-compatible) + platform-specific persistence (filesystem/IndexedDB/etc.). Public API may fuse them; the layered structure underneath is mandatory. Browser WASM is a real deployment target; the previous helper signatures implied filesystem coupling that doesn't translate. **§8.4 Manifest filename `identity.toml` SHOULD-tier** (their §2.6 / §4.2) — pin the manifest filename for cross-impl bundle tools; Go's `bundle.json` is pre-spec and SHOULD migrate to `identity.toml` (or accept both for read) during a transition window. Closes the cross-impl interop ambiguity between Go's empirical name and the spec's sketch. No mechanism change for any of the three; clarifications + portability framing only.
 
-- **v0.1 draft:** Initial Rev 6 draft per the SDK identity-infrastructure-alignment proposal (Rev 6 banner). Bottom-up from Go's `ext/role/sdk/` + `ext/identity/sdk/` empirical baseline; top-down from v3.5 substrate vocabulary (controller / agent / identifier; identity-cert kinds; properties.mode discipline; substrate ops). Sections: scope; reading order; identity stack at a glance; SDK access levels (L0 bootstrap exemption + L1 dispatched); substrate ops surface (attestation + quorum); identity convention-layer surface; identity-coherence aspects of role; bootstrap helper library contract (signature catalog + custody + recovery + bundle layout + adapters + L0/L1 boundary); rotation lifecycle hooks; group placeholder; open questions. Companion: `sdk-domain/guides/GUIDE-IDENTITY-SDK.md` (drafted Step 3); matching pass on `SDK-OPERATIONS.md` / `SDK-EXTENSION-OPERATIONS.md` / `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` (Step 4).
+- **v0.1 draft:** Initial Rev 6 draft per the SDK identity-infrastructure-alignment proposal (Rev 6 banner). Bottom-up from Go's `ext/role/sdk/` + `ext/identity/sdk/` empirical baseline; top-down from v3.5 substrate vocabulary (controller / agent / identifier; identity-cert kinds; properties.mode discipline; substrate ops). Sections: scope; reading order; identity stack at a glance; SDK access levels (L0 bootstrap exemption + L1 dispatched); substrate ops surface (attestation + quorum); identity convention-layer surface; identity-coherence aspects of role; bootstrap helper library contract (signature catalog + custody + recovery + bundle layout + adapters + L0/L1 boundary); rotation lifecycle hooks; group placeholder; open questions. Companion: `GUIDE-IDENTITY-SDK.md` (drafted Step 3); matching pass on `SDK-OPERATIONS.md` / `SDK-EXTENSION-OPERATIONS.md` / `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` (Step 4).
