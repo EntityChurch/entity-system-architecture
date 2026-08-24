@@ -1,6 +1,6 @@
 # Subscription Extension — Normative Specification
 
-**Version**: 3.16
+**Version**: 3.17
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.31+), EXTENSION-INBOX.md (v5.0+)
@@ -120,7 +120,7 @@ system/subscription/notification := {
 
 > **Ownership (re-homed 2026-08-02, `PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §3.2).** This type is now **canonical here** in `EXTENSION-SUBSCRIPTION` — a subscription event belongs to the spec that defines subscriptions (owner-not-problem-domain, `SPECIFICATION-FORMAT.md` §8.4.2). It was previously `system/protocol/inbox/notification`, mis-homed under INBOX by the `protocol` prefix; its sibling `system/inbox/delivery` (async op results) correctly **stays** INBOX-owned. **`EXTENSION-INBOX.md` §2.2 now reproduces this block** for reading convenience (its `receive` handles the type as a payload). **Change the type here; update that reproduction to match.** *(Wire note: this is a type-string rename — a version-mismatched peer sees an unknown type, a loud failure, not the silent never-meet of the §3.1 flag day; impls still update in step.)*
 
-Notifications report what changed and where. By default they carry only `hash` / `previous_hash`, not entity data. When the subscription sets `include_payload` (§2.3), the server MUST bundle the changed entity into the delivery envelope's `included` map (§4.2) — so the subscriber has the bytes atomically with the notification and needs no follow-up cross-peer GET. This is what makes the cross-peer mirror recipe a single hop: the subscriber applies the change locally with `tree:put` + CAS (`expected_hash = previous_hash`), no fetch (see `proposals/PROPOSAL-CONVERGENT-MIRRORING.md`). Absent/`false`, notifications stay lean (the "tell me when, I'll decide whether to read" case).
+Notifications report what changed and where. By default they carry only `hash` / `previous_hash`, not entity data. When the subscription sets `include_payload` (§2.3), the server MUST bundle the changed entity into the delivery envelope's `included` map (§4.2) — so the subscriber has the bytes atomically with the notification and needs no follow-up cross-peer GET. This is what makes the cross-peer mirror recipe a single hop: the subscriber applies the change locally with `tree:put` + CAS (`expected_hash = previous_hash`), no fetch. The recipe's CAS pins are below; the properties a conformant deployment of it MUST exhibit are §6.3. Absent/`false`, notifications stay lean (the "tell me when, I'll decide whether to read" case).
 
 **`include_payload` precise semantics (normative).**
 
@@ -530,16 +530,11 @@ Subscription patterns use the same matching rules as capability patterns (ENTITY
 
 ### 4.4 Entity Inclusion
 
-The server MAY include the changed entity in the notification envelope's `included` map. Inclusion decision is implementation-defined. Strategies:
+**Inclusion is the subscription's decision, not the server's (normative; v3.17).** Whether the changed entity rides in the notification envelope's `included` map is determined solely by the subscription's `include_payload` flag (§2.3), under the semantics pinned in §2.2: set ⇒ the server MUST bundle the direct entity at `notification.hash`; absent or `false` ⇒ the server MUST NOT attach it. The two carve-outs are also in §2.2 — nothing is bundled for a removed event, and a source that cannot resolve the entity at delivery time delivers hash-only rather than failing.
 
-| Strategy | Behavior |
-|----------|----------|
-| Never include | Subscriber always fetches. Minimal bandwidth. |
-| Always include | Subscriber has entity immediately. Higher bandwidth. |
-| Size threshold | Include if entity < N bytes. Exclude large entities. |
-| Subscriber hint | Subscribe request includes `include_entities: true/false`. |
+The subscriber detects inclusion by checking `envelope.included[params.hash]`, and MUST tolerate its absence on an `include_payload` subscription (the resolution-failure fallback).
 
-The subscriber detects inclusion by checking `envelope.included[params.hash]`.
+> **This section previously read the other way** — "the server MAY include … inclusion decision is implementation-defined," with a size-threshold strategy and a subscriber hint named `include_entities`. That predates the v3.13/v3.14 `include_payload` arc and was left behind by it. It was wrong on three counts: it contradicted §2.2's MUST, it named a field this spec does not define (`include_entities` is EXTENSION-QUERY's, §5.1 there), and a server-side size threshold silently breaks the §6.3 mirror recipe — a receiver whose continuation expects the bundled entity gets a hash-only notification for exactly the large entities, and `deref_included` no-ops per its best-effort rule, so the mirror stops advancing with **no error anywhere**. An implementation-defined inclusion policy is a `MAY` whose two conformant readings diverge across a peer boundary; it is pinned, not preserved.
 
 ### 4.5 Notification Budget Model
 
@@ -742,6 +737,22 @@ For third-party delivery, the deliver token MUST authorize the server (Peer B) t
 
 The delegation chain is included in the subscribe EXECUTE's envelope. The server stores the deliver token with the subscription and uses it for every delivery.
 
+### 6.3 Convergent mirroring — required properties (v3.17)
+
+A **mirror** is a peer that reproduces another peer's subtree by subscribing to it and applying each reported transition locally. The mechanism is already normative and split across three specs — `include_payload` and the CAS pins (§2.2/§2.3 here), CAS-create on the zero hash (ENTITY-CORE-PROTOCOL.md §3.9), the `deref_included` transform_op that lets a plain continuation consume the bundled entity (EXTENSION-CONTINUATION.md §2.2), and request-side `included` preservation so the map reaches that continuation (ENTITY-CORE-PROTOCOL.md §3.3). **This section pins what that mechanism must produce**, because the mechanism being conformant per-message does not by itself establish that a ring of mirrors terminates.
+
+**Why it is stated as an observable property, not only as a recipe.** The failure this prevents is *stale-lap amplification*: a slow lap carrying an old `previous_hash` arrives at a peer that has already advanced, an **unconditional** local `tree:put` rewrites that peer backwards, the rollback is itself a real tree change, and it propagates forward and collides with newer laps. Measured on a 4-peer ring, 20 external writes produced ~87 laps, bounded only by the cascade-depth backstop. Every individual write in that trace is conformant. The defect is only visible in the aggregate, across a peer boundary — so the aggregate is what gets pinned.
+
+**Drive.** N external writes at one peer of a mirror topology, each write matching a subscription whose delivery reaches the mirroring peer.
+
+**Property (i) — bounded amplification (MUST).** Over the drive, each peer MUST settle at most **`1.5 × N`** writes on the mirrored path, within a bounded time. Under a correct CAS recipe a one-way mirror settles exactly N; the 1.5 multiplier is headroom for transient races, **not** a licence to re-settle. Exceeding it means a stale lap is being applied rather than rejected — the recipe is failing to terminate.
+
+**Property (ii) — convergence to latest (MUST).** After the drive quiesces, every mirroring peer MUST hold the entity bound by the **latest** external write, byte-identical to the source (the mirrored entity's `content_hash` equals the source's — see ENTITY-CBOR-ENCODING.md §5.4). Convergence MUST hold under delivery loss: a peer that misses notifications MUST still reach the latest state, via §5.5 gap detection and re-read.
+
+**What is conformance-observable and what is not.** Properties (i) and (ii) are **cross-impl assertions** — they are stated over externally visible tree state and settle counts, so any peer can be measured by any implementation's harness. **Drop injection is implementation-internal**: how a harness induces the loss for property (ii) depends on engine internals and is not specified here; only the assertion shape (converge-to-latest) is. A conformance run that cannot inject drops still MUST assert (ii) under normal delivery.
+
+**Scope.** These properties bind a peer that *offers* the mirror recipe — `include_payload` subscriptions plus the §2.2 CAS-put chain. They do not oblige a peer to implement mirroring at all; they pin what mirroring means where it is offered, so two conformant peers mirroring each other terminate rather than amplify. Verified cross-impl (Go / Rust / Python, fresh peers per directional pair) before this section was written; the bound is a folded result, not a new requirement.
+
 ---
 
 ## 7. Security Considerations
@@ -930,6 +941,8 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Notification delivery as authenticated inbox EXECUTE per EXTENSION-INBOX.md
 - Per-subscription ordering MUST be preserved (§5.2; v3.15): for a single subscription, deliveries arrive in tree-change order. Cross-subscription ordering is impl-defined — parallelism across subscriptions is allowed and recommended.
 - The substrate MUST NOT automatically re-register inbox handlers for prior subscription entities on subscriber process restart (§5.7; v3.15). Subscriber-side restoration is application-level — application/SDK code is responsible for restoration via the existing publisher-side subscription persistence + §5.5 gap detection, or via EXTENSION-NETWORK's `maintain-peer` when installed. The MUST NOT ensures consumers can rely on a known substrate scope when building restoration helpers.
+- Entity inclusion is decided by the subscription's `include_payload` flag alone (§4.4; v3.17) — set ⇒ bundle the direct entity, absent/`false` ⇒ MUST NOT attach it. No server-side inclusion policy.
+- Where the mirror recipe is offered, both convergent-mirroring properties hold (§6.3; v3.17): **bounded amplification** — at most `1.5 × N` settled writes per peer over N external writes — and **convergence to latest**, byte-identical to the source and holding under delivery loss.
 
 ### 11.2 SHOULD Implement
 
@@ -947,8 +960,6 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 
 ### 11.3 MAY Implement
 
-- Entity inclusion in notification envelopes (§4.4)
-- Custom entity inclusion strategies (§4.4)
 - Inbox handler notification processing via `receive` operation (§3.3)
 
 ### 11.4 Implementation-Defined
@@ -956,7 +967,6 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Notification delivery retry policy
 - Maximum queued notifications per subscription
 - Subscription cleanup period for failed deliveries
-- Entity inclusion strategy
 - Subscription ID generation scheme
 - Default values for subscription limits (notification_budget, max_events, max_duration_ms, rate_limit)
 - Server-imposed limit maximums

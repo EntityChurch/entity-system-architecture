@@ -235,7 +235,7 @@ unsubscribe(subscription_id: string) → Status
                                or zero-hash for created events — see SDK-OPERATIONS §3.2 put_cas)
 ```
 
-This is the convergent-mirror recipe (`PROPOSAL-CONVERGENT-MIRRORING` in `proposals/implemented/`). With `include_payload`, the subscriber needs no follow-up cross-peer GET — the entity is delivered alongside the notification, and the local `put_cas` with the threaded `previous_hash` (or zero-hash for bootstrap) prevents stale-lap amplification. Without `include_payload`, the flow is unchanged: hashes-only notification, subscriber pulls via `tree:get` on demand.
+This is the convergent-mirror recipe (normative: `EXTENSION-SUBSCRIPTION.md` §2.2 for the CAS pins, §6.3 for the properties a deployment MUST exhibit). With `include_payload`, the subscriber needs no follow-up cross-peer GET — the entity is delivered alongside the notification, and the local `put_cas` with the threaded `previous_hash` (or zero-hash for bootstrap) prevents stale-lap amplification. Without `include_payload`, the flow is unchanged: hashes-only notification, subscriber pulls via `tree:get` on demand.
 
 ### SDK Watch Wrapper
 
