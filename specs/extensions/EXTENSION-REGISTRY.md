@@ -243,15 +243,32 @@ registry zone, alongside its bindings. It is the entity-native SRV-analog to §3
 system/registry/service-advertisement := {
   deployment: <peer_id>,        ; the deployment/registry identity this set belongs to
   services: {
-    reflector:    [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint}]   ; STUN — core path
-    signaling:    [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint}]   ; rendezvous carrier — core path
-    ? data_relay: [+ {endpoint: <endpoint per NETWORK §6.5>, priority: uint,
-                      policy: "open" / "members" / "metered"}]                  ; TURN / RELAY Mode-C — optional
-    ? inbox_relay:[+ {peer_id: <peer_id>, priority: uint}]                      ; RELAY Mode-S — optional
+    reflector:    [+ {endpoint: primitive/string, priority: uint}]   ; STUN URI (§3b.0) — core path
+    signaling:    [+ {endpoint: primitive/string, priority: uint}]   ; carrier URL (§3b.0) — core path
+    ? data_relay: [+ {endpoint: primitive/string, priority: uint,
+                      policy: "open" / "members" / "metered"}]       ; TURN URI (§3b.0) — optional
+    ? inbox_relay:[+ {peer_id: <peer_id>, priority: uint}]           ; RELAY Mode-S — optional
   },
   ttl: uint                     ; ms since Unix epoch, per §2.1
 }
 ```
+
+### §3b.0 `endpoint` is a URI string, and a reflector is not a peer `[cross-peer seam — MUST; corrected 2026-08-14]`
+
+**`endpoint` here is a `primitive/string` carrying a URI — it is NOT an `EXTENSION-NETWORK.md` §6.5 endpoint object.** Per service type:
+
+| Service | `endpoint` form | Reference |
+|---|---|---|
+| `reflector` | **`stun:<host>[:<port>]`** or `stuns:` — **RFC 7064**. Non-hierarchical: there is **no `//`**. | RFC 7064 §3 |
+| `data_relay` | **`turn:<host>[:<port>][?transport=udp\|tcp]`** or `turns:` — **RFC 7065**. Also non-hierarchical. | RFC 7065 §3 |
+| `signaling` | a scheme-prefixed carrier URL — `ws://`, `wss://`, `tcp://host:port` | matches `EXTENSION-NETWORK.md` §6.5.1a D4's inner `url` **value**, as a bare string |
+| `inbox_relay` | *(no endpoint — carries `peer_id`)* | §3b |
+
+**Why not §6.5, stated as a category rather than a type mismatch.** A §6.5 transport profile describes how to reach an **entity peer**: it carries `supported_ops`, `freshness`, `nonce_required`, and `cap_flow`, none of which mean anything for a STUN reflector. **A reflector is not a peer.** It speaks RFC 5389 over UDP (`EXTENSION-SIGNALING.md` §9.3), holds no identity, completes no handshake, and answers no entity operation — `EXTENSION-NETWORK.md` §6.7.1 already refuses to conflate the two in the other direction. A TURN relay is the same. Pointing this field at §6.5 was a **category error**, and the type mismatch below was its symptom.
+
+**The mismatch it caused `[the reason this is a MUST]`.** §6.5.1a D4 pins the live form to the object `{url: "<scheme>://…"}`, while §3b.3 hashes "the advertised endpoint **string's** bytes exactly as published." **An object has no string's bytes**, so two implementers could each be textbook-correct and diverge — one hashing the CBOR encoding of the `{url: …}` map, the other the UTF-8 of the inner `url` value. Different bytes → different SHA-256 → different `argmax` → **the two peers select different `signaling` members and never meet**, which is the exact silent failure §3b.2 makes MUST and §3b.3 pins to the byte to foreclose, reintroduced one level down in *what identifies a member* — a free variable §3b.3's own preamble names. *(Reported by `entity-browser-rust` 2026-08-14, before any implementation existed. The ambiguity was **inherited**: `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT` already wrote `"endpoint": {url}` alongside "the advertised endpoint string's bytes", so re-reading the proposal reaches the same fork — and the fold did not catch it.)*
+
+**A second consequence, and the reason the form is pinned and not merely the type.** `"<scheme>://…"` **cannot express a valid ICE URL at all.** A browser hands these to `RTCIceServer.urls`, which requires the RFC 7064/7065 non-hierarchical form, and a malformed entry does not degrade — it **throws at `RTCPeerConnection` construction**, taking out the establisher rather than falling back to host-only. Publishing the URI in its final form means a consumer hands the **published bytes to the ICE agent verbatim, with no transform** — which is also the ENTITY-CORE-PROTOCOL.md §1.8 byte-preservation posture, since a re-encode on a boundary is *the* interop hazard.
 
 It **MUST** carry a `system/signature` at the invariant-pointer path (V7 §3.5), verified against the
 pinned deployment identity **exactly as a binding is** (§6a.4). A tampered or expired advertisement
@@ -323,11 +340,12 @@ textbook-correct HRW and split every pair.**
 >
 > - **`k`** is the 33-byte rendezvous key **exactly as derived** (`EXTENSION-SIGNALING.md` §3.1) —
 >   the same bytes that go on the wire, never a re-hash of them.
-> - **`endpoint_bytes`** are the advertised endpoint string's bytes **exactly as published** — no
->   normalization, no case-folding, no scheme or default-port canonicalization. Both peers read the
->   *same* advertisement, so byte-preservation makes them agree without either running a URL
->   canonicalizer — and a canonicalizer is precisely where two implementations drift apart
->   (`EXTENSION-SIGNALING.md` §3.3 is the same rule for the key's own string inputs).
+> - **`endpoint_bytes`** are the **UTF-8 bytes of the `endpoint` string** (§3b.0) **exactly as
+>   published** — no normalization, no case-folding, no scheme or default-port canonicalization,
+>   and **never the CBOR encoding of any enclosing map**. Both peers read the *same* advertisement,
+>   so byte-preservation makes them agree without either running a URL canonicalizer — and a
+>   canonicalizer is precisely where two implementations drift apart (`EXTENSION-SIGNALING.md` §3.3
+>   is the same rule for the key's own string inputs).
 > - **No separator between the two, because `k` is fixed at 33 bytes**, which makes the
 >   concatenation unambiguous by construction. Recorded explicitly so it is not read as the
 >   missing-separator defect the `pair` key derivation had to fix.
@@ -350,11 +368,40 @@ different members. Each peer SHOULD try its **top-2** choices, which covers a si
 delta cheaply. A "looking-for-you" beacon forwarded within the pool is the heavier mitigation and is
 **not** v1 — add it only under measured skew.
 
-> **`[§11.5-class]` — not validatable by a single-member pool.** `argmax` over one member returns
-> that member whatever the weight computes, so **every** construction agrees and a green gate says
-> nothing. The conformance vector MUST use a **two-member pool**. This is the same
-> single-impl-invisibility as `EXTENSION-SIGNALING.md` §7.2 `fire_at`, and it is why this pin went
-> unnoticed while three implementations built the selection function.
+#### §3b.3.1 What the selection vector MUST discriminate `[MUST]`
+
+**A two-member pool is necessary and not sufficient.** It catches an implementation that computes
+the weight *wrongly*. It **cannot** catch several implementations that each compute it *correctly
+over different operands* — each is internally self-consistent, and a fixture authored by one of them
+ratifies whichever operand its author chose. That is the cohort-consistency trap ([ADR-0012]: a
+cohort all passing one author's vectors is cohort-consistent, **not** independent convergence),
+sitting one level inside the very rule §3b.3 exists to pin. *(Raised by `entity-browser-rust`
+2026-08-14 against the first draft of this section, which asked only for two members.)*
+
+This section states the **properties the vector must have**. The vector's own bytes are **not
+authored here** — they are generated and pinned by the conformance oracle, and cited
+`N·0F @ <oracle-commit>` like every other published conformance number ([ADR-0012]). A digest
+hand-written into prose cannot be checked by reading it, which is precisely the failure mode this
+section exists to prevent.
+
+The selection vector **MUST**:
+
+1. **Use a pool of at least two members** in the same `priority` tier. `argmax` over one member
+   returns that member whatever the weight computes, so every construction agrees and a green gate
+   says nothing.
+2. **Discriminate the operand (§3b.0/§3b.3).** The member endpoints MUST be chosen so that hashing
+   the enclosing map's CBOR encoding, or the inner value of a `{url: …}` object, or a canonicalized
+   form of the endpoint, yields a **different selected member** than hashing the endpoint string's
+   published UTF-8 bytes. A vector every candidate operand passes tests nothing.
+3. **Separate weight order from endpoint order.** The selected member MUST NOT be the
+   lexicographically-first endpoint in the pool, so that an implementation sorting by endpoint
+   rather than by weight fails.
+4. **Exercise the tier rule (§3b.3)** with at least one member outside the lowest `priority` tier
+   present, so that hashing before partitioning fails.
+
+> **`[§11.5-class]` — single-impl-invisible.** This is the same invisibility as
+> `EXTENSION-SIGNALING.md` §7.2 `fire_at`, and it is why the pin went unnoticed while three
+> implementations built the selection function against pools they configured themselves.
 
 ### §3b.4 Prefer the cheap path `[SHOULD]`
 

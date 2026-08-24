@@ -1,6 +1,6 @@
 # System Revision Extension
 
-**Version**: 3.10
+**Version**: 3.11
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
@@ -223,6 +223,8 @@ and dispatched by no implementation. Splitting their pair, because the two are n
 **KeepBoth bindings are versioned.** The additional binding at the `.keep-both-` path falls under the prefix and is included in the version snapshot. Subsequent merges see it as a normal binding. If a future merge also produces keep-both at the same original path, a new `.keep-both-{different_hash_prefix}` binding is created — keep-both paths accumulate until manually cleaned up or until a different strategy resolves the divergence.
 
 **Custom strategies `[corrected v3.9]`.** `strategy: "handler"` — the sentinel — with the handler path in the companion **`handler`** field (e.g. `{strategy: "handler", handler: "app/merge/text-handler"}`). The revision handler delegates content-level merge to that handler, which receives base, local, and remote entities and returns a merged entity or conflict.
+
+**The sentinel without its companion path MUST be refused at config-write `[MUST, v3.11]`.** A config carrying `strategy: "handler"` with the `handler` field absent or empty MUST be rejected with **`400 invalid_strategy`**, and no binding may land — enforced at the §4.4.18 `merge-config` op, which is the write-time site the same way it is for `lww`/`keep-both` above. This is stated **here**, in the section §4.4.18's field-shape validation defers to, because that deferral is precisely how the rule went unwritten: two implementations built it by inference and the third could have read §2.3 literally and accepted a config that can never dispatch. See §4.4.18 for the pseudocode, the vector, and the full rationale.
 
 > **This paragraph previously read *"when `strategy` is a handler path"*, and that reading is retracted.** Two encodings of custom dispatch were live in this document at once: a *closed enumeration plus a `handler` path field*, and *any path string as the strategy value*. §5.2's `apply_strategy(strategy, …, handler_path)` takes the two as separate arguments and branches on `strategy == "handler"`, so the sentinel is the one the algorithm implements — and it is the only one compatible with §2.3's **write-time strategy-rejection contract** (`400 invalid_strategy`), which cannot exist over a value set that admits any path string. The open-value reading is the leg that goes.
 
@@ -2394,7 +2396,18 @@ handle_merge_config(ctx, params):
                           + " is not a valid value (see §2.3); use one of "
                           + "preserve-on-conflict | deletion-wins | three-way-fallthrough "
                           + "| deterministic | <handler-path>")
-  ; Other field-shape validation (strategy field, pattern shape, etc.) per §2.3.
+  ; §2.3 sentinel shape [MUST, v3.11] — `handler` is a sentinel, not a path.
+  ; A config naming the sentinel without a non-empty companion `handler`
+  ; field can never dispatch (§5.2 branches on strategy == "handler" and
+  ; passes `handler` as the path), so config-write is the ONLY place the
+  ; defect can surface. Refuse it here.
+  if config.data.strategy == "handler"
+     and (config.data.handler is absent or config.data.handler == ""):
+    return error(400, "invalid_strategy",
+                 reason = "strategy \"handler\" is a sentinel; the handler path "
+                          + "belongs in the companion `handler` field (see §2.3)")
+
+  ; Other field-shape validation (pattern shape, etc.) per §2.3.
 
   ; Idempotent: re-writing the same content_hash is a no-op
   config_hash = content_store.put(config)
@@ -2418,6 +2431,31 @@ Prior to v3.3 the spec mandated the strategy-rejection outcome but did not pin t
 - `merge_config_set_idempotent` — re-issuing identical config returns `no_change`; no new content-store entry.
 - `merge_config_cas_guard` — stale `expected_hash` → `409 stale_expected_hash`; no binding written.
 - `merge_config_delete` — action=delete unbinds the path; returns `status: "deleted"`.
+- `merge_config_rejects_handler_sentinel_without_path` **[v3.11]** — action=set, `strategy: "handler"` with the companion `handler` field absent or empty → `400 invalid_strategy`; no binding lands. **Control (required):** the same config *with* a non-empty `handler` path is accepted, in both `scope=path` and `scope=type`. A rejection row without its acceptance control passes trivially against a peer that rejects everything (`GUIDE-CONFORMANCE` §2.4a).
+
+> **The sentinel's own shape rule was deferred and never stated `[ruled 2026-08-15, v3.11]`.** §2.3
+> `[corrected v3.9]` made `strategy: "handler"` a **sentinel** whose path lives in the companion `handler`
+> field, and this section's pseudocode then deferred the rest with *"other field-shape validation (strategy
+> field, pattern shape, etc.) per §2.3"* — while §2.3 states the sentinel's *encoding* and never its
+> *write-time refusal*. So the rule was reachable only by inference, and **two implementations built it from
+> that same inference independently** (`entity-core-go` in their tree; `entity-core-py` at `ef20f3b`, which
+> routed the gap here). Two impls inferring identically is not the same as a pinned rule: it is the state
+> that looks converged right up until a third reads §2.3 literally, finds no refusal contract, and accepts a
+> config that can never dispatch.
+>
+> **Why config-write is the only site.** A sentinel with no companion path has no failure mode at merge
+> time that is distinguishable from an ordinary miss — §5.2 branches on `strategy == "handler"` and hands
+> `handler` to the dispatcher, so an empty path falls through to a conflict entity, which is also what a
+> handler that legitimately declines produces. The operator gets a conflict and no diagnosis. **This is the
+> same shape §2.3's `lww`/`keep-both` contract already has** (`400 invalid_strategy` at write time, because
+> read-time validation can only collapse the value silently, never reject it) — so the sentinel row is not a
+> new kind of rule, it is the row that was missing from one that already existed.
+>
+> **Adopted from `entity-core-py`'s build, and their scoping argument is the durable half:** go routed only
+> the write-time check; py built the merge-time arm in the same commit, on the grounds that *the
+> intermediate state is worse than either end* — a write-time-only fix returns a clean error for the config
+> that cannot work while leaving silence for the one that can. That reasoning generalizes past this row and
+> is why the vector above carries a mandatory acceptance control.
 
 #### 4.4.19 fetch-diff
 
@@ -2933,13 +2971,26 @@ EXECUTE <handler_path>  operation: "merge"
   params: {
     type: "system/revision/merge-request"
     data: {
-      path:     <conflicting path>
       base:     <ancestor entity hash>
       local:    <local entity hash>
       remote:   <remote entity hash>
     }
   }
 ```
+
+> **This example carried a fourth field, `path`, that the normative type block below does not declare
+> `[corrected 2026-08-15, v3.11]`.** Routed by `entity-core-py` after they and `entity-core-go` independently
+> built the three-field shape and pinned it *"so the cohort does not diverge while arch rules."* **Ruled: the
+> type block is the contract; `path` is struck from the example.** The evidence was two-to-one inside this
+> document — the `system/revision/merge-request` declaration and §5.2's `dispatch_merge_handler` pseudocode
+> both carry three fields; only this example carried four.
+>
+> **Fifth instance of the family, and it decided itself the same way every time: the normative artifact and
+> the prose disagreed, and the implementations followed the artifact.** That is now this corpus's stated tie-break
+> (§5.4/§8.3, `ENTITY-CORE-PROTOCOL` §5.4a) and it is why the correction is to the example rather than a
+> widening of the type. A handler needing the conflicting path as merge context is a **real but separate
+> question** — it is a field addition with a cross-peer surface, and it goes through a proposal, not through an
+> example block that has quietly disagreed with its own schema.
 
 ```
 system/revision/merge-request := {
@@ -2960,6 +3011,22 @@ system/revision/merge-response := {
 ```
 
 A custom merge handler can implement any algorithm: text diff3, CRDT merge, semantic merge for domain-specific entity types. The revision extension provides the framework; the handler provides the intelligence.
+
+**Dispatch authority — the merge handler runs under the *caller's* capability `[MUST, v3.11]`.** The delegated `EXECUTE` is authorized by the capability of the peer whose merge triggered it, **never** by a grant belonging to the revision handler or to the merge config's author. An implementation MUST NOT widen authority across this delegation.
+
+> **Ruled 2026-08-15 on a reading `entity-core-go` and `entity-core-py` had already converged on, and their
+> argument is the ruling.** The handler path is **application code named by whoever wrote the merge config**,
+> and merge configs are global (§3.1.1). Dispatch under the handler's own grant would therefore let a config
+> author reach paths the merging caller cannot — a privilege escalation authored in configuration, triggered
+> by a third party's ordinary merge, with no capability the victim ever granted appearing anywhere in the
+> chain. **This is the seam the rule exists for:** the config author, the handler, and the caller can all be
+> different principals, and only the caller's authority is one the merging peer actually consented to.
+>
+> It also needs no new machinery — it is `ENTITY-CORE-PROTOCOL` §6.8 applied here (*"caller-specified
+> paths … the caller's capability is the authorization"*, and *"propagated caller capability is not a dispatch
+> gate"*). Pinned as a **MUST** rather than left to converge because two conformant readings diverge across a
+> peer boundary, which `AGENTS-STANDARD` says to lean MUST on — and because the divergent reading fails
+> *open*, silently, in the direction of more authority.
 
 ### 5.4 CRDT as Merge Strategy
 
