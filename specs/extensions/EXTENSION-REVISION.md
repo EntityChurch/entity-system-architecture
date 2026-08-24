@@ -360,7 +360,7 @@ Where `prefix_hash` is the hex-encoded ECF content hash of the absolute prefix p
 prefix_hash(prefix) = hex(content_hash(type="system/tree/path", data=prefix))
 ```
 
-This produces a 66-character lowercase hex string (2 chars `00` format code + 64 chars SHA-256 digest), matching the signature storage invariant pointer convention (ENTITY-CORE-PROTOCOL.md §7.4). The hash segment is structurally distinct from metadata names — no collision is possible (see §3.1.1).
+**`prefix_hash` is a `[derive-to-meet]` value and is therefore pinned to the ECFv1-SHA-256 floor (`0x00`) — it does NOT follow the deriving peer's home format** (`SPECIFICATION-FORMAT.md` §8.4.6). Both sides of a REVISION fetch compute `{H}` independently from the same prefix string, so a home-format derivation would have two conformant peers construct different paths for the same prefix and never meet, with nothing failing loudly. This produces a **66-character** lowercase hex string (2 chars `00` format code + 64 chars SHA-256 digest) **on every peer, whatever its home format** — matching the signature storage invariant pointer convention (ENTITY-CORE-PROTOCOL.md §7.4). *(This is a pinned **format**, from which the width follows; it is not a §8.4.5 width lock — see that section's closing note.)* The hash segment is structurally distinct from metadata names — no collision is possible (see §3.1.1).
 
 Version heads, branches, tags, conflicts, remotes, and config all live under the same prefix subtree:
 
@@ -393,7 +393,7 @@ Committing advances the current head AND the active branch pointer. Checkout swi
 
 ### 3.1.1 Path Inventory
 
-All `system/revision/` tree paths used by this extension. `{H}` denotes `prefix_hash(prefix)` — the 66-character hex-encoded ECF content hash of the absolute prefix path (see §3.1).
+All `system/revision/` tree paths used by this extension. `{H}` denotes `prefix_hash(prefix)` — the hex-encoded ECF content hash of the absolute prefix path, **pinned to the ECFv1-SHA-256 floor** (66 chars beginning `00`, on every peer — *derive-to-meet*, §8.4.6; see §3.1).
 
 **Per-prefix metadata** (under `system/revision/{H}/`):
 
@@ -416,7 +416,7 @@ All `system/revision/` tree paths used by this extension. `{H}` denotes `prefix_
 
 **Version entities** (`system/revision/entry`) are stored in the content store, not at tree paths. They are referenced by hash from head, branch, tag, and remote pointers listed above.
 
-**Namespace reservation.** The `system/revision/config/` global namespace cannot collide with hash-addressed prefix subtrees: hash segments are 66-character hex strings (`[0-9a-f]+`), while `config` contains non-hex characters and is 6 characters long. No validation rule is needed — the reservation holds by construction. This extends to any future global namespace added under `system/revision/`.
+**Namespace reservation.** The `system/revision/config/` global namespace cannot collide with hash-addressed prefix subtrees: hash segments are **lowercase-hex strings** (`[0-9a-f]+`), while `config` contains non-hex characters. No validation rule is needed — the reservation holds by construction. **The reservation rests on the character set, not on the length.** The length happens to be stable here — §3.1 pins `prefix_hash` to the SHA-256 floor (§8.4.6), so `{H}` is 66 chars on every peer — but keying the reservation on "66 characters" would make it depend on that pin holding forever, when `config` being non-hex is what actually does the work. This extends to any future global namespace added under `system/revision/`.
 
 ### 3.2 DAG Traversal
 

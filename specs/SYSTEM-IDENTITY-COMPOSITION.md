@@ -1,5 +1,6 @@
 # System Identity Composition — Navigation Doc
 
+**Version**: 1.0
 **Status**: Active (promoted Reference → Stable; §6 marked normative for cross-impl ownership)
 **Authoritative scope:** §6 (ownership boundaries) is normative for cross-impl conformance. Other sections are informative orientation.
 **Audience:** New readers needing to understand how identity, attestation, and quorum compose; cross-impl reviewers; spec authors of new extensions that consume the identity stack

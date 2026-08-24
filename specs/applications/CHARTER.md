@@ -1,5 +1,6 @@
 # `applications/` — the L5 Application-Convention domain — CHARTER
 
+**Version**: 1.0
 **Status**: Draft
 `proposals/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`).
 **Owning workstream:** W1 (Outer Limits / application), arch-chartered.

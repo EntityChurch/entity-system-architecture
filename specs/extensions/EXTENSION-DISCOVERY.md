@@ -2,6 +2,8 @@
 
 **Version**: 1.0
 **Status**: Active
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
+**Related**: EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
 **Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
@@ -176,6 +178,8 @@ The candidate entity's `endpoint_hint` for the mDNS backend is the resolved SRV 
 `filter` is an opaque object | null, backend-specific; backends MAY ignore. Same shape as REGISTRY-RESOLVE's `hints` field. mDNS-backend filter MAY constrain by service-name predicate or TXT-key predicate; not v1-normative. When `filter` is absent or present-but-ignored, the backend emits unfiltered candidates; backends MUST NOT silently return zero candidates when filter is unparseable — surface as error code, not empty result.
 
 **Unknown backend (MUST; erratum).** When `:scan(backend, ...)` names a `backend` the peer has not registered (the named backend string is not in the peer's registered-backend set), the handler MUST return **`400 unknown_backend`** (V7 §3.3 request-input class — unknown enum value). This is NOT 404 (`backend` is a parameter value, not a resource path/address; 404 is reserved for the addressed-resource-not-found case). This is NOT a silent empty result (per §8.4). Distinguished from the "no candidates this scan" outcome which is a successful `ScanResult { candidates: [], truncated: false, code: null }`. Pinned in the registry/discovery cross-impl-run absorption (Ruling-5).
+
+**Unknown `profile_ref` (MUST; same class) `[added 2026-08-10]`.** When `:announce(backend, profile_ref)` or `:announce-stop(backend, profile_ref)` names a `profile_ref` that does not resolve to a `system/peer/transport/{peer}/{profile-id}` entity, the handler MUST likewise return **`400`** (`unknown_profile_ref`) — **not `500`**. This is the same Ruling-5 class as the bullet above: an unresolvable parameter *value* is a caller error, and the identical handler already applies that rule to `backend` two lines away. **A `500` additionally tells the caller to retry something that can never succeed.** *(Stated here so the cohort converges by reading rather than by rediscovering: go returned `500 backend_error` until `4375cea`, where it was fixed to `400` by following this section's own precedent. Sentinel there is `discovery.ErrUnknownProfileRef`.)*
 
 mDNS is a discovery + signaling carrier only — it surfaces candidates and helps WebRTC establish; it is **not** a trust surface. Trust is the IDENTIFY handshake over the resulting channel plus the user's grant choice.
 

@@ -1,5 +1,6 @@
 # APP-CONVENTION-EMBED — the generic rich-content typed node — v0.2.3 DRAFT
 
+**Version**: 0.2.3
 **Status**: Draft
 + refined per the v0.2.1 base-plurality-and-output-basis refinement
 + the v0.2.2 raw-role-and-reserved-kinds refinement

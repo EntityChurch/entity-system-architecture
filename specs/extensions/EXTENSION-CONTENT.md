@@ -5,7 +5,8 @@
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
 
-**Depends on:**
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.51+); ENTITY-CBOR-ENCODING.md (v1.4+) — per-dependency detail below.
+
 - `ENTITY-CORE-PROTOCOL.md` (v7.51+) — request-side and result-side envelope-`included` preservation across dispatch boundaries (v7.49 result-side equivalence, v7.51 request-side preservation) underpins the v3.4 ingest-result pass-through and the §4 handler-mediated `included` map.
 - `ENTITY-CBOR-ENCODING.md` (v1.4+) — canonical ECF for entity-hash stability of blob and chunk entities.
 
@@ -689,7 +690,7 @@ Entity types reference content through a ref to the blob entity:
     name: "report.pdf"
     size: 52428800
     modified_at: 1706832000000
-    content: h'00...'                                       ; system/hash reference to blob (33 bytes)
+    content: h'00...'                                       ; system/hash reference to blob (33 B under SHA-256; length per format byte)
   }
 }
 ```
@@ -1048,7 +1049,7 @@ For deployments using the namespace-scoped topology (§6.4.1), the canonical con
 {namespace}/{hex(H)}
 ```
 
-where `{namespace}` is the namespace prefix (e.g., `system/content/public`, `system/content/shared/team-alpha`) and `{hex(H)}` is the lowercase hex encoding of the content hash. **`{hex(H)}` follows the ENTITY-CORE-PROTOCOL.md §3.5 invariant-path hex convention — lowercase, *format-code byte included*, 66 chars beginning `00` for ECFv1-SHA-256 (`hex33`), NOT the 64-char digest-only form** (preserves the algorithm discriminator for crypto-agility and gives URL ⇄ binding parity for the NETWORK §6.5.6 serving route). The bound entity at that path is the `system/content/blob` or `system/content/chunk` entity itself.
+where `{namespace}` is the namespace prefix (e.g., `system/content/public`, `system/content/shared/team-alpha`) and `{hex(H)}` is the lowercase hex encoding of the content hash. **`{hex(H)}` follows the ENTITY-CORE-PROTOCOL.md §3.5 invariant-path hex convention — lowercase, *format-code byte included*, NOT the 64-char digest-only form. Its length is implied by the leading format byte and is never assumed** (66 chars beginning `00` under ECFv1-SHA-256, 98 beginning `01` under ECFv1-SHA-384 — `SPECIFICATION-FORMAT.md` §8.4.5). This preserves the algorithm discriminator for crypto-agility and gives URL ⇄ binding parity for the NETWORK §6.5.6 serving route. The bound entity at that path is the `system/content/blob` or `system/content/chunk` entity itself.
 
 Namespace depth is a deployment choice: flat (`system/content/public/{hex(H)}`), categorized (`system/content/shared/team-alpha/{hex(H)}`), or arbitrarily nested (`system/content/orgs/foo/projects/bar/{hex(H)}`) all conform. The leaf component is always `{hex(H)}`.
 

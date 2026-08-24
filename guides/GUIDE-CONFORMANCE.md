@@ -254,6 +254,31 @@ A normative rule can be genuinely unprobeable: it governs what a peer does **bef
 
 Corollary, now general: **a check that cannot be made to fail has not been shown to measure anything.** Every guard added to such a vector needs an injected-fault control, including — especially — the guards that can never fire against a correct implementation.
 
+### §5.2b Rules the suite has no way to *reach* `[added 2026-08-10]`
+
+§5.2a is about a rule with **no observable surface**. This is its opposite and it is more dangerous: the surface is **built, correct, flagged, and documented** — and the harness has no way to turn it on. The absence of coverage is then invisible, and the scoreboard reads *covered*.
+
+**Three instances surfaced in a single 2026-08-10 cycle, in three different repos:**
+
+| Surface | Built | Why nothing reached it |
+|---|---|---|
+| `content_hash_format = SHA-384` (V7 §1.2) | `--hash-type sha384` shipped in all three CLIs, honored, documented | `validate-complete.sh` had no way to pass it. **Every conformance number this cohort has ever published was measured under exactly one `content_hash_format`.** |
+| `EXTENSION-REGISTRY` §6a.9 live registration | three ops, three policy modes, `403 not_entitled`, `202 pending_review` | `peer-manager` has no `--issuer-policy-mode` passthrough; the surface cannot be started through the documented tooling |
+| `DOMAIN-LOCAL-FILES` §8.3 containment | all six callsites defended in go/rust/py | the shared V4 probe drives **`read` only** — never `list` through a symlinked directory (the literal original defect), nor `write`, nor `delete` |
+
+**The rule `[MUST]`.** A normative rule that enumerates **N callsites, N operations, or N values of a configuration axis** is covered only when the suite exercises it **per callsite, per operation, per value**. One probe against one arm of an enumerated MUST is a **sample, not coverage**, and MUST NOT be recorded as closing it. `DOMAIN-LOCAL-FILES` §8.3 is the canonical shape: *"All path-resolving callsites MUST apply both defenses — `read`, `write`, `list`, `delete`, the watcher's ingest, and the reverse-write / reverse-delete handlers"* — six callsites named in the spec, one probed.
+
+**The audit, and it is nearly free.** *Every peer flag with no harness counterpart is an uncovered axis.* Diff the peer binary's flag set against what the harness can pass:
+
+```bash
+# the cheapest audit available — a flag the suite cannot set is a surface it cannot reach
+comm -23 <(peer-flags | sort) <(harness-passthrough-flags | sort)
+```
+
+**This SHOULD be a test in each implementation's suite**, not a discipline anyone remembers to run — a discipline is what failed three times here. Where a flag is deliberately unreachable, record it as a declared exclusion (§5.2a's shape), so the gap is *stated* rather than *absent*.
+
+**Why per-check review cannot find these.** Every component is individually correct: the flag is real and honored, the peers start, the handler works, the defense is implemented. The failure exists **only in the combination**, and nothing in any single check is wrong. No amount of reading finds it — **only turning the knob does.** That makes this the conformance-side twin of the `SPECIFICATION-FORMAT.md` §8.4.5 width lock (invisible while one value ships) and of §11.5.1's loopback-blindness (green for a peer that cannot traverse). Same shape, three layers.
+
 ### §5.3 Growth triggers
 
 Per Appendix E §E.5, two things trigger growth:
@@ -559,7 +584,7 @@ The single place "what's not finalized" is tracked, so nothing is lost while it 
 ## §10 Cross-references
 
 - **`ENTITY-CBOR-ENCODING.md` Appendix E** — normative conformance contract (categories, fixture format, harness semantics, growth policy).
-- **`ENTITY-CORE-MACHINE-SPEC.md` §1.8** — the property-vs-mechanism framing the conformance gate makes testable.
+- **`ENTITY-CBOR-ENCODING.md` §5.4 (Entity Fidelity)** — the property-vs-mechanism framing the conformance gate makes testable. *(Repointed 2026-08-10 from `ENTITY-CORE-MACHINE-SPEC.md` §1.8, which is now a marked derived copy; §5.4 is the canonical home and sits in the same document as the Appendix E vectors that verify it.)*
 - **`proposals/implemented/PROPOSAL-WIRE-ENCODING-CONFORMANCE-VECTORS.md`** — history. The proposal that ratified the appendix framework. Some §5 framing (Go-as-named-reference) is superseded by Appendix E v1.5; see §3.4 above.
 - **`entity-core-go/cmd/validate-peer/`** — the harness driver. The conformance category extends this binary.
 - **`entity-core-go/cmd/internal/wire-conformance/`** — the build-script home for `.diag` → `.cbor` translation; promoted from the original one-shot fixture writer.

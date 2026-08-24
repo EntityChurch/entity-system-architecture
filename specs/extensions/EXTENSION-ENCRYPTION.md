@@ -314,7 +314,7 @@ This is not a choice between two readable sentences. **`system/attestation` has 
 **The total order `[cross-peer seam — MUST; ruled 2026-08-09, inputs pinned 2026-08-09-b]`.** Over the deduplicated candidate set, at every tier, order by:
 
 1. **`created` descending** — the `created` field of the `system/encryption-pubkey` entity (§4.1), then
-2. **`content_hash` ascending** — the **full authored content_hash of that same entity**: the multihash-prefixed form (1-byte format prefix ‖ digest; 33 bytes under SHA-256), **not** the bare digest. These are byte-for-byte the value the sender goes on to bind as `recipient_key` (§7.4 step 1; R5 / F-PY-ENC-2), so the tie-break key and the bound key are the same bytes and there is nothing left to choose. Compare as **unsigned lexicographic byte strings**; if one is a proper prefix of the other, the shorter sorts first. *(Under a single hash algorithm every candidate shares the prefix and the two forms agree; they diverge only in a mixed-algorithm set — reachable the moment SHA-384 is active, i.e. when `ENC-ROUNDTRIP-FORMAT-1` is built. Pinned now, while that is still unbuilt.)*
+2. **`content_hash` ascending** — the **full authored content_hash of that same entity**: the multihash-prefixed form (format prefix ‖ digest — 33 bytes under SHA-256, 49 under SHA-384; the length follows the format byte, §8.4.5), **not** the bare digest. These are byte-for-byte the value the sender goes on to bind as `recipient_key` (§7.4 step 1; R5 / F-PY-ENC-2), so the tie-break key and the bound key are the same bytes and there is nothing left to choose. Compare as **unsigned lexicographic byte strings**; if one is a proper prefix of the other, the shorter sorts first. *(Under a single hash algorithm every candidate shares the prefix and the two forms agree; they diverge only in a mixed-algorithm set — reachable the moment SHA-384 is active, i.e. when `ENC-ROUNDTRIP-FORMAT-1` is built. Pinned now, while that is still unbuilt.)*
 
 Pick the first. **The tie-break value is arbitrary; that it is *pinned* is not.** Two senders applying different orders to the same recipient silently select different keys, and the failure is invisible at the sending peer — it encrypts successfully, to a key the reader did not expect. At Tier C the consequence is sharper than a retry: §4.4's multi-device rule says the receiving agent is *the agent holding the private half of the chosen key*, so divergent tie-breaks route ciphertext to **different devices** — every peer behaving correctly, message arriving somewhere the user is not looking. Byte-comparison on `content_hash` is chosen because it is total, deterministic across languages, and available without parsing; **timestamp alone is not sufficient** — clock granularity makes ties reachable, and two certs minted in the same millisecond is the normal case for a scripted multi-device enrolment, not a rare one. *(Raised by `entity-core-go` 2026-08-09 as a call they had made and shipped; the call was right and it is now the rule.)*
 
@@ -600,7 +600,11 @@ The cipher suite is determined by the recipient's encryption-cert / pubkey entry
                    info  = utf8("entity-core/peer/") || recipient_pubkey_hash,    ; uniform across tiers (F-GO-1)
                    L     = AEAD key length)
    ```
-   `recipient_pubkey_hash` here (and as the `recipient_key` AAD/wire value) is the **full 33-byte content_hash** — the 1-byte multihash format prefix (`0x00` for SHA-256) + the 32-byte digest — **NOT** the bare 32-byte digest (R5 / F-PY-ENC-2). The cohort converged on this 3-way; the spec now pins it so the HKDF `info` (and therefore the derived key) is byte-identical across impls.
+   `recipient_pubkey_hash` here (and as the `recipient_key` AAD/wire value) is the **full `content_hash`** — the multihash format prefix ‖ digest — **NOT** the bare digest (R5 / F-PY-ENC-2). The cohort converged on this 3-way; the spec pins it so the HKDF `info` (and therefore the derived key) is byte-identical across impls.
+
+   > **Its length follows its own format byte, and MUST NOT be fixed `[MUST; corrected 2026-08-10]`.** This is the recipient's *authored* `system/encryption-pubkey` entity, read from the recipient's tree — so it carries the **recipient's home `content_hash_format`**: 33 bytes under `0x00`/SHA-256, **49 under `0x01`/SHA-384** (`SPECIFICATION-FORMAT.md` §8.4.5, §8.4.6 *hold-and-fetch*). The `info` concatenation stays unambiguous with no length prefix because **the variable-length component is last** (`utf8("entity-core/peer/") ‖ hash`).
+   >
+   > **Why this one mattered most of the nine.** This is not descriptive text — it is HKDF `info`, so it **determines the derived key**. As written it named `0x00` explicitly and fixed the width at 33, so a peer whose recipient is SHA-384-home would derive `info` from a 49-byte hash while a conformant reader of this line derived it from 33 — **two different keys, and the decryption failure gives no hint why.** `entity-core-go` already binds the full hash whatever its length (`peerDeriveAEADKey`, `ext/encryption/peer.go`, go `2d6c993`, `ENC-ROUNDTRIP-FORMAT-1` green with a SHA-384-home recipient); the spec was trailing the implementation, and a reader following the spec would have been entitled to diverge.
 5. Compute AAD per §5.2 (peer-mode 7-key shape; `recipient_key` = `recipient_pubkey_hash`; `ephemeral_key` = `eph_pub`).
 6. `ciphertext = AEAD_encrypt(aead_key, nonce, AAD, inner_entity_ecf)`.
 7. Construct the `system/encrypted` outer entity from steps 1–6.
@@ -1160,7 +1164,9 @@ derived recipient_pubkey_hash = content_hash(system/encryption-pubkey{
                                   expires: absent
                                 })                                      ; the recipient_key value used everywhere (F-GO-1)
 
-recipient_pubkey_hash  = full 33-byte content_hash (1-byte multihash format prefix 0x00 + 32-byte digest), NOT bare digest (R5 / F-PY-ENC-2)
+recipient_pubkey_hash  = full content_hash (multihash format prefix || digest), NOT bare digest (R5 / F-PY-ENC-2).
+                         LENGTH FOLLOWS THE FORMAT BYTE -- 33 B under 0x00, 49 B under 0x01. Never fixed (§8.4.5).
+                         It is the RECIPIENT's authored pubkey entity, so it carries the recipient's home format.
 expected_AAD_hex       = <LOCKED — cohort transcribes>                  ; peer-mode 7-key ECF; 3-way byte-equal (171B)
 expected_ciphertext_hex = <LOCKED — cohort transcribes>                ; 3-way byte-equal (31B) — re-derives against ENC-KAT-INNER per R3
 ```

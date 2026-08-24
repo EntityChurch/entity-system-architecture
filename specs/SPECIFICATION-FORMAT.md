@@ -383,10 +383,50 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 >
 > **This precondition exists because it was skipped.** The 2026-08-02 namespace pass classified that rename as a cheap in-step cleanup and had to revert it. The ideal in this section yields to the hash-input invariant, every time.
 
+> **What "at rest" asks, and what it does not `[clarification, 2026-08-10]`.** Condition 1 is a **question of fact about data that exists**, not a question about the type's design. "This type is durable by design" is not a yes — nearly every type persists, and reading the condition as a property would make this section self-nullifying: no persistent type could ever be renamed, which is every type worth naming correctly. In a **no-installed-base** ecosystem (`AGENTS.md`: no back-compat, no migration windows, no dual-kind acceptance) the honest answer to condition 1 is normally **no**.
+>
+> What durability-by-design does change is **how the rename lands, not whether it may**: a type the receiver stores and later re-reads MUST be renamed as a **coordinated cohort cut** — every implementation changes the string in one round, and any peer holding such entities at cut time drains them first. There is no dual-kind acceptance window to hide behind, so the cut is the migration. Say so at the type when this applies.
+>
+> **Worked example, the other way (`EXTENSION-INBOX.md` §2.1) `[RATIFIED 2026-08-10]`.** `system/protocol/inbox/delivery` → `system/inbox/delivery` **stands.** Condition 2 is **no** — no `delivery` `content_hash` is referenced anywhere — and that is the leg on which encryption failed, where `recipient_key` *is* `content_hash(pubkey)`. Condition 1 is durable-by-design (the inbox is a persistent mailbox, §7) but factually empty, so it sets the *coordinated cut* obligation rather than blocking. The two rulings are consistent: **encryption failed condition 2 and inbox does not.** The cohort-convergence argument does not save the old name here — all three implementations converged on `system/protocol/inbox/*` *because the mis-homing prefix misled them*, which is the defect being corrected, and the sibling `notification` already re-homed to `EXTENSION-SUBSCRIPTION` on the same §8.4.2 grounds. Leaving `delivery` behind would strand the corpus half-corrected on a rule that admits no exception.
+
 **Legitimate exceptions, which MUST be documented where they occur:**
 
 - **Roots that belong to no extension** — `primitive/*` (core scalar primitives).
 - **A distinct authored artifact, as opposed to an operational surface.** `compute/*` (the expression-language node types an author writes: `literal`, `lookup`, `apply`, `if`, `lambda`) is deliberately separate from `system/compute/*` (the handler's operation surface a peer invokes). The test for this exception is narrow: **two genuinely different kinds of thing, authored by different parties for different purposes** — not merely two groups of types from one spec.
+
+#### 8.4.5 Never pin a hash width `[normative]`
+
+> **A specification MUST NOT state a fixed byte length or hex-character count for a `content_hash`.** A content hash is the self-describing pair `(content_hash_format, digest)` (`ENTITY-CORE-PROTOCOL.md` §1.2); **its length follows its leading format varint and is never assumed.** Where a width helps the reader, give it as a *worked instance of a format* — "66 hex chars under ECFv1-SHA-256 (`0x00`), 98 under ECFv1-SHA-384 (`0x01`)" — never as the requirement.
+
+**The rule the width usually meant to state.** Almost every fixed-33 / fixed-66 in this corpus was reaching for one of two real requirements, and both survive the generalization intact:
+
+- **"Include the format-code byte"** — the digest-only form is what must be rejected, because dropping the code destroys the algorithm discriminator. State *that*, and the 64-char rejection follows from it.
+- **"This field is unambiguous to parse"** — a fixed width is one way to get that, and usually not the one in play. Concatenations stay unambiguous if the variable-length component is **last** (or if every variable component is length-prefixed); a validator stays strict by rejecting **any input whose length disagrees with the length its own format byte implies** — which is *stronger* than a constant, since it also rejects a 98-char string claiming `00`.
+
+**Why this is normative and not a style preference.** A width lock is invisible while one algorithm ships: the constant and the derived length are the same number, every test passes, and the two readings of the rule are indistinguishable. They spring apart the instant a second format is exercised — and by then the divergence is **already in the field**, under a MUST, in code nobody reviewed as wrong. **This has now happened twice.** `APP-CONVENTION-EMBED` v0.1 shipped a `hex33` schema atom past three independent reviews (`CHARTER.md` rule 6, the applications-layer form of this rule). `EXTENSION-NETWORK` §6.5.3.1 then pinned the served hash hex at 66 in the same bullet that justified the format byte as *crypto-agility* — and the 2026-08-10 cohort measurement found go and rust returning `400` where python returns `200` on a SHA-384 `CONTENT_GET`, each implementing a different half of the same sentence, with **30 of 31 SHA-384 conformance failures behind that one rule.** Neither implementation was wrong to read it as it did.
+
+**The check.** Grep a draft for `33`, `66`, `49`, `98`, `hex33`, "fixed-length" and "both components are". Every hit is either a worked instance labelled as one, or a defect.
+
+**The one width that is legitimately pinned, and why it is not an exception.** A value that two independent parties must *reproduce* from an agreed input — `EXTENSION-SIGNALING.md` §3.1's rendezvous key is the standing example — is pinned to the **SHA-256 floor** and does not follow the deriving peer's home format. That is not a width lock: it pins the *format*, and the width follows from the format exactly as this rule requires. The distinction is **authored content vs. reproduced lookup token**, and it is the whole test — authored content follows its author's home format and is therefore variable; a lookup token is pinned so two peers running different home formats cannot derive different keys for the same input and silently never meet.
+
+#### 8.4.6 Which format a derived hash uses `[normative]`
+
+§8.4.5 bars pinning a hash's **width**. This answers the question underneath it, which the corpus had applied in exactly one place: **whose `content_hash_format` does a hash carry?**
+
+> **Two dispositions, and every hash in the corpus is one of them.**
+>
+> 1. **Hold-and-fetch — format-free.** You already have the hash: it travelled to you on the wire, or you read it off an entity. **Use it verbatim, at whatever width its own format byte implies, and never re-derive it.** A specification MUST NOT state its format or width. *(`TREE_GET` leaf `data`; `RELAY` `envelope_inner`; `ENCRYPTION` §7.3's HKDF `recipient_pubkey_hash`; the §3.5 invariant pointer `system/signature/{target_hex}`; `system/content/{ns}/{hex(H)}`.)*
+> 2. **Derive-to-meet — pinned to the ECFv1-SHA-256 floor (`0x00`).** You **compute** the hash from an agreed input in order to construct a path, key, or token that **another party must independently compute and match**. It **MUST NOT** follow the deriving peer's home format. *(`SIGNALING` §3.1 rendezvous key; `REVISION` §3.1 `prefix_hash`; `{peer_id_hex}` in `ROLE` §1.5.1, `IDENTITY` §5, `QUORUM` §7.)*
+>
+> **The test, and it is one question.** *Would a second party, holding only the agreed input, have to know your home format to reproduce this value?* If yes, it is derive-to-meet and it is pinned. **A home format is not discoverable from a peer-id or a path**, so any rule that requires knowing it is already broken — the two peers simply never meet, with nothing failing loudly.
+
+**A specification introducing a hash MUST state which disposition it is.** This is the §3.5 discovery-locality pattern applied to formats rather than paths, and it converts "audit indefinitely for new instances" into a checkable property.
+
+**Why one rule and not a ruling per site.** These collapse into each other on a **single-format network**, which is every network anyone has run: derive-to-meet and hold-and-fetch produce the same bytes when there is only one format, so both readings pass every test and the distinction is invisible. It springs apart at the **cross-peer seam** the moment two peers run different home formats — the equivalence-collapse shape, and the same reason §8.4.5's width lock survived three reviews.
+
+> **Worked example — `{peer_id_hex}` asserted both, and the definition is what gives (`ROLE` §1.5.1) `[RULED 2026-08-10]`.** `ROLE` §1.5.1 called `{peer_id_hex}` "the `content_hash` of their `system/peer` entity" **and** used it as a path segment every peer must construct for every *other* peer. Those cannot both hold. Home-format derivation is a **genuine collision**: peers A and B compute different `{peer_id_hex}` for the same third peer C, so their role assignments, identity certificates and quorum paths never meet. **Ruled derive-to-meet — pinned.** The definition is the half that was wrong: `{peer_id_hex}` is the **floor-format identity hash**, which *coincides* with the stored entity's `content_hash` exactly when that peer is SHA-256-home. That coincidence is the local collapse, not the definition.
+>
+> **Named cost, so it is a decision and not a side effect:** pinning derive-to-meet values makes ECFv1-SHA-256 **effectively mandatory** for any peer participating in role, identity, quorum, revision or signaling paths — stronger than V7 §1.2's "SHOULD support." That cost was already accepted for the rendezvous key; it is stated here rather than re-discovered per extension. It buys the property that any peer can construct any other peer's paths knowing only its peer-id.
 
 ### 8.5 Conformance
 

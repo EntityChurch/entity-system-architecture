@@ -1,5 +1,7 @@
 # Entity System — Condensed Working Reference
 
+**Version**: 1.0
+**Status**: Active
 **For**: Developers, AI agents, and operators working with an Entity Core Protocol V7 implementation.
 **Not for**: First-time implementation — see ENTITY-CORE-PROTOCOL.md for the full normative spec.
 
@@ -34,11 +36,11 @@ Entity = {
 Entity = {
   type:         "system/tree/get-request"        # semantic type path
   data:         {path: "peer_id/local/files/..."}  # typed payload
-  content_hash: <33 bytes>                         # format_code(1) + SHA-256(32)
+  content_hash: <content_hash>                         # format_code(1) + SHA-256(32)
 }
 ```
 
-`content_hash = SHA-256(ECF_encode({type, data}))` — only type and data are hashed. The hash is prefixed with format code `0x00` (ECFv1-SHA-256), totaling 33 bytes. On the wire, hashes are CBOR byte strings.
+`content_hash = SHA-256(ECF_encode({type, data}))` — only type and data are hashed. The hash is prefixed with its format code — `0x00` for ECFv1-SHA-256, totaling 33 bytes; `0x01` for ECFv1-SHA-384, totaling 49. **The length follows the format code and is never a constant** (`SPECIFICATION-FORMAT.md` §8.4.5). On the wire, hashes are CBOR byte strings.
 
 ### Envelope
 
@@ -94,13 +96,13 @@ envelope = {
       params: {                                     # entity — has type, data, content_hash
         type: "system/tree/get-request",
         data: {},
-        content_hash: <33 bytes>
+        content_hash: <content_hash>
       },
       author:     <hash of author's identity entity>,
       capability: <hash of capability token>,
       bounds:     {ttl: 64, budget: 100000}          # optional
     },
-    content_hash: <33 bytes>
+    content_hash: <content_hash>
   },
   included: {
     <author_hash>:     {type: "system/peer", data: {peer_id, public_key, key_type}},
@@ -130,7 +132,7 @@ envelope = {
     result: {                        # entity
       type: "some/type",
       data: {...},
-      content_hash: <33 bytes>
+      content_hash: <content_hash>
     }
   }
 }
@@ -563,7 +565,7 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 | `system/capability/token` | Capability with grants, granter, grantee |
 | `system/capability/grant` | Result type when delivering capabilities |
 | `system/capability/grant-entry` | Single grant: handlers, resources, operations, peers, constraints (path dimensions use `system/capability/path-scope`, identifier dimensions use `system/capability/id-scope`, both with include/exclude) |
-| `system/hash` | Content hash — content-space address (`primitive/bytes`, 33 bytes for SHA-256) |
+| `system/hash` | Content hash — content-space address (`primitive/bytes`; format code ‖ digest, length per that code — 33 bytes under SHA-256) |
 
 ### Tree Types
 | Type | Purpose |
@@ -597,8 +599,8 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 - **Framing**: 4-byte big-endian length prefix + CBOR payload
 - **Encoding**: ECF (Entity Canonical Form) — deterministic CBOR per RFC 8949 s4.2
 - **ECF rules**: sorted map keys (by encoded length then lexicographic), minimal integers, definite lengths, shortest floats, no duplicate keys
-- **Hash**: `0x00` + SHA-256 of ECF-encoded `{type, data}` = 33 bytes
-- **Signature**: Ed25519 over full hash bytes (33 bytes including format code)
+- **Hash**: format code ‖ digest of ECF-encoded `{type, data}` — e.g. `0x00` + SHA-256 = 33 bytes; length follows the format code, never fixed (§8.4.5)
+- **Signature**: Ed25519 over full hash bytes (format code included, whatever the length)
 - **PeerID**: Base58(varint(key_type) || varint(hash_type) || digest) — self-describing multikey (Ed25519: hash_type 0x00, digest = public key, no SHA-256; no fixed length). Derivation: EXTENSION-SIGNALING §6.3
 
 ---
@@ -624,7 +626,7 @@ EXECUTE  uri: "system/tree"  operation: "get"
 EXECUTE  uri: "system/tree"  operation: "put"
   resource: {targets: ["peer_id/data/my-key"]}
   params: {type: "system/tree/put-request", data: {
-    entity: {type: "my/type", data: {key: "value"}, content_hash: <33 bytes>}
+    entity: {type: "my/type", data: {key: "value"}, content_hash: <content_hash>}
   }}
 ```
 
@@ -640,7 +642,7 @@ EXECUTE  uri: "system/tree"  operation: "put"
 ```
 EXECUTE  uri: "entity://peer_id/local/files/readme.md"  operation: "read-metadata"
   resource: {targets: ["local/files/readme.md"]}
-  params: {type: "local/files/read-request", data: {...}, content_hash: <33 bytes>}
+  params: {type: "local/files/read-request", data: {...}, content_hash: <content_hash>}
 ```
 
 ### Snapshot for sync (with exclusion)

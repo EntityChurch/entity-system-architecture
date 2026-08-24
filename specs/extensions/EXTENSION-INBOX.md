@@ -76,17 +76,29 @@ Step 7 is the key integration point. The inbox handler uses write-ahead processi
 
 ### 2.1 Inbox Delivery
 
-> **⚠ PROVISIONAL rename — pending the workstream-C ruling (2026-08-02).** This type was renamed from
-> `system/protocol/inbox/delivery` (strip the mis-homing `protocol/` prefix). It **fails the
-> `SPECIFICATION-FORMAT.md` §8.4.4 data-at-rest test on condition 1 only**: §7 / §2 above make the inbox a
-> **persistent mailbox** and `EXTENSION-DURABILITY.md` §108 reads *stored* deliveries — so a peer holding
-> undelivered mail across the rename would **silently stall** its continuation (no loud error; the §3.2
-> silent-drop class). But **condition 2 = no** (no `delivery` `content_hash` is referenced elsewhere), and unlike
-> the reverted `system/encrypted` this is a *defective* name being corrected, not a correct grandfathered flat
-> name being disturbed — so it is **not symmetric with encryption**, and a consistent §8.4.4 ruling may let this
-> rename stand. The narrow open question is whether durable-mailbox-at-rest blocks a rename in a
-> **no-installed-base** world — routed to the extension owners + core-go
-> (`PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §C OPEN RULING). Until ruled this name is **not ratified.**
+> **RATIFIED 2026-08-10 — the rename stands.** This type was renamed from `system/protocol/inbox/delivery`
+> (strip the mis-homing `protocol/` prefix, `SPECIFICATION-FORMAT.md` §8.4.2). The `SPECIFICATION-FORMAT.md`
+> §8.4.4 data-at-rest test was applied and **passes**:
+>
+> - **Condition 2 — no.** No `delivery` `content_hash` is referenced by anything. **This is the leg on which
+>   `system/encrypted` failed** (`recipient_key` *is* `content_hash(pubkey)`, so its rename would have broken
+>   every published key), and it is what makes the two rulings consistent rather than contradictory — the
+>   encryption revert is not precedent for reverting this one.
+> - **Condition 1 — durable by design, factually empty.** §7 / §2 above make the inbox a **persistent mailbox**
+>   and `EXTENSION-DURABILITY.md` §108 reads *stored* deliveries. Under §8.4.4's clarification, that is a
+>   question of fact about data that exists, and in a no-installed-base ecosystem the answer is no. What it
+>   does change is *how the rename lands*:
+>
+> > **Coordinated cohort cut `[MUST]`.** All implementations change this string in **one round**; there is no
+> > dual-kind acceptance window (`AGENTS.md`: no back-compat, no migration windows). A peer holding
+> > undelivered mail at cut time MUST drain it first — a delivery written under the old string is not matched
+> > by an upgraded handler and stalls its continuation **silently** (the §3.2 silent-drop class, no loud error).
+>
+> **Why the cohort's convergence on the old name does not save it.** All three implementations ship
+> `system/protocol/inbox/delivery` — but they converged there *because the mis-homing prefix misled them*, which
+> is the defect §8.4.2 exists to correct; convergence on a defect is not a reason to keep it. The sibling
+> `notification` already re-homed to `EXTENSION-SUBSCRIPTION` on identical grounds (§2.2). Leaving `delivery`
+> behind would strand the corpus half-corrected on a rule that admits no exception.
 
 ```
 system/inbox/delivery := {

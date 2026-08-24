@@ -5,7 +5,8 @@
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
 
-**Depends on:**
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.18+); ENTITY-NATIVE-TYPE-SYSTEM.md (v4.0+); ENTITY-CBOR-ENCODING.md (v1.3+) — per-dependency detail below.
+
 - `ENTITY-CORE-PROTOCOL.md` (v7.18+) — handler dispatch (§6.5), handler authority (§6.8), capability model (§5).
 - `ENTITY-NATIVE-TYPE-SYSTEM.md` (v4.0+) — core type system (structural validation, type resolution, field-spec structure). This extension adds constraint semantics to the open-type `constraints` field.
 - `ENTITY-CBOR-ENCODING.md` (v1.3+) — canonical ECF for `one_of` / `not_one_of` byte-equality (§5.5 normative).

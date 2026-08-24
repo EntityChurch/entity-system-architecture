@@ -1,5 +1,6 @@
 # APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5 DRAFT
 
+**Version**: 0.5
 **Status**: Draft
 `{publisher_peer_id}/content/sites/{site_id}/_root` placement (a layer violation: `system/content/*` is the
 CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always

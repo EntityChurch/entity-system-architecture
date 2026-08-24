@@ -125,7 +125,11 @@ system/tree/snapshot/node := {
       ; Entry discriminated by CBOR major type at decode time:
       ;   CBOR major type 4 (array)        → Bucket: [[key, value_hash], ...]
       ;                                         length ≤ bucketSize=3, sorted lex by key
-      ;   CBOR major type 2 (byte string)  → Link: 33-byte system/hash of a sub-node entity
+      ;   CBOR major type 2 (byte string)  → Link: system/hash of a sub-node entity
+      ;     (format byte + digest; length follows the format byte — 33 B under SHA-256,
+      ;      49 B under SHA-384. NEVER a fixed width: SPECIFICATION-FORMAT.md 8.4.5.
+      ;      The Entry discriminator is the CBOR MAJOR TYPE, not the length, so a
+      ;      longer digest changes nothing about decoding.)
   }
 }
 ```
@@ -171,6 +175,8 @@ Where `A2` = map(2), `63 6D6170` = text(3) "map", `44 00000000` = bytes(4) zero 
 ```
 A2 63 6D6170 44 10000000 64 64617461 81 81 82 60 58 21 <H>
 ```
+
+> **This fixture is `content_hash_format = 0x00` (ECFv1-SHA-256) `[qualification added 2026-08-10]`.** The `58 21` header below is bytes(33) and the routing digest is SHA-256 — **both are properties of this fixture's format, not of the node shape.** A SHA-384-home peer produces the identical *structure* with `58 31` (bytes(49)); the Entry discriminator is the CBOR **major type**, never the length (§3.1). The "**All** implementations MUST produce this exact byte sequence" below is therefore scoped to a SHA-256-home peer — read unqualified it would forbid a conformant SHA-384 peer from producing anything at all (`SPECIFICATION-FORMAT.md` §8.4.5).
 
 Where: `A2` map(2); `63 6D6170` "map"; `44 10000000` bytes(4) bitmap; `64 64617461` "data"; `81` array(1) (one entry in data); `81` array(1) (bucket with one tuple); `82` array(2) (`[key, value_hash]`); `60` empty text string ""; `58 21` bytes(0x21 = 33); `<H>` 33-byte value hash. **All implementations MUST produce this exact byte sequence given identical canonical-normalize on the empty-string relative_key.** This is conformance fixture #2 — the canonical fuzzer seed for catching SHA-256-input ambiguity (relative-key vs absolute-path) and bitmap-convention ambiguity at fuzzer-touch time.
 
@@ -1471,7 +1477,7 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 
 ### 12.1 MUST
 
-- **HAMT node shape (§3.1)** — `{map: bytes(4), data: [Entry]}`; Entry discriminated by CBOR major type (array = bucket of [key, value_hash] tuples sorted lex; byte string = 33-byte link to sub-node). No `binding` field. Field names `map` / `data` per spec text (chosen for terseness; we are NOT wire-compatible with IPLD HashMap tooling).
+- **HAMT node shape (§3.1)** — `{map: bytes(4), data: [Entry]}`; Entry discriminated by CBOR major type (array = bucket of [key, value_hash] tuples sorted lex; byte string = link to sub-node, its length per its format byte — §8.4.5). No `binding` field. Field names `map` / `data` per spec text (chosen for terseness; we are NOT wire-compatible with IPLD HashMap tooling).
 - **Bitmap convention (§3.1)** — K-bit unsigned integer where position p is bit p (LSB-indexed); serialized as K/8 bytes big-endian.
 - **Parameters pinned (§3.1)** — `bitWidth=5` (K=32), `bucketSize=3`, hash=SHA-256, hash input = `UTF-8-bytes(canonical-normalize(relative_key))`. Implementations MUST NOT expose these as per-tree configuration; MUST NOT carry parameter values on wire.
 - **Canonical-form invariant (§3.1)** — IPLD HashMap form: no non-root node may contain (directly or via links) fewer than `bucketSize+1 = 4` reachable entries; on deletion, violations MUST be collapsed and inlined into parent (CHAMP-equivalent). The root node MAY be exempt from the lower bound.

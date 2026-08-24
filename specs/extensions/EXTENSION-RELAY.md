@@ -2,6 +2,8 @@
 
 **Version**: 1.2
 **Status**: Active
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
+**Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
 **Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
@@ -48,7 +50,7 @@ Operators select modes per deployment; the spec exposes the mechanism, not the p
 ### §3.0 Representation conventions
 
 - **`peer_id`** is the Base58 peer identifier per **V7 §1.5** (`key_type || hash_type || digest`, Base58-encoded). It is **NOT** a bare `system/hash`. Relay routing, namespace addressing, and `put_by`/`source_peers` all use this canonical Base58 form. (Routing keyed on the wrong representation silently fails to match — the cross-impl trap REGISTRY/DISCOVERY pinned.)
-- **`<system/hash>`** denotes a content hash in the **bare 2-key form** `ECF({type: "system/hash", data: <33-byte H>})` per V7 §1.5 / EXTENSION-TREE.
+- **`<system/hash>`** denotes a content hash in the **bare 2-key form** `ECF({type: "system/hash", data: <H>})` per V7 §1.5 / EXTENSION-TREE.
 - **Timestamps** are **integer milliseconds since the Unix epoch.**
 - **Signatures** are carried per **V7 §5.2 target-matching** and are reachable at the invariant-pointer `system/signature/{hex(content_hash)}`. Relay entities do **not** carry `refs: { signature }` blocks.
 
@@ -69,10 +71,12 @@ data: {
                                          ;   is advisory and MUST equal route[0] if both set
                                          ;   (else invalid_request/400, pre-dispatch).
   ttl_hops:        u32,                  ; relay-transport hop budget; decremented per hop
-  envelope_inner:  <bstr, 33 bytes>      ; the content hash (bare system/hash digest form,
-                                         ;   1 format byte + 32 digest) of the carried inner
-                                         ;   envelope; the inner entity travels as opaque raw
-                                         ;   bytes in the materialized envelope's `included` set
+  envelope_inner:  <bstr>                ; the content hash (bare system/hash form: format
+                                         ;   byte + digest, LENGTH FOLLOWS THE FORMAT BYTE --
+                                         ;   33 B under SHA-256, 49 B under SHA-384; never
+                                         ;   fixed, SPECIFICATION-FORMAT.md 8.4.5) of the
+                                         ;   carried inner envelope; the inner entity travels
+                                         ;   as opaque raw bytes in the envelope's `included`
 }
 ```
 
@@ -83,8 +87,12 @@ to the **first** relay; that relay is **not** in `route`. `route` is the inverse
 both **absent** for the table-routed case (§3.1.1 reads the local route table per
 `EXTENSION-ROUTE.md`); precedence is **source route > route table > direct** (§3.1.1).
 
-**`envelope_inner` is a `data` field carrying the raw 33-byte content hash** — not a
-`refs` entry (cohort convergence R6/R7, 3-impl). The relay reads the hash from `data`
+**`envelope_inner` is a `data` field carrying the raw content-hash bytes** — not a
+`refs` entry (cohort convergence R6/R7, 3-impl). **The load-bearing property is that it is
+raw and unwrapped, not that it is 33 bytes:** its length follows its own format byte
+(`SPECIFICATION-FORMAT.md` §8.4.5), and a CBOR `bstr` is self-delimiting, so a relay reads it
+without knowing the originator's home `content_hash_format` — which it must not need to,
+since it never decodes the inner entity. The relay reads the hash from `data`
 to address the carried entity and forwards the inner entity's raw bytes verbatim from
 the `included` set; it never decodes them. Content-store dedup is preserved (the inner
 is still content-addressed by the hash).
@@ -153,14 +161,15 @@ data: {
   namespace:       <path>,               ; where the receiver polls
   expires_at:      <timestamp | null>,   ; ms since epoch; standard cap-style expiry
   put_by:          <peer_id>,            ; the authenticated session/connection peer (Base58, §3.0)
-  envelope_inner:  <bstr, 33 bytes>      ; content hash of the carried inner envelope
-                                         ;   (data field, raw 33-byte bstr — as §3.1)
+  envelope_inner:  <bstr>                ; content hash of the carried inner envelope
+                                         ;   (data field, raw bstr, length per format byte
+                                         ;    — as §3.1)
 }
 ```
 
 **Both the store-entry and the inner envelope are tree-bound** (the relay indexes everything it serves in the tree, so the standard tree-handler cap check governs per-namespace access):
 
-- the **store-entry** at `system/relay/store/{namespace}/{entry_hash_hex}` (`{entry_hash_hex}` = the hex33 form of the entry hash, path-safe per REGISTRY §6.3);
+- the **store-entry** at `system/relay/store/{namespace}/{entry_hash_hex}` (`{entry_hash_hex}` = the full-wire-form hex of the entry hash — format-code byte included, length implied by that byte per `SPECIFICATION-FORMAT.md` §8.4.5 — path-safe per REGISTRY §6.3);
 - the **inner envelope** at `system/relay/store/{namespace}/inner/{inner_hash_hex}` — nested under the same namespace subtree, so a single namespace-scoped tree-read cap covers both fetches. Tree-binding is path→hash (PRIMER invariant #1); the inner's bytes still live once in the content store, so dedup is preserved and two namespaces may point at the same inner hash.
 
 `:put` (and the §6.2.1 `:fallback`) MUST establish both bindings. The receiver polls `system/relay:poll` against `namespace`; the relay returns enumerated store-entry hashes (§4.2), which the receiver fetches via `tree:get` on the namespace-scoped paths — **`system/content` is NOT a receive-side dependency** (§4.2). STORAGE-SUBSTITUTE-HTTP is the first deployed Mode S — a static-CDN-hosted peer's tree IS a Mode S relay namespace (§6.5).
@@ -326,7 +335,7 @@ data: {
 
 `poll` returns store-entry **hashes** (pointers), not inline bytes. The receiver then does **two `tree:get`s on the namespace-scoped relay paths** (§3.2): it fetches the store-entry at `system/relay/store/{namespace}/{entry_hash_hex}`, reads its `envelope_inner` field (the inner hash), and fetches the inner envelope at `system/relay/store/{namespace}/inner/{inner_hash_hex}`. Both are content-addressed and preserve content-store dedup.
 
-**`system/content` is NOT a relay receive-side dependency.** A receiver consumes Mode-S traffic with `tree` + `relay` only. The "content-addressed two-hop discipline (NETWORK §6.5.3.1)" is **path→hash→bytes**, realized two ways by transport — neither the `system/content` extension: over a **live session** a single materializing `tree:get` (V7 §1.7) on the relay-tree path returns the entity bytes directly; over a **static CDN** (STORAGE-SUBSTITUTE-HTTP, §6.5) `TREE_GET` returns the bound `system/hash` pointer (Amendment 6) and the consumer second-hops `CONTENT_GET /content/{hex33(H)}`. `CONTENT_GET` (a transport route / core hash-fetch) is distinct from `system/content:get` (an extension handler op); the inner bytes are reached by tree resolution plus a core hash-fetch, never by installing `system/content`. This is also why the static-CDN Mode-S deployment — which has no live `:poll` handler — consumes through the same tree paths: the surface is uniform across live and static Mode S.
+**`system/content` is NOT a relay receive-side dependency.** A receiver consumes Mode-S traffic with `tree` + `relay` only. The "content-addressed two-hop discipline (NETWORK §6.5.3.1)" is **path→hash→bytes**, realized two ways by transport — neither the `system/content` extension: over a **live session** a single materializing `tree:get` (V7 §1.7) on the relay-tree path returns the entity bytes directly; over a **static CDN** (STORAGE-SUBSTITUTE-HTTP, §6.5) `TREE_GET` returns the bound `system/hash` pointer (Amendment 6) and the consumer second-hops `CONTENT_GET /content/{hex(H)}`. `CONTENT_GET` (a transport route / core hash-fetch) is distinct from `system/content:get` (an extension handler op); the inner bytes are reached by tree resolution plus a core hash-fetch, never by installing `system/content`. This is also why the static-CDN Mode-S deployment — which has no live `:poll` handler — consumes through the same tree paths: the surface is uniform across live and static Mode S.
 
 **Cursor ordering is impl-defined; the contract is resumability, not a specific order.**
 A relay MAY order entries FIFO/insertion-order, lexically by hash, or otherwise — all
@@ -532,7 +541,7 @@ Knobs exposed; default values conservative (unlimited / off / largest); operator
 There are two envelopes; only one is decoded.
 
 - The **relay envelope** (`forward-request` / `store-entry`) IS decoded — that is how the relay reads its outer routing fields (`destination`, `next_hop`, `namespace`, `ttl_hops`).
-- The **inner envelope** (the carried payload, addressed by the `data.envelope_inner` 33-byte hash, §3.1) MUST be held as opaque bytes. Implementations MUST NOT decode it as part of forward, store, aggregate, **or terminal-hop delivery**. Routing decisions MUST be based solely on the relay envelope's outer fields. Carry the inner as raw bytes — e.g. Go's `cbor.RawMessage` — keyed by its content hash; never decode it in the relay path; at the terminal hop write those raw bytes verbatim into the destination frame (§3.1.1). (Rationale: decode-and-re-encode can be byte-identical for ECF-canonical inputs but is not *guaranteed* to be; holding — and forwarding — the inner as an opaque content-addressed blob preserves both bit-fidelity and content-store dedup. This is the single discipline behind the §2.1 raw-frame ruling: there is no point in the relay path, *including terminal delivery*, where the inner is decoded.)
+- The **inner envelope** (the carried payload, addressed by the `data.envelope_inner` hash, §3.1) MUST be held as opaque bytes. Implementations MUST NOT decode it as part of forward, store, aggregate, **or terminal-hop delivery**. Routing decisions MUST be based solely on the relay envelope's outer fields. Carry the inner as raw bytes — e.g. Go's `cbor.RawMessage` — keyed by its content hash; never decode it in the relay path; at the terminal hop write those raw bytes verbatim into the destination frame (§3.1.1). (Rationale: decode-and-re-encode can be byte-identical for ECF-canonical inputs but is not *guaranteed* to be; holding — and forwarding — the inner as an opaque content-addressed blob preserves both bit-fidelity and content-store dedup. This is the single discipline behind the §2.1 raw-frame ruling: there is no point in the relay path, *including terminal delivery*, where the inner is decoded.)
 
 ---
 

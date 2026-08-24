@@ -2,6 +2,8 @@
 
 **Version**: 1.2
 **Status**: Active
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
+**Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
 **Tier:** Operational — Tier 2b (network), per `core-protocol-domain/specs/SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
@@ -172,7 +174,7 @@ data: {
 
 Stored at `system/registry/binding/{binding_hash}` (universal — every kind, including local-name bodies, lives here). Aggregators MAY re-publish at their own path (see §8). Local-name bindings ADDITIONALLY have a tree pointer at a name-keyed path (see §6.3).
 
-**Hash-field shape.** All bare-hash fields in this entity — `supersedes`, `issuer_attestation`, and `system/registry/revocation.revokes` — are **bare `system/hash`** values (33 bytes, `0x00`+digest), NOT wrapped in any envelope or object. Conformance: impls MUST NOT wrap or double-encode them.
+**Hash-field shape.** All bare-hash fields in this entity — `supersedes`, `issuer_attestation`, and `system/registry/revocation.revokes` — are **bare `system/hash`** values (format byte + digest — 33 bytes under `0x00`/SHA-256, 49 under `0x01`/SHA-384; **the length follows the format byte and MUST NOT be fixed**, `SPECIFICATION-FORMAT.md` §8.4.5), NOT wrapped in any envelope or object. Conformance: impls MUST NOT wrap or double-encode them. **The conformance claim here is the *shape* — bare and unwrapped — never the width**; a CBOR `bstr` is self-delimiting, so nothing downstream needs the length to parse the field.
 
 **`target_peer_id` is an identity, not a content-hash.** It is the Base58-encoded peer-id per V7 §1.5 multikey form (key_type ‖ hash_type ‖ digest, encoded). Self-certifying naming uses this string directly (`name == target_peer_id`), NOT `hex()` of a hash. This is the V7 §1.5 alignment pin.
 
@@ -662,7 +664,21 @@ Two separable proof layers:
   - **`manual`** — requests queue as `pending_review`; the operator approves out-of-band.
   - **`domain-control`** — for domain-shaped names, the registry requires proof of DNS-domain control before signing. **The challenge format is DEFERRED** — it MUST share one mechanism with the web-native `dns-txt` / `well_known_url` backends rather than inventing a second domain-proof scheme, so it is settled jointly with those proposals, not here. A v1 registry uses `open` / `allowlist` / `manual`; `domain-control` lands with the web-native co-design.
 
-`registry-issue-binding` (the internal sign+publish act) is gated by `system/capability/registry-issue-binding`, held by the policy logic / operator only. `register-request` is the *external* surface, gated by `system/capability/registry-request-binding` (open → granted broadly; allowlist → narrow). `system/capability/registry-manage-issuer-policy` gates editing the policy.
+`registry-issue-binding` (the internal sign+publish act) is gated by `system/capability/registry-issue-binding`, held by the policy logic / operator only. `register-request` is the *external* surface, gated by `system/capability/registry-request-binding` (open → granted broadly; allowlist → narrow). `system/capability/registry-manage-issuer-policy` gates editing the policy — **via the two operations defined in §6a.9.2.**
+
+##### §6a.9.2 Managing the policy — `set-issuer-policy` / `get-issuer-policy` `[RATIFIED 2026-08-10]`
+
+> **This capability named an act the corpus never defined**, and all three implementations diverged into the vacuum: go `2d6c993` and rust `b8e0ae2` expose only the three registration ops and arm the policy **out-of-band** (a CLI flag or a direct entity write); py `e60c822` invented `set-issuer-policy` / `get-issuer-policy` (`manifest.py`). **A client written against this spec had nothing to call anywhere.** Python's names are the obvious ones and the payload type already existed, so its shape is ratified rather than replaced — it costs one subsection and converges three implementations.
+
+| Operation | Input | Output | Gate |
+|---|---|---|---|
+| `set-issuer-policy` | `system/registry/issuer-policy` | `system/registry/issuer-policy` (the stored policy, as written) | `system/capability/registry-manage-issuer-policy` |
+| `get-issuer-policy` | — | `system/registry/issuer-policy`, or `404 not_found` when unset | `system/capability/registry-manage-issuer-policy` |
+
+- **`set-issuer-policy` replaces the policy whole `[MUST]`** — it is not a partial merge. An absent optional field means *unset*, not *unchanged*; a merge semantics would make the resulting policy depend on write order, which two peers cannot reconstruct.
+- **Resolution order is store-first `[MUST]`.** The issuer reads `system/registry/issuer-policy` from its tree; out-of-band arming (a CLI flag, an operator write) is a **seed for that entity**, never a parallel source consulted at request time. *(This order is load-bearing and predates the operations: it is what lets a conformance run drive all three modes against a **single** peer by writing the entity, which is how `registry_issuer` reached 12 checks — core-go `559f44c`. An implementation that let a flag shadow the stored entity would make that untestable.)*
+- **Unset is not a mode.** With no policy entity stored, the registry does not run live registration at all (§6a.9's handler is unregistered) — it is a conformant curated-only registry per §6a.8. `get-issuer-policy` returns `404`; it MUST NOT synthesize a default `open`, which would silently turn a curated registry into a first-come-first-serve one.
+- **`domain-control` remains deferred** (§6a.9.1) — `set-issuer-policy` MUST reject `mode: "domain-control"` with `400 unsupported_mode` until the challenge format lands, rather than storing a policy it cannot enforce.
 
 **Replay defense (normative discriminator).** A signed request carries `nonce` + `issued_at` (the registry tracks seen `nonce`s per requester within an `issued_at` window; a replayed request is rejected) **iff replay has a non-idempotent state effect.** This holds for `register-request` (replay can roll a name back to a superseded binding) and `renew-request` (replay can extend a binding's life past intended lapse). It does **not** hold for `revoke-request`, which is monotonic on a content-addressed target (replay cannot un-revoke and cannot reach a later re-issued binding) — so revoke omits `nonce` / `issued_at`. The discriminator, not the op name, decides: future ops are replay-defended exactly when their replay mutates state.
 
