@@ -1,7 +1,23 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.20
+**Version**: 3.22
 **Status**: Active
+**v3.22 (2026-07-23) — §11 Alternate-Engine Admission** (AE-1 boundary-equivalence + AE-2–AE-6): folded from
+`PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` on its only gate being met — the first green **inproc** alternate-engine
+admission run (**Axis-1**, Go, `entity-core-go` report `2026-07-23-ae5-axis1-inproc-admission-GREEN`: 330/330
+byte-identical alternate==reference, 0 fallbacks, `engine-role==alternate` enforced). The reference interpreter
+(§4) remains the conformance floor; an alternate engine is a per-impl opt-in.
+**v3.21 (2026-07-23) — validated by the compute corpus three-way LOCK (330/330 byte-identical across Go/Rust/Python,
+oracle-pinned `seed 20260716 / SplitMix64 / corpus-SHA d0fdd757`):** `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`
+(implemented — §4.2, Q2; all three impls charge `evaluate()` steps only, `worked/budget/exhausted-deterministic`
+agrees). Also validated three-way by the same lock: F-1 (Rust cast-to-uint materialization, §2.2 rule 11), F-2
+(§9.1 out-of-range index), F-3 (Python tier-1 `included`). Ruled in `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`.
+**Pending (provisional — folded in §2.4 but NOT yet corpus-gated cross-impl):**
+`PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM` (§2.4 — materialized `compute/error` is `code`-only, Q1) —
+validated intra-Go (Axis-1 == Stage-1, code-only). **Cross-impl gate:** Python (+Rust) materialize `compute/error`
+code-only per this §2.4, and a corpus vector that materializes an error *into a construct/tree* runs three-way.
+(This §2.4 is the canonical home for `compute/error`; `ENTITY-CORE-MACHINE-SPEC.md` is a *derived* condensed
+summary and is downstream — regenerate-or-retire is the protocol maintainer's hygiene, not a gate here.)
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
 **Source**: PROPOSAL-COMPUTE-AMENDMENTS.md (implemented — C1-C10), PROPOSAL-COMPUTE-AMENDMENTS-V2.md (implemented — V1-V32 + V6/V7/V7'), PROPOSAL-COMPUTE-AMENDMENTS-V3.md (implemented — C1-C4 core helpers + E1-E3 compute fixes), PROPOSAL-COMPUTE-SPEC-AMBIGUITIES.md (implemented — A1-A4, B1, C1, D1, D2), PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md (implemented — D3-D6), PROPOSAL-COMPUTE-TAIL-CALL-OPTIMIZATION.md (implemented — T1-T3, R1-R2), PROPOSAL-ENTITY-NATIVE-HANDLER-DISPATCH.md (implemented — E1-E4), PROPOSAL-COMPUTE-APPLY-RESOURCE-CEILING.md (implemented — F1-F5, H2-H3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (implemented — CP1, CP2), PROPOSAL-COMPUTE-LOOKUP-TREE-LOCAL-QUALIFICATION.md (implemented — S8)
 
@@ -361,7 +377,7 @@ compute/index := {
 ```
 
 Returns the element at the (evaluated) `index` of the (evaluated) `array`. Pure (a deterministic function of the values), core, and override-prohibited like `compute/field`. Edge cases (normative):
-- **Out-of-range index → `index_out_of_range` error.** Negative indices are out of range — there is no from-end (Python-style) indexing.
+- **Out-of-range index → `index_out_of_range` error.** Negative indices are out of range — there is no from-end (Python-style) indexing. A `uint`-annotated index (e.g. `cast(-4, uint)`) is **not** a `type_mismatch`: `int`/`uint` are annotations, not distinct value types (§2.2), so any integer bit-pattern is a valid index *argument*; an out-of-bounds magnitude — whether read signed (negative) or unsigned (≥ length) — is `index_out_of_range`. *(Ruled from the compute corpus's first cross-impl run — `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`, R3/F-2.)*
 - **`index` on `null` or a non-array value → `type_mismatch` error.**
 
 #### compute/length
@@ -473,13 +489,31 @@ Entity-typed results from `compute/construct` retain their natural type and are 
 ```
 compute/error := {
   fields: {
-    code:       {type_ref: "primitive/string"}          ; Error code (§9.1)
-    message:    {type_ref: "primitive/string"}          ; Human-readable description
-    at:         {type_ref: "primitive/string", optional: true}  ; Path or location of error
-    expression: {type_ref: "system/hash", optional: true}  ; Hash of expression that produced the error
+    code:       {type_ref: "primitive/string"}          ; Error code (§9.1) — the ONLY materialized field
+    message:    {type_ref: "primitive/string", optional: true}  ; In-flight diagnostic; NOT materialized (see below)
+    at:         {type_ref: "primitive/string", optional: true}  ; In-flight diagnostic; NOT materialized
+    expression: {type_ref: "system/hash", optional: true}  ; In-flight diagnostic; NOT materialized
   }
 }
 ```
+
+**Materialized `compute/error` is content-hashed over `code` alone (normative — cross-impl determinism; v3.21 provisional, `PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM`, validated intra-Go — cross-impl gate: Python+Rust materialize code-only + a materialized-error vector runs three-way).**
+When a `compute/error` **materializes** — written to a `result_path` (§7.2), placed in a `compute/construct`
+field, or sent on the wire as part of a materialized subtree (the compute→non-compute crossings, §2.3 N1) —
+its canonical content is exactly `{code}`. `message`, `at`, and `expression` are **diagnostic-only**: they MAY
+appear in the *in-flight / dispatch-boundary* representation of an error (the handler-dispatch status-200
+error-as-value return, §3.7 / the F10 surface; a debugging view), but they MUST **NOT** be part of the bytes
+V7 content-addresses. The reason is load-bearing: `message` is unpinned prose (§9.1 pins codes, not strings),
+`at` is an impl-dependent attribution point, and `expression` is the hash of *whichever* sub-expression an impl
+blames — so if any of the three entered the content hash, two conformant peers writing the **same** error to
+the **same** path would produce **different** entity hashes, breaking AE-1 materialized-boundary equivalence,
+V7 content-dedup, cross-peer sync, and any reactive consumer keyed on the result hash. Two errors with the same
+`code` **are** the same materialized entity — that is correct content-addressing. This is the error-side of the
+"only the materialized form is normative; the in-flight representation is implementation-private" rule (§2.3 N1
+/ the `compute/construct` materialization note). **Any materialized error field beyond `code` MUST first be
+proven a pure function of the IR + inputs** (not of impl attribution). *(Ruled from the compute corpus's first
+cross-impl run — `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`, Q1; the corpus's `code`-strict error comparison is
+exactly this materialized boundary.)*
 
 ### 2.5 Subgraph Metadata Type
 
@@ -1530,15 +1564,30 @@ is_compute_type(entity):
   ]
 ```
 
-Implementations SHOULD ensure entity resolution is O(1) per hash (e.g., via reverse index). Implementations using scan-based resolution SHOULD count resolution steps against the budget to prevent denial-of-service from deep reference chains.
+Implementations SHOULD ensure entity resolution is O(1) per hash (e.g., via reverse index).
 
-**Resolution cost considerations (advisory).** The evaluation budget (§5.1) counts `evaluate()` steps but not `resolve()` calls. An expression that constructs deep reference chains can force unbounded I/O (scan-based resolution) within a bounded operation budget. This is a denial-of-service concern for implementations without O(1) reverse-index resolution. Guidance:
+**The observable operation budget charges `evaluate()` steps only (normative — cross-impl determinism; v3.21, `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`, validated three-way by the corpus LOCK 330/330).** The
+`operations` ceiling of §5.1 — whose exhaustion is the hard `budget_exhausted` — is decremented **one per
+`evaluate()` step and nothing else** (the §4.1 pseudocode `budget.operations -= 1`). `resolve()` calls cost
+**zero** in this observable budget. Given the same `(IR, inputs, budget)`, two conformant implementations MUST
+therefore reach `budget_exhausted` at the **same** `evaluate()`-step count — the value-vs-`budget_exhausted`
+outcome is a cross-impl-deterministic function of the inputs, and is a gated conformance outcome (GUIDE-CONFORMANCE §7c.5).
 
-- **Implementations with reverse-index resolution** MAY treat `resolve()` as zero-cost since the work is amortized by the index. No budget deduction needed.
-- **Implementations with scan-based resolution** SHOULD deduct one or more operations from the budget per `resolve()` call. The deduction factor is implementation-defined but SHOULD reflect the worst-case scan depth.
-- **Implementations with encountered-during-read minimum resolution** (§4.2) avoid the issue entirely — resolution is bounded by prior reads, which are themselves budget-counted.
+**Scan-based DoS protection is a private guard, out of band (normative).** An expression that constructs deep
+reference chains can force unbounded I/O on an implementation without O(1) reverse-index resolution. Such an
+implementation MAY impose an **additional, implementation-private** resource guard (a scan-depth or wall-clock
+bound). That guard **MUST NOT alter the observable budget outcome**: if it trips, it surfaces as a **distinct
+resource-limit condition** (a transport/resource failure, out of band), **never** as the in-band
+`compute/error{budget_exhausted}` value at a shifted stop-point. This keeps the DoS mitigation while leaving the
+budget outcome deterministic. Implementations with reverse-index or content-store-direct resolution (§1613 —
+scope resolution is O(1)) or encountered-during-read minimum resolution need no such guard.
 
-Cross-implementation determinism is not affected — the number of `resolve()` calls is the same regardless of how they are costed. Budget accounting differs across implementations but result values do not.
+This is why cross-implementation determinism holds: because `resolve()` cost never enters the observable
+`operations` ceiling, both the number of `evaluate()` steps **and** the stop-point are identical across impls —
+result values *and* the `budget_exhausted` boundary agree. *(Ruled from the compute corpus's first cross-impl
+run — `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`, Q2; supersedes the prior "deduction factor is
+implementation-defined" guidance, which let impl-defined cost leak into the observable ceiling and made the
+`budget_exhausted` boundary non-deterministic at the budget edge.)*
 
 **Content store access model.** Hash resolution follows a layered access model consistent with EXTENSION-QUERY.md §5.5:
 
@@ -1957,11 +2006,9 @@ on_tree_change(event_type, uri, new_hash, previous_hash, emission_context):
 
     if cascade_depth(emission_context) >= RECOMMENDED_MAX_CASCADE_DEPTH:
       ; Cascade limit exceeded — error and freeze
-      error_entity = {type: "compute/error", data: {
-        code: "cascade_limit",
-        message: "Cascade depth exceeded during reactive re-evaluation",
-        at: entry.expression_uri
-      }}
+      ; Materialized form is code-only (§2.4) — message/at are in-flight diagnostics, not
+      ; part of the tree-written entity's content hash (cross-impl determinism).
+      error_entity = {type: "compute/error", data: {code: "cascade_limit"}}
       entity_tree.put(subgraph.data.result_path, error_entity, emission_context)
       subgraph.data.status = "frozen"
       entity_tree.put(entry.subgraph_path, subgraph)
@@ -1989,11 +2036,8 @@ re_evaluate(expression_uri, subgraph_path, emission_context):
   installation_grant = content_store.get(subgraph.data.installation_grant)
   if installation_grant is null or is_expired(installation_grant):
     ; Grant missing or expired — write error to result path, freeze subgraph
-    error_entity = {type: "compute/error", data: {
-      code: "installation_grant_invalid",
-      message: "Installation grant missing or expired",
-      at: expression_uri
-    }}
+    ; Materialized form is code-only (§2.4) — message/at are in-flight diagnostics.
+    error_entity = {type: "compute/error", data: {code: "installation_grant_invalid"}}
     entity_tree.put(subgraph.data.result_path, error_entity, emission_context)
     subgraph.data.status = "frozen"
     entity_tree.put(subgraph_path, subgraph)
@@ -2276,3 +2320,140 @@ These peer-wide defaults apply when the capability's `constraints["system/comput
 - Subgraph ID derivation from root expression path (§3.3)
 - Tree-scoped hash resolution mechanism beyond the minimum guarantee — encountered-during-read is required (§4.2); reverse index and scan are permitted enhancements
 - Cascade depth limit value (§7.3) — recommended 16, implementations MAY allow configuration
+- The evaluation strategy itself — the reference tree-walk (§4) or an admitted alternate engine (§11); the representation of any alternate engine stays implementation-local (§11.5)
+
+## 11. Alternate-Engine Admission
+
+The reference evaluation algorithm (§4) is the **conformance floor**: a peer that implements it (and §10.1) is
+fully conformant, and the cross-impl conformance LOCK is over reference evaluators. A peer **MAY** additionally
+add an **alternate execution strategy** for the same content-addressed IR — a faster interpreter (decode-once /
+resolved-node), a compiled or fused handler, a memoizing backend, a defunctionalized walker. Because the IR is
+content-addressed and the conformance surface is the *materialized* boundary, every such engine is governed by
+**one** admission rule (AE-1) plus the invariants and evidence that make it hold (AE-2–AE-6). Stating the rule
+once, over "any engine," is deliberate — an equivalence pinned per-engine-kind springs apart at the next kind
+nobody wrote a rule for.
+
+An alternate engine is **optional and per-implementation** — a performance choice, never a conformance
+requirement. This section governs any engine a peer chooses to add; it does not require peers to build one, and
+does not call for the cohort to build the *same* one (three transcriptions of one engine would be
+cohort-consistent, not independent convergence).
+
+### 11.1 AE-1 — materialized-boundary equivalence (the admission MUST)
+
+An alternate execution strategy is **conformant iff**, for the same IR over the same inputs, it produces the
+**byte-identical materialized boundary** the spec defines: the same canonical CBOR encoding and the same content
+hash at every compute→non-compute crossing, plus the same terminal outcome. The boundary set is exactly the
+crossings of §2.3 (one home — no new surface) together with the two outcome forms:
+
+1. **Materialization crossings** — the §2.3 N1 placement sites (a `compute/scope` binding, a `compute/construct`
+   field, a `compute/apply` argument) and the four compute→non-compute crossings (a constructed/evaluated value
+   **stored to the tree / a `result_path`**, **returned from a handler**, **passed as a `compute/apply` arg**, or
+   **sent on the wire**) — each materialized as a **bare** entity per V7 §1.4, byte-identical to the hand-built
+   entity.
+2. **The cross-peer materialized subtree** — a `compute/closure`'s reachable scope materialized into the envelope
+   `included` map on peer handoff (§2.3 N7): the bytes another peer resolves MUST match.
+3. **A materialized `compute/error`** — content-hashed over **`code` alone** (§2.4); `message`/`at`/`expression`
+   are in-flight diagnostics, **not** part of the boundary. This is the ~40% of the input space where an
+   alternate engine is most likely to diverge (error paths are re-derived, not shared), so it is named explicitly.
+4. **The terminal resource outcome** — value vs. a resource-limit `compute/error`, **and its trigger point**:
+   `budget_exhausted` (§5.1), `depth_exceeded` (§5.4, raised §4.1), and `cascade_limit` (§7.2) MUST each fire at
+   the **same logical point** on every engine.
+
+**The boundary bytes are fixed by the spec, not by any implementation** — the canonical CBOR encoding (V7 §1.4),
+the value model (§2.2/§2.3), and the frozen conformance corpus (§10 / `GUIDE-CONFORMANCE §7c`) are the authority;
+no implementation is privileged. An alternate engine is admitted against the frozen corpus's pinned boundary
+hashes, which independent ground-up implementations have confirmed (the three-way LOCK), never against one
+runtime's bytes.
+
+Equivalence is defined **only** at that boundary. It is **NOT** required — and MUST NOT be assumed — at
+**intermediate steps** (per-node content-addressing the reference does internally is an interpretation artifact
+an alternate engine may drop) or at **content-store contents** (an alternate engine legitimately leaves *fewer*
+entities in the store; a byte-for-byte store-equality test is a *false* conformance test that rejects a valid
+engine). An engine that changes any boundary hash — or a terminal trigger point — is **non-conformant** (a
+mis-evaluation), not an optimization.
+
+### 11.2 AE-2 / AE-3 / AE-4 — the cross-engine invariants
+
+Boundary-equivalence is the observable; three invariants are what an engine MUST preserve to achieve it.
+
+- **AE-2 — impure-frontier preservation.** An alternate engine MUST NOT reorder, elide, duplicate, or introduce
+  an impure operation (`tree.get` / `tree.put` / dispatch / `check_permission`), and MUST register the **same
+  reactive dependency set** the reference registers (§7.1). A fast interpreter that resolves hashes by a
+  different tier (reverse index vs. encountered-during-read) MUST still record the dependency edges the reference
+  records, or reactive re-evaluation forks across engines.
+- **AE-3 — demand (laziness) equivalence.** An alternate engine MUST evaluate exactly the **demanded** subgraph —
+  no more (speculative evaluation of an undemanded branch could materialize or fault where the reference does not)
+  and no less. **Error-driven demand is part of demand:** the §4.1 short-circuits are demand boundaries an engine
+  MUST replicate exactly — a `compute/if` whose condition evaluates to a `compute/error` short-circuits to that
+  error with **neither branch evaluated**; a short-circuiting `compute/logic` and the `if is_error(x): return x`
+  after every sub-evaluation likewise cut demand.
+- **AE-4 — metering at the logical boundary.** The observable operation budget is metered over **logical
+  `evaluate()` steps**, not host/engine steps — one decrement per `evaluate()` step, `resolve()` at zero
+  (§5.1/§4.2). A faster interpreter still decrements `operations` once per logical step; a fused/compiled handler
+  that runs a pure interior natively MUST account **the logical step count the reference would charge on the same
+  demanded path** (data-dependent loops included). A handler that counted itself as ≈1 op would complete where
+  the reference `budget_exhausted`s — a boundary divergence, not a speedup. Eval-depth is likewise logical: the
+  **tail-call trampoline** (tail calls do not consume depth, §4.1) is a spec semantic every engine MUST
+  reproduce — an engine that recurses on the host stack where the reference trampolines will hit `depth_exceeded`
+  (or overflow) where the reference loops or completes.
+
+### 11.3 AE-5 / AE-6 — admission evidence
+
+- **AE-5 — admission is demonstrated in-process, never over the wire.** An alternate engine is admitted only by
+  running the frozen conformance corpus **in-process with that engine as the evaluator** and matching the pinned
+  boundary (AE-1). A wire/handler-path conformance run cannot attest *which engine ran* inside a peer, so it
+  cannot distinguish the alternate engine from a reference fallback and is **not** admission evidence. Admission
+  requires the in-process (`inproc`) corpus profile (`GUIDE-CONFORMANCE §7c.3`).
+- **AE-6 — the alternate engine MUST run every vector; no per-vector fallback.** Every corpus vector in an
+  admission run MUST be evaluated by the alternate engine on each side — never silently deopted to the reference
+  for the hard cases (a run that falls back compares the reference to itself; the agreement is circular). Deopt
+  at *production* runtime is a correctness-preserving safety net (the lowering contract's L-3); deopt during an
+  *admission run* voids the evidence for that vector.
+
+### 11.4 Engine-specific requirements (compiled backends)
+
+AE-1–AE-6 govern every engine. A **compiled** backend additionally carries the lowering-specific MUSTs of the
+lowering contract — source-IR preservation (L-2), deopt fallback to interpreting the source IR (L-3), the
+pure-interior fusion unit (L-4 — the fusion-specific instance of AE-2), and memoization soundness (L-5 —
+pure-only, byte-identical). A fast interpreter with no separate compiled artifact does not need L-2/L-3.
+
+### 11.5 Interpreter architecture (RECOMMENDED)
+
+An **explicit-state / resolved-node** evaluator (versus a recursive host-stack tree-walk) is what makes
+preemption (a capturable frame at a yield boundary) and fusion (a stable interior to specialize) tractable.
+Implementations SHOULD converge on an explicit-state evaluator for their fast path. This is guidance, **not** a
+mandated representation — AE-1 admits any engine that is boundary-equivalent, however structured; the engine's
+representation stays implementation-local, and MAY live in a separate research/experiment repo (the admission
+*run*, not the engine, is what crosses into the conformance tier).
+
+### 11.6 Conformance vectors
+
+The alternate-engine vectors run over the differential corpus (§10 / `GUIDE-CONFORMANCE §7c`), which MUST
+exercise the divergence-prone classes: numeric-intent **through indirection** (§2.2 rule 11, materialized),
+materialized **error paths** (code-only), **budget-edge**, **deep tail recursion** (past the host limit, within
+the depth budget), **float-carrying** entities (canonical CBOR), and **cross-peer** closure transfer.
+
+- `ae_boundary_equivalence` — same IR + inputs ⇒ identical boundary-hash sequence on the reference and the
+  alternate engine, **in-process** (AE-5). A skip counts as a failure.
+- `ae_error_boundary` — a materialized `compute/error` compares **code-only** across engines (AE-1 outcome 3).
+- `ae_resource_stoppoint` — a resource-edge workload reaches the same terminal outcome at the same **logical
+  point**: `budget_exhausted`, `depth_exceeded`, `cascade_limit` (AE-1 outcome 4 / AE-4).
+- `ae_no_intermediate_leak` — the alternate engine's store contents **may differ** (fewer entities) while the
+  boundary hashes match (the test does **not** over-assert store equality).
+- `ae_demand_equivalence` — an undemanded branch that would fault/materialize is **not** evaluated, including an
+  error-short-circuited `if` branch (AE-3).
+- `ae_metering_parity` — the `operations` decrement sequence matches per logical step (AE-4).
+- `ae_dependency_parity` — the reactive dependency set an engine registers matches the reference (AE-2 / §7.1).
+
+### 11.7 Admission status
+
+**Axis-1** — a Go decode-once resolved-node fast interpreter (research/experiment tier) — is the **first admitted
+alternate engine** (2026-07-23). The frozen `inproc` corpus (330 vectors) run in-process through Axis-1 produced
+the byte-identical materialized boundary of the reference on **all 330 vectors, 0 fallbacks**, with
+`engine-role==alternate` enforced and 6 distinct error codes matching the reference. The run also demonstrated
+AE-5's teeth: it caught a `numeric-cast → uint` **index-code drift** (Axis-1 had been transcribed from the
+reference before the §9.1 out-of-range-index ruling landed and answered `type_mismatch` where the reference
+answers `index_out_of_range`); the corpus surfaced the drift and the fix closed it. *(This is one implementation's
+alternate engine admitted against the spec-arbitrated boundary — the admission procedure is proven; a second,
+independent alternate engine is what would upgrade the evidence to independent convergence. See the compute
+conformance ledger for the residual coverage items.)*

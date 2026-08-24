@@ -429,17 +429,30 @@ cross-bless for the gate.
 
 ### §7c.3 The vector shape (high-level — the only thing pinned here)
 
-A compute conformance vector is `(IR entity, root bindings, budget) → { boundary-hash | error{code, message} }`,
+A compute conformance vector is `(IR entity, root bindings, budget) → { boundary-hash | error{code} }`,
 where the **boundary** is the AE-1 set: the **materialized bare-entity content hash** (a `construct`, byte-
-identical to the hand-built entity — V7 §1.4), **value-kind canonical-CBOR bytes**, and the **error `code`
-(+`message`)**. Portable by construction — IR + inputs + hash, no Go. Leave the exact serialization
+identical to the hand-built entity — V7 §1.4), **value-kind canonical-CBOR bytes**, and the **error `code`**
+(compared strictly; `message`/`at`/`expression` are in-flight diagnostics, **not** part of the materialized
+error boundary — `EXTENSION-COMPUTE §2.4`, so the gate's `code`-comparison *is* the materialized-error-hash
+comparison). Portable by construction — IR + inputs + hash, no Go. Leave the exact serialization
 (`.diag`-analog vs. a compute-native form) to the cohort; the schema above is the contract.
+
+**Two build profiles; one locks.** An `inproc` profile matches the `(IR, root bindings, budget)` shape above
+exactly and exercises the evaluator in isolation — it is the **normative, hash-pinned artifact** and is the one
+that can satisfy §7c.4(2)'s alternate-engine-each-side guard. A `wire` profile inlines root bindings so the
+corpus can be driven against a live peer (§3.2 evaluates from an empty scope); it exercises the handler path,
+records `engine: "wire:<addr>"`, and **cannot** satisfy the alternate-engine guard — it is an auxiliary driver,
+not the locked corpus. The two are different artifacts with different SHAs; **`inproc` is the one vendored and
+locked.**
 
 ### §7c.4 Guidance to the core peers — converge the set
 
 1. **Port the generator, not a static dump.** A frozen vector dump alone freezes *Go's* coverage. Each impl
    SHOULD be able to run the seeded generator (identical seed → identical shapes) so coverage grows cross-impl
-   — but the **published artifact is the seeded frozen output**, so every impl runs identical bytes.
+   — but the **published artifact is the seeded frozen output**, so every impl runs identical bytes. **The
+   generator's PRNG MUST be portable — SplitMix64 with a 64-bit seed** (corpus v1: seed `20260716`), never a
+   language-runtime RNG (Go's `math/rand` is not reproducible cross-language, so "seed S" would mean a different
+   corpus per impl). Identical seed → byte-identical shapes on every impl is the contract.
 2. **The anti-vacuity guards travel WITH the corpus — as gates, not decoration.** Port the five verbatim:
    **≥25% value outcomes** (else agreement is mostly errors — vacuous); **≥1 error-as-value** (the code path is
    part of the contract); **≥1 closure built** (else `map`/`filter` / the live-frame path never ran); **0
@@ -473,7 +486,12 @@ identical to the hand-built entity — V7 §1.4), **value-kind canonical-CBOR by
 
 **Gates:** AE-1 admission (fast interpreter *and* compiled handler), the lowering-toolkit vectors (first
 tranche), W-BUDGET preemption determinism (BP-1), W-HOSTING transferable compute. Highest-leverage cohort
-build (`ROUTING-2026-07-21` Wave 0→1). **Ownership:** **arch authors this guidance + the vector shape + the
+build (`ROUTING-2026-07-21` Wave 0→1). **`budget_exhausted` is a gated, cross-impl-deterministic outcome** —
+the observable `operations` ceiling charges `evaluate()` steps only (`EXTENSION-COMPUTE §4.2`, ruled from this
+corpus's first run), so budget-edge vectors (a workload deliberately partway through its budget) **stay in the
+equality gate**: two conformant impls given the same `(IR, inputs, budget)` MUST reach `budget_exhausted` at
+the same step. Impl-private scan-based DoS guards surface out of band (a distinct resource condition), never as
+a shifted in-band `budget_exhausted`, so they do not perturb the gate. **Ownership:** **arch authors this guidance + the vector shape + the
 discipline (here);** the **cohort** builds the generator port + the evaluate-emit stage + cross-blesses; the
 frozen corpus + MANIFEST live in `entity-core-protocol/specs/test-vectors/compute-conformance/` (new dir),
 vendored into keystone — the same split as the ECF corpus. Per the working pattern, arch **guides**; the impl
