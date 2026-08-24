@@ -5,7 +5,7 @@
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.39+)
 **Optional**: EXTENSION-SUBSCRIPTION.md (v3.10+) — reactive grant lifecycle
 **Optional**: EXTENSION-CONTINUATION.md (v1.7+) — automated grant issuance and exclusion cascade
-**Related**: EXTENSION-NETWORK-GROUP.md — consumes role types for group membership permissions
+**Related**: EXTENSION-GROUP.md — consumes role types for group membership permissions
 **Analysis**: REVIEW-GROUP-EXTENSION-ANALYSIS.md §§20, 22-27, 30, 34
 **Proposal**: PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (RL1, RL2, RL3)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -35,7 +35,7 @@ This extension defines:
 
 This extension does **not** define:
 
-- Group membership lifecycle (EXTENSION-NETWORK-GROUP)
+- Group membership lifecycle (EXTENSION-GROUP)
 - Automated grant issuance for non-role-handler actors (convention territory, uses EXTENSION-CONTINUATION)
 - Cross-context queries (future EXTENSION-QUERY territory)
 
@@ -96,7 +96,7 @@ Capability system (core §5)         → enforcement: verify, check_permission
   ↑ issues tokens from
 Role extension (this spec)           → management: define, assign, exclude
   ↑ consumed by
-Group extension (EXTENSION-NETWORK-GROUP) → coordination: membership lifecycle
+Group extension (EXTENSION-GROUP) → coordination: membership lifecycle
 ```
 
 The capability system does not depend on roles. Peers can issue ad-hoc grants without roles. Roles provide organizational meaning — a named bundle with a context — that any handler can consume.

@@ -82,6 +82,30 @@ resolution → ENCRYPTION confidentiality. The unsolved root under all of it is
 **consumer↔consumer connectivity** (browser/phone ↔ desktop, both NAT) — the cheapest attack is
 the browser WebRTC transfer demo (Milestone 1), off the critical path but the proof point.
 
+### The connectivity build order (the consumer↔consumer root — now designed)
+
+The "unsolved root" now has a designed, dependency-ordered build plan (2026-07-22). Each step is an
+additive amendment/proposal on the already-reserved NETWORK §10.2 seam — none a wire renumber. Operator
+calls settled: **signaling carrier = stateless rendezvous (v1), QR secondary-under-review; substrate =
+TCP-simopen first, our-QUIC the sequenced upgrade; relay/async = opt-in dedicated-peer tier.**
+
+| # | unit / proposal | what | buildable | depends on |
+|---|---|---|---|---|
+| 0 | `PROPOSAL-NETWORK-REACHABILITY-FACTS` | reflection + dial-back + candidate gathering (NETWORK amendment + `network-reflect`/`network-dialback` caps) | **now** — facts only, no punch | — |
+| 1 | `PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH` | `system/signaling` rendezvous carrier + `system/nat/*` coordination + **TCP-simopen** native substrate | **now** — rides the existing `tcp` profile | #0 |
+| 2 | our-QUIC transport (study Iroh, build our own) | the `quic` candidate substrate — better punch reliability | after #1 proves the coordination protocol | our own QUIC transport (large, separate) |
+| 3 | `PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` (bring fwd, unit #3) | fills the reserved `webrtc` §10 slot; SDP/ICE schema on the signaling carrier — the **browser leg** | **parallel track** (browser demand; the cheapest end-to-end exercise of the whole arch) | #1 signaling carrier |
+| 4 | RELAY **Mode-C** (opt-in) | live relayed circuit — last-resort fallback when a punch fails *and* liveness is needed (symmetric-NAT pairs) | gated on a real-time driver | RELAY; a driver |
+
+Rides alongside (infra, not on the punch critical path): `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT`
+(advertises the reflector/signaling pools + optional relay fallbacks) + `GUIDE-REFERENCE-DEPLOYMENT`
+(budget tiers). **Cohort build target / the integration test: `entity-chat`** — buildable **today** on the
+async floor (mDNS + registry + INBOX/CONTINUATION + EMBED, all Active); live P2P (steps 1+) is the upgrade,
+not a blocker. A real five-layer chat exchange (discover→resolve→connect→message→render) between two
+conformant peers is the **best integration test the whole stack has** — and, per the CDN-corridor meta-rule,
+the *only* real validation gate for the connectivity/infra/chat design. **Near-term spine: #0 + #1 +
+entity-chat-on-the-async-floor.** #2/#3 are parallel/deferred; #4 is opt-in.
+
 ## Stage C — Early / parked (M0–M2, 🔴)
 
 | extension | ver | state |
@@ -92,9 +116,11 @@ the browser WebRTC transfer demo (Milestone 1), off the critical path but the pr
 ## Stage D — Proposed, not landed (M0–M1): design intent in `proposals/`
 
 Not shipping as specs; several are real and load-bearing-but-forthcoming (cited in landed specs
-as `(planned)`): **BRIDGE-HTTP · BRIDGE-SMTP · GOSSIP · WEBRTC-TRANSPORT · NAT-TRAVERSAL ·
-PEER-MANIFEST-STATIC-HANDSHAKE · NAME-GRAMMAR · UNIVERSAL-RESOLUTION · GROUP-V1.5 ·
-STATIC-PEER-HOSTING-UMBRELLA · DOMAIN-LOCAL-IO · APPLICATIONS-DOMAIN · ENCRYPTED-SESSION**.
+as `(planned)`): **BRIDGE-HTTP · BRIDGE-SMTP · GOSSIP · NETWORK-REACHABILITY-FACTS ·
+CONNECTIVITY-SIGNALING-AND-PUNCH · WEBRTC-TRANSPORT · PEER-MANIFEST-STATIC-HANDSHAKE ·
+NAME-GRAMMAR · UNIVERSAL-RESOLUTION · GROUP-V1.5 · STATIC-PEER-HOSTING-UMBRELLA · DOMAIN-LOCAL-IO ·
+APPLICATIONS-DOMAIN · ENCRYPTED-SESSION**. *(The archived `NAT-TRAVERSAL` DRAFT is brought forward,
+reconciled, as the two connectivity proposals above — see the Stage B build order.)*
 
 ## Stage E — Forward-feature backlog of LANDED extensions (NOT shipping v1)
 

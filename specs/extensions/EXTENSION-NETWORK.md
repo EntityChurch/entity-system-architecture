@@ -53,10 +53,12 @@ This extension does **not** cover:
 - Relay / store-and-forward (`EXTENSION-RELAY`, shipped)
 - NAT traversal / WAN reachability — the *reachability facts* (observed-address, dial-back,
   candidate gathering) land as an **amendment to this extension**; the punch-coordination dance is a
-  thin protocol over RELAY signaling. See `proposals/PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md`.
+  thin protocol over a pluggable signaling carrier. See `docs/proposals/PROPOSAL-NETWORK-REACHABILITY-FACTS.md`
+  (the facts — reflection/dial-back/candidates) + `docs/proposals/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md`
+  (the coordination dance + signaling carrier).
   (Note: the asymmetric-NAT case — reaching a NAT'd peer from a public peer — is *already* covered by
   the `held_connection_client` reachability class, §10.)
-- Group coordination (future EXTENSION-NETWORK-GROUP)
+- Group coordination (EXTENSION-GROUP)
 - Transport negotiation (ENTITY-CORE-PROTOCOL.md §4)
 
 ### 1.2 Design Principles

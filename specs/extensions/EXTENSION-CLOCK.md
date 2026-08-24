@@ -397,7 +397,7 @@ advance_clock(execution_context):
 
 ### 4.3 Clock State Writes Do Not Advance the Clock
 
-Writing to clock engine output paths (`system/clock/logical`, `system/clock/vector`, `system/clock/hlc`) MUST NOT trigger clock advancement. This prevents infinite recursion — clock persistence writes are produced by the clock consumer itself during emit processing.
+Writing to clock **engine-output paths** — the persistence paths (`system/clock/logical`, `system/clock/vector`, `system/clock/hlc`) **and the scheduled tick paths (`system/clock/tick/*`)** — MUST NOT trigger clock advancement. Engine output is produced by the clock consumer itself during emit processing; advancing on it would recurse (persistence) or, for a **periodic tick**, would advance the clock **at wall rate on an idle peer** — so in `logical`/`vector`/`hlc` mode the counter would count wall time instead of causal events and every causal comparison (§6.4) silently degrades. The rule is general: **a write the clock engine itself emits does not advance the clock.** *(Tick-path exclusion added from the core-go tick-emission validation, 2026-07-22; §4.3's original enumeration predated tick emission.)*
 
 Configuration paths (`system/clock/config`) are handler-written via explicit EXECUTE and do not create recursion risk. Configuration changes SHOULD advance the clock like any other tree mutation. See SYSTEM-COMPOSITION.md §6.1 for the engine-output vs configuration path distinction.
 
@@ -622,7 +622,9 @@ Clock handler operations (now, compare, tick) are read-only — no tree writes.
 
 Clock advancement (§3.3) is an autonomous background operation. Writes to `system/clock/*` paths are authorized by the clock handler's own grant. The local peer identity is the author.
 
-Note: `system/clock/*` paths are not excluded from history recording by the history spec (the recursion prevention in EXTENSION-HISTORY.md §3.2 only covers `system/history/*`). If history is configured for `system/clock/*` paths, advancement writes will be recorded with the clock handler grant as the authorizing capability.
+**Tick paths are history-excluded by default.** The scheduled tick paths (`system/clock/tick/*`) **MUST NOT be history-recorded by default** — a periodic tick otherwise generates history at wall rate forever on an idle peer (unbounded growth by omission, the same class as chain-error-marker retention). The `.../latest` pointer plus the monotonic `sequence` (§2.8) give every consumer what they need; the historical tick series carries no value. A deployment MAY opt a tick path back into history recording, but only under a **bounded retention policy**. This mirrors EXTENSION-HISTORY.md §3.2's exclusion of `system/history/*` and §4.3's exclusion of engine output from advancement — one rule: **engine-output ephemera are excluded from the recording/advancement feedback loops.** *(From the core-go tick-emission validation, 2026-07-22.)*
+
+The other `system/clock/*` paths (advancement persistence, config) are **not** history-excluded: the recursion prevention in EXTENSION-HISTORY.md §3.2 covers only `system/history/*`, and an advancement write is recorded (with the clock handler grant as the authorizing capability) only when something else is already writing — bounded by write activity, not wall time.
 
 See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 

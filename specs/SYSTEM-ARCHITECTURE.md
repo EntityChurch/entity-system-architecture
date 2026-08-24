@@ -423,7 +423,7 @@ These freeze in the first wave alongside V7 and Tier 0 (§13.4).
 
 #### Tier 2 — Operational extensions
 
-Needed for **production multi-peer deployments**. A single peer can run without these on V7 + bare-key-pair identity. Required for identity management, peer networking, and operational management. Decomposes into three sub-groups; the architecture team has at present **named four extensions in this tier and identified several gaps** where extensions are expected but not yet authored.
+Needed for **production multi-peer deployments**. A single peer can run without these on V7 + bare-key-pair identity. Required for identity management, peer networking, and operational management. Decomposes into three sub-groups; **most of this tier is now authored** (identity/authority/membership in 2a; NETWORK + DISCOVERY + RELAY in 2b), and the **remaining gaps are in operational management (2c — GC, persistence)**.
 
 ##### Tier 2a — Operational user-identity
 
@@ -439,13 +439,13 @@ How identity, authority, and membership are managed above raw key-pair identity.
 
 ##### Tier 2b — Operational network
 
-Cross-peer connection, sync, discovery, relay. Architecturally established for some time; current normative spec coverage is uneven.
+Cross-peer connection, sync, discovery, relay. Architecturally established for some time; **now authored** — NETWORK, DISCOVERY, and RELAY all carry normative specs.
 
 | Member | Status | Role |
 |---|---|---|
 | `EXTENSION-NETWORK` | Draft v1.3 | Sync, peer connection, bootstrap conventions. |
-| **Discovery** | Spec gap (architecturally established) — `proposals/deferred/PROPOSAL-PEER-DISCOVERY-AND-INITIAL-SCOPE.md` is the closest artifact; `reviews/PLAN-REGISTRY-AND-DISCOVERY-LANDSCAPE.md` carries the broader thinking. Not authored as a normative extension. | Peer discovery beyond ad-hoc connection. Concept established across multiple review docs and the deferred proposal; the unscheduled work is authoring a normative spec. |
-| **Relay** | Spec gap (prior implementation exists; architecturally established) — `reviews/REVIEW-STANDARD-PEER-EXTENSIONS.md:84` records: `Relay | system/relay | Rust impl, no spec | Multi-hop routing through intermediaries`. | Peer-to-peer message relay through intermediaries. Implemented in an early Rust prototype (legacy project, no longer extant in the current repo); discussed across the review surface; no current normative spec. The unscheduled work is reauthoring against the v7-substrate model. |
+| `EXTENSION-DISCOVERY` | Active | Peer discovery beyond ad-hoc connection (mDNS / local + registry-assisted resolution). Authored as a normative extension. |
+| `EXTENSION-RELAY` | Active | Peer-to-peer message relay through intermediaries — four canonical modes (Forward / Store-and-poll ship in v1; Aggregate / Circuit named-but-deferred). Reauthored against the v7-substrate model. |
 
 ##### Tier 2c — Operational management
 
@@ -511,8 +511,8 @@ ENTITY-CORE-PROTOCOL (Tier 0 substrate; v7.48)
 │   │   ├── EXTENSION-QUERY             (cross-dep; tree change events)
 │   │   └── EXTENSION-NETWORK           (cross-dep; subscription restoration)
 │   └── EXTENSION-NETWORK               (Tier 2b; depends on INBOX + CONTINUATION + SUBSCRIPTION)
-│       ├── (Discovery — gap)           (Tier 2b; under NETWORK; spec not authored)
-│       └── (Relay — gap)               (Tier 2b; under NETWORK; legacy Rust impl exists)
+│       ├── EXTENSION-DISCOVERY         (Tier 2b; under NETWORK; Active)
+│       └── EXTENSION-RELAY             (Tier 2b; under NETWORK; Active)
 │
 ├── EXTENSION-CONTINUATION              (Tier 1; chained execution; independent of INBOX spec-wise; composes operationally)
 │   └── EXTENSION-NETWORK               (cross-dep)
@@ -547,7 +547,7 @@ ENTITY-CORE-PROTOCOL (Tier 0 substrate; v7.48)
 - A node freezes only when everything it depends on is frozen. V7 must freeze before TREE; TREE before REVISION; etc.
 - The substrate tier (Tier 1) can freeze in waves: first the no-dependency leaves (CONTENT, COMPUTE, HISTORY, CLOCK), then TREE, then SUBSCRIPTION (after INBOX), then NETWORK (after its three deps), then QUERY/TRANSACTION (which have cross-deps).
 - The operational tier (Tier 2) waits on substrate. Within Tier 2a, ATTESTATION + QUORUM freeze first; IDENTITY then; GROUP last.
-- Discovery / relay / GC / persistence (the gaps) need spec authoring before they can freeze at all. These are explicitly the *post-publishing* community-and-team work surface.
+- GC / persistence (the remaining Tier-2c gaps) need spec authoring before they can freeze at all. (Discovery + relay are now authored — `EXTENSION-DISCOVERY` / `EXTENSION-RELAY`, Active.) These are explicitly the *post-publishing* community-and-team work surface.
 
 ### 13.1a Reading the classification
 
