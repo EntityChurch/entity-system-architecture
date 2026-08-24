@@ -173,6 +173,16 @@ The `capability` field follows the same resolve-then-evaluate pattern as other `
 
 The `resource` field carries the resource target for the dispatched EXECUTE, mirroring V7 §3.3 EXECUTE.resource. It uses the same resolution pattern as `capability` — a `system/hash` reference to an expression evaluating to a `system/protocol/resource-target`. Static literals stay statically auditable at install time; dynamic resources defer to runtime checks (the same conservative-static / dynamic-runtime split used for `store` builtin paths). When `capability` is present, `resource` MUST also be present — see F5 below and §4.1.
 
+**A builtin-path apply carrying `capability` or `resource` is invalid `[MUST; ruled — the three-way split]`.** Both fields are defined **only** as parameters of the **dispatched EXECUTE**: `capability` replaces `ctx.capability` *"when present in handler mode, dispatch uses the provided capability"*, and `resource` *"carries the resource target for the dispatched EXECUTE."* A `system/compute/builtins/*` path is evaluated **inline** (§3.5) and **dispatches no EXECUTE**, so neither field has a referent. An implementation **MUST** return `invalid_expression` for a builtin-path `compute/apply` whose `capability` or `resource` is present, and **MUST NOT** silently ignore them.
+
+> **Why rejection, and not "ignore them as harmless."** The dual-check can only ever **narrow** — a provided capability is honored *and* `ctx.capability` must still cover the target. So a caller supplying one is asking for the operation to be **more** constrained than ambient authority. **Silently dropping that request grants a wider operation than the caller asked for**, and the builtin it matters for is `store` — the one impure builtin (§6.2), writing to a caller-specified path. Ignoring is therefore the one disposition that fails quietly in the dangerous direction.
+>
+> **Nothing legitimate is lost.** §6.2 already fixes the authority for `store`: the caller's capability on the explicit-eval path, or the installation grant on the reactive path, checked with `check_path_permission("put", path, capability)` — **never a field on the expression.** A caller wanting an attenuated `store` attenuates the capability it evaluates under. And rejecting keeps §3.5's alias result **hash-identical to the inline form** for every legal builtin apply, which falling back to handler dispatch would not.
+>
+> **The rejection is a SHAPE check and runs before any field is resolved or evaluated `[MUST]`.** It depends only on `path` and on the **presence** of the fields, never on their values. Rejecting after evaluation would make the outcome depend on a value the expression is not allowed to carry: an error-valued `resource` would short-circuit to **that** error instead of `invalid_expression`, so two conformant implementations would answer one malformed expression with different codes. It would also perform tree reads on the strength of an expression already known to be invalid.
+>
+> **It is enforced at install time too, on the same static/dynamic split this section already uses `[MUST]`.** Where `path` is a **static literal** under `system/compute/builtins/`, the whole condition is decidable without evaluating anything, so an install-time audit **MUST** reject it — exactly as F5 rejects capability-without-resource, and for the same reason: *a static structural error, regardless of whether the fields would be statically resolvable.* Where `path` is **dynamic**, the shape is not knowable until evaluation and the runtime rejection above is the whole enforcement. **An audit that fail-fasts F5 while installing this shape clean is internally inconsistent** — both are structural, and neither is a value-dependent check.
+
 Two modes:
 - **Handler mode**: `path` and `operation` present. Dispatch EXECUTE to handler.
 - **Closure mode**: `fn` present. Apply closure to arguments.
@@ -1215,6 +1225,25 @@ evaluate_inner(entity, scope, budget, ctx):
         ; caller_capability, chain_id) alongside the dispatch capability, per V7 §6.8
         ; context propagation. The mechanism is implementation-defined.
 
+        ; A builtin path dispatches no EXECUTE, so the override fields have no
+        ; referent. Reject rather than ignore: the dual-check only ever NARROWS,
+        ; so silently dropping a provided capability runs the operation WIDER
+        ; than the caller asked — and `store` writes to a caller-specified path.
+        ;
+        ; ORDERING IS NORMATIVE — this is a SHAPE check and it runs BEFORE any
+        ; field is resolved or evaluated. Rejecting after evaluation would make
+        ; the outcome depend on the field's VALUE: an error-valued `resource`
+        ; would short-circuit to THAT error instead of `invalid_expression`, so
+        ; two conformant impls would return different codes for one malformed
+        ; expression. Evaluating a field the expression is not allowed to carry
+        ; also performs tree reads on the strength of an expression already
+        ; known to be invalid.
+        if is_builtin_path(entity.data.path)
+           and (entity.data.capability is not null
+                or entity.data.resource is not null):
+          return error("invalid_expression",
+            "compute/apply on a builtin path MUST NOT carry capability or resource")
+
         ; Resolve resource target (if present) — F1/F2/F4 (v3.10)
         resource = null
         if entity.data.resource is not null:
@@ -2160,7 +2189,10 @@ This is the same model as NaN propagation in IEEE 754 arithmetic — errors are 
 >   succeeds. It does **not** propagate and write nothing.
 > - **Both in-language forms behave identically** — a minted error and one that evaluated successfully
 >   as a value under SA-1 — because `is_error` is kind-based (§4.1). One value, one behaviour.
-> - An error in the apply's `resource` or `capability` **does** short-circuit, unchanged.
+> - An error in the apply's `resource` or `capability` **does** short-circuit, unchanged — **on the
+>   handler-dispatch path, which is the only path those fields are legal on.** On a
+>   `system/compute/builtins/*` path they are **rejected outright** as `invalid_expression` (§2.1),
+>   so the short-circuit is not reached there and is not expected to be.
 >
 > **The principle, which is this paragraph's own rationale applied honestly.** Short-circuit exists so
 > that no expression *reads an error's fields*. A write payload's fields are never read — they are

@@ -22,12 +22,39 @@ questions. The whole design rests on not conflating them:
 | 3 | **Move it one hop.** | **RELAY** (the forwarding plane) | SMTP / IP forwarding |
 | 4 | **How do I actually open a connection to that next hop?** (incl. through NAT) | **NETWORK** (transport + reachability) | IP / TCP / NAT traversal |
 
-And a fifth, *unaddressed* way information moves — not to a specific D at all:
+Those four are all **addressed** — there is a specific D. Information also moves in two
+**unaddressed** ways, where there is no single recipient:
 
+| # | Question | Answered by | Analogy |
+|---|---|---|---|
 | 5 | **Spread this to whoever cares.** | **GOSSIP** (scatter) — *roadmap* | epidemic / anti-entropy |
+| 6 | **Many peers serve the same bytes.** | **CONTENT** (blob manifest + chunks) | BitTorrent |
 
 The recurring mistake in P2P systems is to mash these together (one blob that "handles
 networking"). We keep them as distinct planes so each does one job and can evolve independently.
+
+> ### The boundary that matters most: RELAY is addressed messaging, not data expansion
+>
+> **RELAY answers "carry *this* to *D*."** That is peer-to-peer messaging — one sender, one
+> destination, an opaque signed envelope, a hop budget. It is the SMTP-shaped problem, and
+> **it works without any of concerns 5 and 6**, exactly as SMTP works without gossip or
+> BitTorrent. That is why a LAN or VPN deployment is complete today (§3).
+>
+> **Expanding shared data across a network is a different problem** and has two different homes:
+> **GOSSIP** for unaddressed spread of updates and membership, and **CONTENT** for
+> many-peers-serve-the-same-bytes. Neither is relay's job, and pushing either into relay is how
+> the forwarding plane grows a routing algorithm and a replication policy it should not own.
+>
+> **The one genuine seam is RELAY Mode A (aggregate)** — a persistent multi-publisher
+> intermediary. It is addressed like a relay and multi-source like dissemination, which is why
+> §3 groups it with GOSSIP under *federated*, and why its home is an open design question rather
+> than a settled one.
+>
+> **Concern 6 is further along than it looks.** `EXTENSION-CONTENT`'s blob manifest is *"a
+> content-addressed chunk list — analogous to a torrent file. Any peer with the chunks can serve
+> them,"* with per-chunk hash verification and resumable transfer already specified. Multi-peer
+> content distribution does **not** wait on GOSSIP; what it lacks is peer/chunk *discovery*
+> (which peers hold which chunks), not the transfer model.
 
 ---
 
@@ -147,8 +174,11 @@ relayed circuits. Async store-and-forward delivery to any NAT'd peer works now (
 | LAN peer-finding (mDNS) | DISCOVERY | ✅ v1 |
 | Single-hop forward; store-and-poll; raw-frame delivery | RELAY (Mode F / Mode S) | ✅ v1 |
 | Per-hop capability enforcement | RELAY §5.2 | ✅ v1 |
-| Source-routed multi-hop (originator names the path) | RELAY `route` field | 🔄 in review (v1.x) |
-| Routing table (next-hop store, hop-by-hop) | **ROUTE** (`system/route`) | 🔄 in review (storage plane) |
+| Source-routed multi-hop (originator names the path) | RELAY `route` field (§3.1.1 source 1) | ✅ v1.1 |
+| Routing table (next-hop store, hop-by-hop) | **ROUTE** (`system/route`) | ✅ v1 (storage plane) |
+| Per-hop cap enforcement across a source route | RELAY §5.2 — every hop independently enforces `relay-forward`, so a route cannot conscript relays | ✅ v1.1 |
+| Chunked blob transfer, per-chunk verification, resumable | CONTENT (blob manifest) | ✅ v1 |
+| **Torrent-like multi-peer content distribution** | CONTENT (blob manifest = chunk list; any peer with chunks can serve) | ✅ transfer model / ⏳ **chunk-peer discovery** |
 | Direct transport dial; transport profiles | NETWORK §6.5/§10 | ✅ v1 |
 | Async delivery to NAT'd peers | RELAY Mode S (held-outbound) | ✅ v1 |
 | **Bidirectional NAT'd↔public** (push down held outbound socket) | NETWORK §10 `held_connection_client` | ✅ v1 |
@@ -180,11 +210,13 @@ relayed circuits. Async store-and-forward delivery to any NAT'd peer works now (
 ---
 
 ## §7 Refs
-- How information travels (the three primitives + history): the information-travel relay/routing/gossip exploration.
-- Routing paradigms / the distributed route graph / search & scale: the distributed-route-graph and routing-paradigms exploration.
-- NAT traversal proposal (the reachability surface + punch coordination): `proposals/PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md`.
-- Full-stack topology review: the full-stack networking-topology review.
-- Design review + scale walkthrough + gap sweep: the information-travel design review and pre-release gap sweep.
-- NAT traversal mechanics + placement: the NAT-traversal and WAN-reachability exploration.
-- Proposals: `proposals/PROPOSAL-RELAY-SOURCE-ROUTED-MULTIHOP-AND-ROUTING-BOUNDARY.md`, `proposals/PROPOSAL-EXTENSION-ROUTE.md`, `proposals/PROPOSAL-EXTENSION-GOSSIP.md`.
-- Specs: `specs/extensions/network-peer-extensions/` — EXTENSION-RELAY, EXTENSION-NETWORK, EXTENSION-REGISTRY, EXTENSION-DISCOVERY.
+
+**Specs in this corpus:** `specs/extensions/` — `EXTENSION-RELAY`, `EXTENSION-ROUTE`,
+`EXTENSION-NETWORK`, `EXTENSION-REGISTRY`, `EXTENSION-DISCOVERY`, `EXTENSION-SIGNALING`,
+`EXTENSION-CONTENT`, `EXTENSION-SUBSCRIPTION`.
+
+**Roadmap items whose design records are not in this corpus.** The GOSSIP and NAT-traversal
+proposals were authored before the spec corpus was published and did not cross that split — so
+those two rows in §5 are **named on the roadmap without a design document you can read here.**
+That is a corpus gap, not a design gap; treat the §5 rows as the current statement of intent
+until the records are pulled in or re-authored.
