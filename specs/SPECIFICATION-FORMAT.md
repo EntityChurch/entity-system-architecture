@@ -309,6 +309,51 @@ When an extension adds optional fields to a core type, the extension spec MUST:
 - Specify behavior when the field is absent (default)
 - Specify behavior when the field is present
 
+#### 8.4.1 The permission is tiered — not every extension qualifies `[normative]`
+
+> **An extension MAY define optional fields on core types only when its concept is durable and broadly applicable** — part of the standard capability layer that peers generally participate in. **An extension whose concern is specific to a technology landscape, a deployment topology, or a particular feature set MUST NOT extend core types.** It defines its own types and composes through a seam.
+
+**Why the permission is tiered.** Open Types make *adding* a field cheap and make *removing* one impossible. A core type is permanent, so an optional field on it is carried, preserved and hashed by **every peer forever** — including peers that never implement the extension, and peers built long after the motivating technology is gone. The cost is unbounded in time and paid by everyone; the benefit is bounded and paid to one extension. That asymmetry is the whole rule.
+
+**The test an author applies — three questions. All three MUST pass, and all three MUST be answered in writing in the proposal that adds the field.** A field that passes two is not a close call; it is a rejection.
+
+1. **Durability.** *Would this field still make sense if the technology that motivated it disappeared?*
+   `deliver_token` on EXECUTE describes **delivery authorization**, which any message-passing system has — it passes. A `nat_candidate` field describes an artifact of **middlebox behavior in the IPv4 era** — it fails.
+2. **Universality.** *Would a peer that never implements this extension still reasonably carry this field on that type?* If it is dead weight for most peers, the field belongs in the extension's own types.
+3. **Seam check.** *Is composing through a seam genuinely worse here — and why, concretely?* The alternative always exists and costs nothing, so a core-type field MUST be shown to be **better**, not merely convenient. **State what the seam design would look like and what it costs.** "A seam would be awkward" is not an answer; "a seam cannot express this because X" is. An author who cannot articulate the seam design has not established that they need the field.
+
+**The operational form of question 3 — the discriminator that decides nearly every case:**
+
+> **Does this information have to be carried in the entity's bytes, or does it only have to be available where the code runs?** **Bytes** ⇒ a field may be justified. **Call site** ⇒ use a seam.
+
+Every field that qualifies today does so for this reason: `deliver_token` travels **on the wire** to a remote peer that must parse it; `constraints` travels **with the type definition** to readers who run no validator; `clock` on `system/revision/entry` must be **inside the hash** or it does not survive what it describes; `composition` must be visible to anyone loading the handler entity. A seam is a local call and can do none of these.
+
+Conversely, connectivity data — candidates, observed addresses, punch coordination — is **call-site** data, which is why `EXTENSION-SIGNALING.md` composes through `EXTENSION-NETWORK.md` §10.3's `establish_live` seam and needs no core-type field at all.
+
+**The alternative, stated once so it is never re-derived.** A non-qualifying extension composes exactly as NETWORK / RELAY / ROUTE / SIGNALING already do: **its own types, plus a seam the substrate exposes** (`dispatch_fallback`, `establish_live`, `resolve_next_hop`). Seams are additive, removable, and carried only by peers that install the extension. **This section restricts one mechanism precisely because a better one is already in universal use.**
+
+**Namespace claims are a different act and are not governed here.** Defining a type *inside* a core-owned namespace (e.g. `system/protocol/**`) without adding a field to a core type is a separate question with a different cost; see §8.4.2.
+
+#### 8.4.2 Types inside another spec's namespace `[normative]`
+
+> **A type is owned by the spec that defines it, and a namespace is owned by the spec that owns the types in it.** A spec MUST NOT define a type inside a namespace another spec owns. Where a spec needs to *describe* such a type — because its own behavior turns on the type's shape — it **references** the owning spec and MUST NOT restate the definition.
+
+**Restating is the failure this rule prevents, and it is not hypothetical.** A reproduced type definition is a second source of truth that drifts silently: nothing links the two copies, no gate compares them, and the divergence surfaces only when two implementations built from different copies fail to interoperate. Every instance found in this corpus arrived the same way — a spec quoted a type it did not own, for good local reasons, and the copy aged.
+
+**So, whenever one spec mentions a type another spec owns:**
+
+- **Name the owner at the point of mention** — *"defined in `X.md` §N, canonical there"* — every time, not once per document.
+- **Never restate the field list.** Reference it. If a reader needs the fields inline for the passage to make sense, that is a signal the passage belongs in the owning spec.
+- **A behavioral note about someone else's type is fine**; a definition of it is not. "This handler rejects a `delivery` whose `status` is absent" is a behavioral claim about the local handler; re-declaring `system/protocol/inbox/delivery := {...}` is a competing definition.
+
+**Ownership decides *who may define*; it does not decide *where the type goes*.** These are two questions and conflating them produces circular reasoning — *"it is in `system/protocol/**` because core put it there, and core may put things there, so it belongs there."* That argument justifies any placement whatsoever and is therefore not an argument. **Placement is a separate, falsifiable claim: the type must satisfy what the namespace means.**
+
+> **A namespace means something, and the meaning is fixed by its existing members — not by who owns it.** Before placing a type, enumerate the namespace's current contents and state the property they share. **If the new type lacks that property, it does not belong there, however legitimate the author's authority to put it there.** A namespace whose members share no property is not a namespace; it is a prefix, and it should be split.
+
+**This test binds core specs exactly as it binds extension specs.** A core spec placing a core type in a core namespace can still place it wrongly, and "core defined it" is not a defense — a misplaced type misleads every reader who reasons from the prefix, which is what a namespace is *for*. Core authority makes a placement **authoritative**; it does not make it **correct**, and only the second is what a reader relies on.
+
+**Corollary — a core-model spec may extend a core namespace.** The ownership half of this rule constrains *cross-owner* definition, not layering as such: a core-model document defining a type inside a core namespace is core extending core, which is ordinary. The placement half above still applies to it.
+
 ### 8.5 Conformance
 
 Extension specs have their own conformance section. An implementation MAY be conformant to the core protocol without implementing any extensions. Extension conformance is independent.

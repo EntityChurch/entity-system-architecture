@@ -114,9 +114,27 @@ backoff. The return shape and the `connection` type stay **impl-idiomatic and de
 builds factor the handshake on opposite sides of the seam and both interop. *The deviation was real and the
 review vindicated the design; both halves are worth remembering, since the next fold-before-proposal will feel
 equally safe.* Separately,
-`PROPOSAL-CORE-TYPE-EXTENSION-TIERING` (DRAFT, **not folded**) records the operator ruling that only durable,
-broadly-applicable extensions may put optional fields on core types — signaling-class extensions compose through
-seams instead. Its retroactive sweep found **four** such fields, not the three previously listed; all pass.
+`PROPOSAL-CORE-TYPE-EXTENSION-TIERING` is **RATIFIED + FOLDED (2026-07-31)** into `SPECIFICATION-FORMAT` §8.4.1:
+only durable, broadly-applicable extensions may put optional fields on core types; signaling-class extensions
+compose through seams. The operator added a **third** question at ratification — the **seam check** — and it
+sharpened the rule into a usable discriminator: *does the information have to be in the entity's bytes, or only
+available at the call site?* All four existing fields pass for that same reason. A companion **§8.4.2** lands
+alongside it on types inside another spec's namespace: **a type is owned by the spec that defines it, and a spec
+MUST reference rather than restate a type it does not own.**
+
+**The namespace question resolved in two passes, and the first answer was wrong** — see
+`ANALYSIS-CORE-NAMESPACE-CLAIMS-IMPACT.md` + `ROUTING-2026-08-01-inbox-types-namespace-upstream.md`. The flag as
+worded ("extensions claiming core turf") is **not** a violation: core defines `system/protocol/inbox/*` itself
+and `SYSTEM-COMPOSITION.md` is a core-model spec. But the 07-31 conclusion — *therefore the placement is
+correct* — was **circular**, and is withdrawn. The real question is whether these are protocol messages, and
+**they are not.** `system/protocol/**` means wire messages and their components: **seven of its nine members are
+V7 §9.5 Core Type Floor types; the only two that are not are the inbox pair.** The machine spec's own §3.2
+"Protocol Types" excludes them, their §3.9 siblings use `system/subscription/*`, and INBOX §137 puts them in the
+same slot as *any domain-specific message type*. **Routed upstream to `entity-core-protocol`** as one change:
+rename out of the wire namespace (`notification` → `system/subscription/notification`; `delivery` → name
+upstream's call) **plus** the live `result` drift (`core/entity` here vs `primitive/any` upstream — Rust built
+ours, Go is permissive, so it has not bitten). **Not a wire-core change** (neither type is in the floor);
+**keystone impact is regeneration, not migration.** `system/handler/composition` passes — no action.
 
 **SIGNALING v1.0 is largely a fold of already-built work**: the carrier, the key derivation, the coordination
 messages and pool selection are implemented in **all three** implementations — rust `extensions/signaling` plus
