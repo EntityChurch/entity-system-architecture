@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.10
+**Version**: 1.12
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -530,7 +530,7 @@ When `meta_resolve(name)` is called:
 
 | Backend kind | Catch-all | Why |
 |---|---|---|
-| `local-name`, `pinned`, self-certifying decode | **MAY** | No network consultation at all. |
+| `local-name`, `self-certifying` | **MAY** | No network consultation at all. *(A **pinned** binding never reaches this table — §4.1 step 1 returns it before dispatch runs.)* |
 | `peer-issued` **resolved per §6a.4 through the signed root** | **MAY** | Every request is content-addressed. The queried name is matched inside a node already fetched and never appears in a request. |
 | `dns-txt`, `well-known-url`, `did-web`, `consensus-anchored` | **MUST NOT** | Consultation *is* disclosure — the name goes to a third party as a query, a path segment, or a document name. |
 
@@ -553,11 +553,16 @@ The `#` column numbers the rows for reference; it is **not** an evaluation order
 | # | `pattern` | `backend_kinds` | Shape |
 |---|---|---|---|
 | 1 | `did:web:*` | `["did-web"]` | scheme-typed |
-| 2 | `did:key:*` | `["did-key"]` | scheme-typed, self-certifying |
+| 2 | `did:key:*` | `["self-certifying"]` | scheme-typed, self-certifying |
 | 3 | `*.eth` | `["consensus-anchored"]` | scheme-typed by suffix |
 | 4 | `*@*.*` | `["dns-txt", "well-known-url"]` | domain-scoped — **dotted** authority |
 | 5 | `*@*` | `["peer-issued"]` | registry-scoped — **undotted** handle |
-| 6 | `*` | `["local-name", "pinned", "peer-issued"]` | catch-all — **no name-transmitting backend (MUST)** |
+| 6 | `*` | `["local-name", "self-certifying", "peer-issued"]` | catch-all — **no name-transmitting backend (MUST)** |
+
+**Two tokens were corrected here `[v1.12]`, and both were dead config in every conformant peer.** §2.4.1 is the canonical `backend_kind` vocabulary and neither appeared in it, so §4.2's forward-compat rule — *an unknown `backend_kind` MUST cause the entry to be skipped with a warning* — **discarded rows this spec recommends shipping.**
+
+- **`did-key` → `self-certifying`.** Row 2's own Shape column already said *self-certifying*: a `did:key:` name carries its key, so the self-certifying backend decodes it. No new vocabulary is needed and none is added.
+- **`pinned` → removed** (replaced by `self-certifying`, which the catch-all table below already admits). **`pinned` is not a backend kind and cannot be reached from dispatch:** §4.1 step 1 returns a pinned match **immediately**, before the step-2 filter runs, and §4.1.2 uses `pinned` as a **`backend_id`** on the synthesized result — a result label, not a dispatch target. Naming it in `backend_kinds` was a category error that no configuration could act on.
 
 **Rules 4 and 5 overlap, and `priority` resolves it — not the row order.** A POSIX glob cannot
 express "undotted", so `*@*` necessarily also matches a dotted authority: `alice@example.org` is
@@ -1075,7 +1080,9 @@ data: {
   mode:             "open" | "allowlist" | "manual" | "domain-control",
   allowlist:        [<peer-id>] | null,
   name_constraints: <glob | null>,              ; e.g. only issue "*.lab"
-  default_ttl:      <ms | null>
+  default_ttl:      <ms | null>,                ; MUST NOT exceed max_ttl
+  max_ttl:          <ms duration>               ; REQUIRED for any mode reaching *approve* (§6a.9);
+                                                ;   requests above it are CLAMPED, not refused
 }
 ```
 
@@ -1133,7 +1140,19 @@ It **MUST NOT substitute an implementation-chosen default.** That is the same mo
 
 **What the cascade does not do:** it does not extend a binding beyond what the registry already granted (step 3 re-grants the same duration to the same layer-1-authenticated `target_peer_id`), it does not weaken §6a.3 (the resolved `ttl` is non-null on every path), and it does not touch revocation (a revoked binding is not renewable regardless of `ttl`).
 
-> **Open and deliberately not ruled here — there is no ceiling on `ttl` anywhere on this surface.** Step 1 accepts the requester's own number, and `issuer-policy` carries `default_ttl` with **no `max_ttl`**. §6a.9.2 states the concern in as many words — *"handing TTL selection to the party §6a.1a treats as untrusted"* — and then the schema hands it to them unbounded. Since `ttl` is the **only** bound on a withheld revocation (§6a.3), an unbounded requester-chosen `ttl` is the same defect §6a.3 exists to prevent, reached through the front door. This is a separable design question with more than one defensible answer — a policy `max_ttl` that clamps, one that refuses `400`, or an explicit decision that layer-1 proof is sufficient — and it bears on `register-request` identically, so it is **not a renew question and is not decided here.** Until it is, a registry that wants a bound sets one operationally; no conformant peer may invent one (the implementation-chosen-default ban above applies unchanged).
+**`ttl` is bounded on both sides, and the binding side is not the one that matters `[MUST, v1.11]`.** Step 1 accepts the requester's own number and nothing capped it. Since §6a.3 makes `ttl` the **only** bound on a withheld revocation, an unbounded requester-chosen `ttl` reproduces the permanently-unrevokable binding §6a.3 exists to prevent, without ever setting the field to null.
+
+**Issuer side — `max_ttl` is REQUIRED on any policy that can reach *approve*.** `system/registry/issuer-policy` gains `max_ttl: <ms duration>`. `set-issuer-policy` MUST reject with **`400`** a live-registration policy whose `max_ttl` is absent or null — **the same trigger, the same site, and the same reason as the `default_ttl` rule above**: it is the operator's field, set through the operator's operation, and this is where the missing input lives. `default_ttl` MUST NOT exceed `max_ttl`; a policy violating that is refused `400`.
+
+**A request above the ceiling is CLAMPED, not refused `[MUST]`.** `register-request` and `renew-request` resolve `ttl` through their cascades, then apply `effective = min(resolved, policy.max_ttl)`. **Refusing would bill a well-formed request for a policy the requester cannot read** — §6a.9.2's own stated reason for not gating the requester — and it teaches requesters to probe for the ceiling. Clamping is silent to the requester by design: the issued binding carries the clamped value, which is signed, published, and readable.
+
+**Resolver side — a resolver MAY impose its own ceiling, and this is the half that protects the consumer `[MUST when present]`.** A resolver that declares a local maximum MUST treat a binding's effective lifetime as **`min(binding.ttl, local_max)`**, computed at resolution and never written back into the binding (the binding's content hash is unchanged; this is a *use* bound, not a re-issue).
+
+> **Why the resolver's ceiling is the load-bearing one.** §6a.3's argument is entirely about the **consumer**: a hostile byte-server withholds a revocation, and `ttl` bounds the exposure. **A ceiling enforced by the registry does not protect a consumer from that registry** — a hostile or compromised issuer simply sets `max_ttl` high. Only the party bearing the risk can bound it. This is the split DNS settled decades ago: the authority sets the record's TTL, and the **resolver** caps what it will honor (`max-cache-ttl`), because the resolver is the one holding stale data. The issuer-side `max_ttl` is operator hygiene — it stops a careless registrant asking for a decade — while the resolver-side clamp is the actual security property.
+>
+> **The shape is §4.10's, applied to freshness: mandate that the bound exists and is declared and enforced; leave the value to the deployment.** No number is written here for the same reason §4.10 writes none — there is no defensible constant, and choosing one makes every unconfigured deployment look configured. This is also the mainstream answer across the surveyed field: DNS caps at the resolver, TUF sets expiry per role, and the X.509 and ACME ecosystems put the ceiling in policy rather than in the protocol. **None of them put an unbounded lifetime in the hands of the requesting party, and none of them writes the maximum into the wire format.**
+
+**Conformance:** **`REG-TTL-CEILING-1`** — `set-issuer-policy` with a live mode and absent `max_ttl` → `400`; with `default_ttl > max_ttl` → `400`; **control:** a policy with both, `default_ttl <= max_ttl`, is accepted. **`REG-TTL-CLAMP-1`** — a `register-request` and a `renew-request` each carrying `ttl` above `max_ttl` → both accepted `200`, and both issued bindings carry **exactly `max_ttl`**. The clamp is asserted on the *binding's* value, not on the response code, because a peer that refuses instead of clamping also returns a non-`200` and would otherwise be indistinguishable.
 
 **Conformance:** **`REG-RENEW-TTL-CASCADE-1`** — three rows against a curated registry whose stored policy has no `default_ttl`: (a) renew **with** explicit `ttl` → accepted, successor carries it; (b) renew **omitting** `ttl` → accepted, successor carries **the superseded binding's** `ttl`, and the successor resolves under §6a.4; (c) the same renew against a policy that **does** carry `default_ttl` → successor carries the **policy's** value, not the predecessor's. Row (b) is the one that fails against both a null-minting peer and a refusing peer; row (c) is the one that fails against a peer that implemented inherit-first.
 

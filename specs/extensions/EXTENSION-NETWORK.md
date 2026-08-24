@@ -1,6 +1,6 @@
 # Network Extension — Normative Specification
 
-**Version**: 1.7
+**Version**: 1.8
 
 > **Amendment 12 — partial fold: the §A1/§5.4 join (new §5.4a; §5.4 pseudocode corrected; §12.1 bullet; two new vectors) `[2026-08-12]`.** Amendment 12 remains **ratified but not folded** as a whole; this folds the one part a cohort implementation proved was load-bearing, ahead of the rest. `entity-core-go` found that the §A1 transport-error eviction **destroyed the keepalive loop that owes the §5.4 `suspect → disconnected` escalation, at the moment it became owed** — so the peer stayed `suspect` forever, §4.1 reconnect never fired, and the §A3 consumer latency contract was silently unmet on every transport-error-first path (the *common* path — a transport error is how a dead peer is usually noticed first). **Root cause is a fold gap made worse by this spec's own pseudocode:** §A1 lives only in the proposal, §5.4 lives here, nothing owned the composition — and §5.4's reference pseudocode put the escalation *inside* the ping loop, so the defect was a faithful implementation of what this section said. **The pseudocode is corrected, not merely annotated** (the §8.3 containment lesson: when pseudocode and prose disagree, implementations follow the pseudocode). §5.4a states the join as a MUST, pins the `suspect`-guard scope so §10.2 fallback and RELAY terminal-hop evictions still MUST NOT demote, orders the grace `sleep` before the status read, and **rules `reason` preservation** — the escalation carries the episode's *originating* reason (`transport-error` on the seam path, `keepalive-miss` on the idle path), because re-stamping asserts pings that were never sent and destroys the only signal distinguishing the path that was broken. Both halves vectored; the negative half is required, since escalating on any *unbound* peer rather than any *`suspect`* peer passes the positive vector and breaks the §A1 seam scope. **Second gap of this exact shape in two cycles** (after the §5.5a granter frame): a reachable state all impls agree on by construction that **no vector visits**, so conformance-green said nothing about it — found by an implementation, not by prose review, both times. *(Observed: `entity-core-go`, source-read at `b55101f`, 2026-08-12.)*
 >
@@ -1217,10 +1217,15 @@ data: {
   nonce_required: false,                 ; static has no session; signatures self-authenticate
   cap_flow:       "egress",              ; with respect to the publisher: they push to the static store (egress); consumers fetch
   poll_interval_ms: 60000,               ; informative; consumers may poll less or more often
-  signed_pointer: "system/peer/published-root",   ; canonical signed root pointer (EXTENSION-TREE.md §3.3a)
+  signed_pointer: "system/peer/published-root",   ; TREE PATH naming what manifest_url_prefix serves.
+                                                  ;   NOT a URL and NOT a suffix — see below.
   advertised_at?: <time>                 ; OPTIONAL (Amendment 8, Q6)
 }
 ```
+
+**`signed_pointer` is a tree path; `manifest_url_prefix` is where you fetch. A consumer MUST NOT join `signed_pointer` onto an origin `[MUST, v1.8]`.** The two answer different questions: `signed_pointer` says *what entity type the origin is asserting* (the `EXTENSION-TREE` §3.3a path, so a consumer knows a signed root exists and what to verify), and `manifest_url_prefix` says *where to GET it* — terminal, no suffix (§6.5.3.1). **The manifest's location is DISCOVERED from the profile, never derived by convention from the tree path.** A publisher is free to serve at any `manifest_url_prefix` it advertises; `{origin}/manifest` and `{origin}/{peer_id}/system/peer/published-root` are equally conformant, and only the advertised one is findable.
+
+> **Why this needs saying `[found by cross-impl publish/consume]`.** A consumer that treats `signed_pointer` as a path fragment to append to the origin reads a **tree** path as a **transport** path. It then fails on any publisher whose `manifest_url_prefix` differs — which is every publisher that does not happen to share its convention — and the failure is at **hop 0**, so nothing downstream is exercised and the alignment that does exist stays invisible. The tree path additionally may not be a servable file at all: it names a binding in a trie, not a byte range at an origin. **A profile field that exists to be read is not a default to be assumed.**
 
 **Multi-peer-shared-domain example (the load-bearing case).** When a single domain owner hosts content from multiple peers, each peer's profile embeds its peer-ID literally in the prefix strings:
 

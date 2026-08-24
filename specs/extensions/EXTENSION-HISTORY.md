@@ -1,6 +1,6 @@
 # System History Extension
 
-**Version**: 1.6
+**Version**: 1.7
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.19+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -664,6 +664,22 @@ find_history_config(path):
 ```
 
 Pattern matching uses the core `matches_pattern` algorithm (ENTITY-CORE-PROTOCOL.md §5.4).
+
+**`pattern_specificity` is a TWO-KEY comparison, and the selection MUST NOT depend on enumeration order `[MUST, v1.7]`.** §2.2 already states the order — *"(1) number of literal (non-wildcard) segments, then (2) total segment depth"* — but the pseudocode above compares a single `specificity` value with `>`, and `list_entities` ordering is unspecified. **A scalar cannot carry a two-key order**, so an implementation that collapses the keys into one number manufactures ties §2.2 does not have and then resolves them by whatever the store happened to yield.
+
+Compare as an ordered tuple, most significant first:
+
+| Key | Value |
+|---|---|
+| 1 | count of **literal** (non-`*`) segments — higher wins |
+| 2 | **total** segment depth — higher wins |
+| 3 | **lexicographic byte order on the canonicalized pattern** — lower wins |
+
+Key 3 makes the order **total**, which keys 1–2 are not: two distinct patterns can agree on both (`a/*/c` and `a/b/*` are each 2 literal segments at depth 3). It is peer-independent, so every conformant peer selects the same config. **§2.2's peer-ID rule needs no separate key** — an explicit peer segment is literal and a `*` peer segment is not, so key 1 already ranks `/{peerA}/project/*` above `*/project/*`.
+
+**A worked pair that separates the two readings**, because it is the one an implementation gets wrong silently: `a/b/c/d` (4 literal, depth 4) against `a/*/c/*/e` (3 literal, depth 5). Under the tuple, the first wins on key 1. Under any *"2 points per literal segment, 1 per wildcard"* scalar both score 8, and the winner is whichever the store listed first.
+
+**Conformance vector `HIST-CONFIG-SPECIFICITY-1` (REQUIRED).** Configure both patterns above with distinguishable settings, write at a path both match, and assert the `a/b/c/d` config is selected — **with the two configs written in both insertion orders**, since a peer that ties resolves by enumeration and will pass one order by luck.
 
 ### 6.3 Default Configuration
 

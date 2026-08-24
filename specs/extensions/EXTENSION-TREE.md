@@ -1,6 +1,6 @@
 # System Tree Extension
 
-**Version**: 4.2
+**Version**: 4.3
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
@@ -322,6 +322,10 @@ system/peer/published-root := {
   }
 }
 ```
+
+**Head-pointer path — `{peer_id}/system/peer/published-root`, and it carries NO peer-id segment `[MUST, v4.3]`.** The peer's current published root is bound at that path and nowhere else. **The type path is the whole path; appending the peer-id to it double-qualifies**, because the peer namespace is already the first segment of every absolute path (`ENTITY-CORE-PROTOCOL.md` §1.4). `/{peer}/system/peer/published-root/{peer}` names the peer twice, and the stated reason for doing so — *locating the current root for peer X without enumerating a content-addressed type's siblings* — is what the peer prefix already provides.
+
+> **This path was never pinned, and three implementations picked `[found by cross-impl publish/consume, v4.3]`.** Two landed the form above; one appended `/{base58_peer_id}` and recorded in its own source that doing so *"supersedes the legacy `signed_pointer` string"* — **a supersession this corpus never ratified and holds no record of.** The divergence is invisible locally and fatal at the seam: the extra segment turns the pointer's path into a **directory**, so a consumer reading the pointer as a file fails at hop 0, before reaching any of the surfaces that do agree. **An unpinned path is not a free choice — it is a divergence with a delay**, and this one sat behind three otherwise-aligned surfaces (content sharding, bare-hashable bodies, two-hop signature keying) that a cross-impl run only reached after the front door was fixed.
 
 **Signature carriage.** Per `ENTITY-CORE-PROTOCOL.md` §5.2 target-matching at the invariant-pointer path `system/signature/{hex(published_root.content_hash)}`. The `MANIFEST_GET` envelope includes that signature entity under `envelope.included`. This entity carries **no `refs:` block** (V7 refless contract, as REGISTRY §3 and DISCOVERY §2.1).
 

@@ -3061,6 +3061,13 @@ best_specificity` comparison keeps whichever config `list_entities` happened to 
 resolve the same conflict differently, with nothing failing anywhere. That is the same defect class as an
 unpinned exclude matcher, one section over.
 
+> **The name is not unique in the corpus, and this definition is revision-local.**
+> `EXTENSION-HISTORY` §6.2 calls a function **also named `pattern_specificity`**, over a different
+> domain (tree paths, not merge patterns) with a different order (literal *segments*, then depth).
+> Neither confers a reading on the other, and an implementation that shares one function between the
+> two sites is wrong at whichever site it did not come from. **This note exists because the v3.12 fold
+> pinned the name without checking whether the corpus already used it.**
+
 > **Anchored-above-unanchored is the one genuinely chosen rung, and it is recorded as a choice.** Ranks 3
 > and 0 are forced. Rank 2 above rank 1 is not: for `docs/a.lock`, `docs/*` and `*.lock` both match and
 > neither is contained in the other. Prefix wins because it is anchored at a known position while a suffix
