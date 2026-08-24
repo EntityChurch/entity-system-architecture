@@ -84,15 +84,19 @@ the browser WebRTC transfer demo (Milestone 1), off the critical path but the pr
 
 ### The connectivity build order (the consumer↔consumer root — now designed)
 
-The "unsolved root" now has a designed, dependency-ordered build plan (2026-07-22). Each step is an
-additive amendment/proposal on the already-reserved NETWORK §10.2 seam — none a wire renumber. Operator
+The "unsolved root" now has a designed, dependency-ordered build plan (2026-07-22); **steps #0 and #1 are
+folded spec as of 2026-07-31.** Each step is additive — none a wire renumber. *(Corrected 2026-07-31: this
+previously said every step rides "the already-reserved NETWORK §10.2 seam." Two refinements — the facts are a
+NETWORK amendment and ride no seam at all, and the punch needed **its own** seam, §10.3, because §10.2 returns a
+delivered result where traversal must return a reusable connection. The carrier is also not a NETWORK amendment
+at all: it is a new handler with its own conformance posture, so it landed as its own extension.)* Operator
 calls settled: **signaling carrier = stateless rendezvous (v1), QR secondary-under-review; substrate =
 TCP-simopen first, our-QUIC the sequenced upgrade; relay/async = opt-in dedicated-peer tier.**
 
 | # | unit / proposal | what | buildable | depends on |
 |---|---|---|---|---|
-| 0 | `PROPOSAL-NETWORK-REACHABILITY-FACTS` | reflection + dial-back + candidate gathering (NETWORK amendment + `network-reflect`/`network-dialback` caps) | **now** — facts only, no punch | — |
-| 1 | `PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH` | `system/signaling` rendezvous carrier + `system/nat/*` coordination + **TCP-simopen** native substrate | **now** — rides the existing `tcp` profile | #0 |
+| 0 | ✅ **NETWORK §6.7** (Amendment 13, folded 2026-07-29) | reflection + dial-back + candidate gathering + `network-reflect`/`network-dialback` caps | **now** — landed spec; the two ops are not yet in any tree | — |
+| 1 | ✅ **`EXTENSION-SIGNALING.md` v1.0** (folded 2026-07-31) | `system/signaling` rendezvous carrier + `system/nat/*` coordination + the punch + **TCP-simopen**; registers behind NETWORK **§10.3** (Amendment 14, the live-establishment seam) | **BUILT** — carrier/key/coordination/pool + clients in all three (rust `extensions/signaling` + `cmd/entity-signaling-node`; go `ext/signaling` + `cmd/signaling-meet`; py `entity_handlers/signaling`), Go's validator carries a `signalingMeet` cross-impl check. Stage 2 (unwrapped surface, punch) not yet built. | #0 |
 | 2 | our-QUIC transport (study Iroh, build our own) | the `quic` candidate substrate — better punch reliability | after #1 proves the coordination protocol | our own QUIC transport (large, separate) |
 | 3 | `PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` (bring fwd, unit #3) | fills the reserved `webrtc` §10 slot; SDP/ICE schema on the signaling carrier — the **browser leg** | **parallel track** (browser demand; the cheapest end-to-end exercise of the whole arch) | #1 signaling carrier |
 | 4 | RELAY **Mode-C** (opt-in) | live relayed circuit — last-resort fallback when a punch fails *and* liveness is needed (symmetric-NAT pairs) | gated on a real-time driver | RELAY; a driver |

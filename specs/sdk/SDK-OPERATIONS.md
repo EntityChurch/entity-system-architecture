@@ -2,7 +2,7 @@
 
 **Version**: 1.11
 
-> **v1.11 — service-owning handlers (new §11.6.9).** §11.6 covered request/response dispatch only, so a handler owning a resource that lives *between* calls — a listener, a background loop, a watcher — had no contract: an implementation could only spawn it inside the body (unstoppable, unowned) or hardcode it into peer startup as a privileged built-in, which defeats the handler abstraction. §11.6.9 adds the opt-in lifecycle (**start** after tree writes and before dispatch, failure compensating per §11.6.4; **stop** before dispatch-unregister, extending §11.6.2's ordering to *stop service → dispatch index → tree entries*), a **mandatory manifest declaration** (`owned_services[]` with closed `kind` / `exposure` enums plus a free-form descriptor), and the **declared-not-gated** boundary rule: declaring a service does not capability-check its traffic, it makes the hole visible. Two MUSTs carry the audit story — an `unmediated-public` service MUST publish its bind address/port, and an unrecognized enum value MUST be surfaced as **unassessable** rather than ignored (a deliberate departure from MUST-ignore-unknowns, which is right for wire extensibility and wrong for auditing). Entity-native handlers MUST NOT be service-owning. Folds `PROPOSAL-SDK-HANDLER-OWNED-SERVICES` including its §6.1 field-shape ruling (2026-07-29). **Additive:** no existing handler is service-owning, `owned_services` absent ⇒ today's behavior exactly. **Not yet built or cohort-validated** — `PROPOSAL-CONNECTION-NODE`'s unwrapped surface is the intended first proof, and until it runs, the contract is unexercised.
+> **v1.11 — service-owning handlers (new §11.6.9).** §11.6 covered request/response dispatch only, so a handler owning a resource that lives *between* calls — a listener, a background loop, a watcher — had no contract: an implementation could only spawn it inside the body (unstoppable, unowned) or hardcode it into peer startup as a privileged built-in, which defeats the handler abstraction. §11.6.9 adds the opt-in lifecycle (**start** after tree writes and before dispatch, failure compensating per §11.6.4; **stop** before dispatch-unregister, extending §11.6.2's ordering to *stop service → dispatch index → tree entries*), a **mandatory tree declaration** at `system/runtime/owned-services/{handler-pattern}` (closed `kind` / `exposure` enums plus a free-form descriptor), and the **declared-not-gated** boundary rule: declaring a service does not capability-check its traffic, it makes the hole visible. Two MUSTs carry the audit story — an `unmediated-public` service MUST publish its bind address/port, and an unrecognized enum value MUST be surfaced as **unassessable** rather than ignored (a deliberate departure from MUST-ignore-unknowns, which is right for wire extensibility and wrong for auditing). Entity-native handlers MUST NOT be service-owning. Folds `PROPOSAL-SDK-HANDLER-OWNED-SERVICES` including its §6.1 field-shape ruling (2026-07-29). **Touches no core-protocol type:** the declaration is a `system/runtime/` entity (§11.6.7), deliberately *not* a field on `system/handler`, which is core's (ENTITY-CORE-PROTOCOL.md §3.7) — and which is also the handler-*private* entity a remote auditor cannot read. **Additive:** no existing handler is service-owning; absent a declaration, behavior is exactly as today. **Build state (observed 2026-07-31):** no service declaration is present in any of the three reference implementations (exhaustive name search). `EXTENSION-SIGNALING.md` §9's unwrapped surface is the intended first proof.
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+), SYSTEM-COMPOSITION.md (v1.5+), EXTENSION-COMPUTE.md (v3.18+)
@@ -1219,16 +1219,19 @@ Stop **MUST** be idempotent and **MUST NOT** be relied upon to run via GC or fin
 
 **Entity-native (compute-backed) handlers MUST NOT be service-owning.** An expression owning a socket breaks transferability, which is model 3's entire purpose.
 
-**Declaration is mandatory and lives in the manifest.** Spawning something in the body is not enough:
+**Declaration is mandatory and is a tree entity.** Spawning something in the body is not enough:
 
 ```
-system/handler := {
-  ...
-  owned_services?: [ system/handler/service-declaration ]
-                   ; OPTIONAL. Absent or empty ⇒ not service-owning.
+system/runtime/service-declaration := {
+  fields: {
+    handler_pattern: {type_ref: "system/tree/path"}
+                ; the service-owning handler this declaration belongs to
+    services:   {array_of: {type_ref: "system/runtime/owned-service"}}
+                ; non-empty. One entry per owned service.
+  }
 }
 
-system/handler/service-declaration := {
+system/runtime/owned-service := {
   fields: {
     kind:       {type_ref: "primitive/string"}   ; CLOSED enum
                 ; "network-listener" — binds a socket, accepts connections
@@ -1244,7 +1247,15 @@ system/handler/service-declaration := {
 }
 ```
 
-An **array**: a handler may own more than one service (a listener *and* its reaper is the common shape).
+**Stored at `system/runtime/owned-services/{handler-pattern}`**, written as part of the §11.6.1 registration writes and removed with them on close. `services` is an **array**: a handler may own more than one service (a listener *and* its reaper is the common shape).
+
+> **Why a separate entity and not a field on `system/handler`.** Because of **who can read it**, not because the field would have been forbidden:
+>
+> - **Not a layering violation** *(corrected 2026-07-31)*. An optional field on a core type is explicitly sanctioned: ENTITY-CORE-PROTOCOL.md §2.10 Open Types guarantees preservation, and `SPECIFICATION-FORMAT.md` §8.4 permits extensions to define such fields in their own spec — with precedent in `deliver_token` on EXECUTE (EXTENSION-INBOX §2.3) and `constraints` on type definitions (EXTENSION-TYPE). An earlier draft of this section claimed the field would be an impermissible core-protocol change. **That was wrong**, and it is worth stating rather than quietly deleting, because the distinction it missed is the one that actually governs: §8.4 covers **data an extension attaches** to a core type; it does not cover **behavior an extension requires of a core handler**. (That is why the NAT `observed_address` HELLO field genuinely does route upstream — it requires the responder's *core connect handler* to observe and populate it. A stored declaration requires nothing of core.)
+> - **The reason that does hold: audit reach.** Core §3.7 splits the handler into three entities. `system/handler` is the **private** dispatch target carrying `max_scope` / `internal_scope`; `system/handler/interface` is the **public** contract, and core states its security configuration **MUST NOT** be exposed to connecting peers. A declaration on `system/handler` is preserved and hashed — but it is on the entity a remote auditor does not read, which makes it invisible to exactly the party the boundary rule below exists to serve. Moving it to `interface` is worse: it pushes exposure data into an entity core forbids from carrying security configuration.
+> - **A standalone entity resolves both.** It has **its own grant surface**, so an operator can permit auditors to read `system/runtime/owned-services/*` without widening anything else — and `system/runtime/` is the right namespace by §11.6.7 (*system-privileged, runtime-instantiated, unfitted-elsewhere*: service ownership crosses extension boundaries and no single extension owns it).
+
+**Discoverability is the point.** An operator or auditing peer enumerates *what is listening on this peer and which handler owns it* by listing `system/runtime/owned-services/*`, with no out-of-band knowledge and no access to handler-private configuration.
 
 > **MUST.** A declaration with `exposure: "unmediated-public"` **MUST** carry the bind address and port in `descriptor`. An operator cannot assess exposure from "this handler owns a socket" alone.
 
@@ -1302,16 +1313,23 @@ This section is informative — it describes the architectural target, not a cur
 
 ### 12.2 Error Entity
 
+`system/protocol/error` is a **core-protocol type** (ENTITY-CORE-PROTOCOL.md §3.4). It is reproduced here for reading convenience only — **core is authoritative and this spec does not extend it:**
+
 ```
 system/protocol/error := {
   fields: {
-    status:  {type_ref: "primitive/uint"}
-    code:    {type_ref: "primitive/string"}       ; Machine-readable
-    message: {type_ref: "primitive/string"}       ; Human-readable
-    details: {type_ref: "primitive/any", optional: true}
+    code:    {type_ref: "primitive/string"}                  ; programmatic identifier
+    message: {type_ref: "primitive/string", optional: true}  ; human-readable detail
   }
 }
 ```
+
+**Two fields are deliberately *not* on this entity**, and an SDK MUST NOT add them:
+
+- **`status`** lives on `system/protocol/execute/response`, one level up. Core is explicit: *"the `status` field on EXECUTE_RESPONSE provides the numeric category; `result.data.code` provides the specific error within that category."* Duplicating it into the error entity creates two sources for one fact that can disagree on the wire.
+- **`details`** does not exist in core. Structured error payloads belong in a handler-defined result type, not smuggled into the shared error entity.
+
+> **Corrected 2026-07-31 (layering audit).** This section previously showed `status` and `details` as fields of `system/protocol/error` and `message` as required — three deviations from the core type it was restating. It was documentation drift, not built reality: `entity-core-go` (`PartialResultError`, "mirrors system/protocol/error fields") and `entity-core-py` (`messages.py`, error results emitted as `{code, message}` with `status` on the response) both already match core. No implementation change follows from this correction; a **restatement that drifts from its upstream is itself the defect**, because an implementer building from the restatement produces an entity the rest of the ecosystem does not expect.
 
 ### 12.3 SDK Error Mapping
 

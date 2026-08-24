@@ -82,6 +82,7 @@ The subscription entity is the source of truth. Internal subscription registries
 The params type for a notification inbox EXECUTE:
 
 ```
+; DEFINED IN EXTENSION-INBOX.md §2.2 — canonical. Reproduced for reading convenience.
 system/protocol/inbox/notification := {
   fields: {
     subscription_id: {type_ref: "primitive/string"}
@@ -92,6 +93,8 @@ system/protocol/inbox/notification := {
   }
 }
 ```
+
+> **Ownership (2026-07-31, layering audit).** This type belongs to **`EXTENSION-INBOX.md` §2.2**, which defines it alongside its sibling `system/protocol/inbox/delivery` and installs both. The block above is a **reproduction, not a second definition** — it previously stood as an unqualified `:=` in two specs with neither naming an authority. The two were field-for-field identical when checked, so nothing has drifted; the risk being closed is that a future edit to one would not obviously be an edit to the other. **Change the type in INBOX; update this reproduction to match.**
 
 Notifications report what changed and where. By default they carry only `hash` / `previous_hash`, not entity data. When the subscription sets `include_payload` (§2.3), the server MUST bundle the changed entity into the delivery envelope's `included` map (§4.2) — so the subscriber has the bytes atomically with the notification and needs no follow-up cross-peer GET. This is what makes the cross-peer mirror recipe a single hop: the subscriber applies the change locally with `tree:put` + CAS (`expected_hash = previous_hash`), no fetch (see `proposals/PROPOSAL-CONVERGENT-MIRRORING.md`). Absent/`false`, notifications stay lean (the "tell me when, I'll decide whether to read" case).
 

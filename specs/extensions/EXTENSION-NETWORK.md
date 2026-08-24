@@ -1,8 +1,10 @@
 # Network Extension — Normative Specification
 
-**Version**: 1.5
+**Version**: 1.6
 
-> **Amendment 13 — reachability facts (new §6.7: observed-address reflection, dial-back, candidate gathering; two new capabilities; two new operations).** A peer dispatches by reachability class (§10) but has had no protocol way to learn its **own** reachability facts — its public NAT mapping, whether it is publicly dialable, what addresses it might be reached at. §6.7 lands the three facts and stops there: **gathering is a local fact, exchanging is a protocol**, and the punch-coordination protocol that acts on them is not in this spec. Adds `observe-address` → `system/network/observed-address` (§6.7.1) and `check-reachability` → `system/network/reachability-result` (§6.7.2), gated by new `system/capability/network-reflect` (broad default grant reasonable — a mirror) and `system/capability/network-dialback` (restricted — it causes the responder to emit traffic at an address), plus the `system/network/candidate` type (§6.7.3). **Additive and not v1-blocking:** the section is OPTIONAL as a whole (§12.3) — the asymmetric NAT case already works via §10's `held_connection_client`, and this changes no §10 pseudocode, no wire format, and adds no error code. **Every rule inside it is a MUST when offered** (§12.1), because each is a cross-peer seam that prose review does not catch: reflection returns the transport source and never a body echo; the observed address is **never** persisted to `system/connection.address` or a transport profile (it is a *responder-side* fact and every durable address field in this spec is *dialer-side dialable-endpoint* state — the cheap fix corrupts §10 dispatch for every other reader); dial-back targets **only** the observed source (a body-supplied target makes every dial-back peer a DDoS reflector); candidates are never durable profiles; and a `srflx` candidate is the mapping of the socket the peer punches from. Folds `PROPOSAL-NETWORK-REACHABILITY-FACTS` §2–§5 in full, including the 2026-07-29 ownership ruling (the HELLO-handshake mechanism is `entity-core-protocol`'s to ratify, not this repo's — it routes upstream and gates nothing here, so the op is the v1 path) and the §4.2 candidate-to-socket MUST. **Not yet cohort-validated** — the §6.7.5 gate (a cross-impl reflect + a dial-back across a real NAT) is what validates it, and it has not run. *(Numbered 13, not 12: Amendment 12 — the NETWORK liveness reactive buildout — is ratified but not folded, and holds that number.)*
+> **Amendment 14 — the live-establishment seam (new §10.3; §10 step 3b; §10.2 correction).** §10 step 3 resolves *durable* transport profiles, so a NAT'd peer — whose published endpoints are unreachable from outside — falls straight to the store-and-forward terminal even when it is reachable *right now* by traversal. Amendment 14 names `establish_live(peer_id) → connection | null`, consulted at **step 3b**: after profile resolution fails, **before** the §10.2 delivery fallback. **It returns a connection, not a result, and that is why it is a separate seam** — the ladder re-enters ordinary dispatch on success, so the connection is pooled and reused by every later dispatch. Forcing traversal through §10.2's `dispatch_fallback` (which returns a delivered result) would punch a fresh hole per message and hide the connection from §10 step 1. **This corrects §10.2's forward-looking claim** that the punch and store-and-forward would "escalate from the same step-4 site": that paragraph predates the punch's design, and its own "tries live first and store-and-forward last" is unachievable from a single site consulted once. Ordering is now a **MUST** — live first, store-and-forward last. Two obligations on the returned connection, both MUST: it is an **ordinary transport** (never a new transport type, never published as a durable `system/peer/transport/*` profile — the mapping is session-scoped, §6.7.3), and it **MUST run keepalive** (§5), because a punched NAT mapping expires on silence and an idle punched connection dies in a way no same-host test reproduces. **Additive:** `null` when no traversal extension is installed ⇒ byte-identical to the pre-seam ladder; no V7 change, no wire change, no new capability or error code. The v1 policy behind the seam is `EXTENSION-SIGNALING.md` §6. **Cohort review absorbed the same day it landed (2026-07-31), and the seam survives with four additions** — the four open items `PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM` §6 flagged at fold are now closed by two independent implementations that built it (Go and Rust): the signature gains **`ctx`** (a seconds-long seam with no cancel is a hang — both raised it independently); **one call with strict ordering is confirmed** as right rather than merely simple (both rejected racing it against §10.2 as a layering regression); the **`connection` type and the handshake boundary stay unpinned** as impl-idiomatic — the two builds factor the handshake differently on opposite sides of the seam and both interop, because the seam is internal to one peer — while the **identity check and the retry composition become MUSTs** (obligations 3 and 4), because those two *are* cross-peer observable. Per `AGENTS.md`, cohort findings on a just-landed spec fix it **in place**: no rev bump, v1.6 stands, and the proposal's open items now carry their answers. **Build state (peer-reported, observed 2026-07-31, post-review):** `entity-core-go` has built the seam (`core/peer.tryEstablishLive`, `ext/signaling/peerwiring`) and `entity-core-rust` has built its `LiveEstablish` counterpart; Python has not. *(The pre-review draft of this note read "not present in any implementation" — asserted the morning of the day Go's build landed and Rust reported theirs. See `docs/DOCTRINE-COHORT-STATE-TRACKING.md`: build state is peer-reported and dated, and a spec header is a poor place to carry it.)* The gate remains two NAT'd peers establishing a direct transport that survives idle — **not yet run**; both builds are loopback/in-process, which proves the choreography and not NAT traversal.
+
+> **Amendment 13 — reachability facts (new §6.7: observed-address reflection, dial-back, candidate gathering; two new capabilities; two new operations).** A peer dispatches by reachability class (§10) but has had no protocol way to learn its **own** reachability facts — its public NAT mapping, whether it is publicly dialable, what addresses it might be reached at. §6.7 lands the three facts and stops there: **gathering is a local fact, exchanging is a protocol**, and the punch-coordination protocol that acts on them is not in this spec. Adds `observe-address` → `system/network/observe-address-result` (§6.7.1) and `check-reachability` → `system/network/check-reachability-result` (§6.7.2), gated by new `system/capability/network-reflect` (broad default grant reasonable — a mirror) and `system/capability/network-dialback` (restricted — it causes the responder to emit traffic at an address), plus the `system/network/candidate` type (§6.7.3). **Additive and not v1-blocking:** the section is OPTIONAL as a whole (§12.3) — the asymmetric NAT case already works via §10's `held_connection_client`, and this changes no §10 pseudocode, no wire format, and adds no error code. **Every rule inside it is a MUST when offered** (§12.1), because each is a cross-peer seam that prose review does not catch: reflection returns the transport source and never a body echo; the observed address is **never** persisted to `system/connection.address` or a transport profile (it is a *responder-side* fact and every durable address field in this spec is *dialer-side dialable-endpoint* state — the cheap fix corrupts §10 dispatch for every other reader); dial-back targets **only** the observed source (a body-supplied target makes every dial-back peer a DDoS reflector); candidates are never durable profiles; and a `srflx` candidate is the mapping of the socket the peer punches from. Folds `PROPOSAL-NETWORK-REACHABILITY-FACTS` §2–§5 in full, including the 2026-07-29 ownership ruling (the HELLO-handshake mechanism is `entity-core-protocol`'s to ratify, not this repo's — it routes upstream and gates nothing here, so the op is the v1 path) and the §4.2 candidate-to-socket MUST. **Build state (peer-reported, observed 2026-07-31, corrected):** `entity-core-go` **has built the §6.7.1 `observe-address` responder** — dispatched, rate-limited, and live-validated under its `reachability` validator category. What is absent in every tree is the **client-side srflx gatherer** (dial a reflector → call `observe-address` → produce the `srflx` candidate the punch fires from); Go has claimed it, since it owns the working responder. `check-reachability` is unbuilt. *(The pre-correction draft of this note claimed both operations were absent everywhere on the strength of an arch-side name search; the peer that had built one reported it the same day. Build state is peer-reported — `docs/DOCTRINE-COHORT-STATE-TRACKING.md` D1.)* The §6.7.5 gate — a cross-impl reflect plus a dial-back across a real NAT — has not run. *(Numbered 13, not 12: Amendment 12 — the NETWORK liveness reactive buildout — is ratified but not folded, and holds that number.)*
 
 > **Amendment 11 — dispatch-fallback seam at §10 step 4 (store-and-forward escalation; new §10.2).** The §10 ladder's step-4 terminal (queue/502) cannot originate delivery to a peer with no live or recurring session that is offline/NAT'd right now. Amendment 11 names a `dispatch_fallback(peer_id, execute) → {ok, result} | null` seam consulted once at step 4 **before** the terminal; the store-and-forward policy lives in RELAY (§6.2.1), never in NETWORK — same layering boundary as the relay→routing `resolve_next_hop` seam. **Additive / v1.x:** `null` (no RELAY installed) ⇒ byte-identical to the pre-seam terminal; non-RELAY v1 floor unchanged. Two cohort-convergence corrections fold in with it: **(a)** the step-4 terminal is restated as impl-variable — `queue_pending` (§8 outbox) is an OPTIONAL rung an impl MAY interleave only if it implements §8 (Rust + Python ship no §8 outbox; their terminal is a bare error), so "byte-identical when unset" means "behaves as this impl's terminal does today"; **(b)** a normative insertion-site MUST — the seam is consulted at the caller holding both `peer_id` and the `execute` envelope, never inside connection-resolution (3-impl independent convergence). Conformance gates the outcome (offline-target delivery lands at the inbox; target polls + verifies signature as direct), not the policy's internal rung choices. No V7 change, no wire change, no new cap/error code. Cohort review converged 3-way before fold (Go build-tested `INBOX-RELAY-FALLBACK-1` PASS; Rust + Python confirmed seam-vs-inline fit against their dispatch ladders — Rust as a hard crate-DAG constraint).
 
@@ -54,7 +56,7 @@ This extension does **not** cover:
 - Peer discovery (mDNS / DNS-SD — `EXTENSION-DISCOVERY`, shipped); seed / bootstrap peers — `EXTENSION-REGISTRY` §7 + `system/config/bootstrap` (not a DISCOVERY backend)
 - Relay / store-and-forward (`EXTENSION-RELAY`, shipped)
 - NAT traversal — the **punch-coordination dance** (a thin protocol over a pluggable signaling carrier).
-  See `docs/proposals/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md`.
+  See `EXTENSION-SIGNALING.md`, which registers behind the §10.3 live-establishment seam.
   **In scope, as of Amendment 13:** the *reachability facts* the punch consumes — observed-address
   reflection, dial-back, and candidate gathering — are **§6.7 of this spec**. Gathering a candidate is a
   local fact and lives here; exchanging one is a protocol and does not.
@@ -257,11 +259,11 @@ system/handler := {
     }
     observe-address: {
       input_type:  null
-      output_type: "system/network/observed-address"
+      output_type: "system/network/observe-address-result"
     }
     check-reachability: {
       input_type:  null
-      output_type: "system/network/reachability-result"
+      output_type: "system/network/check-reachability-result"
     }
   }
   internal_scope: [
@@ -1116,9 +1118,9 @@ This section defines the three facts and stops there:
 When peer A connects to peer R, R can see the source `IP:port` its transport reported for that connection. That observed source **is** A's public NAT mapping. R telling A what it saw is the whole mechanism.
 
 ```
-observe-address() → system/network/observed-address
+observe-address() → system/network/observe-address-result
 
-system/network/observed-address := {
+system/network/observe-address-result := {
   fields: {
     observed_address: {type_ref: "primitive/string"}
                       ; the source IP:port the responder observed on THIS connection,
@@ -1150,9 +1152,9 @@ system/network/observed-address := {
 "Am I publicly dialable, or behind NAT?" A peer learns this by asking another peer to dial it back and reporting whether the dial arrived.
 
 ```
-check-reachability() → system/network/reachability-result
+check-reachability() → system/network/check-reachability-result
 
-system/network/reachability-result := {
+system/network/check-reachability-result := {
   fields: {
     reachable:      {type_ref: "primitive/bool"}
                     ; did the dial-back to address_tested succeed
@@ -1437,7 +1439,19 @@ dispatch_remote(peer_id, execute):
       static_publisher:
         continue                                  ; consumer-fetch target, never a dispatch target
 
-  ; 4. No live profile connected. Consult the registered store-and-forward
+  ; 3b. No durable profile connected, but the target may still be reachable LIVE
+  ;     via traversal (NAT hole punch / WebRTC). Consult the live-establishment
+  ;     seam (§10.3). Null if none registered (no traversal extension installed)
+  ;     ⇒ falls straight through to step 4, byte-identical to the pre-seam ladder.
+  ;     This seam returns a CONNECTION, not a result: on success the ladder
+  ;     re-enters ordinary dispatch, so the connection is pooled and reused by
+  ;     every later dispatch (§6.5.1b). It is NOT a delivery fallback — see §10.3.
+  ;     ctx carries the deadline: traversal takes seconds, unlike every other rung.
+  conn = establish_live(ctx, peer_id)             ; §10.3 seam — null if unregistered
+  if conn is not null:
+    return send(conn, execute)
+
+  ; 4. No live path at all. Consult the registered store-and-forward
   ;    fallback seam (§10.2) BEFORE the step-4 terminal. Null if none registered
   ;    (e.g. no RELAY installed) ⇒ byte-identical to the pre-seam terminal below.
   ;    Consulted HERE — at the dispatch caller holding BOTH peer_id and the execute
@@ -1494,7 +1508,45 @@ dispatch_fallback(peer_id, execute) → { ok: bool, result } | null
 
 **v1 posture.** The seam is **v1.x**, additive. For non-RELAY peers the v1 floor is unchanged (queue/502, per each impl's terminal — see step 4t). For RELAY peers the new MUST is small: §10 consults the registered `dispatch_fallback` before the terminal; RELAY registers the inbox-relay-resolution behavior behind it (EXTENSION-RELAY.md §6.2.1). Conformance gates the **outcome** (offline-target delivery lands at the target's inbox; the target polls and verifies the sender signature exactly as on a direct delivery), not the rung choices inside the registered policy. No V7 change, no wire-format change, no new capability or error code (reuses `no_inbox_relay`/502, `capability_denied`/403).
 
-**The forward-looking win.** Naming the seam now gives both deferred axes a single home at §10 step 4: the asynchronous floor (store-and-forward, *deliver later* — this seam's RELAY policy) and, later, the live-connection punch (NAT hole / WebRTC, *deliver now*). A mature dispatcher tries live first and store-and-forward last; both escalate from the **same** step-4 site rather than as parallel systems.
+**The forward-looking win.** Naming the seam gives the asynchronous floor a home: store-and-forward, *deliver later* — this seam's RELAY policy.
+
+> **Corrected by Amendment 14.** This paragraph originally claimed the live-connection punch would escalate from **the same step-4 site**, giving "both deferred axes a single home." **That was written before the punch was designed and it does not hold.** Two reasons, and either alone is decisive: (a) `dispatch_fallback` returns a **delivered result**, while a punch returns a **connection** the ladder must then re-enter and reuse — forcing a punch through this signature means punching per message and hiding the connection from the pool; (b) the paragraph's own "a mature dispatcher tries live first and store-and-forward last" is unachievable from a seam consulted **once**, at a single site, after profile resolution. Live establishment is therefore its own seam at **step 3b (§10.3)**, ordered before this one. The two are complementary, not alternatives: §10.3 answers *can I reach this peer now*, §10.2 answers *how do I deliver when I cannot*.
+
+### 10.3 The live-establishment seam (traversal escalation)
+
+*Amendment 14.* §10 step 3 resolves **durable** transport profiles. A peer behind NAT has no dialable durable profile — its published endpoints are unreachable from outside — yet it may still be reachable **right now** by traversal (a NAT hole punch, or WebRTC on the browser leg). NETWORK names the seam for that escalation; the traversal *protocol* lives in an extension, never in NETWORK.
+
+**Signature.**
+
+```
+establish_live(ctx, peer_id) → connection | null
+```
+
+- Consulted **once**, at **§10 step 3b** — after durable-profile resolution has failed to connect and **before** the §10.2 delivery fallback.
+- **`ctx` carries a deadline and is cancellable (MUST).** A traversal attempt takes *seconds* — candidate gathering, a carrier round trip, a scheduled simultaneous open, retries — which is one to two orders of magnitude longer than any other rung of the §10 ladder. A seam with no cancellation makes an unreachable peer indistinguishable from a hung dispatcher, and it makes the whole ladder uninterruptible. Both native implementations raised this independently on first build.
+- Returns `null` when no traversal policy is registered (a peer with no traversal extension installed) ⇒ the ladder falls straight through to step 4, **byte-identical to the pre-seam behavior**. This is the additive, no-regression property.
+- **Returns a connection, not a result — and that is the whole reason it is a separate seam.** On success the ladder re-enters ordinary dispatch (`send(conn, execute)`), so the connection enters the pool and **every subsequent dispatch to that peer reuses it** (§6.5.1b). A seam that returned a delivered result would force a fresh traversal per message and leave the connection invisible to §10 step 1.
+
+**Ordering is normative (MUST).** `establish_live` is consulted **before** `dispatch_fallback` (§10.2). A dispatcher that consults them in the other order, or that consults only one, will store-and-forward to a peer it could have reached directly — correct in outcome, wrong in cost, and it silently defeats the entire traversal path. *Live first, store-and-forward last.*
+
+**What the seam guarantees, and what it does not.** NETWORK guarantees only that the returned connection is treated as an ordinary live transport. It does **not** specify how the connection was obtained — candidate exchange, simultaneous-open timing, carrier selection, and connectivity checks all belong to the registered policy.
+
+**`connection` is deliberately undefined, and the handshake boundary is deliberately unpinned.** `connection` is whatever the host implementation's live-transport handle already is; this spec does not define it, and that is correct layering rather than under-specification — confirmed by two independent implementations that built the seam and reported the type fell out of their existing peer layer with nothing new invented. **The seam MAY return a connection either before or after the `system/protocol/connect` handshake has run on it** — the two reference builds split on exactly this point (one runs the handshake inside the registered policy and returns an established connection; the other returns a pre-handshake connection and runs the handshake in the shared adopt-path used by ordinary dials). **Both are conformant.** The seam is a boundary *inside* one peer, invisible across the wire, and forcing one factoring makes one implementation restructure for zero interop benefit. What is pinned instead is *which* peer runs the client half of the handshake — see obligation 3 — and that the identity check has happened before the connection is used.
+
+**Four obligations on the returned connection (MUST).**
+
+1. **It is an ordinary transport, with stream semantics.** A punched connection is a live full-duplex transport, **indistinguishable to the entity layer** from a dialed `tcp` connection. It slots into the §10 full-duplex-listener class and carries EXECUTE / TREE_GET / CONTENT_GET identically. It is **not** a new transport type, and it MUST NOT be published as a durable `system/peer/transport/*` profile — the mapping behind it is session-scoped (§6.7.3). **It MUST present reliable, ordered, stream semantics** — the registered policy owns reliability *below* the seam and the entity layer above it MUST NOT be asked to re-derive framing. A traversal that punches a raw datagram path therefore owes reliability and ordering before returning; handing an unordered datagram path up through this seam corrupts the length-prefixed framing every implementation layers on a stream. Not yet biting — both v1 substrates (`tcp`, and WebRTC data channels in reliable-ordered mode) are streams — but load-bearing the moment a QUIC or raw-UDP substrate lands.
+2. **It MUST run keepalive (§5).** A punched NAT mapping expires after seconds-to-minutes of silence and the hole closes. An idle punched connection therefore **dies silently**, presenting as a "worked, then dropped" bug that a same-host test never reproduces. A peer MAY record a `punched: true` connection attribute purely to drive this discipline — an implementation detail, not an entity-layer type.
+
+3. **The peer identity MUST be verified before the connection is exposed to the ladder.** Whatever factoring an implementation chooses for the handshake boundary (above), the registered policy's connectivity check — `EXTENSION-SIGNALING.md` §7.4's nonce-plus-identity binding — MUST have completed successfully before this seam's return value enters the connection pool or carries an operation. A traversal returns a path to *an address*; only the check makes it a path to *the peer*. The freedom granted above is over **where** the verification runs, never over **whether** it has run by the time the ladder re-enters ordinary dispatch. The reverse ordering — pool first, verify later — is a valid-looking factoring that hands an attacker who forged a candidate address one dispatch of authenticated traffic.
+
+4. **Exactly one retry authority (§4.1 composition).** When this seam is consulted from a `maintain-peer` reconnection continuation (§4.1), the registered policy MUST make **exactly one attempt at whatever step of its traversal contacts a third party** — for `EXTENSION-SIGNALING.md` §7 that is one coordination exchange (§7.2.1) — and §4.1's reconnect backoff owns re-scheduling. The policy's own budget (`EXTENSION-SIGNALING.md` §7.2 — up to 3 exchanges) applies **only** to a standalone consultation, i.e. one driven directly by a §10 dispatch. **This constrains only the third-party-facing step.** A traversal policy's internal retries against the *target peer's own* socket are local reliability and MUST NOT be reduced to satisfy this obligation — see `EXTENSION-SIGNALING.md` §7.2.1, where cutting the wrong counter broke a working punch. Two nested retry loops multiply: a reconnect backoff re-entering the ladder, each entry spending a 3-attempt punch budget, yields *reconnect-retries × 3* attempts against the shared carrier and reflector for a peer that is simply behind a symmetric NAT. That load lands on **third-party** infrastructure peers, which is why the composition is a MUST and not a tuning note — an implementation that nests the two is invisible to its own tests and visible to everyone else's provider. A peer MAY additionally record a local prefer-relay memo for a peer whose traversal has failed, to skip the seam on subsequent reconnects; like the observed address (§6.7.1) it is **session-scoped local state and MUST NOT be published** as a durable profile or written to `system/connection.address`.
+
+**Layering.** Identical to §10.2's: NETWORK is **below** the traversal extension and cannot call into it, so the substrate exposes the slot and the extension plugs the algorithm — the same boundary as the relay→routing `resolve_next_hop` seam (`EXTENSION-ROUTE.md` §4). In the strictest implementation this is a compile-time constraint, not a preference.
+
+**v1 posture.** Additive and **v1.x**. For a peer with no traversal extension the v1 floor is unchanged. Conformance gates the **outcome** — two NAT'd peers that could not previously reach each other establish a direct live transport, and that transport carries ordinary operations and survives idle — not the rung choices inside the registered policy. No V7 change, no wire-format change, no new capability or error code.
+
+**The registered policy for v1 is `EXTENSION-SIGNALING.md`** (§6), which registers the rendezvous-coordinated hole punch behind this seam.
 
 ---
 
@@ -1566,6 +1618,16 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 
 ## 13. Types Installed
 
+> **Known deviation — op-type naming (logged 2026-07-31, layering audit; NOT fixed here).** ENTITY-CORE-PROTOCOL.md §3.7 makes the canonical op-type name a **MUST** — `{handler-path}/{op-name}-request` / `-result` — and names `network` among the extensions that inherit it. Five of this spec's type names predate that and deviate:
+>
+> | Op | Current | Canonical per core §3.7 |
+> |---|---|---|
+> | `maintain-peer` | `system/network/maintain-request` / `-result` | `…/maintain-peer-request` / `-result` |
+> | `release-peer` | `system/network/release-request` / `-result` | `…/release-peer-request` / `-result` |
+> | `status` | `system/network/status` | `…/status-result` |
+>
+> **Deliberately not renamed.** These are landed, 3-way-green, conformance-exercised type names; renaming them breaks every implementation's type registry and every vector that references them. That is a cohort decision with a migration, not a spec edit — and the alternative resolution (core grandfathers existing names, or relaxes the MUST to a SHOULD) is an `entity-core-protocol` change, upstream of here. **Routed, not decided.** The Amendment 13 types added in 2026-07-29 *do* follow §3.7 (`observe-address-result`, `check-reachability-result`) — the drift was not propagated.
+
 | Type | Description |
 |------|-------------|
 | `system/peer/session` | Per-peer session auth record: held/minted capability + handshake bookkeeping (§6.6, R6) |
@@ -1586,8 +1648,8 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 | `system/network/keepalive-config` | Keepalive parameters |
 | `system/network/ping` | Keepalive ping |
 | `system/network/pong` | Keepalive pong |
-| `system/network/observed-address` | Output of `observe-address` — the responder-observed source address (§6.7.1) |
-| `system/network/reachability-result` | Output of `check-reachability` — dial-back outcome + address tested (§6.7.2) |
+| `system/network/observe-address-result` | Output of `observe-address` — the responder-observed source address (§6.7.1) |
+| `system/network/check-reachability-result` | Output of `check-reachability` — dial-back outcome + address tested (§6.7.2) |
 | `system/network/candidate` | A typed reachability candidate: `host`/`srflx`/`relay` (§6.7.3). **Ephemeral — carried in coordination messages, never written to the tree as a transport profile (§6.7.3 MUST).** |
 
 ---
