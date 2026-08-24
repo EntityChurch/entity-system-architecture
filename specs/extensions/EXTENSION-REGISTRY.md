@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -12,7 +12,7 @@
 >
 > **✅ Landed + implemented (v1):** resolver substrate (§2–§5); local-name backend (§6); peer-issued resolve + curated registration (§6a.1–§6a.8).
 >
-> **🟡 Design folded, build in flight / deferred:** peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
+> **🟡 Design folded, build in flight / deferred:** peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — designed 2026-08-13 (v1.3); `pending-binding` schema, by-request pointer, approve/deny. Unbuilt in all three: rust withheld `pending_hash` pending this schema, python built an approve path against the reserved section, go's oracle asserts the handle. Route before building.**); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
 >
 > **🔴 NOT yet designed — outstanding work before this extension is "done":**
 > - **`domain-control` DNS-challenge format** (§6a.9.1) — must be ONE mechanism shared with the web-native `dns-txt`/`well_known_url` backends; settles with *that* proposal, not here.
@@ -650,7 +650,7 @@ data: {
 
 **`pending_hash` `[MUST]` `[RULED 2026-08-12]` — it names the stored pending request entity, not the request the client sent.** It is the `content_hash` of the `system/registry/pending-binding` entity the registry stored at step 5 (§6a.9.3), resolvable by the ordinary `tree:get` / `content:get` machinery every other registry read uses (§6a.3). **A handle the client can already compute is not a handle** — echoing the request hash tells the requester nothing it did not have before sending, and nothing is fetchable at it. The divergence here was real and undecidable from the text: one implementation named the stored entity, another named the request.
 
-**Owed, named rather than invented `[2026-08-12]`:** the manual-approval path itself — the `system/registry/pending-binding` schema, the by-request pointer a requester polls when it no longer holds the 202 response, and the operator's approve/deny operation — is **not specified anywhere in this document**, which is why step 5 could say "queue" and stop. §6a.9.3 is reserved for it. **This ruling pins the cross-peer-observable surface (result type, status value, what `pending_hash` refers to) and deliberately stops there**; the approval protocol is a spec delta owed, not something to settle inside a status-code correction.
+**Owed, named rather than invented `[2026-08-12]` — ✅ DISCHARGED `[2026-08-13]`, see §6a.9.3.** The manual-approval path itself — the `system/registry/pending-binding` schema, the by-request pointer a requester polls when it no longer holds the 202 response, and the operator's approve/deny operation — was **not specified anywhere in this document**, which is why step 5 could say "queue" and stop. That ruling pinned the cross-peer-observable surface (result type, status value, what `pending_hash` refers to) and deliberately stopped there. **Stopping there had a cost that is worth recording: it left `pending_hash` a `MUST` naming an entity with no schema**, so `entity-core-rust` withheld the value on principle while `entity-core-go`'s oracle failed peers for withholding it — the spec manufactured a conformance failure out of its own reserved section. **A `MUST` may not name a referent the corpus does not define**; if the referent must wait, the `MUST` waits with it. §6a.9.3 now defines it.
 
 **Statuses `[MUST]` `[RATIFIED 2026-08-11]` `[RATIONALE CORRECTED 2026-08-12]`.** §6a.9 pinned the reject *codes* and left the *statuses* open, the way §6a.9.2 later pinned `400` / `501`. It is now text:
 
@@ -746,6 +746,124 @@ Two separable proof layers:
 **Conformance:** `REG-REGISTER-PROOF-1` (signature not by `target_peer_id` → rejected), `REG-REGISTER-POLICY-1` (allowlist reject → `not_entitled`; allow-listed → issued + resolvable), `REG-REGISTER-REPLAY-1` (seen nonce → rejected). `REG-REGISTER-DOMAINCTRL-1` gates the deferred `domain-control` mode; **`REG-ISSUER-DOMAINCTRL-STORED-1`** gates the fail-closed `501` above (write the policy entity directly, then attempt live registration — the `set-issuer-policy` refusal cannot be the only thing standing between a stored unenforceable mode and an open registry).
 
 **Implementation status:** the **design is pinned here**; the `open` / `allowlist` / `manual` modes are buildable now (no external dependency); `domain-control` waits on the web-native domain-proof co-design. A registry shipping curated-only (§6a.8) is conformant — it simply does not run the handler.
+
+##### §6a.9.3 The manual-approval path — `pending-binding`, the by-request pointer, approve / deny `[RULED 2026-08-13]`
+
+**Reserved on 2026-08-12, filled here.** The 08-12 ruling pinned *what `pending_hash` refers to*
+— the `content_hash` of the stored `system/registry/pending-binding` — and then stopped, because
+that entity had **no schema anywhere in this document**. That left `pending_hash` naming a shape
+nobody had defined, and the three seats split accordingly: **Rust deliberately emits no
+`pending_hash` at all** (`extensions/registry/src/registration.rs:303` — REQUIRED by the ruling,
+withheld because the referent is unspecified), **Python invented the entity and an
+`approve-request` operation** (`entity_handlers/registry.py:1188`, `:1303`), and **core-go's
+oracle FAILs a peer that returns no `pending_hash`** (`cmd/internal/validate/registry_issuer.go:401`).
+So the reference oracle currently fails a seat for withholding a value the spec gave it no way to
+compute. **A `MUST` whose referent is unspecified is not a requirement, it is a trap**, and this
+section removes it.
+
+*Python's shape is ratified rather than replaced — it is the only worked implementation and it
+already follows §6.3's body/pointer split. **One seat is not convergence**, so the additions below
+(the by-request pointer, the decision states, deny, retention) are arch's design and are marked as
+such; they are the parts no implementation has built.*
+
+**The storage shape follows §6.3 exactly — an immutable content-addressed body plus a mutable tree
+pointer.** This is not a new pattern; re-deriving one here is how the two would drift.
+
+```
+type: "system/registry/pending-binding"
+data: {
+  name:           <string>,                  ; name-path safety per §6.3
+  target_peer_id: <Base58 peer-id, V7 §1.5>,
+  transports:     [<endpoint per NETWORK §6.5>],
+  requested_ttl:  <ms | null>,
+  queued_at:      <ms-since-epoch>,
+  status:         "pending_review" | "approved" | "denied",
+  binding_hash?:  <system/hash>,             ; REQUIRED on "approved", absent otherwise
+  reason?:        <string>                   ; OPTIONAL on "denied"; operator-supplied, never parsed
+}
+```
+
+- **Body** at `system/registry/pending/{pending_hash}` — immutable, content-addressed, matching
+  §3's universal `binding/{binding_hash}` rule.
+- **Pointer** at `system/registry/pending/by-request/{target_peer_id}/{name}` — holds the bare
+  `system/hash` of the **current head** pending-binding. This is the *"by-request pointer a
+  requester polls when it no longer holds the 202 response"* the 08-12 note named as owed.
+
+**`target_peer_id` precedes `name` in the pointer path, and the order is normative.** A
+`target_peer_id` is a single Base58 segment; a `name` is name-path-safe but **not guaranteed
+single-segment** (§6.3 pathes names directly, and `binding/local-name/{name}` already relies on
+that). Putting the variable-depth value **last** keeps the prefix parseable and keeps
+`pending/by-request/{peer}/` enumerable. *(Same failure this corpus corrected in
+`EXTENSION-NETWORK` §4.1 the same day: a multi-segment value in a non-terminal position makes the
+path unwalkable at a fixed depth.)*
+
+**`pending_hash` is registry-local and its bytes need no cross-peer agreement `[MUST NOT be
+gated on reproducibility]`.** `queued_at` is a local wall-clock reading, so two registries will
+not compute the same hash for the same request — **and they never need to.** A pending-binding is
+**pre-decision, single-registry state**: no second registry stores it, aggregators do not
+re-publish it (§8 republishes *bindings*), and the only obligation is that the hash **resolves at
+the registry that minted it**. This is stated explicitly because the corpus's other content-hash
+rulings run the opposite way (`EXTENSION-COMPUTE` §2.4 materialized errors must agree byte-for-byte
+cross-impl), and an implementer generalizing from those would strip `queued_at` to chase a
+determinism this surface does not require.
+
+**One pending head per `(target_peer_id, name)` `[MUST]`.** A `register-request` that queues while
+a pending head already exists for the same pair **supersedes** it: a new body is written, the
+pointer repoints, and the 202 returns the **new** `pending_hash`. Replace-whole, never merge —
+the same rule and the same reason as §6a.9.2's policy write, and it is what stops a requester's
+retries (each of which carries a fresh `nonce`, so each is a distinct request by construction)
+from filling an operator's queue with duplicates of one intent.
+
+**Operator decisions** — both gated by `system/capability/registry-issue-binding`, the capability
+§6a.9.1 already defines for the internal sign-and-publish act. **No new capability**: approving a
+queued request *is* issuing a binding.
+
+| Operation | Input | Output | Effect |
+|---|---|---|---|
+| `approve-request` | `{pending_hash}` | `system/registry/register-result` `{status: "bound", binding_hash}` | issues the binding (§6a.8), writes a new body `status: "approved"` carrying `binding_hash`, repoints |
+| `deny-request` | `{pending_hash, reason?}` | `system/registry/register-result` `{status: "denied"}` | writes a new body `status: "denied"`, repoints; nothing is signed or published |
+
+- **`404 not_found`** when `pending_hash` names no stored pending-binding.
+- **`409 name_taken`** when the name was bound by someone else between queue and approval `[MUST]`
+  — the queue is not a reservation, and a registry that issued anyway would silently overwrite a
+  live binding. *(Python already returns exactly this.)*
+- **A decision on an already-decided request returns `409 already_decided`** — approve and deny are
+  not idempotent-by-replay, and re-approving would mint a second binding for one request.
+- **The decision states are the reason deny is not a delete `[MUST]`.** A denied request MUST leave
+  a `status: "denied"` head reachable through the by-request pointer; the registry MUST NOT simply
+  remove the entry. A requester polling a vanished pointer cannot distinguish *denied* from *never
+  received* — that is a silent drop, which the substrate floor forbids (deliver-or-signal). Python's
+  current approve path removes the entry on issue; **that is the one place its shape is not
+  ratified**, and it is a spec-side correction rather than a defect it should have caught.
+- **No `list-pending` operation.** An operator enumerates `system/registry/pending/by-request/`
+  with the ordinary `tree`/`query` machinery, exactly as every other registry read works (§6a.3).
+  Adding an operation for a list a tree walk already answers is the live-registry cost the coral-reef
+  posture (§7.4) exists to avoid.
+
+**Retention `[SHOULD]`.** A decided pending-binding (`approved` / `denied`) is GC-eligible after a
+configured retention window; the body stays content-addressed and auditable independently of the
+pointer. A **`pending_review`** head is **never** GC-eligible — it is live queue state. *(A
+MUST-write paired with an unbounded queue is a leak by construction; the retention knob is what
+keeps the queue an operator's inbox rather than a log.)*
+
+**Conformance — `REG-PENDING-HANDLE-1` / `REG-PENDING-DECIDE-1` (new).** Per `GUIDE-CONFORMANCE`
+§2.4a both halves are required, and the negative half is the load-bearing one:
+
+- **`REG-PENDING-HANDLE-1`** — `mode: manual`; a valid request returns **202** with a
+  `pending_hash` **distinct from the request's own `content_hash`**, and that hash **resolves** to
+  a `system/registry/pending-binding` whose `status` is `pending_review`. The by-request pointer
+  resolves to the same body. *(The distinctness half is already asserted by core-go's oracle; the
+  resolvability half is what the schema makes assertable and is the reason this section exists —
+  a handle that names nothing fetchable was indistinguishable from a conformant one.)*
+- **`REG-PENDING-DECIDE-1`** — approve issues a binding that resolves by name **and** leaves an
+  `approved` head; deny leaves a `denied` head **and publishes nothing** (assert the name does not
+  resolve — a deny that silently issued would pass an outcome-only check); a second decision on
+  either returns `409 already_decided`; a superseding request leaves exactly **one** head for the
+  pair.
+
+**This unblocks Rust immediately** — the referent it was withholding a `MUST` for now has a shape
+— and it is a spec-side change for Python (deny states, supersession, retention) rather than a
+defect report.
 
 ### §6a.10 What the peer-issued backend does NOT do (v1)
 

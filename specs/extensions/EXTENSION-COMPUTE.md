@@ -827,7 +827,8 @@ audit_walk(entity, read_paths, handler_targets, write_paths, data_hashes, visite
       return error("invalid_expression",
         "compute/apply with capability field MUST also have resource field")
 
-    ; CP1 (v3.11): static-literal capability chain-root check.
+    ; CP1 (v3.11): static-literal capability in-chain authorization check
+    ; (in-chain, NOT rooted-at-author — V7 §5.5; see the §11.1 note).
     ; Run BEFORE F3 resource-coverage check — chain-root is cheaper (chain walk
     ; vs scope-coverage) and more fundamental (an unauthorized embedded cap
     ; should be rejected before reasoning about whether its scope covers the
@@ -2270,8 +2271,10 @@ These peer-wide defaults apply when the capability's `constraints["system/comput
 - When `compute/apply.capability` is present, `compute/apply.resource` MUST also be present; absent → `invalid_expression` at both eval-time (§4.1) and install-time audit (§3.3) (v3.10 — F5)
 - `dispatch_execute` MUST carry the resource through to the constructed EXECUTE's `resource` field (§4.1) (v3.10 — F4)
 - Install audit MUST collect static-literal resource targets from `compute/apply.resource` and use them in `check_grant_covers` (§3.3) (v3.10 — F3)
-- Install audit MUST verify static-literal `compute/apply.capability` chain-root against `ctx.execute.data.author` via `check_creator_authority` (ENTITY-CORE-PROTOCOL.md §5.5); reject with 403 `embedded_cap_unauthorized` on mismatch (§3.3) (v3.11 — CP1)
-- Install audit MUST run CP1 chain-root check BEFORE F3 resource-coverage check on the same `compute/apply` entity (v3.11)
+- Install audit MUST verify that `ctx.execute.data.author` appears **as a granter anywhere in** the static-literal `compute/apply.capability` authority chain, via `check_creator_authority` (ENTITY-CORE-PROTOCOL.md §5.5 — in-chain, *not* rooted-at-author); reject with 403 `embedded_cap_unauthorized` when it does not (§3.3) (v3.11 — CP1)
+
+  > **In-chain, not chain-root (correction).** The label above read *"chain-root against `ctx.execute.data.author`"*, while the §3.3 pseudocode has always performed the in-chain check (*"checks whether the installer's identity is in the granter chain"*) and V7 §5.5 states the rule generally. Same pre-correction residue `EXTENSION-CONTINUATION.md` §3.1a swept for `dispatch_capability`, unswept here. It is silent for a locally-installed `compute/apply` — the installer is both author and chain root — and load-bearing the moment the capability was attenuated to the installer by another peer, which a chain-root reading rejects outright.
+- Install audit MUST run the CP1 in-chain check BEFORE F3 resource-coverage check on the same `compute/apply` entity (v3.11)
 - `dispatch_execute` MUST propagate full execution context (author, caller_capability, chain_id) per ENTITY-CORE-PROTOCOL.md §6.8 (§4.1)
 - Eval can be invoked with pre-populated scope for entity-native handler dispatch (§3.2)
 - Builtin handler override prohibition — registration targeting `system/compute/builtins/*` MUST be rejected (§3.5)

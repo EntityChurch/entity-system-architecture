@@ -42,7 +42,7 @@ This extension is independent of EXTENSION-INBOX.md. The advancement algorithm t
 
 Direct `tree:put` to `system/continuation/suspended/*` is permitted but bypasses the install operation's validation; continuations created that way are not guaranteed to satisfy the `dispatch_capability` authority invariant. Application-level capability grants should cover `system/continuation:install` rather than direct `tree:put` to the namespace. Direct `tree:put` is appropriate for system-extension code (handlers writing under their own grant) and administrative/bootstrap contexts. See ENTITY-CORE-PROTOCOL.md §6.3 for the kernel-vs-handler principle.
 
-**Sub-identity behavior (informative).** Delegated sub-identities (non-peer actors with delegated grants from a peer's root) calling `install` directly are naturally rejected by the chain-root check — the dispatch_capability must chain to a peer identity that the continuation handler can wield, and the sub-identity isn't in that chain. This is by design: sub-identities don't set up deferred dispatches directly. They invoke handler operations that may internally create continuations under the handler's own authority.
+**Sub-identity behavior (informative).** Delegated sub-identities (non-peer actors with delegated grants from a peer's root) calling `install` directly are naturally rejected by the §3.1a in-chain check — the dispatch_capability must chain to a peer identity that the continuation handler can wield, and the sub-identity isn't in that chain. This is by design: sub-identities don't set up deferred dispatches directly. They invoke handler operations that may internally create continuations under the handler's own authority.
 
 ---
 
@@ -1474,7 +1474,7 @@ These codes appear as:
 | `on_error_dispatch_failed` | 500 | An `on_error` deliver-target dispatch failed (transient or permanent). Per v1.9 §3.4 A.1. |
 | `merge_value_not_map` | 400 | `result_merge: true` met a non-map post-transform value at chain assembly. Per v1.16 §3.4. |
 | `transform_failed` | 400 | A continuation-transform vocabulary evaluation produced an error (e.g., `extract` against a non-map, `transform_ops` evaluation hit an unknown op). Per §2.2 transform contract. |
-| `chain_construction_invalid` | 400 | The continuation entity at install time was malformed (missing required fields, type discrimination failed, `dispatch_capability` chain-root check failed). Per §3.2. |
+| `chain_construction_invalid` | 400 | The continuation entity at install time was malformed (missing required fields, type discrimination failed, `dispatch_capability` §3.1a in-chain check failed). Per §3.2. |
 
 Additional codes MAY be reserved by future spec amendments to this appendix. Impls MAY emit non-reserved codes for impl-specific engine failures; consumers MUST treat unknown codes as informational (no reactive behavior).
 

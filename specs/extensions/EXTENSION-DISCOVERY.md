@@ -332,7 +332,7 @@ All retention windows are operator-configurable knobs; defaults conservative.
 - `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-REGISTRY.md` — sibling extension (lookup; this extension is find)
 - `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-NETWORK.md` — composition for connection post-admission
 - `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-IDENTITY.md` — IDENTIFY against the admitted channel
-- `proposals/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md` — DRAFT; the eventual transport for LAN mDNS-discovered peers
+- `proposals/implemented/extensions/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md` — DRAFT; the eventual transport for LAN mDNS-discovered peers
 - `core-protocol-domain/specs/ENTITY-CORE-PROTOCOL.md` §4.10 — resource bounds floor (referenced in §3.1)
 
 ---

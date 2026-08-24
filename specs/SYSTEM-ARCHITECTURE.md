@@ -210,9 +210,15 @@ docs/architecture/v7.0-core-revision/
 │
 ├── guides/
 │   └── index.md                         ← root guide index (both domains)
-├── proposals/                           ← spec amendments
-│   ├── implemented/                         ← applied to specs
-│   └── (pending in root)
+├── proposals/                           ← spec amendments; state = dir, tier = subdir
+│   ├── active/                              ← work is owed
+│   │   ├── core/                                ← V7 / wire / core types
+│   │   ├── extensions/                          ← EXTENSION-*
+│   │   ├── applications/                        ← SDK + L5 + the authoring stack
+│   │   └── process/                             ← gates, oracle, corpus, maturity
+│   ├── implemented/                         ← applied to specs (same four tiers)
+│   ├── deferred/                            ← parked on purpose
+│   └── superseded/                          ← retired without landing
 └── reviews/                             ← explorations and analysis
     ├── core/                                ← core protocol explorations
     ├── foundations/                          ← theoretical foundations
@@ -348,7 +354,7 @@ Candid internal material (extension-orthogonality pattern from the exploration �
 | Understand SDK usage patterns | `sdk-domain/guides/GUIDE-SDK-PATTERNS.md` |
 | Understand peer organization | `sdk-domain/guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` |
 | Understand a protocol composition pattern | `core-protocol-domain/guides/` |
-| See what spec changes are in flight | `proposals/` (pending) and `proposals/implemented/` (applied) |
+| See what spec changes are in flight | `proposals/active/{core,extensions,applications,process}/` (owed) and `proposals/implemented/` (applied) |
 | See the cross-team convergence story | The full cross-team convergence synthesis (paper-team summary note) |
 
 ---

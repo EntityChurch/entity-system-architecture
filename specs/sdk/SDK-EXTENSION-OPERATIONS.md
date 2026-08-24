@@ -35,7 +35,7 @@ The SDK's job is to provide typed, discoverable wrappers. The underlying mechani
 **Handler:** `system/continuation`
 **What it does:** Durable async execution chains. Request goes out, result comes back to inbox, continuation advances to next step.
 
-> **Coherent Capability (v0.3).** Continuation entities carry a `dispatch_capability` field that authorizes future dispatches. Use `system/continuation:install` to create them — the install operation validates the embedded capability against the writer's authority chain. Direct `tree:put` of continuation entities is reserved for system-extension use. See EXTENSION-CONTINUATION §1.X Coherent Capability.
+> **Coherent Capability (v0.3).** Continuation entities carry a `dispatch_capability` field that authorizes future dispatches. Use `system/continuation:install` to create them — the install operation validates the embedded capability against the writer's authority chain. Direct `tree:put` of continuation entities is reserved for system-extension use. See EXTENSION-CONTINUATION §1.1 Coherent Capability.
 
 ### Operations
 
@@ -45,7 +45,7 @@ install(params: InstallParams) → InstallResult
 
   Creates a continuation entity at the specified path. Validates
   dispatch_capability: the writer's identity must be in the embedded
-  cap's authority chain (R1 chain-root check). Persists the cap and
+  cap's authority chain (R1 in-chain check, V7 §5.5). Persists the cap and
   its chain to the local content store.
 
   InstallParams := {
@@ -180,9 +180,9 @@ The chain stays declarative end-to-end — no opaque handler step is needed beca
 **Handler:** `system/subscription`
 **What it does:** Push notifications on tree changes matching a pattern.
 
-> **Coherent Capability (v0.3).** The subscribe handler validates the `deliver_token`'s authority chain against the subscriber's identity (R1 chain-root check). The subscriber can only use deliver tokens whose chain includes their own identity — tokens they issued or hold via legitimate delegation. This prevents an actor from referencing another peer's deliver token to force notifications to that peer's inbox. See EXTENSION-SUBSCRIPTION §1.X Coherent Capability.
+> **Coherent Capability (v0.3).** The subscribe handler validates that the subscriber's identity appears **as a granter anywhere in** the `deliver_token`'s authority chain (R1 in-chain check — ENTITY-CORE-PROTOCOL.md §5.5; *not* rooted-at-subscriber, see EXTENSION-SUBSCRIPTION §1.1). The subscriber can only use deliver tokens whose chain includes their own identity — tokens they issued or hold via legitimate delegation. This prevents an actor from referencing another peer's deliver token to force notifications to that peer's inbox. See EXTENSION-SUBSCRIPTION §1.1 Coherent Capability.
 
-> **Three capabilities in a subscribe flow.** A subscribe request involves three distinct capabilities: (1) the **caller capability** (outer EXECUTE) authorizing the subscribe operation itself, rooted at the subscribee's peer; (2) the **subscription deliver_token** (`params.deliver_token`) authorizing future async delivery to the subscriber's inbox, rooted at the subscriber's peer; (3) the **inbox EXECUTE-level deliver_token** (per-delivery) authorizing a specific async delivery. In cross-peer scenarios, the caller capability and deliver_token root at different peers. See EXTENSION-SUBSCRIPTION §2.X for details.
+> **Three capabilities in a subscribe flow.** A subscribe request involves three distinct capabilities: (1) the **caller capability** (outer EXECUTE) authorizing the subscribe operation itself, rooted at the subscribee's peer; (2) the **subscription deliver_token** (`params.deliver_token`) authorizing future async delivery to the subscriber's inbox, rooted at the subscriber's peer; (3) the **inbox EXECUTE-level deliver_token** (per-delivery) authorizing a specific async delivery. In cross-peer scenarios, the caller capability and deliver_token root at different peers. See EXTENSION-SUBSCRIPTION §1.2 for details.
 
 ### Operations
 
@@ -677,7 +677,7 @@ Transaction + revision compose naturally: the transaction groups writes, revisio
 **Handler:** `system/compute/*`
 **What it does:** Entity-native computation. Install expressions that reactively evaluate when dependencies change.
 
-> **Coherent Capability (v0.3).** Compute subgraphs and the expressions they reference are load-bearing: their `installation_grant`, `authorized_data_hashes`, and embedded `compute/apply.capability` fields authorize future evaluations and dispatches. Use `system/compute:install` to create subgraphs. The install operation audits the expression graph, validates literal capability references against the installer's authority chain (chain-root check), and persists subgraph metadata under the handler's own grant. See EXTENSION-COMPUTE §1.X Coherent Capability.
+> **Coherent Capability (v0.3).** Compute subgraphs and the expressions they reference are load-bearing: their `installation_grant`, `authorized_data_hashes`, and embedded `compute/apply.capability` fields authorize future evaluations and dispatches. Use `system/compute:install` to create subgraphs. The install operation audits the expression graph, validates literal capability references against the installer's authority chain (R1 in-chain check — the installer must appear as a granter somewhere in the chain, ENTITY-CORE-PROTOCOL.md §5.5), and persists subgraph metadata under the handler's own grant. See EXTENSION-COMPUTE §1.1 Coherent Capability.
 
 > **Standard-IR floor (EXTENSION-COMPUTE v3.18).** The expression surface now includes three additional core inline types — `compute/index`, `compute/length`, `compute/numeric-cast` — and the collection stdlib `map`/`filter`/`fold` is **MUST-given-COMPUTE** with spec-pinned argument types (`system/compute/{map,filter,fold}-args`). Integer arithmetic follows the pinned WASM/LLVM/JVM model (sign-agnostic `add`/`sub`/`mul`, signed-default `div`/`mod`/`compare`, point-of-use casts). An expression builder (when specified here) covers these. See GUIDE-COMPUTE §4.4 / §10.2 and GUIDE-COMPUTE-PROGRAMMING §2.3 for the authoring patterns.
 

@@ -1,6 +1,6 @@
 # Subscription Extension — Normative Specification
 
-**Version**: 3.17
+**Version**: 3.18
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.31+), EXTENSION-INBOX.md (v5.0+)
@@ -26,7 +26,11 @@ This extension defines:
 
 ### 1.1 Coherent Capability
 
-`system/subscription` entities are load-bearing: their `deliver_token` field authorizes future async deliveries by the subscription engine. Use `system/subscription:subscribe` to create them. The subscribe operation validates the deliver_token's chain root against the subscriber's identity (§3.1) before persisting.
+`system/subscription` entities are load-bearing: their `deliver_token` field authorizes future async deliveries by the subscription engine. Use `system/subscription:subscribe` to create them. The subscribe operation validates that the subscriber's identity appears **as a granter anywhere in** the deliver_token's authority chain (§3.1, via `check_creator_authority` — ENTITY-CORE-PROTOCOL.md §5.5) before persisting.
+
+> **In-chain, not chain-root (correction; v3.17).** This sentence, the §1.2 table row below, and the §11.1 MUST all read *"chain root against the subscriber's identity"*. **The normative pseudocode in §3.1 step 2a has always done the in-chain check** — *"checks whether the subscriber's identity appears as granter anywhere in the chain"* — and ENTITY-CORE-PROTOCOL.md §5.5 states the rule generally: the check *"requires only that the writer appear as a granter somewhere in the chain — **not** that the chain roots at the writer."* The chain-root phrasing was pre-correction residue, identical to what `EXTENSION-CONTINUATION.md` §3.1a swept for `dispatch_capability`; this spec was not swept at the same time.
+>
+> **It is load-bearing at exactly one seam, and that seam is a feature this spec defines.** For ordinary self-delivery the two readings coincide — the subscriber is both the author and the chain root, so nothing distinguishes them. For **third-party delivery (§6.1)**, where A subscribes on B and delivery goes to C's inbox, the deliver_token MUST root at **C** (so C's peer verifies it at delivery time) with **A in-chain as the delegating leaf** — precisely the arrangement §6.2 describes. An implementation that took the chain-root phrasing literally would reject every third-party-delivery subscription: the feature would fail against the spec's own summary line while passing its pseudocode.
 
 Direct `tree:put` to `system/subscription/*` is permitted but bypasses the subscribe operation's validation; subscriptions created that way are not guaranteed to satisfy the `deliver_token` authority invariant. Application-level capability grants should cover `system/subscription:subscribe` rather than direct `tree:put` to the namespace. Direct `tree:put` is appropriate for system-extension code and administrative/bootstrap contexts. See ENTITY-CORE-PROTOCOL.md §6.3 for the kernel-vs-handler principle.
 
@@ -37,7 +41,7 @@ A subscribe request involves three distinct capabilities, each playing a differe
 | Capability | Carried in | Authorizes | Issued by | Validated by |
 |---|---|---|---|---|
 | Caller capability | Outer EXECUTE `capability` field | The subscribe operation itself, including the pattern resource scope | The subscribee's namespace authority (target peer that owns the data being observed) | Dispatch chain (`verify_request`, `check_permission`) |
-| Subscription deliver_token | `params.deliver_token` | Future async dispatch from the subscription engine to the subscriber's inbox | The subscriber's namespace authority (sender peer that owns the inbox) | Subscribe handler (`grants_access` + chain-root check, §3.1) |
+| Subscription deliver_token | `params.deliver_token` | Future async dispatch from the subscription engine to the subscriber's inbox | The authority of the peer that owns the target inbox (§6.2 for third-party delivery) | Subscribe handler (`grants_access` + **in-chain** check, §3.1 / §1.1) |
 | Inbox EXECUTE-level deliver_token | EXECUTE `deliver_token` field (EXTENSION-INBOX.md §2.3) | A specific async delivery on a specific EXECUTE | The deliverer's namespace authority | Dispatch chain at the receiver |
 
 For Alice (peer A) subscribing to Bob's data (peer B):
@@ -932,9 +936,9 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - `chain_id` inheritance from emission context to notification (§4.5)
 - Deliver token validation before each notification delivery (§5.4)
 - Subscription deletion on deliver token expiry (§5.4)
-- Subscribe handler MUST verify the deliver_token's authority chain root against the EXECUTE author's identity via `check_creator_authority` (ENTITY-CORE-PROTOCOL.md §5.5); reject with 403 `embedded_cap_unauthorized` on mismatch (§3.1, SB1)
+- Subscribe handler MUST verify the EXECUTE author's identity appears **as a granter anywhere in** the deliver_token's authority chain via `check_creator_authority` (ENTITY-CORE-PROTOCOL.md §5.5 — in-chain, *not* rooted-at-author; see §1.1); reject with 403 `embedded_cap_unauthorized` when it does not (§3.1, SB1)
 - When `include_payload` is set, the subscribe handler MUST verify the caller's capability covers tree `get` on the resource (`check_path_permission("get", resource_path, caller_capability, "system/tree", local_peer_id)`); reject with 403 `payload_unauthorized` if not. `subscribe` permission alone does NOT authorize payload delivery — content delivery requires read access (§2.3, v3.13)
-- Subscribe handler MUST persist the deliver_token and its full authority chain to local content store after the chain-root check succeeds (§3.1)
+- Subscribe handler MUST persist the deliver_token and its full authority chain to local content store after the in-chain check succeeds (§3.1)
 - Generalized rule: any handler accepting a `deliver_token` (or equivalent embedded delivery cap) in its EXECUTE input AND that **stores, persists, or forwards** the token for later use MUST validate the token's authority chain against the EXECUTE author's identity at the time of receipt (GR1). Inbox `receive` is out of scope — the deliver_token serving as the dispatch capability on a delivery EXECUTE is validated by ENTITY-CORE-PROTOCOL.md §5.2 dispatch chain; no separate GR1 check is required at receive.
 - `max_events` enforcement — terminate subscription at limit (§4.6)
 - `max_duration_ms` enforcement — terminate subscription at limit (§4.6)

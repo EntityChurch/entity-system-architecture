@@ -2,7 +2,11 @@
 
 **Version**: 1.6
 
-> **Amendment 12 — partial fold: the §A1/§5.4 join (new §5.4a; §5.4 pseudocode corrected; §12.1 bullet; two new vectors) `[2026-08-12]`.** Amendment 12 remains **ratified but not folded** as a whole; this folds the one part a cohort implementation proved was load-bearing, ahead of the rest. `entity-core-go` found that the §A1 transport-error eviction **destroyed the keepalive loop that owes the §5.4 `suspect → disconnected` escalation, at the moment it became owed** — so the peer stayed `suspect` forever, §4.1 reconnect never fired, and the §A3 consumer latency contract was silently unmet on every transport-error-first path (the *common* path — a transport error is how a dead peer is usually noticed first). **Root cause is a fold gap made worse by this spec's own pseudocode:** §A1 lives only in the proposal, §5.4 lives here, nothing owned the composition — and §5.4's reference pseudocode put the escalation *inside* the ping loop, so the defect was a faithful implementation of what this section said. **The pseudocode is corrected, not merely annotated** (the §8.3 containment lesson: when pseudocode and prose disagree, implementations follow the pseudocode). §5.4a states the join as a MUST, pins the `suspect`-guard scope so §10.2 fallback and RELAY terminal-hop evictions still MUST NOT demote, orders the grace `sleep` before the status read, and **rules `reason` preservation** — the escalation carries the episode's *originating* reason (`transport-error` on the seam path, `keepalive-miss` on the idle path), because re-stamping asserts pings that were never sent and destroys the only signal distinguishing the path that was broken. Both halves vectored; the negative half is required, since escalating on any *unbound* peer rather than any *`suspect`* peer passes the positive vector and breaks the §A1 seam scope. **Second gap of this exact shape in two cycles** (after the §5.5a granter frame): a reachable state all impls agree on by construction that **no vector visits**, so conformance-green said nothing about it — found by an implementation, not by prose review, both times. *(Observed: `entity-core-go`, source-read at `b55101f`, 2026-08-12. The remaining Amendment 12 deltas — §A2 fields, §A3 floor framing, §A4–§A6 retry lifecycle — are still unfolded and still owed.)*
+> **Amendment 12 — partial fold: the §A1/§5.4 join (new §5.4a; §5.4 pseudocode corrected; §12.1 bullet; two new vectors) `[2026-08-12]`.** Amendment 12 remains **ratified but not folded** as a whole; this folds the one part a cohort implementation proved was load-bearing, ahead of the rest. `entity-core-go` found that the §A1 transport-error eviction **destroyed the keepalive loop that owes the §5.4 `suspect → disconnected` escalation, at the moment it became owed** — so the peer stayed `suspect` forever, §4.1 reconnect never fired, and the §A3 consumer latency contract was silently unmet on every transport-error-first path (the *common* path — a transport error is how a dead peer is usually noticed first). **Root cause is a fold gap made worse by this spec's own pseudocode:** §A1 lives only in the proposal, §5.4 lives here, nothing owned the composition — and §5.4's reference pseudocode put the escalation *inside* the ping loop, so the defect was a faithful implementation of what this section said. **The pseudocode is corrected, not merely annotated** (the §8.3 containment lesson: when pseudocode and prose disagree, implementations follow the pseudocode). §5.4a states the join as a MUST, pins the `suspect`-guard scope so §10.2 fallback and RELAY terminal-hop evictions still MUST NOT demote, orders the grace `sleep` before the status read, and **rules `reason` preservation** — the escalation carries the episode's *originating* reason (`transport-error` on the seam path, `keepalive-miss` on the idle path), because re-stamping asserts pings that were never sent and destroys the only signal distinguishing the path that was broken. Both halves vectored; the negative half is required, since escalating on any *unbound* peer rather than any *`suspect`* peer passes the positive vector and breaks the §A1 seam scope. **Second gap of this exact shape in two cycles** (after the §5.5a granter frame): a reachable state all impls agree on by construction that **no vector visits**, so conformance-green said nothing about it — found by an implementation, not by prose review, both times. *(Observed: `entity-core-go`, source-read at `b55101f`, 2026-08-12.)*
+>
+> **Amendment 12 — second partial fold: §A6.6, the `chain_id` spelling (§2.4 field declaration; §4.1 pseudocode) `[2026-08-13]`.** §4.1 minted `chain_id = "network/maintain/" + session_id` — **three path segments** — and that is not a style question. `chain_id` is **interpolated as a path segment** of `EXTENSION-CONTINUATION` §3.10.1's marker path `.../lost/{chain_id}/{step_index}/{reason}/{marker_hash}`, so a value containing `/` forks the marker tree into extra levels and makes the scheme unwalkable at a fixed depth: given `lost/network/maintain/abc/req-1/connection_failed/<hash>` nothing can tell where `chain_id` ends and `step_index` begins. **The old form was therefore internally inconsistent with CONTINUATION's own landed path scheme, not merely stale** — this spec and that one could not both be satisfied. Corrected to `"network-maintain-" + session_id`; the single-segment rule itself belongs to and is routed to `ENTITY-CORE-PROTOCOL` §3.11, where `chain_id` is declared. **No wire change, no renumber:** `chain_id` is opaque (§3.11 gives it no format, nothing parses one), so this is three impls emitting a different generated string. **Found by an audit of arch's own fold debt, and the sharpest evidence is that the reference conformance oracle already rejected this spec:** `entity-core-go`'s `validate-peer` FAILs any peer whose `maintain-result.chain_id` contains `/` (`cmd/internal/validate/network.go:125`, source-read at `a02ab5e`), so **a peer implementing §4.1 as written failed the conformance run** — while go, rust and python had all three independently converged on the single-segment form and recorded in their own source comments that the spec's version was non-conformant (go `ext/network/session.go:118`, rust `extensions/network/src/lib.rs:726`, py `entity_handlers/network.py:373`). Three-way convergence against stale pseudocode is the strongest signal this method produces; the failure was that nothing carried it back here for four weeks. *(Confirmed by `entity-core-go`, `ROUTING-2026-08-13-k`, with the CONTINUATION-inconsistency argument above supplied by them and adopted in preference to arch's weaker "three impls disagree" framing.)* **The remaining Amendment 12 deltas — §A3 floor framing, §A4, §A6.1 — are still unfolded and still owed.**
+>
+> **Amendment 12 — third partial fold: §A2 / §A6.2 / §A6.3 / §A6.4 / §A6.5, the retry lifecycle (new §2.2.1, new §2.11; §2.2 gains two OPTIONAL bounds) `[2026-08-13]`.** `system/peer/status` carried a bare three-state enum, so no consumer could tell *why* a peer left and none could choose a recovery — a transient drop, an auth rejection and a deliberate shutdown were one value. §2.11 lands the `reason` vocabulary and its recovery mapping; §2.2 gains `max_attempts`/`max_elapsed_ms` (**both default unset ⇒ retry forever, which §A6.2 now states normatively** so no implementation invents its own cap); exhausting a bound is a `reason` (`retry-exhausted`), **not** a fourth status. §2.2.1 pins the retry schedule as a **pure function of `(failing_since, cfg, now)`**, with `attempt`/`next_attempt_at` **derived and explicitly never stored** — storing them is a tree write per attempt, the exact fan-out §6.6 rejected — and with the three divergence points (1-indexed `k`, `attempt` counts retries *fired*, `elapsed_to(0)=0`) pinned, because an unpinned derivation relocates a divergence rather than removing it. **The fields themselves are declared upstream at `ENTITY-CORE-PROTOCOL` §3.13 (`9829c6f`), not here** — this spec owns the lifecycle semantics only; two specs declaring fields on one entity is how implementations end up with two shapes. **Additive: all OPTIONAL, no wire change, no renumber; today's behavior is preserved exactly when the bounds are unset.** *(Adopted from convergence, not legislated ahead of it: `failing_since` was **measured on the wire 3-of-3** — go, rust `1152d35`, py `ad0ef98`, `network_reconnect_anchor` PASS 5/5 with 0 skips per seat — reported by `entity-core-go` at `a02ab5e`, whose own conformance check had been holding this at WARN on a stale build-state comment that survived because **a WARN is invisible in a green run.** Three implementations interoperating on a field no landed spec carried: the same shape as the `chain_id` defect corrected the same day, caught one step earlier.)*
 
 > **Amendment 14 — the live-establishment seam (new §10.3; §10 step 3b; §10.2 correction).** §10 step 3 resolves *durable* transport profiles, so a NAT'd peer — whose published endpoints are unreachable from outside — falls straight to the store-and-forward terminal even when it is reachable *right now* by traversal. Amendment 14 names `establish_live(peer_id) → connection | null`, consulted at **step 3b**: after profile resolution fails, **before** the §10.2 delivery fallback. **It returns a connection, not a result, and that is why it is a separate seam** — the ladder re-enters ordinary dispatch on success, so the connection is pooled and reused by every later dispatch. Forcing traversal through §10.2's `dispatch_fallback` (which returns a delivered result) would punch a fresh hole per message and hide the connection from §10 step 1. **This corrects §10.2's forward-looking claim** that the punch and store-and-forward would "escalate from the same step-4 site": that paragraph predates the punch's design, and its own "tries live first and store-and-forward last" is unachievable from a single site consulted once. Ordering is now a **MUST** — live first, store-and-forward last. Two obligations on the returned connection, both MUST: it is an **ordinary transport** (never a new transport type, never published as a durable `system/peer/transport/*` profile — the mapping is session-scoped, §6.7.3), and it **MUST run keepalive** (§5), because a punched NAT mapping expires on silence and an idle punched connection dies in a way no same-host test reproduces. **Additive:** `null` when no traversal extension is installed ⇒ byte-identical to the pre-seam ladder; no V7 change, no wire change, no new capability or error code. The v1 policy behind the seam is `EXTENSION-SIGNALING.md` §6. **Cohort review absorbed the same day it landed (2026-07-31), and the seam survives with four additions** — the four open items `PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM` §6 flagged at fold are now closed by two independent implementations that built it (Go and Rust): the signature gains **`ctx`** (a seconds-long seam with no cancel is a hang — both raised it independently); **one call with strict ordering is confirmed** as right rather than merely simple (both rejected racing it against §10.2 as a layering regression); the **`connection` type and the handshake boundary stay unpinned** as impl-idiomatic — the two builds factor the handshake differently on opposite sides of the seam and both interop, because the seam is internal to one peer — while the **identity check and the retry composition become MUSTs** (obligations 3 and 4), because those two *are* cross-peer observable. Per `AGENTS.md`, cohort findings on a just-landed spec fix it **in place**: no rev bump, v1.6 stands, and the proposal's open items now carry their answers. **Build state (peer-reported, observed 2026-07-31, post-review):** `entity-core-go` has built the seam (`core/peer.tryEstablishLive`, `ext/signaling/peerwiring`) and `entity-core-rust` has built its `LiveEstablish` counterpart; Python has not. *(The pre-review draft of this note read "not present in any implementation" — asserted the morning of the day Go's build landed and Rust reported theirs. See `docs/DOCTRINE-COHORT-STATE-TRACKING.md`: build state is peer-reported and dated, and a spec header is a poor place to carry it.)* The gate remains two NAT'd peers establishing a direct transport that survives idle — **not yet run**; both builds are loopback/in-process, which proves the choreography and not NAT traversal.
 
@@ -105,15 +109,80 @@ system/network/maintain-request := {
 ```
 system/network/backoff-config := {
   fields: {
-    min_ms:   {type_ref: "primitive/uint", optional: true}
-              ; Minimum delay between reconnection attempts (default: 1000)
-    max_ms:   {type_ref: "primitive/uint", optional: true}
-              ; Maximum delay (default: 60000)
-    strategy: {type_ref: "primitive/string", optional: true}
-              ; "exponential" (default), "linear", "constant"
+    min_ms:          {type_ref: "primitive/uint", optional: true}
+                     ; Minimum delay between reconnection attempts (default: 1000)
+    max_ms:          {type_ref: "primitive/uint", optional: true}
+                     ; Maximum delay (default: 60000)
+    strategy:        {type_ref: "primitive/string", optional: true}
+                     ; "exponential" (default), "linear", "constant"
+    max_attempts:    {type_ref: "primitive/uint", optional: true}
+                     ; Amendment 12 §A6.3. UNSET = retry forever (the default).
+    max_elapsed_ms:  {type_ref: "primitive/uint", optional: true}
+                     ; Amendment 12 §A6.3. UNSET = retry forever (the default).
   }
 }
 ```
+
+**Retry-forever is the default and it is intended, not an oversight (§A6.2, normative).** A
+maintained peer relationship retries **indefinitely**; `release-peer` (§4.2) is the exit. A peer
+offline for a week and returning is the P2P norm, and the "give up after N" instinct imports a
+client-server assumption that does not hold here. Stated normatively so no implementation invents
+its own cap and diverges silently.
+
+`max_attempts` / `max_elapsed_ms` are OPTIONAL bounds for deployments that *do* want give-up
+(mobile, constrained devices, short-lived agents). **Both default unset, so today's behavior is
+preserved exactly.** Exhausting a configured bound is a **`reason`, not a fourth status**
+(§A6.4): the peer is written `status: disconnected` with `reason: retry-exhausted`, which is
+terminal — cleared only by an explicit re-`maintain-peer`. The `system/peer/status` enum stays
+three-state (`ENTITY-CORE-PROTOCOL` §3.13); `status` carries *where the peer is*, `reason` carries
+*why, and what to do about it*.
+
+#### 2.2.1 The retry schedule is a pure function `[MUST — Amendment 12 §A6.5]`
+
+Retry state lives in the tree as **one transition-written field**, `failing_since` (declared at
+`ENTITY-CORE-PROTOCOL` §3.13): set on the transition into `suspect`/`disconnected`, cleared on the
+transition back to `connected`. **`attempt` and `next_attempt_at` are DERIVED, never stored** —
+storing them would mean a tree write per attempt, which is exactly the subscription/revision
+fan-out §6.6 rejected and §A4 removed.
+
+The inversion is **pinned normatively**, because an unpinned derivation does not remove a
+divergence, it relocates it — three implementations would invert the series three ways:
+
+```
+; Retry schedule — a PURE FUNCTION of (failing_since, backoff-config §2.2).
+
+delay(k, cfg)  =                              ; delay BEFORE the k-th retry; k is 1-indexed
+    exponential : min(min_ms * 2^(k-1), max_ms)     ; §2.2 default
+    linear      : min(min_ms * k,       max_ms)
+    constant    : min_ms
+
+elapsed_to(n, cfg) = Σ(k=1..n) delay(k, cfg)  ; elapsed_to(0) = 0
+                                              ; ms after failing_since at which retry n fires
+
+attempt(now)    = max { n ≥ 0 : elapsed_to(n, cfg) ≤ (now − failing_since) }
+next_attempt_at = failing_since + elapsed_to(attempt(now) + 1, cfg)
+
+retry_exhausted ⟺ (max_attempts   set ∧ attempt(now) ≥ max_attempts)
+                ∨ (max_elapsed_ms set ∧ (now − failing_since) ≥ max_elapsed_ms)
+```
+
+Pinned explicitly at the three divergence points: **`k` is 1-indexed** (the first retry is
+`k=1`); **`attempt` counts retries *fired*** (0 immediately after `failing_since` — the drop
+itself is not a retry); **`elapsed_to(0) = 0`**. Worked example (defaults, exponential): delays
+`1,2,4,8,16,32,60,60…s` → `elapsed_to = 1,3,7,15,31,63…s`; at `now − failing_since = 10s`,
+`attempt = 3` and `next_attempt_at = failing_since + 15s`.
+
+**No jitter in v1** — deterministic, and cross-peer decorrelation comes free from the natural
+spread in `failing_since`. Deferred until a deployment demonstrates thundering-herd.
+
+**The timer is host-provided; the schedule is spec-defined.** §5.4's pseudocode already assumes a
+host `sleep(interval_ms)`; this is that existing blessed pattern, not a new concession.
+
+**Why this shape pays for itself twice.** Because the schedule is a pure function, its conformance
+vector is a **pure-function table** — `(failing_since, cfg, now) → (attempt, next_attempt_at)`, no
+peers, no sockets, no timing flake. The most divergence-prone surface in the retry design becomes
+the most cheaply converged one. And because `failing_since` is durable, a **restarting peer resumes
+at the correct escalation** instead of dropping back to `min_ms` and hammering.
 
 ### 2.3 Keepalive Configuration
 
@@ -141,7 +210,9 @@ system/network/maintain-result := {
     subscriptions: {array_of: {type_ref: "primitive/string"}, optional: true}
                    ; Subscription IDs created for lifecycle monitoring
     chain_id:      {type_ref: "primitive/string"}
-                   ; Process chain_id for the lifecycle continuation graph
+                   ; Process chain_id for the lifecycle continuation graph.
+                   ; MUST be a single path segment (no "/") — ENTITY-CORE-PROTOCOL
+                   ; §3.11; see §4.1 and Amendment 12 §A6.6 for why.
   }
 }
 ```
@@ -231,6 +302,45 @@ system/network/pending-delivery := {
 ```
 
 Pending deliveries are stored at `system/outbound/{peer_id}/{sequence}`.
+
+### 2.11 Peer-status transition reasons `[Amendment 12 §A2/§A6.4]`
+
+`system/peer/status` carries a three-state lifecycle enum, which tells a consumer *where* a peer
+is but not *why it left* — so neither a consumer nor the reconnect continuation can choose a
+recovery. A transient drop wants backoff-reconnect; an auth rejection wants re-handshake; a
+deliberate peer shutdown wants *stop trying*. §10 already forks on this for **dispatch**
+(403 → handshake); before Amendment 12 the **liveness** path collapsed every cause to
+"disconnected."
+
+**The fields (`reason`, `last_error`, `failing_since`) are declared once, upstream, at
+`ENTITY-CORE-PROTOCOL` §3.13.** This section owns their *lifecycle semantics* — the vocabulary
+and its recovery mapping — and does not re-declare the shape. NETWORK's put-sites (§4.2, §6.2,
+§5.4a, the §A1 seam) are **minimal writes, not exhaustive shapes**: a bare `{peer_id, status}`
+write is conformant.
+
+`reason` is an OPTIONAL kebab enum. **A reader MUST treat an unrecognized value as generic and
+fall back to backoff** (MUST-ignore-unknowns) — that is what lets the vocabulary grow without a
+flag day.
+
+| `reason` | Recovery the consumer / reconnect continuation selects |
+|---|---|
+| `transport-error` | backoff-reconnect (§4.1) — a single transport error on a connection believed active (§A1) |
+| `keepalive-miss` | backoff-reconnect (§4.1) — the idle path (§5.4) |
+| `auth-rejected` | re-handshake (§6.3), **then** reconnect — do NOT reuse the held capability |
+| `peer-shutdown` | **terminal** — the session ended deliberately (§6.1) |
+| `local-release` | **terminal** — this peer called `release-peer` (§4.2) |
+| `retry-exhausted` | **terminal** — a configured §2.2 bound was reached; cleared only by an explicit re-`maintain-peer` (§A6.4) |
+| `peer-idle` | preserve subscriptions; expect resume (§9.1) |
+| `peer-migration` | preserve subscriptions; expect resume (§9.1) |
+
+`last_error` is coded/opaque detail for humans and logs. **It is never parsed** — nothing may
+fork on its content.
+
+**`reason` is preserved across an escalation, not re-stamped** (§5.4a): a `suspect → disconnected`
+escalation carries the *originating* reason of the episode, because re-stamping `keepalive-miss`
+onto a transport-first episode asserts pings that were never sent and destroys the only signal
+distinguishing which path broke. Both values map to `backoff-reconnect`, so nothing downstream
+forks on the distinction — it is there for the operator reading the tree.
 
 ---
 
@@ -338,7 +448,15 @@ The handler:
 handle_maintain_peer(ctx, params):
   peer_id = params.peer_id
   session_id = generate_id()
-  chain_id = "network/maintain/" + session_id
+  ; Amendment 12 §A6.6. A chain_id MUST be a SINGLE PATH SEGMENT (declared at
+  ; ENTITY-CORE-PROTOCOL §3.11) — it is interpolated as a path segment of the
+  ; EXTENSION-CONTINUATION §3.10.1 marker path
+  ; `system/runtime/chain-errors/lost/{chain_id}/{step_index}/{reason}/{marker_hash}`,
+  ; so a value containing "/" forks that path into extra levels and the scheme
+  ; stops being walkable at a fixed depth. The value is otherwise OPAQUE (§3.11
+  ; gives it no format; nothing parses one) — the label exists for a human
+  ; reading a marker path.
+  chain_id = "network-maintain-" + session_id
 
   ; 1. Connect if needed
   current_status = ctx.entity_tree.get("system/peer/status/" + peer_id)
