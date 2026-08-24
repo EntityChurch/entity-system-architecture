@@ -1,7 +1,13 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.25
+**Version**: 3.26
 **Status**: Active
+**v3.26 — a CONTAINED `compute/error` has a boundary form** (§2.3, §3.5): v3.25's data positions made
+v3.23 ruling B's premise false — *"an error is never placed into the data"* was true until `assoc`'s
+`value`, `concat`'s elements and `group-by`'s `members` existed. Ruling B is **scoped, not reversed**:
+it is a consumption-site invariant, and in those three positions the error materializes **code-only,
+by bare `system/hash`**. Code-only is load-bearing — a contained `message` would fork the containing
+array's bytes across two conformant peers. Everywhere else §7.2's short-circuit is unchanged.
 **v3.25 — the v3.24 primitives' four corners close** (§3.5, §9.1): the first implementation of v3.24
 found three corners that determine boundary bytes, and a fourth surfaced while ruling them. `group-by`
 returns **`system/compute/group{key, members}`** — the key is in the result, restored from the shape the
@@ -24,7 +30,10 @@ admission run (**Axis-1**, Go, `entity-core-go` report `2026-07-23-ae5-axis1-inp
 byte-identical alternate==reference, 0 fallbacks, `engine-role==alternate` enforced). The reference interpreter
 (§4) remains the conformance floor; an alternate engine is a per-impl opt-in.
 **v3.21 (2026-07-23) — validated by the compute corpus three-way LOCK (330/330 byte-identical across Go/Rust/Python,
-oracle-pinned `seed 20260716 / SplitMix64 / corpus-SHA d0fdd757`):** `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`
+oracle-pinned `seed 20260716 / SplitMix64 / corpus-SHA d0fdd757`)** *(that pin is **historical**: it records what v3.21
+was blessed against and **does not describe the corpus today** — the set has since grown past 330 and re-frozen under a
+new SHA, and the outcome cross-bless at the current SHA is owed. A conformance claim cites the MANIFEST beside the
+bytes, never this line.)* **:** `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`
 (implemented — §4.2, Q2; all three impls charge `evaluate()` steps only, `worked/budget/exhausted-deterministic`
 agrees). Also validated three-way by the same lock: F-1 (Rust cast-to-uint materialization, §2.2 rule 11), F-2
 (§9.1 out-of-range index), F-3 (Python tier-1 `included`). Ruled in `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`.
@@ -481,6 +490,8 @@ system/compute/scope-binding :=
 
 - **N1 — reference, don't duplicate (one rule, three boundaries).** Wherever an entity- or `compute/closure`-valued thing is placed into another entity's data — **scope bindings, `compute/construct` fields, and `compute/apply` args** — it is referenced by content hash into the content store and tagged with its kind, never inlined. This is the materialized-subtree model (V7 §3) applied uniformly; `compute/apply` args' `input_type` consultation (V30) is the typed-encoding case of the same rule.
   > **`compute/error` is deliberately not in that list `[corrected v3.23]`.** It was, and it was wrong at all three sites: an error reaching any of them **short-circuits** (§4.1 `is_error`, and the short-circuit `[MUST]` in §7.2 names all three), so it is never placed into the data and N1 never applies to it. The listing was unreachable, and it is where one implementation's reading of the construct branch came from. **An error materializes where it is *written* — the §7.2 `result_path` and SA-9 `store` — never where it is *consumed*.**
+  >
+  > **Scoped, not reversed `[v3.26]`.** The sentence above is a **consumption-site** invariant, and its premise — *"it is never placed into the data"* — was true when written and stopped being true at v3.25. §3.5's collection primitives created **data positions**, where an error is **contained in a value** rather than consumed, so N1 **does** apply to it there: `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`, and **only** those three. In a contained position the error materializes **code-only, by bare `system/hash`** (§3.5). Everywhere else — `compute/construct`, `field`, `arithmetic`, `compare`, `logic`, `apply`'s consumed operands, `if`'s condition — the §7.2 short-circuit is unchanged, and **an error reaching materialization from any of those is still the defect this note names.** An implementation guarding that path should add the carve-out, not remove the guard.
 - **N3 — navigation is by kind, not by shape.** `compute/field`/`compute/index`/`compute/length` on a `kind:"entity"` value navigate its `.data`; on a `kind:"value"` (record) value navigate it flat. Implementations **MUST NOT** distinguish entity-vs-record by inspecting keys (e.g. presence of `type`/`data`/`content_hash`) — such heuristics misfire on legitimate records. (This pins the N.5 disambiguation deferred from v3.19a; it resolves a symmetric cross-impl divergence — flat-read was wrong for entity envelopes, envelope-peel wrong for records — for all implementations.)
 - **N4 — binding resolution inherits the closure's authorization.** When `load_scope` (§4.3) resolves a binding's `entity_hash`, the resolve rides the authorization already granted to the closure; the binding entity need **not** be `is_compute_type` (§4.2) or in the sealed set. The closure was authorized at creation, and its bindings are structurally part of it.
 - **N4a — resolution is eager (normative; ratified 3/3 cross-impl).** `load_scope` resolves **all** `kind:"entity"` bindings at apply time (when the scope is loaded), **not** lazily on first access. Consequently an unresolvable binding surfaces as `scope_unreachable` (N8) at apply time regardless of whether the closure body reads it — whole-scope validity is checked up front. ("At apply time" throughout this model means eager. The earlier "lazy" lean was a mis-attribution; all three impls resolve eagerly, and the eager reading is what the "at apply time" wording elsewhere in this section already implies.)
@@ -1130,6 +1141,8 @@ system/compute/assoc-args := {
 | `concat` | element | copied into the output | contain |
 
 A `compute/error` **key** short-circuits even though the key now has an output position (`system/compute/group.key`), because key equality is byte-identity over the canonical encoding: grouping by an error would make its message string structurally load-bearing, so two failures worded differently would become two groups and one reworded message would change the result's shape.
+
+**How a CONTAINED error materializes `[MUST, v3.26]`.** Where the table above says **contain**, the error is present in the value when that value crosses a materialization boundary (§2.3 N1). It materializes **code-only** — content-hashed over `code` alone per §2.4, with `message`/`at`/`expression` excluded as in-flight diagnostics — and is **referenced by a bare `system/hash`** like any other entity-valued element. **The code-only form is load-bearing, not tidiness:** if the contained element carried `message`, two conformant peers whose diagnostics differ would produce **different bytes for the containing array**, so the array's content hash would fork cross-impl on a string no spec pins. **The contained set is exactly three positions** — `assoc`'s `value`, `concat`'s elements, `group-by`'s `members`. An error reaching materialization from anywhere else remains the §4.1 defect it has always been.
 
 **Adopting `concat` does not bless an in-compute sharded step `[not ruled]`.** A self-dispatch fan-out rejoined by `concat` additionally requires the tick contract to state a fairness posture — either a bound on synchronous fan-out width, or a nested-eval yield guarantee. **Termination was never the question; occupancy of the serve loop is.** Adopting the primitive and blessing the pattern are two decisions and only the first is made here.
 

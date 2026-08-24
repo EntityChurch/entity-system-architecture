@@ -545,16 +545,45 @@ T1.2 rides `--validate` (reuses the §7a `dispatch-outbound` handler — honest-
 
 ---
 
-## §7c Compute conformance: the differential corpus (guidance to converge — UNBUILT)
+## §7c Compute conformance: the differential corpus (BUILT and cross-blessed; **not frozen, not vendored**)
 
 The **third conformance modality**. Wire ECF (§§1–6) is enumerable golden fixtures; concurrency (§7b) is
 behavioral probes; **compute is *differential* over a combinatorial input space.** This is the conformance
 artifact for **AE-1** (`PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` — an alternate execution strategy is conformant
-iff materialized-boundary-equivalent). **Status: no portable cross-impl compute corpus exists.** Today the
-entire cross-impl compute-evidence base is the single `compute/scope` hash-equality point
-(`EXTENSION-COMPUTE §447`) plus Go-internal differential tests — so "Rust eval == Go eval" is *assumed, not
-verified*. This section is arch's guidance to the core peers to build and **converge** it; it is high-level by
-intent — the vector shape is pinned, the construction is left to the cohort.
+iff materialized-boundary-equivalent). This section is arch's guidance to the core peers to build and
+**converge** it; it is high-level by intent — the vector shape is pinned, the construction is left to the
+cohort.
+
+> **STATUS CORRECTED 2026-08-20 — this section said "UNBUILT" for four weeks after the corpus locked.**
+>
+> It read: *"Status: no portable cross-impl compute corpus exists … so 'Rust eval == Go eval' is
+> **assumed, not verified**."* **All three clauses were false**, and had been since **2026-07-23** —
+> **two days** after the 07-21 survey this section was written from.
+>
+> **What actually exists, verified in all three trees rather than inferred from one:**
+>
+> | | |
+> |---|---|
+> | Generator + emit + cross-bless | `entity-core-go/cmd/internal/compute-corpus/` — `gen.go`, `evaluate.go`, `crossbless.go`, `guards.go`, `peeremit.go`, and a **portable `prng.go`** |
+> | Pin | **`seed 20260716` · SplitMix64 · corpus-SHA `d0fdd757`** — the exact `(seed, generator-version, SHA)` triple §7c.4(6) asks for |
+> | Result | **330/330 byte-identical, three-way** (`EXTENSION-COMPUTE` v3.21 header) |
+> | Corroboration in each seat | go `docs/validation/reports/2026-07-22-compute-corpus-first-crossimpl-run.md` · rust `ROUTING-2026-07-23-compute-corpus-f1-q1-rust.md` · py `HANDOFF-2026-07-23-compute-corpus-f3-included-resolution-python.md` — **one per impl, each recording its own F-finding** (F-1 rust cast-to-uint, F-2 the §9.1 out-of-range index, F-3 py tier-1 `included`) |
+>
+> **F-2 is why this mattered rather than being filing hygiene.** That ruling — *an out-of-bounds magnitude
+> is `index_out_of_range`, not `type_mismatch`* — came **out of this corpus's first cross-impl run**, and
+> on 2026-08-20 `EXTENSION-COMPUTE` v3.24 re-litigated it in the losing direction and a seat implemented
+> the contradiction. **A guide saying the instrument does not exist is a guide nobody consults when
+> deciding whether a question was already settled.**
+>
+> **What is genuinely still open, and it is now the only unmet step:** §7c.4(5)**(e)** — *freeze, MANIFEST,
+> vendor*. There is **no frozen vector dump and no MANIFEST anywhere in the checkout**, and
+> `entity-core-protocol/specs/test-vectors/compute-conformance/` — the canonical home §7c.5 declares — is
+> **absent at `89e4525`**. The corpus today is a **regenerable artifact in one seat's tree**, reproducible
+> only by running go's generator at the pinned seed.
+>
+> **So the honest state is "built, cross-blessed, and homeless," and the risk is specific**: a regenerable
+> corpus is one refactor of `gen.go` away from silently changing what 330/330 means, and the SHA that would
+> catch it is quoted in a spec header rather than pinned in a MANIFEST beside the bytes.
 
 ### §7c.1 Why a different modality (the §3.4 reconciliation)
 
@@ -652,6 +681,62 @@ discipline (here);** the **cohort** builds the generator port + the evaluate-emi
 frozen corpus + MANIFEST live in `entity-core-protocol/specs/test-vectors/compute-conformance/` (new dir),
 vendored into keystone — the same split as the ECF corpus. Per the working pattern, arch **guides**; the impl
 work lands in the cohort repos, not isolated into `entity-core-protocol`.
+
+## §7c.6 The v3.25 corner vectors — arch-authored worked vectors `[2026-08-20]`
+
+**Six worked vectors for `EXTENSION-COMPUTE` v3.25's four corner rulings (C-1…C-4).** Authored here
+because §7c.5 puts *"the guidance + the vector shape + the discipline"* on arch and the **emit + cross-bless
+stages on the cohort** — the same split as §7c.4(5)(a)'s nine lowering-toolkit worked lowerings, which is
+the precedent these follow.
+
+**They are not a corpus and must not be run as one.** They are six cases to seed into the existing corpus
+at the next regeneration. §7c.4(2)'s anti-vacuity guards are properties of the **whole** corpus: on their
+own these six carry only **two** distinct error codes against the `≥3` guard, so a run of just these would
+be vacuous by the corpus's own rule. **Seed them in; do not score them separately.**
+
+**Arch supplies the IR and the expected outcome. Arch does not supply boundary hashes** — those are the
+emit stage's output (§7c.4(5)(b)), and a hash arch computed by hand would make arch the oracle, which
+§7c.4(3) forbids: *"for the cross-impl corpus, no impl is privileged … the frozen vector's boundary-hash is
+fixed by the spec, not by Go."*
+
+| # | Ruling | IR (`(IR entity, root bindings, budget)`) | Expected outcome |
+|---|---|---|---|
+| **CV-1** | C-1 · `group-by` result shape | `apply(builtins/group-by, {collection: [1,2,3,4], fn: λx. mod(x,2)})` | **value** — `[ group{key:1, members:[1,3]}, group{key:0, members:[2,4]} ]`. Two `system/compute/group` entities; **group order is first-appearance** (`1` first, because element `1` yields key `1`), **member order is input order**. Boundary = the materialized bare-entity hash |
+| **CV-2** | C-2 · `assoc` out-of-range | `apply(builtins/assoc, {collection: [10,20,30], index: -1, value: 99})` **and** the same with `index: 3` | **`error{code: "index_out_of_range"}`**, both arms. **Both arms are required** — negative and `≥ length` are the two magnitudes §2.2's F-2 ruling names, and an impl that special-cases only one passes a single-arm vector |
+| **CV-3** | C-3 · `range` domain | `apply(builtins/range, {n: -1})` · `apply(builtins/range, {n: 0})` | `error{code: "count_out_of_range"}` · **value** `[]`. The `n: 0` arm is the **anti-vacuity partner**: without it a peer that errors on *every* `range` scores green on CV-3 |
+| **CV-4** | C-4 · **the discriminator** — control vs data | (a) `apply(builtins/assoc, {collection:[1,2,3], index: 1, value: <compute/error E>})` · (b) `apply(builtins/assoc, {collection:[1,2,3], index: <compute/error E>, value: 9})` | (a) **value** `[1, <E>, 3]` — the error is **contained**, it is a write payload, not a consumed operand · (b) **`<E>` itself** — short-circuit. **This pair is the whole point of C-4:** one expression type, two positions, opposite outcomes, so **an implementation that treats all positions uniformly fails exactly one arm whichever way it picks.** A uniform-short-circuit peer fails (a); a uniform-contain peer fails (b) |
+| **CV-5** | C-4 · `concat` type-transparency | `apply(builtins/concat, {collections: [[1,2], [<compute/error E>]]})` | **value** `[1, 2, <E>]` — **not** `type_mismatch`. A `compute/error` element does not participate in the element-type match (§1.5's NaN model). Discriminates the reading that inspects elements for errors |
+| **CV-6** | C-4 · `group-by` error key | `apply(builtins/group-by, {collection: [1,2], fn: λx. <compute/error E>})` | **`<E>`** — short-circuit. The derived key is **consumed** (compared to assign a group). Guards the tempting containment reading that C-1 makes newly arguable, since the key now has an output position |
+
+**Two properties of this set worth keeping when it is ported:**
+
+1. **CV-4 is the only one that cannot be satisfied by guessing.** CV-1/2/3/5/6 each admit a single wrong
+   uniform rule that passes them. CV-4's two arms are the same operation and demand opposite behaviour, so
+   it is the arm to port first and the one whose failure is most diagnostic.
+2. **Every vector's outcome is `code`-only where it is an error** — per §7c.3, `message`/`at`/`expression`
+   are in-flight diagnostics and **not** part of the materialized error boundary, so the gate compares
+   `code` strictly and nothing else. An impl whose diagnostics differ is still conformant.
+
+**Satisfaction mode (§5.2b.1): constructible today at every seat with no new surface** — these are
+pure-function checks over an evaluator, needing no harness, no live peer, and no capability. **Class
+(§7.0): compute differential-corpus vectors (§7c), not the ECF/crypto-agility fixture corpus** — see the
+correction note below.
+
+> **Class correction, recorded against arch `[2026-08-20]`.** `PROPOSAL-COMPUTE-V324-CORNERS` §5 and the
+> first `COHORT-OPEN-ITEMS` C-5 row declared these **"fixture-corpus vectors (static `.diag` + canonical
+> `.cbor`, arch-authored)"**, citing §7.0. **Wrong row of the right table.** §7.0's *fixture corpus* is
+> byte-level data **for ECF / crypto-agility**, living in
+> `entity-core-protocol/specs/test-vectors/`; an evaluator-behaviour check is not that, and no amount of
+> `.diag` would have made it one. The correct home is **§7c**, whose shape is
+> `(IR, root bindings, budget) → { boundary-hash | error{code} }` and whose ownership splits
+> arch-guides / cohort-builds.
+>
+> **This is L19's own failure, committed in the packet that invoked L19** — the rule is *say which kind of
+> vector, **and check the corpus before inventing the taxonomy***, and arch named a class from §7.0's table
+> without reading §7c, which is the section `EXTENSION-COMPUTE` §11.6 points at by name. **Declaring a
+> class is not the discipline; opening the section that owns it is.** The cost had it shipped: four
+> vectors routed to the wrong authoring split, into a directory built for crypto agility, against a corpus
+> that already existed and would have absorbed them for free.
 
 ## §8 `validate-peer` remediation roadmap (the Go handoff)
 

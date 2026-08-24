@@ -1,7 +1,12 @@
 # EXTENSION-SUBSTITUTE
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: Active
+**v1.3 — `{hash}` in a content URL is the full wire hex, format byte included** (§7): this spec restated
+the `content_layout` URL construction without restating what `{hash}` is, so a reader working from here
+alone reached for the digest. `EXTENSION-NETWORK` §6.5.3.1 defines it and declares it universal; the
+shard slices are positions in that string, so `[0:2]` is the algorithm partition and a digest-only
+rendering silently breaks it. The source proposal's 64-character examples are superseded.
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-CONTENT.md (v3.6+) — this extension exists to be consulted on CONTENT's local-miss path and hooks it at §5; without CONTENT there is no miss to substitute for. (The dependency is one-directional: not installing this leaves CONTENT's 404 behavior unchanged, §1.)
 **Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); EXTENSION-BRIDGE-HTTP (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above)
 **Tier:** Operational — Tier 1 (CDN release v1 critical path).
@@ -73,6 +78,12 @@ data: {
 ```
 
 **`content_url_prefix` is REQUIRED** — *pinned ruling.* The two-prefix model (`tree_url_prefix` + `content_url_prefix` as separate publisher commitments) exists precisely so content can be dedup'd cross-peer to a different host/prefix than the tree (scenario S4 below). A derivation default ("derive content_url_prefix from tree_url_prefix when absent") silently defeats that case, so there is no default — the publisher MUST state it. An impl that treats it as optional-with-derivation is non-conformant.
+
+**`{hash}` is `hex(H.Bytes())` — the full wire encoding, format byte INCLUDED `[MUST, v1.3]`.** For `ecfv1-sha256` that is **66 hex characters** beginning `00`, never the 64-character digest-only rendering. This is `EXTENSION-NETWORK` §6.5.3.1's definition and that section states its universality outright — *"**one definition of `{hash}` everywhere** — no separate digest-sliced layout family."* This spec restates the construction below; it does not define a second convention, and a consumer MUST NOT render a digest-only content URL on either surface.
+
+> **The shape and the layout are coupled, which is why this is a MUST and not a style note.** The shard slices below are positions in **that** string, counted from the left, so `[0:2]` is the **format-code byte** (`00` = ECFv1-SHA-256, `01` = ECFv1-SHA-384) and therefore the **algorithm partition** — one bucket family per format actually authored, diversifying the instant a non-SHA-256 hash ships. Under a digest-only rendering `[0:2]` slices the first **digest** byte instead, the algorithm-partition property is silently lost, and a deployment that later adds SHA-384 collides two algorithms into one family. **A digest-only URL does not merely spell the hash differently; it breaks a property the layout depends on.**
+>
+> *(The 64-character examples in the source HTTP proposal are **superseded by this spec**, on the same basis as the two-mechanism correction in §1: a proposal carries rationale, the spec carries the rule.)*
 
 `content_layout` URL construction:
 - `flat`: `{content_url_prefix}/{hash}`
