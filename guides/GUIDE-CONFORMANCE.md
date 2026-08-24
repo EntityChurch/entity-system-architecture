@@ -237,6 +237,23 @@ A report of "passes v3" means every vector in `conformance-vectors-v3.cbor` retu
 
 An impl passing v{N} does not automatically pass v{N+1} — new vectors may have surfaced new corners. The impl team runs the new vectors, fixes anything that surfaces, updates the report.
 
+**A check that never contacts the peer is a `[self]` check, and a per-peer figure that hides one overclaims `[MUST; ruled 2026-08-09]`.** Some conformance checks take no client at all — they exercise the running implementation against the spec locally (a resolver, an ordering rule, a local-store invariant). They are legitimate and they stay in the suite; what is not legitimate is a **peer's** row scoring a PASS for behavior that peer was never asked about. A sibling could ship none of the rule and the row would not move.
+
+- Every client-free check MUST be **declared** as such by the suite, rendered distinguishably (`[self]`), and carried as a machine-readable flag in structured output.
+- Self-checks **stay in the suite total.** They are not removed. Removing them would delete real coverage from the record to make a labelling point, and would break every published comparison at once.
+- **Both numbers are published.** The conformance citation form (`N·0F @ <oracle-commit>` with the P/W/F/S breakdown, per `AGENTS-STANDARD`) gains a **peer-attributable count** whenever the figure is stated per-peer: `1549 (1520 peer-attributable) · 0 F / 0 S @ <oracle>`. A bare total against a named sibling is no longer a complete report.
+- The change is a **reporting** change, so it lands in **all impls in the same cycle** — a cohort where one repo reports peer-attributable counts and two report bare totals is worse than either convention applied uniformly.
+
+*(Surfaced by `entity-core-go` 2026-08-09: 29 client-free checks across five categories, 9 of 20 in `encryption` alone, found by diffing the whole suite rather than fixing the one instance that bit them. This is the sharpest form of the "three-way green is not independence" class — not three implementations agreeing, but **one implementation counted three times**, on a rule whose entire justification is that implementations must not diverge.)*
+
+### §5.2a Rules with no peer-observable surface
+
+A normative rule can be genuinely unprobeable: it governs what a peer does **before** it emits anything, and no operation exists to ask it. §4.4 of `EXTENSION-ENCRYPTION` is the worked example — sender-side key resolution, with no peer-facing encrypt operation to interrogate.
+
+**A `[cross-peer seam — MUST]` with no peer-observable surface MUST be gated by a pinned-input vector, in the same change that lands the MUST `[MUST]`.** Prose alone leaves it unenforceable in exactly the place the "cross-peer" label claims it matters, and the divergence stays invisible until a second implementation builds it. The vector is a shared row file of authored inputs and expected outputs that **each implementation runs in its own suite** — the crossing is the shared file, not a live peer. `EXTENSION-ENCRYPTION` §16.6 defines the required properties (coverage, order-independence, negative control, declared exclusions); reuse that shape.
+
+Corollary, now general: **a check that cannot be made to fail has not been shown to measure anything.** Every guard added to such a vector needs an injected-fault control, including — especially — the guards that can never fire against a correct implementation.
+
 ### §5.3 Growth triggers
 
 Per Appendix E §E.5, two things trigger growth:

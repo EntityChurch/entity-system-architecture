@@ -2,6 +2,16 @@
 
 **Version**: 1.0
 **Status**: Active
+**Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only unconditional dependency (Tier A, §4.0); EXTENSION-ATTESTATION.md (v1.3+) — **optional, Tier B and above** (the entity shape §3.1, `is_attestation_live` §4.3, and the universal `revocation` kind §3.3 / `find_revocations_for` §5.6 are normative wherever a carrier is an attestation — see §4.4); EXTENSION-IDENTITY.md (v3.10+) — **optional, Tier C only** (owns `system/identity/`, its cert path function, and the temporal-validity MUST §9.3)
+**Related**: EXTENSION-RELAY.md (peer-mode's transport case), EXTENSION-GROUP.md (group-mode membership), EXTENSION-CONTENT.md (encrypted content at rest)
+**Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
+
+> **The optional dependencies are optional in the strong sense — a lower tier is not a degraded
+> configuration.** Tier A is the V7 floor with neither ATTESTATION nor IDENTITY installed and is the *right*
+> shape for a headless peer (§1, §4.0). The declarations above exist because when a tier **is** installed, that
+> extension's rules bind here and are not restatable from this spec — which is how §4.4's candidate definition
+> and its expiry filter were both derived (2026-08-09-b) — and the missing declaration is a fair part of why
+> neither had been read against until an implementer went looking.
 
 The original conceptual core (entity-level framing, three-mode split, don't-reuse-identity-key, encryption-as-defense-in-depth-with-capabilities) is preserved verbatim in §2 + §13; every cross-extension / wire / cap claim is the substrate-aligned form.
 
@@ -168,6 +178,8 @@ system/encryption-pubkey := {
 
 `content_hash(system/encryption-pubkey)` is a pure function of `(enc_key_type, public_key, supported_aead_ids, supported_kdf_ids, created, expires)`. The pubkey entity is content-addressed and immutable; the cert (§4.2) attests to it.
 
+**`expires` is a sender-side selection filter, and only that `[MUST; ruled 2026-08-09-b]`.** A sender MUST NOT select an expired pubkey during §4.4 resolution — an expired candidate is dropped exactly as a revoked one is. A **receiver MUST NOT refuse to decrypt** because the bound key has expired: entities encrypted at rest outlive any publication window, and a message in flight must not become undecryptable in transit. Expiry retires a key from *selection*; revocation retires it from *use*. Only revocation is an error at decrypt time (§11); receiver hygiene on expiry is local policy (§11.4). Expiry is also the **only** input to §4.4's order evaluated against the sender's **local clock**, so two senders may straddle the boundary — but unlike a tie-break divergence that failure is **loud**: the straddling sender either resolves an older key the recipient still holds, or reports `403 encryption_recipient_unknown`. Nothing is silently routed to a device nobody is watching, which is why this input does not need a pinned clock model. *(At Tiers B/C the carrier's own `not_before` / `expires_at` are already enforced by `is_attestation_live`, `EXTENSION-ATTESTATION` §4.3 + `EXTENSION-IDENTITY` §9.3 — this clause is the same discipline for the key entity itself, which no other spec covers.)*
+
 ### §4.2 Publishing per tier
 
 The pubkey from §4.1 is published according to the highest tier installed.
@@ -188,7 +200,7 @@ Sign it with the peer's V7 keypair via `system/signature` at the invariant point
 
 A sender resolves Tier-A recipient pubkeys by reading `system/encryption-pubkey/{h}` at the recipient's namespace and verifying the invariant-pointer signature with the recipient's V7 peer_id (which is the trust anchor — the V7 peer keypair is self-rooted identity per V7 §1.5 / IDENTITY §1.1 progression item 1).
 
-Discovery: enumerate the `system/encryption-pubkey/` subtree at the recipient's peer namespace; filter out revoked entries per §11; pick most recent live by `created`.
+Discovery: enumerate the `system/encryption-pubkey/` subtree at the recipient's peer namespace; filter out revoked entries per §11; pick most recent live **per §4.4's total order** (which is the same order at every tier — do not re-derive it here).
 
 #### §4.2.b Tier B — +ATTESTATION (no IDENTITY)
 
@@ -208,7 +220,7 @@ system/attestation := {
 
 Path: `/{peer_id}/system/encryption/attestation/{attestation_hash}`.
 
-Discovery: `find_attestations_targeting(attested=pubkey_hash)` per ATTESTATION §5; filter revocations via universal `revocation` kind; pick most recent live.
+Discovery: `find_attestations_targeting(attested=pubkey_hash)` per ATTESTATION §5; filter revocations via universal `revocation` kind; pick most recent live **per §4.4's total order** — note the ordering is over the **attested pubkey entities**, not over the attestations (§4.4; `system/attestation` carries no `created`).
 
 Tier B is genuinely equivalent to Tier A in features — what it adds is **substrate-grade observability**: graph-tooling that walks `system/attestation` entities for any purpose now sees encryption-key publications uniformly with every other signed-edge claim in the system. Generic dashboards / cross-extension queries / introspection tools work. Tier-A peers are equally functional; they're invisible to substrate-graph tooling because their authority lives in invariant-pointer signatures, not attestations.
 
@@ -249,14 +261,28 @@ Path layout depends on tier.
 | Per-key backup | `system/encryption/key-backup/{pubkey_hash}` | Tier 2 passphrase-wrapped backup (§9.2) |
 | Revocation | `system/encryption/revocation/{revocation_hash}` (Tier A) or universal `revocation` kind in ATTESTATION's subtree (Tier B) | Marks a pubkey as revoked |
 
-**Tier C** — IDENTITY's audience layout (§5.1):
+**Tier C** — IDENTITY's audience layout (§5.1). **ENCRYPTION defines no path under `system/identity/`; IDENTITY owns that namespace `[MUST; ruled 2026-08-09]`.** See the ownership rule below the table.
 
 | Audience | Path | Purpose |
 |---|---|---|
 | Internal (per-agent private) | `system/identity/internal/cert/{cert_hash}` | This agent's own encryption-cert (its decryption private key lives off-tree per §9; this is the cert) |
-| Public (contact-discoverable) | `system/identity/public/encryption/{cert_hash}` | The discoverable handle for senders to encrypt to this identity |
-| Per-relationship | `system/identity/relationships/{contact_id}/encryption/{cert_hash}` | Per-contact encryption key for forward-secrecy hygiene |
-| Per-key backup | `system/identity/internal/key-backup/{cert_hash}` | Tier 2 passphrase-wrapped backup |
+| Public (contact-discoverable) | `system/identity/public/cert/{cert_hash}` | The discoverable handle for senders to encrypt to this identity — **discriminated by `properties.function == "encryption"`, not by a path segment** |
+| Per-relationship | `system/identity/relationships/{contact_id}/cert/{cert_hash}` | Per-contact encryption key for forward-secrecy hygiene (same function filter) |
+| Per-key backup | *(IDENTITY-owned; see the ownership rule)* | Tier 2 passphrase-wrapped backup (§9.2) |
+
+> **Namespace ownership — stated once, generally `[MUST; ruled 2026-08-09, found by entity-core-go building ENC-CERT-LIFECYCLE-1]`.**
+>
+> **ENCRYPTION MUST NOT define, name, or write to any path segment inside `system/identity/`.** IDENTITY owns that namespace (`SPECIFICATION-FORMAT` §8.4.2 — *a spec MUST reference rather than restate a surface it does not own*; §8.4.4 — one top-level namespace segment per owner). At Tier C an encryption cert is created through `identity:create_attestation`, so **IDENTITY's canonical path function decides where it lands** — ENCRYPTION cannot redirect another extension's tree from its own text.
+>
+> **IDENTITY's canonical shape is `system/identity/{audience}/cert/{cert_hash}`**, routed by `properties.mode` (`internal` / `public` / `per-relationship`; `embedded` has no tree path). **`function` is a property *on* the cert and never appears in a path segment.** An encryption cert is therefore found by **enumerating certs at the mode-derived path and filtering `properties.function == "encryption"`** — a filter, not a per-function subtree.
+>
+> **This spec previously named six segments IDENTITY does not define** — `public/encryption/`, `relationships/{contact_id}/encryption/`, `internal/key-backup/`, `internal/key-share/`, `internal/key-share-register`, and the `system/identity/key-backup` / `system/identity/key-share` type names. All are **retracted**. Only `system/identity/internal/cert/{cert_hash}` was ever correct, and its presence one row above an invented sibling in this very table is what shows these were an unreviewed slip rather than a design choice.
+>
+> **Why this was not cosmetic, and why only two of the six had bitten.** A conformant publisher creating a `mode=public` encryption cert lands it at `system/identity/public/cert/{h}`; a conformant sender following the old §4.4 step 1 read `system/identity/public/encryption/` — **empty** — fell through Tier C → B → A, and a Tier-C-only recipient resolved as `403 encryption_recipient_unknown`. **Nothing errors**: the sender simply concludes the recipient publishes no encryption key. The other four sites are the same defect in **unbuilt** features (Tier-2 backup, Shamir shares), which is why they had not surfaced — they would have, one at a time, as each was built. *(Fixed generally rather than per-instance: patching the two live sites would have left four latent.)*
+>
+> **If per-function indexing is genuinely needed, it is IDENTITY's to add, not ENCRYPTION's.** The invented subtree bought an O(1) lookup where the ruled shape is an O(n) filter over an identity's cert set — a set that is small by construction. Should that stop being true, the fix is an index in IDENTITY (the REGISTRY §6a.3 by-name-pointer pattern is the precedent), never a segment minted from this spec.
+>
+> **`function = "encryption"` is app-defined and ENCRYPTION is its sole registrant.** IDENTITY §4.2 enumerates `controller` / `agent` / `identifier` and permits app-defined values, so the value is legal — but it is unregistered, so a second extension could adopt the same string with different semantics. **Routed to IDENTITY** for one line in its §4.2 table recording ENCRYPTION as the registrant, so the next reader does not re-derive this.
 
 For **self-mode storage** (encrypting your own data), the local internal cert is the one referenced.
 
@@ -270,16 +296,39 @@ A sender resolves recipient encryption-pubkeys by reading at the recipient's nam
 
 **Resolution order (sender does this):**
 
-1. Try Tier C: read `system/identity/public/encryption/` at the recipient. If non-empty, enumerate `find_attestations_with_kind(kind="identity-cert", function="encryption")` filtered through identity's authority chain; filter revoked; pick most recent live.
-2. Try Tier B: read `system/encryption/attestation/` at the recipient. If non-empty, enumerate `find_attestations_targeting(attested in system/encryption-pubkey/...)` with `kind="encryption-key"`; filter revoked via universal `revocation` kind; pick most recent live.
-3. Try Tier A: read `system/encryption-pubkey/` directly at the recipient. Verify each pubkey's `system/signature` at the invariant pointer against the recipient's V7 peer_id; filter revoked via encryption-owned `system/encryption/revocation/`; pick most recent live.
+1. Try Tier C: enumerate identity-cert attestations at the recipient's **mode-derived IDENTITY path** — `system/identity/public/cert/` for the discoverable case (`EXTENSION-IDENTITY` §4.2; ENCRYPTION defines no path here, see §4.3) — with `kind="identity-cert"` **and `properties.function == "encryption"`**, filtered through identity's authority chain. Drop what is not live, project the rest, take the first per the total order — both defined below. If nothing survives, fall through.
+2. Try Tier B: read `system/encryption/attestation/` at the recipient. If non-empty, enumerate `find_attestations_targeting(attested in system/encryption-pubkey/...)` with `kind="encryption-key"`. Same liveness filter, same projection, same order. If nothing survives, fall through.
+3. Try Tier A: read `system/encryption-pubkey/` directly at the recipient. Verify each pubkey's `system/signature` at the invariant pointer against the recipient's V7 peer_id. Same liveness filter, same order (projection is the identity function here — the carrier *is* the pubkey entity).
 4. None resolved → `403 encryption_recipient_unknown`.
+
+**A tier that is non-empty but wholly dead does NOT terminate the walk `[MUST]`.** "Try tier N" means *did tier N yield a **live** candidate*, not *did tier N publish anything*. A recipient whose Tier-C certs are all revoked and whose Tier-A pubkey is live resolves at Tier A.
 
 The sender resolves to whichever tier is highest-installed at the recipient.
 
+**What a candidate *is*: the inner pubkey entity, at every tier `[cross-peer seam — MUST; ruled 2026-08-09-b]`.**
+
+Each step above enumerates a tier-shaped **carrier** — a V7-signed pubkey entity (Tier A), an `encryption-key` attestation (Tier B), an `identity-cert` attestation (Tier C). **Filtering is carrier-scoped** (authority chain, `kind`, `function`, carrier liveness — all properties of the carrier). **Ordering is not.** Every surviving carrier is first **projected to the `system/encryption-pubkey` entity it publishes or attests** (`attested` at Tiers B/C, itself at Tier A), and the order is taken over **those entities, deduplicated by `content_hash`**: two live carriers naming one pubkey are **one** candidate.
+
+This is not a choice between two readable sentences. **`system/attestation` has no `created` field** (`EXTENSION-ATTESTATION` §3.1 defines `attesting` / `attested` / `properties` / `supersedes` / `not_before` / `expires_at` — no creation timestamp), and an `identity-cert` adds none. Ordering carriers by `created` is **unimplementable**, and ENCRYPTION **cannot mint the field** — the same `SPECIFICATION-FORMAT` §8.4.2 rule that decided the namespace question earlier the same day decides this one. The pubkey entity's `created`, by contrast, is authored by the key holder and is **hash input** (§4.1), so it cannot be moved without changing the identity of the very key it orders. A re-issued cert over an unchanged key therefore does not reorder devices — which is correct: a cert re-attests *authority*, it does not republish a *key*. *(The earlier parenthetical "the publication timestamp on the pubkey entity / cert" named a field certs do not have — **retracted**. Found by `entity-core-go` 2026-08-09 building `ENC-RESOLVE-ORDER`, the vector this rule had no observer for.)*
+
+**The total order `[cross-peer seam — MUST; ruled 2026-08-09, inputs pinned 2026-08-09-b]`.** Over the deduplicated candidate set, at every tier, order by:
+
+1. **`created` descending** — the `created` field of the `system/encryption-pubkey` entity (§4.1), then
+2. **`content_hash` ascending** — the **full authored content_hash of that same entity**: the multihash-prefixed form (1-byte format prefix ‖ digest; 33 bytes under SHA-256), **not** the bare digest. These are byte-for-byte the value the sender goes on to bind as `recipient_key` (§7.4 step 1; R5 / F-PY-ENC-2), so the tie-break key and the bound key are the same bytes and there is nothing left to choose. Compare as **unsigned lexicographic byte strings**; if one is a proper prefix of the other, the shorter sorts first. *(Under a single hash algorithm every candidate shares the prefix and the two forms agree; they diverge only in a mixed-algorithm set — reachable the moment SHA-384 is active, i.e. when `ENC-ROUNDTRIP-FORMAT-1` is built. Pinned now, while that is still unbuilt.)*
+
+Pick the first. **The tie-break value is arbitrary; that it is *pinned* is not.** Two senders applying different orders to the same recipient silently select different keys, and the failure is invisible at the sending peer — it encrypts successfully, to a key the reader did not expect. At Tier C the consequence is sharper than a retry: §4.4's multi-device rule says the receiving agent is *the agent holding the private half of the chosen key*, so divergent tie-breaks route ciphertext to **different devices** — every peer behaving correctly, message arriving somewhere the user is not looking. Byte-comparison on `content_hash` is chosen because it is total, deterministic across languages, and available without parsing; **timestamp alone is not sufficient** — clock granularity makes ties reachable, and two certs minted in the same millisecond is the normal case for a scripted multi-device enrolment, not a rare one. *(Raised by `entity-core-go` 2026-08-09 as a call they had made and shipped; the call was right and it is now the rule.)*
+
+**"Live" means all three of these, and a candidate failing any one is dropped — not an error `[MUST; ruled 2026-08-09-b]`:**
+
+1. **Carrier validity.** Tier A: the invariant-pointer `system/signature` verifies against the recipient's V7 `peer_id`. Tier B / Tier C: `is_attestation_live` (`EXTENSION-ATTESTATION` §4.3 — which already covers `not_before` / `expires_at` / transitive supersession / self-revocation), plus at Tier C the identity authority chain walked to the quorum (`EXTENSION-IDENTITY` §3.6, and §9.3's temporal-validity MUST).
+2. **Revocation, at both granularities.** A revocation targeting the **inner pubkey hash** (§11.1 at Tier A; the universal `revocation` kind's §11.2 shape at any tier) kills that candidate outright — the key is dead, and republication at a lower tier does not revive it. A revocation targeting a **carrier** hash (§11.3, Tier C certs) kills **only that carrier**; the candidate survives iff at least one live carrier still attests it. Revoking a per-relationship cert MUST NOT retire the device's public key. Retiring a *key* at Tier C therefore means revoking every carrier that attests it, or revoking the pubkey hash directly.
+3. **Temporal validity of the key itself.** The pubkey entity's own `expires` (§4.1): if present and `now >= expires`, the candidate is dropped. See §4.1 for why this is sender-side selection only and never a decrypt-side gate.
+
+**Retrievability is part of resolution `[MUST]`.** A sender cannot encrypt to a key it cannot read — it needs `public_key` and the suite arrays, not just a hash. A publisher MUST keep the attested inner `system/encryption-pubkey` entity retrievable by `content_hash` for as long as any live carrier attests it. A candidate whose inner entity cannot be retrieved is **dropped and the walk continues**; it is not a distinct error. Step 4's `403 encryption_recipient_unknown` is the single error a sender reports: *publishes nothing*, *publishes only revoked keys*, and *publishes a key I cannot read* are one fact at the sending peer — no bindable key. (An impl SHOULD distinguish them in its own diagnostics; the wire does not.)
+
 **Wire-format discriminator (peer mode):** the encrypted entity's `recipient_key` reference is content-addressed (it points at the pubkey entity, regardless of tier); recipient resolves by content_hash through its own local store + signature verification. No wire-level tier discriminator needed — content-addressing handles it.
 
-**Multi-device discovery (Tier C only):** one logical identity may have several agents, each with its own encryption-cert. The sender picks ONE cert and the receiving agent is the agent that holds the private key for that cert. For broadcast to all agents of an identity, use group mode with each agent's cert as a member. Tier A / Tier B peers do not surface multi-device — each peer is its own identity.
+**Multi-device discovery (Tier C only):** one logical identity may have several agents, each with its own encryption key. The sender picks **ONE candidate** per the order above, and the receiving agent is the agent holding **that key's** private half. A **device is a private-key holder**, not a cert — which is why deduplication above is by pubkey: two live certs over one key are one device, and the sender's choice between them is not a choice at all. For broadcast to all agents of an identity, use group mode with each agent's key as a member. Tier A / Tier B peers do not surface multi-device — each peer is its own identity.
 
 ---
 
@@ -695,7 +744,7 @@ A passphrase-wrapped copy of the encryption private key, stored on disk. Path is
 | Tier | Backup path |
 |---|---|
 | Tier A / Tier B | `/{peer_id}/system/encryption/key-backup/{pubkey_hash}` |
-| Tier C | `/{peer_id}/system/identity/internal/key-backup/{cert_hash}` |
+| Tier C | **ENCRYPTION-owned, same as A/B: `/{peer_id}/system/encryption/key-backup/{cert_hash}`** — *(was `system/identity/internal/key-backup/`; retracted per §4.3's ownership rule — IDENTITY does not define it)* |
 
 Tier A has no `system/identity` subtree (no IDENTITY installed); the encryption-extension's own subtree is used. The `{pubkey_hash}` / `{cert_hash}` selector matches the publishing path's hash kind at that tier.
 
@@ -762,7 +811,9 @@ Reserved paths (tier-relative, matching §4.3):
 | Tier | Share path |
 |---|---|
 | Tier A / Tier B | `/{peer_id}/system/encryption/key-share/{share_id}` |
-| Tier C | `/{peer_id}/system/identity/internal/key-share/{share_id}` |
+| Tier C | **ENCRYPTION-owned, same as A/B: `/{peer_id}/system/encryption/key-share/{share_id}`** — *(was `system/identity/internal/key-share/`; retracted per §4.3's ownership rule)* |
+
+> **Why these two collapse to one path rather than gaining a Tier-C variant.** A key-backup and a key-share are **ENCRYPTION's own artifacts** — IDENTITY neither defines nor validates them, and nothing in IDENTITY's cert machinery reads them. They were placed under `system/identity/internal/` only to mirror the (also invented) Tier-C cert layout. With that retracted there is no reason for the path to vary by tier at all: the selector `{pubkey_hash}` / `{cert_hash}` still matches the publishing path's hash kind at that tier, which is the only thing that was ever tier-dependent.
 
 Cross-reference §19.4 for the full design.
 
@@ -1023,7 +1074,7 @@ Inherits V7 §4.10 status codes verbatim for resource-bound exceedance (`payload
 
 ## §16 Conformance vectors
 
-The keystone "vectors are the contract" discipline (v7.65 – v7.75) applies. Ten gating vectors for v1.0 ratification, each with **fully-pinned byte inputs** so all impls produce identical bytes from identical inputs (F-GO-2 / F-GO-8 / F-GO-9 absorbed; F2-1 group-commitment added v2.4).
+The keystone "vectors are the contract" discipline (v7.65 – v7.75) applies. The gating vectors for v1.0 ratification are indexed below, each with **fully-pinned byte inputs** so all impls produce identical bytes from identical inputs (F-GO-2 / F-GO-8 / F-GO-9 absorbed; F2-1 group-commitment added v2.4).
 
 ### §16.1 Vector index
 
@@ -1039,6 +1090,7 @@ The keystone "vectors are the contract" discipline (v7.65 – v7.75) applies. Te
 | `ENC-TIER-INTEROP-1` | Tier-A sender encrypts to Tier-C recipient (and vice versa); peer-mode round-trip succeeds via §4.4 resolution order. Validates F-GO-1 uniform pubkey-hash binding | peer | **floor** |
 | `ENC-ROUNDTRIP-FORMAT-1` | Cross-format identity-reference: encrypt on SHA-256 peer, decrypt on SHA-384 peer; verify §1.8 / v7.69 §4.5a discipline | peer | floor when SHA-384 active |
 | `ENC-RESOURCE-BOUNDS-1` | Oversized `wrapped_keys` → `encryption_wrapped_keys_too_many`; oversized ciphertext → V7 §4.10 `payload_too_large` | group | **floor** |
+| `ENC-RESOLVE-ORDER-1` | §4.4 resolution: tier-ladder precedence, the total order (`created` desc → `content_hash` asc), carrier→pubkey projection + dedup, revocation at both granularities, `expires`, and both step-4 error cases. **Pinned-input, not a probe** — see §16.6 | all | **floor** |
 | `ENC-KEY-SEPARATION-1` | Key separation (R6): published encryption-pubkey is NOT the identity key and NOT a deterministic transform of it (birational Ed25519→X25519 forbidden); encryption keypair generated independently | all | **floor (BLOCK-1, against real keygen)** |
 
 The KAT vectors (`ENC-*-KAT-*`, `ENC-AAD-1`, `ENC-GROUP-COMMIT-1`) are the **BLOCK-0** primitive-byte gate — locked 3-way (self + peer byte-equal; group AAD + commitment byte-equal; group ciphertext/wraps lock on Python's re-run with R1+R3 pinned). The lifecycle/interop/separation vectors (`ENC-CERT-LIFECYCLE-1`, `ENC-TIER-INTEROP-1`, `ENC-KEY-SEPARATION-1`) + the §3 BLOCK-1 scenarios are the **BLOCK-1** end-to-end gate that actually closes v1.0 — byte-equality of the primitive is necessary, not sufficient, for a privacy primitive.
@@ -1127,6 +1179,19 @@ expected_ciphertext_hex = <LOCKED — cohort transcribes>                ; 3-way
 6. Same shape as `v767/SEEDS.md` Phase-2 authoring (the cross-impl byte-fixture cycle).
 
 Cross-impl 3-way + Keystone-generated peer green on every floor vector is the v1.0 lock signal. Same shape as v7.74 cohort close.
+
+### §16.6 `ENC-RESOLVE-ORDER-1` — a MUST with no wire surface
+
+§4.4's resolution is something a **sender** does *before* it encrypts, and ENCRYPTION defines **no peer-facing encrypt-to-this-recipient operation**. No request a validator can make will reveal which key another implementation's resolver would have chosen. That is a property of the rule, not a gap in any validator — and it is why a `[cross-peer seam — MUST]` sat for a week exercised only by each implementation's own resolver, called by its own suite, scoring rows against peers it never contacted. *(Surfaced by `entity-core-go` 2026-08-09, who built the vector, then diffed their whole suite and found **29 client-free checks across five categories** — 9 of 20 in `encryption` alone.)*
+
+**So this vector is a pinned-input differential, on the model the `ENC-*-KAT-*` rows already use for primitive bytes:** a shared row file of authored candidate sets with expected selections, which **each implementation runs inside its own suite**. That is the only crossing this rule can have. Required properties of a conformant row set:
+
+1. **Coverage** — tier-ladder precedence at all three pairings; `created` descending; the tie-break **direction asserted** (not merely order-independence); `created` outranking `content_hash`; carrier→pubkey projection with two carriers over one key deduplicating to one candidate; revocation at **both** granularities (pubkey-targeted kills, carrier-targeted leaves a live sibling carrier standing); `expires` dropping a candidate; a non-empty-but-fully-dead tier falling through; both step-4 error cases.
+2. **Order-independence** — every row re-checked with its candidate set enumerated in reverse.
+3. **Negative control `[MUST]`** — deliberately-wrong resolvers run against the shipped rows, each caught by a **named** row. A guard that cannot be made to fire (the permutation check against a correct resolver) needs its own injected-fault control or it is coverage-shaped and measures nothing.
+4. **Declared exclusions** — a row set that is deliberately silent on an open question states so **in the file**, with a test enforcing it, so a row added later cannot quietly encode one implementation's reading. (`entity-core-go`'s `excludes` field is the reference shape.)
+
+No repo's emitted file is normative here; the **coverage above** is. `entity-core-go`'s `encryption-resolve-order-go.cbor` (14 rows, `emitter_commit`-pinned at `17fc8ed`, vector contract agreed with `entity-core-rust` 2026-08-03) is the first instance and the natural seed for the cohort file — it predates the Q1/Q2/Q3 rulings and is neutral on all three by construction, so it extends rather than needing a rewrite.
 
 ---
 
