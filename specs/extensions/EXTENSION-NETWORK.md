@@ -1,6 +1,8 @@
 # Network Extension — Normative Specification
 
-**Version**: 1.4
+**Version**: 1.5
+
+> **Amendment 13 — reachability facts (new §6.7: observed-address reflection, dial-back, candidate gathering; two new capabilities; two new operations).** A peer dispatches by reachability class (§10) but has had no protocol way to learn its **own** reachability facts — its public NAT mapping, whether it is publicly dialable, what addresses it might be reached at. §6.7 lands the three facts and stops there: **gathering is a local fact, exchanging is a protocol**, and the punch-coordination protocol that acts on them is not in this spec. Adds `observe-address` → `system/network/observed-address` (§6.7.1) and `check-reachability` → `system/network/reachability-result` (§6.7.2), gated by new `system/capability/network-reflect` (broad default grant reasonable — a mirror) and `system/capability/network-dialback` (restricted — it causes the responder to emit traffic at an address), plus the `system/network/candidate` type (§6.7.3). **Additive and not v1-blocking:** the section is OPTIONAL as a whole (§12.3) — the asymmetric NAT case already works via §10's `held_connection_client`, and this changes no §10 pseudocode, no wire format, and adds no error code. **Every rule inside it is a MUST when offered** (§12.1), because each is a cross-peer seam that prose review does not catch: reflection returns the transport source and never a body echo; the observed address is **never** persisted to `system/connection.address` or a transport profile (it is a *responder-side* fact and every durable address field in this spec is *dialer-side dialable-endpoint* state — the cheap fix corrupts §10 dispatch for every other reader); dial-back targets **only** the observed source (a body-supplied target makes every dial-back peer a DDoS reflector); candidates are never durable profiles; and a `srflx` candidate is the mapping of the socket the peer punches from. Folds `PROPOSAL-NETWORK-REACHABILITY-FACTS` §2–§5 in full, including the 2026-07-29 ownership ruling (the HELLO-handshake mechanism is `entity-core-protocol`'s to ratify, not this repo's — it routes upstream and gates nothing here, so the op is the v1 path) and the §4.2 candidate-to-socket MUST. **Not yet cohort-validated** — the §6.7.5 gate (a cross-impl reflect + a dial-back across a real NAT) is what validates it, and it has not run. *(Numbered 13, not 12: Amendment 12 — the NETWORK liveness reactive buildout — is ratified but not folded, and holds that number.)*
 
 > **Amendment 11 — dispatch-fallback seam at §10 step 4 (store-and-forward escalation; new §10.2).** The §10 ladder's step-4 terminal (queue/502) cannot originate delivery to a peer with no live or recurring session that is offline/NAT'd right now. Amendment 11 names a `dispatch_fallback(peer_id, execute) → {ok, result} | null` seam consulted once at step 4 **before** the terminal; the store-and-forward policy lives in RELAY (§6.2.1), never in NETWORK — same layering boundary as the relay→routing `resolve_next_hop` seam. **Additive / v1.x:** `null` (no RELAY installed) ⇒ byte-identical to the pre-seam terminal; non-RELAY v1 floor unchanged. Two cohort-convergence corrections fold in with it: **(a)** the step-4 terminal is restated as impl-variable — `queue_pending` (§8 outbox) is an OPTIONAL rung an impl MAY interleave only if it implements §8 (Rust + Python ship no §8 outbox; their terminal is a bare error), so "byte-identical when unset" means "behaves as this impl's terminal does today"; **(b)** a normative insertion-site MUST — the seam is consulted at the caller holding both `peer_id` and the `execute` envelope, never inside connection-resolution (3-impl independent convergence). Conformance gates the outcome (offline-target delivery lands at the inbox; target polls + verifies signature as direct), not the policy's internal rung choices. No V7 change, no wire change, no new cap/error code. Cohort review converged 3-way before fold (Go build-tested `INBOX-RELAY-FALLBACK-1` PASS; Rust + Python confirmed seam-vs-inline fit against their dispatch ladders — Rust as a hard crate-DAG constraint).
 
@@ -51,11 +53,11 @@ This extension does **not** cover:
 
 - Peer discovery (mDNS / DNS-SD — `EXTENSION-DISCOVERY`, shipped); seed / bootstrap peers — `EXTENSION-REGISTRY` §7 + `system/config/bootstrap` (not a DISCOVERY backend)
 - Relay / store-and-forward (`EXTENSION-RELAY`, shipped)
-- NAT traversal / WAN reachability — the *reachability facts* (observed-address, dial-back,
-  candidate gathering) land as an **amendment to this extension**; the punch-coordination dance is a
-  thin protocol over a pluggable signaling carrier. See `docs/proposals/PROPOSAL-NETWORK-REACHABILITY-FACTS.md`
-  (the facts — reflection/dial-back/candidates) + `docs/proposals/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md`
-  (the coordination dance + signaling carrier).
+- NAT traversal — the **punch-coordination dance** (a thin protocol over a pluggable signaling carrier).
+  See `docs/proposals/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md`.
+  **In scope, as of Amendment 13:** the *reachability facts* the punch consumes — observed-address
+  reflection, dial-back, and candidate gathering — are **§6.7 of this spec**. Gathering a candidate is a
+  local fact and lives here; exchanging one is a protocol and does not.
   (Note: the asymmetric-NAT case — reaching a NAT'd peer from a public peer — is *already* covered by
   the `held_connection_client` reachability class, §10.)
 - Group coordination (EXTENSION-GROUP)
@@ -253,6 +255,14 @@ system/handler := {
       input_type:  "system/network/close-request"
       output_type: null
     }
+    observe-address: {
+      input_type:  null
+      output_type: "system/network/observed-address"
+    }
+    check-reachability: {
+      input_type:  null
+      output_type: "system/network/reachability-result"
+    }
   }
   internal_scope: [
     {handlers: {include: ["system/tree"]}, resources: {include: ["system/*"]}, operations: {include: ["get", "put"]}},
@@ -273,6 +283,15 @@ system/capability/grant-entry := {
 ```
 
 The network handler is a system handler — typically only the local peer admin has grants for it. Remote peers do not call `maintain-peer` on another peer.
+
+**The two reachability-fact operations are the exception (§6.7).** `observe-address` and `check-reachability` are *designed* to be called by remote peers — they answer "how do I look from outside" and "am I dialable," questions only another peer can answer. They carry their own capabilities, deliberately separate from the admin grant above:
+
+```
+system/capability/network-reflect     ; gates observe-address     (§6.7.1)
+system/capability/network-dialback    ; gates check-reachability  (§6.7.2)
+```
+
+A peer granting `network-reflect` is **not** thereby granting `maintain-peer`. Both are rate-limited; posture and rationale are in §6.7.4.
 
 ---
 
@@ -1076,6 +1095,148 @@ data: {
 - **No self-session.** A peer never writes `system/peer/session/{local_peer_id}`; local dispatch short-circuits (the in-memory degenerate row, §10).
 - **Writes fire ordinary subscription events.** The entity is a real tree write; it hits revision/history and fires events like any write. Subscriptions observing the session subtree MUST scope their patterns accordingly.
 
+### 6.7 Reachability Facts
+
+*Amendment 13.* §10 dispatches by **reachability class** (§10 decision table) — but a peer has no protocol way to learn its **own** reachability facts. It cannot learn the public-facing `IP:port` its NAT allocated (only the router knows, and the router reveals it only implicitly, on outbound packets); it cannot learn whether it is publicly dialable; it therefore cannot honestly populate or order its own transport profiles for a peer on the far side of a NAT.
+
+This section defines the three facts and stops there:
+
+| §6.7.1 | **Observed address** — how this peer looks from outside (the STUN binding, in our protocol) |
+| §6.7.2 | **Dial-back** — whether this peer is publicly dialable |
+| §6.7.3 | **Candidates** — the typed set of addresses this peer might be reached at |
+
+**These are pure transport facts, which is why they belong here** — below the model, in the extension that owns connections. The entity layer never sees an `IP:port` (ENTITY-CORE-PROTOCOL.md §1.4, local-view authority); an application extension is the wrong altitude for all three.
+
+**They are useful the moment they land, independent of any hole-punch.** NAT-type detection falls out for free (§6.7.1); a peer that knows it is NAT'd stops advertising unreachable direct profiles and leans on its held outbound socket, cutting failed dials. The **punch protocol that exchanges and acts on these facts is deliberately not here** — gathering is a local fact, exchanging is a protocol, and keeping them apart is the clean seam. §6.7.3 gathers and types candidates; nothing in this spec sends one to another peer.
+
+**What is already handled, so it is not re-solved here.** The asymmetric case works today: a non-listening NAT'd peer that holds an **outbound** duplex socket to a public peer receives pushes down that socket (§10 `held_connection_client`) — **NAT'd peer ↔ public peer works in both directions with no traversal at all.** The one genuinely missing case is *two* peers both behind NAT wanting a direct connection, and that is the punch's problem, not this section's.
+
+#### 6.7.1 Observed-Address Reflection (`observe-address`)
+
+When peer A connects to peer R, R can see the source `IP:port` its transport reported for that connection. That observed source **is** A's public NAT mapping. R telling A what it saw is the whole mechanism.
+
+```
+observe-address() → system/network/observed-address
+
+system/network/observed-address := {
+  fields: {
+    observed_address: {type_ref: "primitive/string"}
+                      ; the source IP:port the responder observed on THIS connection,
+                      ; e.g. "203.0.113.7:51820"
+  }
+}
+```
+
+**The three MUSTs.** Each is a cross-peer seam where two conformant readings diverge — none is a style preference:
+
+1. **`observed_address` is the transport-layer source of the connection the request arrived on, and never a value echoed from the request body.** A body-supplied address makes the responder a laundering service for an attacker's chosen address, and it is the same amplification seam §6.7.2 closes on the dial-back side.
+
+2. **`observed_address` MUST NOT be persisted to any durable per-peer address field** — not `system/connection.address` (ENTITY-CORE-PROTOCOL.md §3.13), not a `system/peer/transport/*` profile (§6.5.1), not `system/peer/status`. It is read from the live connection and returned; it is not connection-state, not a transport profile, and not a peer attribute.
+
+   > **Why this needs saying.** An observed source address is a **responder-side** fact, and every existing place this spec writes an address is **dialer-side dialable-endpoint** state. `system/connection/{peer_id}` is the record an implementer reaches for first — it is keyed by peer, it has an `address` field, and it is already reachable from the handler. It is wrong twice: its `address` means *the endpoint I dial to reach this peer* and it is written dialer-side (the responder holds no dialable address for the remote and correctly records nothing). An ephemeral source port written there is a routable-**looking** value that routes nowhere, and §10 and `system/peer/status` both consume that field as dialable. The cheap fix corrupts dispatch for every other reader. It is also insufficient on its own terms: §6.7.3's mapping is **per socket**, and one record per peer cannot express it.
+
+3. **The mapping belongs to a socket, and the peer MUST punch from that socket** — stated in full at §6.7.3, because it is a property of the candidate rather than of this operation.
+
+**What it costs to implement, stated plainly.** The handler answering `observe-address` needs the source address of the connection the request arrived on. A dispatch seam that extracts only the remote peer identity does not carry it, and this spec deliberately does **not** widen the general handler context to fix that — a narrow, NETWORK-scoped accept-side path from the connection to this operation is the intended shape. Where it sits in a given implementation's layering is that implementation's call; that it is a real addition, and not free, is not in dispute.
+
+**NAT-type detection falls out for free.** A peer collects `observed_address` from **several** reflectors. Agreement ⇒ a stable, endpoint-independent mapping (punchable). Disagreement ⇒ the mapping differs per destination ⇒ symmetric NAT ⇒ a punch will likely fail ⇒ prefer relay. No extra mechanism, and it is why the security posture below can afford to be permissive.
+
+**A single reflector is advisory, never trusted.** A lying reflector feeds a peer a wrong mapping — wasted punches, or steering toward an attacker. **No security decision rests on one observed address**; the agreement-across-reflectors discipline above is what makes the fact usable.
+
+**Native and browser do not share this mechanism (do not conflate).** A browser's own ICE agent gathers `srflx` candidates by speaking **STUN/UDP to a standard STUN server**, a wire protocol our peers do not speak. **A peer offering `observe-address` is not a STUN reflector for a browser.** Browser reachability uses standard STUN/TURN infrastructure; what this ecosystem contributes on the browser leg is signaling carriage, not reflection. Collapsing the two is a cross-peer-seam error.
+
+#### 6.7.2 Dial-Back (`check-reachability`)
+
+"Am I publicly dialable, or behind NAT?" A peer learns this by asking another peer to dial it back and reporting whether the dial arrived.
+
+```
+check-reachability() → system/network/reachability-result
+
+system/network/reachability-result := {
+  fields: {
+    reachable:      {type_ref: "primitive/bool"}
+                    ; did the dial-back to address_tested succeed
+    address_tested: {type_ref: "primitive/string"}
+                    ; the observed source address the responder dialed back —
+                    ; the same value observe-address would return on this connection
+  }
+}
+```
+
+**The load-bearing security rule (MUST).** This is not optional to get right: a body-supplied target turns every dial-back peer into a DDoS reflector.
+
+> **MUST.** The dial-back targets the **requesting peer's own observed source address** — the address the asked peer *itself observed* on the request connection — and **never an address supplied in the request body.** The asked peer **MUST** rate-limit dial-backs per requester and keep the dial-back payload small and fixed-size, so there is no amplification factor.
+
+This is a **MUST and not a SHOULD** for the reason this spec pins anything: two conformant readings of "dial back the requester" — one using the observed source, one honoring a body field — diverge into a security hole **at the peer boundary**, and prose review does not catch it. (It mirrors the STUN binding rule and libp2p AutoNAT's dial-back-to-observed-address-only.)
+
+`address_tested` is reported back so the requester can confirm *which* address was proved, rather than inferring it — the value is the responder's, and echoing it closes the loop without ever accepting one.
+
+#### 6.7.3 Candidate Gathering and Typing
+
+To be reachable, a peer knows all the addresses it might be reached at — its **candidates** — typed and ordered. **This section defines gathering and typing only.** The exchange of candidates between two peers is the punch-coordination protocol and is not in this spec.
+
+```
+system/network/candidate := {
+  fields: {
+    address:   {type_ref: "primitive/string"}
+               ; IP:port
+    type:      {type_ref: "primitive/string"}
+               ; "host" | "srflx" | "relay"
+    substrate: {type_ref: "primitive/string"}
+               ; "tcp" | "quic" | "webrtc" — which transport this candidate is punchable on
+  }
+}
+```
+
+| Type | Origin | Priority |
+|---|---|---|
+| `host` | a local/LAN address — works when peers share a network | highest (cheapest) |
+| `srflx` | server-reflexive: the mapping observed via §6.7.1 — the hole-punch target | middle |
+| `relay` | a public relay address — the always-works fallback | lowest |
+
+**Ordering: `host` → `srflx` → `relay`; the first pair that completes a connectivity check wins.** This is the **session-scoped** extension of §10's existing "try profiles in `(priority asc, profile-id lex)` order" — the same try-in-order idea applied to ephemeral candidates instead of durable profiles.
+
+**Candidates are session-scoped and ephemeral — NOT durable transport profiles (MUST).**
+
+> **MUST NOT** model a candidate as a durable `system/peer/transport/{peer}/{profile-id}` profile entity (§6.5.1). §6.5 profiles are **stable published endpoints** — a TCP listener URL, an `http-poll` CDN prefix. Candidates change per session and per NAT mapping and exist for one connection attempt. **A candidate written as a durable profile goes stale instantly and mis-routes every later dispatch that reads it.**
+
+Candidates therefore travel inside coordination messages, **never as published tree state.** This is the durable-vs-ephemeral seam that, uncaught, produces the classic "worked for the issuer, stale for everyone else" cross-peer failure.
+
+**A `srflx` candidate MUST be the mapping of the socket the peer will punch from (MUST).**
+
+A NAT allocates a mapping **per local socket**. An observed address is therefore meaningful only *for the socket that produced it*.
+
+> **MUST.** A peer publishing a `srflx` candidate **MUST** punch from the **same local endpoint whose mapping was observed** — binding the reflector connection and the punch socket to the same local port using the platform's address/port-reuse options. A `srflx` gathered on one ephemeral socket and punched from another **is not the peer's address**: it describes a hole that will never open.
+
+**Why this is normative rather than an implementation detail.** The socket options are the implementation's business; the **binding between the candidate and the socket** is not. A peer that gets it wrong sends its counterparty an address that is a **lie**, and the counterparty punches at a mapping that does not exist. It never appears on the wire, yet it is cross-peer observable in its effect.
+
+> **Debugging note (informative, and the reason this is pinned in advance).** This failure **wears another failure's costume.** The symptom is "the punch didn't land" — indistinguishable from a mistimed simultaneous-open, whose delay is a sanctioned local tunable. An implementer can therefore spend an entire debugging budget inside the one knob guaranteed not to be the problem. **On a first cross-implementation punch failure, bisect against this rule before touching the timing.**
+
+Its cost is substrate-dependent: on UDP/QUIC it is one socket reused and effectively free; on TCP it requires `SO_REUSEADDR`/`SO_REUSEPORT` plus an explicit bind on both dials, and **is not satisfiable by discipline.**
+
+#### 6.7.4 Capabilities and Rate Limiting
+
+| Capability | Gates | Posture |
+|---|---|---|
+| `system/capability/network-reflect` | `observe-address` (§6.7.1) | **A broad default grant is reasonable** — the operation only echoes the source address the peer itself observed, so it leaks nothing the requester does not already imply by connecting, and the response is a single small address (no amplification factor). Still **rate-limited**. |
+| `system/capability/network-dialback` | `check-reachability` (§6.7.2) | **Restricted.** A peer **SHOULD** grant it to peers it is actively connecting with, so setup-time reachability checks work, and **SHOULD NOT** make it an open grant to arbitrary peers. Always **rate-limited** per requester (§6.7.2 MUST). |
+
+The asymmetry is deliberate and is the whole security story: reflection is a mirror (the requester learns about itself), while dial-back **causes the responder to emit traffic at an address**, which is why it is capability-restricted, rate-limited, fixed-size, and pinned to the observed source.
+
+Denial uses the ordinary capability path — 403, no new error code.
+
+#### 6.7.5 Composition with §10 Dispatch
+
+The facts feed the existing dispatch ladder; they do not fork it.
+
+- A peer that learns it is **not** publicly dialable (§6.7.2) **SHOULD NOT** advertise direct listener profiles that cannot be reached, and should rely on its held outbound socket (§10 `held_connection_client`) or a relay. This is the immediate, punch-independent payoff: fewer failed dials against addresses that were never reachable.
+- A peer that finds its mapping **disagrees across reflectors** (§6.7.1, symmetric NAT) **SHOULD** prefer relay over any future punch attempt — it knows before trying.
+- The candidate ladder (§6.7.3) is **session-scoped** and does not enter `resolve_profiles` (§10 step 3), which resolves durable profiles only. Nothing in §6.7 changes the §10 pseudocode or the reachability-class table.
+
+**Conformance posture: additive, and not v1-blocking.** A NAT'd peer already receives via store-and-forward and talks to public peers via its held outbound socket. §6.7 adds facts that *improve* dispatch and *enable* a later punch. No V7 change, no wire-format change, no new error code.
+
+> **The validation gate (the meta-rule applies).** None of these facts is *validated* until a cross-implementation conformance run exercises them — two conformant peers where one reflects the other's real observed address, and a dial-back that correctly reports reachable/not across a real NAT. **That run is the gate; prose review is not.** Two items are deliberately **not** re-derived here and are to be read from the references at build time rather than invented: the connectivity-check / consent-freshness handshake (RFC 8445 §7, RFC 7675) and symmetric-NAT port prediction. Both are detailed, well-studied, and security-sensitive, and both gate the punch rather than these facts.
+
 ---
 
 ## 7. Subscription Restoration
@@ -1365,6 +1526,13 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Pending delivery drain on reconnection (§8.3)
 - Session state entity at `system/peer/session/{peer_id}` carrying `held_capability`, persisted across `disconnected` (MUST NOT delete on disconnect) (§6.6, R6)
 - Reachability-class outbound dispatch: resolve the target's profiles by `(priority asc, profile-id lex)` and dispatch by class; authenticate via `system/peer/session/{peer}.held_capability` when held (§10, R5)
+- **Reachability facts, when §6.7 is implemented at all (Amendment 13)** — the section is OPTIONAL as a whole (§12.3), but every rule inside it is a MUST for a peer that offers it, because each is a cross-peer seam:
+  - `observe-address` returns the **transport-layer source** of the request connection, never a body-supplied value (§6.7.1)
+  - `observed_address` is **never persisted** to `system/connection.address`, a `system/peer/transport/*` profile, or any durable per-peer address field (§6.7.1)
+  - `check-reachability` dials back **only** the requester's observed source address, rate-limited per requester, fixed-size payload (§6.7.2)
+  - candidates are **never** written as durable `system/peer/transport/*` profiles (§6.7.3)
+  - a published `srflx` candidate is the mapping of the **socket the peer punches from** (§6.7.3)
+  - both operations are capability-gated (`network-reflect` / `network-dialback`) and rate-limited (§6.7.4)
 
 ### 12.2 SHOULD Implement
 
@@ -1381,6 +1549,7 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Custom keepalive intervals (§2.3)
 - Subscription gap detection and reconciliation (§7.3)
 - One-shot connection for unknown peers (§10)
+- **Reachability facts (§6.7, Amendment 13)** — a peer MAY offer `observe-address`, `check-reachability`, both, or neither. Offering neither is fully conformant: a requester that gets a 403 or an unimplemented response proceeds to another reflector, exactly as it does when a reflector is unreachable. Whether a peer offers them is a deployment choice (a public peer running as a `reflector` service will; a NAT'd leaf peer has nothing useful to reflect). **What is not optional is getting them right when offered — see §12.1.**
 
 ### 12.4 Implementation-Defined
 
@@ -1389,6 +1558,7 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 - Pending delivery queue size limits
 - Subscription preservation timeout on `idle`/`error` close
 - Address resolution strategy
+- Reflection/dial-back rate-limit constants; how many reflectors a peer consults before trusting agreement; re-check cadence for a drifted mapping; where the accept-side path carrying the observed source sits in the implementation's layering (§6.7)
 - Connection pooling
 - Concurrent reconnection handling
 
@@ -1416,6 +1586,9 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 | `system/network/keepalive-config` | Keepalive parameters |
 | `system/network/ping` | Keepalive ping |
 | `system/network/pong` | Keepalive pong |
+| `system/network/observed-address` | Output of `observe-address` — the responder-observed source address (§6.7.1) |
+| `system/network/reachability-result` | Output of `check-reachability` — dial-back outcome + address tested (§6.7.2) |
+| `system/network/candidate` | A typed reachability candidate: `host`/`srflx`/`relay` (§6.7.3). **Ephemeral — carried in coordination messages, never written to the tree as a transport profile (§6.7.3 MUST).** |
 
 ---
 

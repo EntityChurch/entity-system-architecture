@@ -72,7 +72,7 @@ Paths are UTF-8 strings typed as `system/tree/path` (extends `primitive/string`)
 
 ```
 KeyPair = Ed25519 (32-byte seed, 32-byte public key)
-PeerID  = Base58(0x01 || 0x01 || SHA-256(public_key))    # 46 characters, typed as system/identity/peer-id
+PeerID  = Base58(0x01 || 0x01 || SHA-256(public_key))    # 46 characters, typed as system/peer-id
 ```
 
 ---
@@ -501,7 +501,7 @@ Value-level constraint validation. Core type system describes **structure only**
 
 The core type system is pure structure — it describes data shapes, not value predicates. Type definitions are entities of type `system/type` stored at `system/type/{type_path}`.
 
-14 bootstrap types seed the system: 8 primitives (`primitive/string`, `primitive/bytes`, `primitive/uint`, `primitive/int`, `primitive/float`, `primitive/bool`, `primitive/null`, `primitive/any`) + 6 meta-types (`system/hash`, `system/tree/path`, `system/type/name`, `system/identity/peer-id`, `system/type`, `system/type/field-spec`).
+14 bootstrap types seed the system: 8 primitives (`primitive/string`, `primitive/bytes`, `primitive/uint`, `primitive/int`, `primitive/float`, `primitive/bool`, `primitive/null`, `primitive/any`) + 6 meta-types (`system/hash`, `system/tree/path`, `system/type/name`, `system/peer-id`, `system/type`, `system/type/field-spec`).
 
 ### `system/type` Fields
 
@@ -540,8 +540,8 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 | `system/protocol/execute/response` | Response message |
 | `system/protocol/error` | Error result (code + message) |
 | `system/protocol/envelope` | Wire envelope |
-| `system/protocol/connect/hello` | Connection hello (peer_id: `system/identity/peer-id`, nonce, protocols) |
-| `system/protocol/connect/authenticate` | Connection authenticate (peer_id: `system/identity/peer-id`, public_key, nonce, signature) |
+| `system/protocol/connect/hello` | Connection hello (peer_id: `system/peer-id`, nonce, protocols) |
+| `system/protocol/connect/authenticate` | Connection authenticate (peer_id: `system/peer-id`, public_key, nonce, signature) |
 
 ### Type System Meta-Types
 | Type | Purpose |
@@ -550,7 +550,7 @@ Value constraints (`constraints` field on type definitions) are an open-type ext
 | `system/type/field-spec` | Field shape specification (type_ref: `system/type/name`, array_of, map_of, union_of, type_param + modifiers) |
 | `system/tree/path` | Tree path — naming-space address (`primitive/string`). Handler patterns, URIs, resource targets. |
 | `system/type/name` | Type name — type-space address (`primitive/string`). Type references, extends, field type_ref. |
-| `system/identity/peer-id` | Peer identifier — identity-space address (`primitive/string`). Base58, 46 chars, self-describing. |
+| `system/peer-id` | Peer identifier — identity-space address (`primitive/string`). Base58, 46 chars, self-describing. |
 | `system/capability/path-scope` | Scope for path-valued grant dimensions: `handlers`, `resources` ({include, exclude}) |
 | `system/capability/id-scope` | Scope for identifier-valued grant dimensions: `operations`, `peers` ({include, exclude}) |
 

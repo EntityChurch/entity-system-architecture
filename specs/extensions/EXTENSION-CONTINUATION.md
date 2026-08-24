@@ -1,10 +1,10 @@
 # Continuation Extension — Normative Specification
 
-**Version**: 1.20
+**Version**: 1.21
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
-**Proposal**: PROPOSAL-CONTINUATION-MODEL.md, PROPOSAL-CONTINUATION-SPEC-AMENDMENT.md (A1-A6), PROPOSAL-DELIVERY-AND-INBOX-RENAME.md (D5, D6), PROPOSAL-CONTINUATION-TRANSFORM-AND-ENVELOPE-AMENDMENTS.md (S1), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (CT1, CT2, CT3)
+**Proposal**: PROPOSAL-CONTINUATION-MODEL.md, PROPOSAL-CONTINUATION-SPEC-AMENDMENT.md (A1-A6), PROPOSAL-DELIVERY-AND-INBOX-RENAME.md (D5, D6), PROPOSAL-CONTINUATION-TRANSFORM-AND-ENVELOPE-AMENDMENTS.md (S1), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (CT1, CT2, CT3), PROPOSAL-CONTINUATION-STANDING-MODEL.md (v1.21: §3 advance authority — §3.1b/§6.1; §4 join completion policy — §2.3 fields + §3.5 round-identity guard + §3.5a deadline/abandon/fire-partial/sweep-all/round-id; §4.2 finite-exhaustion MUST-delete — §3.4/§3.5)
 
 ---
 
@@ -217,9 +217,27 @@ system/continuation/join := {
                            ; only for continuations that do not dispatch (e.g.,
                            ; storage-only inbox entries without continuation
                            ; semantics).
+    completion_deadline_ms: {type_ref: "primitive/uint", optional: true}
+                           ; per-round wall budget (§3.5a). Absent = wait forever
+                           ; (the pre-completion-policy behavior; no silent change).
+    on_incomplete:          {type_ref: "primitive/string", optional: true}
+                           ; "abandon" | "fire-partial"; default "abandon" (§3.5a).
+    round_id:               {type_ref: "primitive/uint", optional: true}
+                           ; current round generation (§3.5a). Monotonic;
+                           ; incremented on every reset/fire. A slot advance is
+                           ; tagged with the round_id it targets. Absent on joins
+                           ; that do not opt into completion policy.
   }
 }
 ```
+
+**Completion policy (standing joins).** `completion_deadline_ms`, `on_incomplete`, and `round_id`
+are the standing-join completion surface — the lifecycle half of the standing-continuation model
+(§3.1b is the authority half). A standing join (`remaining_executions: null`) that misses a slot must
+not wedge forever; it owns a completion policy independent of any single trigger. The normative
+mechanics — the per-round deadline, `abandon`/`fire-partial`, the sweep that reaps expired rounds, and
+the `round_id` straggler guard — are specified in **§3.5a**. Absent all three fields, a join behaves
+exactly as before (wait-forever, no rounds).
 
 **`expected`**: Array of slot names. Results arrive at `{join_path}/{slot_name}`.
 
@@ -343,7 +361,7 @@ Handler entity at pattern path `system/continuation`. Dispatch resolves any URI 
 
 The `install` operation is the proper create path for continuation entities — see §3.2.
 
-The `advance` operation implements the continuation advancement algorithm (§3.3-§3.6). The continuation path is specified via `resource.targets[0]`. Any handler or extension can trigger advancement by dispatching to `advance`.
+The `advance` operation implements the continuation advancement algorithm (§3.3-§3.6). The continuation path is specified via `resource.targets[0]`. **Who may trigger advancement — and under what authority — depends on whether the advance is a reactive delivery or an administrative invoke; see §3.1b (normative).**
 
 The `resume` operation reconstructs an EXECUTE from a suspended continuation and dispatches it (§3.7).
 
@@ -359,6 +377,17 @@ This distinction is silent for local continuations and load-bearing for cross-pe
 - **Cross-peer (a step whose `target` is a remote peer B).** The chain MUST root at the authority **B** conferred (so B's advance-time `VerifyChain`, ENTITY-CORE-PROTOCOL.md §5.2, succeeds) with the installer **in-chain as the re-attenuation leaf granter** (so the install-time in-chain check passes). A chain *rooted at the installer* is the local sufficient condition only and is **wrong** for a remote target — B cannot verify it. See §4.2 case 3.
 
 Wherever this spec or a conformance test says "chain root against author" / "chain-root check" for the install-time authorization, read it as the in-chain check defined here. §3.2, §4.2, and §8.1 are written to this rule; the prior chain-root phrasing was pre-correction residue that, taken verbatim cross-peer, reproduces the dispatch-capability collapse this section prevents.
+
+### 3.1b Advance authority: reactive trigger vs administrative invoke (normative)
+
+A standing continuation (`remaining_executions: null`) is decoupled from any single trigger: it always advances under its stored `dispatch_capability` (§3.6 step 5), regardless of who reached it. A trigger *reaches* it; it does not *own* it. The deliverer-declared **`reactive_trigger`** signal on the advance context classifies the advance:
+
+- **Reactive trigger (`reactive_trigger` = true) — the standing / cross-peer path.** Driven by delivery of an event (a `deliver_to` arrival, inbox route, subscription poke). Gated by **delivery-reachability to the continuation's owner-configured trigger channel**; advances under the continuation's own `dispatch_capability`. The trigger **MUST NOT** be required to hold `advance` capability on the continuation path.
+- **Administrative invoke (`reactive_trigger` = false) — the local / operator path.** A bare `advance` EXECUTE. Remains capability-gated on the continuation path: the caller **MUST** hold `advance` capability on that path. **O1 (normative, fail-closed):** an administrative advance whose caller presents **no** capability on the continuation path is **DENIED (`403`)** — never allowed by omission. (A no-op-on-absent check and a require-cap-present check must therefore agree on the outcome: deny.)
+
+`reactive_trigger` is cross-peer-observable — it decides which gate applies, so a divergent reading would spring apart at the peer seam.
+
+**Safety (privilege-escalation, §6.1).** A reactive trigger causes the continuation to do only what its owner **pre-authorized** at install (the scoped `dispatch_capability`) — the trigger gains nothing it could not already do, exactly as an emitter triggering a subscription gains none of the subscriber's rights. The escalation mitigation is the **install-time** in-chain check on `dispatch_capability` (§3.1a / §3.2 step 4), **not** an advance-time caller check on the reactive path — the latter breaks reactive standing continuations without adding containment. The residual is timing/frequency (over-triggering) — a DoS surface bounded by the continuation's own `bounds` (`chain_depth`/TTL, ENTITY-CORE-PROTOCOL §5.9) and by idempotency at the channel.
 
 ### 3.2 Install Operation
 
@@ -488,7 +517,7 @@ advance_forward(continuation, result, status, continuation_path):
     ; recursive error-handling complexity with diminishing returns.
     ;
     ; If the continuation at the on_error path also has on_error, the error
-    ; can chain through multiple error paths. Chain depth (§3.8) is the
+    ; can chain through multiple error paths. Chain depth (§3.9) is the
     ; backstop against unbounded error routing.
     return {status: 200, result: {advanced: true, error_routed: true}}
   else:
@@ -537,16 +566,35 @@ advance_forward(continuation, result, status, continuation_path):
 
   ; Lifecycle — only on successful dispatch
   if continuation.data.remaining_executions != null:
-    updated = copy(continuation)
-    updated.data.remaining_executions = continuation.data.remaining_executions - 1
     current_hash = continuation.content_hash
-    entity_tree.put(continuation_path, updated, expected_hash: current_hash)
+    if continuation.data.remaining_executions - 1 == 0:
+      ; Exhaustion — MUST delete (delete-if-last, one CAS with the final
+      ; decrement so 0 never persists). See "Exhaustion" note below.
+      entity_tree.delete(continuation_path, expected_hash: current_hash)
+    else:
+      updated = copy(continuation)
+      updated.data.remaining_executions = continuation.data.remaining_executions - 1
+      entity_tree.put(continuation_path, updated, expected_hash: current_hash)
     ; On 409 conflict: re-read continuation, re-check remaining_executions, retry
-    ; At 0: entity records exhausted state. Implementations SHOULD clean up
-    ; exhausted continuations. The entity MUST NOT advance when at 0.
+    ; The entity MUST NOT advance when at 0 (defensive — normally already deleted).
 
   return {status: 200, result: {advanced: true}}
 ```
+
+**Exhaustion — delete, do not retain (MUST) [STANDING-MODEL §4 close-out, 2026-07-29].** When
+`remaining_executions` reaches 0 — for **both** a forward continuation (above) and a join (§3.5) — the
+entity **MUST be deleted**, not left in the tree at `remaining_executions: 0`. This is **cross-peer-observable**,
+not hygiene: a consumed finite continuation MUST resolve to *absent* at its path on every peer (a
+`tree = path → hash` fact), so a re-`tree:get` returns not-found and a post-exhaustion advance resolves to
+`not_found` (§3.3) — a consumed finite continuation is gone, the direct analogue of `abandon` deleting a
+suspended continuation (§3.8, "killing a stopped process"). The delete is **one CAS with the final decrement**
+(delete-if-last), so the entity never persists at 0; the `remaining_executions == 0 → exhausted: true` entry
+guard (§3.4/§3.5) is a defensive no-op for any impl that briefly materializes 0 before deleting. This was
+formerly a `SHOULD clean up`, whose two conformant readings (delete vs retain-at-0) split across the peer
+seam — pinned MUST per the cross-peer-observable-`SHOULD` discipline. **Convergence:** Go and Rust delete on
+every fire path (`delete-if-last`); Python deletes on its `fire-partial` path but *retained* on its ordinary
+completion path — so **Python's ordinary completion path is the one build owed**, which also removes an
+internal Python inconsistency. State this once here; §3.5 references it rather than restating.
 
 **Forward-dispatch outcome classification (normative — v1.10).** `dispatch_result.error` above denotes a **dispatch delivery/processing failure**: the EXECUTE could not be delivered or processed *as a dispatch* — transport failure, unresolvable target, malformed dispatch, or the dispatch's own capability check failing. It is **not** the dispatched handler's response status. A *delivered* EXECUTE that returns a handler-level non-2xx (e.g. 403/404/500) is a **completed forward dispatch**, not a `dispatch_result.error`: a forward continuation propagates the result onward — it is a closure invocation, not an RPC, and the dispatched response is not threaded back (in the success path either). On a delivered handler-level non-2xx the algorithm therefore proceeds past the `dispatch_result.error` branch: `remaining_executions` is decremented and `{advanced: true}` is returned. `remaining_executions` counts completed dispatch attempts, not successful downstream outcomes. Implementations MUST classify uniformly: a returned handler-level non-2xx MUST NOT be promoted to `dispatch_result.error.transient`/`.permanent`, and MUST NOT be silently retried or suspended on that basis. (This pins behavior that §3.4 previously left undefined — the cross-impl ambiguity surfaced by the entity-core-go v1.9 peers-status report; the reference impl already behaves this way.)
 
@@ -623,6 +671,21 @@ advance_join_slot(join, join_path, slot_name, result):
     if join.data.remaining_executions == 0:
       return {status: 200, result: {advanced: false, exhausted: true}}
 
+  ; Round-identity guard (§3.5a) — drop a straggler from an abandoned round.
+  ; A slot advance carries the round_id it targets; a slot whose targeted round
+  ; is not the join's current round MUST NOT be admitted and MUST be dropped
+  ; loudly (a `stale_round` marker naming the slot). This keeps an abandoned
+  ; round's late slot out of a later round — no mixed-generation stitch.
+  if join.data.round_id != null and result.targeted_round != null:
+    if result.targeted_round != join.data.round_id:
+      bind_lost_marker(join_path, reason: "join_late", slot: slot_name,        ; §3.5a — durable marker
+                       targeted_round: result.targeted_round,
+                       current_round: join.data.round_id)
+      return {status: 200, result: {advanced: false, dropped: "stale_round",   ; §3.5a — wire drop-body
+                                    slot: slot_name,
+                                    targeted_round: result.targeted_round,
+                                    current_round: join.data.round_id}}
+
   ; Validate slot
   if slot_name not in join.data.expected:
     return error(400, "unexpected_slot")
@@ -652,15 +715,24 @@ advance_join_slot(join, join_path, slot_name, result):
 
     ; Lifecycle — only on successful dispatch
     if join.data.remaining_executions != null:
-      updated = copy(join)
-      updated.data.remaining_executions = join.data.remaining_executions - 1
-      updated.data.received = {}  ; Reset for next round
-      entity_tree.put(join_path, updated)
-      ; At 0: entity records exhausted state. SHOULD clean up.
+      if join.data.remaining_executions - 1 == 0:
+        ; Exhaustion — MUST delete the join entity (delete-if-last); do not
+        ; retain a zero-count husk. See the "Exhaustion" note in §3.4 (one rule,
+        ; both continuation kinds — cross-peer-observable pin).
+        entity_tree.delete(join_path)
+      else:
+        updated = copy(join)
+        updated.data.remaining_executions = join.data.remaining_executions - 1
+        updated.data.received = {}  ; Reset for next round
+        if updated.data.round_id != null:            ; §3.5a — open the next round
+          updated.data.round_id = join.data.round_id + 1
+        entity_tree.put(join_path, updated)
     else:
-      ; Standing join (remaining_executions: null) — reset received
+      ; Standing join (remaining_executions: null) — reset received, open next round
       updated = copy(join)
       updated.data.received = {}
+      if updated.data.round_id != null:              ; §3.5a — open the next round
+        updated.data.round_id = join.data.round_id + 1
       entity_tree.put(join_path, updated)
     return {status: 200, result: {advanced: true}}
   else:
@@ -672,6 +744,104 @@ advance_join_slot(join, join_path, slot_name, result):
     ; On 409 conflict: re-read join, merge received, retry
     return {status: 200, result: {advanced: true}}
 ```
+
+### 3.5a Join Completion Policy — deadline, abandon, fire-partial, round identity (normative)
+
+A **standing** join (`remaining_executions: null`) that misses a slot would otherwise wedge forever —
+it never fires and, being standing, never resets. This subsection is the lifecycle half of the
+standing-continuation model: **a standing continuation owns a completion policy independent of any
+single trigger** (the §3.1b authority half is its twin — a trigger *reaches* a standing continuation,
+it does not *own* it). The policy is **opt-in**: a join with none of `completion_deadline_ms` /
+`on_incomplete` / `round_id` behaves exactly as §3.5 (wait-forever, no rounds), so no existing
+join changes behavior.
+
+**The per-round deadline.** With `completion_deadline_ms` set, each round has a wall budget, armed when
+the round opens (reset with `received`). On the deadline passing with `received ⊊ expected`, the
+round's outcome is governed by `on_incomplete`:
+
+- **`abandon`** (default) — **fail the round, self-heal:** bind a `join_incomplete` marker naming the
+  missing slots, reset `received`, and increment `round_id` (open the next round). A standing per-tick
+  join thus recovers rather than wedging — the load-bearing change for realtime reuse, and the direct
+  analogue of §3's "owns its liveness independent of any trigger."
+- **`fire-partial`** — fire the target with the partial `received` plus an explicit `join_incomplete`
+  marker listing the missing slots, then reset/advance the round. **Never the default** (a stitch that assumes
+  *k* fragments must opt in explicitly). **A determinism-critical stitch MUST NOT select
+  `fire-partial`:** its output is a boundary hash consumed for cross-peer equivalence, and a partial
+  fire is a seam-collapse opted into. A consumer whose descriptor requires all slots MUST declare
+  `fire-partial` opt-in explicitly; the prohibition is spec-level, not left to the stitch.
+
+**The sweep — reap all tracked expired joins on touch, no timer (MUST).** Reaping is **traffic-driven,
+not timer-driven**: on any continuation operation, an implementation MUST sweep **all** tracked
+deadline-carrying joins (throttled) and reap any whose round deadline has passed with
+`received ⊊ expected`, applying its `on_incomplete` outcome — **not** only the join being touched. A
+background timer/reaper subsystem MUST NOT be required (it would introduce a peer lifecycle the model
+deliberately declines). Sweeping only the touched join is **non-conformant**: a join that goes silent
+while the peer stays continuation-active would then be reaped by a sweep-all peer but never by a
+touched-only peer, so the `join_incomplete` marker would appear on one peer and not another — a
+cross-peer divergence on exactly the liveness signal this policy exists to make deterministic. *(The
+truly-quiescent peer — zero continuation ops — is uniform: nothing sweeps anywhere. Whether a peer
+should eventually abandon expired joins with no activity at all is a separate, deferred design question
+for all impls at once, not a convergence gap — no impl does it today.)*
+
+**Round identity — the straggler guard (MUST).** `abandon` resets `received` and opens the next round,
+but a bare slot advance carries no round identity, so a *straggler* from the abandoned round (a
+merely-slow slot, not a lost one) is byte-identical at the join to a next-round slot and would land in
+it — a round stitched from two generations, producing a boundary hash that is wrong yet
+deterministic-looking. The join therefore carries a monotonic `round_id`, incremented on every
+reset/fire (§3.5); every slot advance is tagged with the `round_id` it targets, and the §3.5
+round-identity guard drops any slot whose targeted round ≠ the join's current round.
+
+- **Self-supplied monotonic round id (MUST — the built floor).** `round_id` is the join's own monotonic
+  generation counter: it starts at 0 at install and is incremented on every reset/fire (§3.5); each slot
+  advance carries the `round_id` it targets. This is what is built + converged three-way (Go / Rust /
+  Python). A join that does not opt into completion policy omits `round_id` entirely (its entity bytes are
+  unchanged — `omitempty` drops the zero), so no existing join changes.
+- **Clock-tick round id (design-forward — NOT yet built).** For a **tick-driven** realtime join the clock
+  **`tick.sequence`** (`EXTENSION-CLOCK` §2.8) *is* the round boundary, so binding `round_id` to it (rather
+  than to a private counter) would let stragglers be dropped against the shared tick generation — making
+  `EXTENSION-CLOCK` tick emission (§10.3, a MAY) *conditionally* required for such a join. **No impl binds
+  `round_id` to `tick.sequence` today** (all three self-increment); this refinement is deferred until a
+  tick-driven realtime compute-program join (W-COMPUTE) actually consumes it, and MUST be validated by a
+  cross-impl run at that point (CDN-corridor). The `tick` operation stays MAY in general.
+- **Drop stale, loudly (MUST).** A slot whose `round_id` ≠ the join's current round MUST NOT be admitted
+  and MUST be dropped loudly — a durable `join_late` marker (see the marker paragraph below) naming the
+  slot, *and* the `stale_round` wire drop-body returned to the sender. A straggler from an abandoned
+  round MUST NOT appear in a later round. Lateness must be *observable*, not merely survived — a
+  silently mixed generation is worse than a dropped round.
+- **Round-opening collapses into this.** A round is opened by its boundary — the tick, or the fan-out's
+  round-open — whether or not any slot arrives; a tick where every slot is refused still opens (and, at
+  deadline, abandons) a round. No separate round-opening signal.
+
+**Delivered-error slots — the target must reject (MUST).** A *delivered* non-2xx **fills** its slot and
+the join fires normally; the failure then surfaces at the stitch. The `received` map MUST **preserve
+each slot's status** (a non-2xx / `compute/error` payload passes through as-is, not coerced into
+boundary bytes). A target requiring all-good slots (the determinism-critical stitch) **MUST reject** on
+any error slot — surfacing a `join_error_slot` marker for the round rather than emitting a boundary
+entity computed from an error payload. An error slot MUST NOT silently produce a boundary hash that
+diverges across peers.
+
+**Determinism preserved.** Both mechanisms — undelivered (deadline/abandon) and delivered-error — are
+failure-path only; the success path is untouched (`received` keyed by slot name, read in `expected`
+order, byte-identical to serial). Failure produces a marker, never a partial boundary entity — a failed
+round is *observably* failed, not silently divergent.
+
+**Markers and the drop-response body (cross-peer-observable — MUST).** Completion markers are durable
+`lost`-sink entities (type `system/runtime/chain-error-lost`) bound under the §3.4 scheme at
+`system/runtime/chain-errors/lost/{chain_id}/{step_index}/{reason}/{marker_hash}`. The `{reason}`
+segment is a continuation-family code (snake), one of **three** — and MUST NOT mint strings colliding
+with the bounds family (`bounds_exceeded` / `chain_depth_exceeded`):
+
+- **`join_incomplete`** — a round's deadline passed with slots never arrived (`abandon`); names the missing slots.
+- **`join_late`** — a stale-round slot dropped by the round-identity guard (§3.5); names the one stale slot.
+- **`join_error_slot`** — a delivered-error slot rejected by an all-good-slots target (mechanism 1 above).
+
+Distinct from the durable marker, a stale-slot drop **also** returns a wire body to the slot sender
+(which may be a remote peer, so the shape is cross-peer-observable and pinned exactly):
+`{advanced: false, dropped: "stale_round", slot, targeted_round, current_round}` — all five keys
+present, status `200`, `dropped` the value `stale_round` (snake — not re-cased to kebab). Note
+`stale_round` is the **drop-body** value; the durable marker for the same event carries reason
+`join_late`. (These reason strings + the drop-body shape are source-verified converged three-way at
+Go `1ccdd51` / Rust `aec13b1` / Python `1590d8a`.)
 
 ### 3.6 Execute Dispatch
 
@@ -750,11 +920,14 @@ execute_dispatch(continuation, raw_result):
       "Continuation must have dispatch_capability to dispatch")
   execute.capability = continuation.data.dispatch_capability
 
-  ; Step 6: Dispatch with fresh bounds
+  ; Step 6: Dispatch. chain_depth inherited+incremented; ttl/budget decrement per
+  ; ENTITY-CORE-PROTOCOL §5.9 (0.8.1) — NOT refilled. (Corrects the earlier
+  ; `peer_default_ttl` refill language, which contradicted §5.9 and every shipped impl.)
   dispatch(execute, bounds: {
-    ttl:      peer_default_ttl
-    budget:   peer_default_budget
-    chain_id: context.chain_id or generate_id()
+    ttl:         decrement(context.ttl)             ; resource backstop — §5.9, one decrement per dispatch
+    budget:      decrement(context.budget)
+    chain_id:    context.chain_id or generate_id()
+    chain_depth: (context.chain_depth or 0) + 1     ; inherited from the wire (§3.11), monotonic — §3.9
   })
 ```
 
@@ -803,7 +976,7 @@ handle_resume(ctx, params):
     operation: suspended.data.operation
     resource:  suspended.data.resource
     params:    suspended.data.params
-    bounds:    params.bounds or peer_defaults
+    bounds:    root_chain_depth_0(params.bounds or peer_defaults)  ; fresh operator-authorized root — see note
   }
 
   ; Merge resolution if provided
@@ -820,6 +993,8 @@ handle_resume(ctx, params):
   ; Dispatch
   return dispatch(execute)
 ```
+
+**Resume roots `chain_depth` at 0 (normative).** Resume is an operator-authorized *fresh* dispatch after a suspension — often one *caused by* `bounds_exceeded` on depth (§3.9). It MUST root `bounds.chain_depth` at 0: fresh operator intent is a fresh root, exactly as a fresh external trigger roots a standing continuation (§3.9; ENTITY-CORE-PROTOCOL §3.11, 0.8.1). Otherwise a chain resumed after a depth suspension re-suspends immediately.
 
 ### 3.8 Abandon Operation
 
@@ -861,9 +1036,14 @@ The dispatch layer returns the error response with an additional field:
 
 If no suspension handler is registered, the dispatch layer returns the error response without creating a suspended entity. This preserves backward compatibility with sync-only peers.
 
-**Chain depth tracking**: The dispatch layer threads a `chain_depth` counter through the execution context. The counter is incremented on each continuation advancement dispatch. When it exceeds the implementation-defined maximum, the dispatch layer calls `suspend()` with `reason: "chain_depth_exceeded"`. Continuation advancement dispatches with fresh TTL/budget but inherits the chain depth counter.
+**Chain depth tracking**: `chain_depth` is carried in `system/bounds` (ENTITY-CORE-PROTOCOL §3.11) and inherited across peer boundaries, exactly as `cascade_depth` is. The dispatch layer sets it two ways:
 
-**Cross-peer limitation**: `chain_depth` is a per-peer execution context counter — it is not carried in `system/bounds` on the wire. Cross-peer continuation chains reset chain depth at each peer boundary. This is acceptable: each peer independently bounds its own local execution depth. Global chain length is bounded by TTL on the wire and by deliver token expiry. If global chain depth tracking is needed, implementations MAY propagate a chain depth field in bounds as a non-normative extension.
+- **Causal advance (inherit + increment).** On an advancement dispatched *causally from within* a triggering advancement's execution (A→B→C as one flow), `bounds.chain_depth = triggering.bounds.chain_depth + 1`. This is the cross-peer runaway case, now bounded on the wire.
+- **Fresh root (depth 0).** When a **standing continuation** (`remaining_executions: null`) fires on a *fresh external trigger* — a timer tick, a `system/peer/status` write, a new inbound message — with no triggering advancement bounds in context, `chain_depth` roots at 0, exactly as a fresh notification roots a new cascade. `chain_id` stays stable (correlation is a separate axis from depth). Resume (§3.7) is likewise a fresh root.
+
+When `bounds.chain_depth` exceeds the peer's maximum, the dispatch layer calls `suspend()` with `reason: "bounds_exceeded"` (ENTITY-CORE-PROTOCOL §4.10(b), 0.8.1 Ruling 3 — **not** `chain_depth_exceeded`, which is the *capability*-chain depth limit, `400`). The maximum is peer-local but MUST be uniform across the cohort; the value tested is global, because `chain_depth` is inherited rather than reset. TTL/budget decrement (§5.9) does not touch `chain_depth`.
+
+**Cross-peer chain length**: Global chain length is bounded by `chain_depth`, carried in `system/bounds` (§3.11) and inherited across peer boundaries (the `cascade_depth` precedent), suspended uniformly at the cohort-wide ceiling with `reason: bounds_exceeded`. TTL/budget are a *resource* backstop that decrements per §5.9; they do not define chain length. Deliver-token expiry remains a wall-clock backstop, not a hop bound.
 
 ---
 
@@ -1148,9 +1328,11 @@ Implementations SHOULD periodically clean up suspended continuations that exceed
 
 A caller with tree write access to a continuation path could create continuations targeting sensitive handlers. Mitigation: the `dispatch_capability` field is required and provides explicit, scoped authorization for the dispatch target. A continuation without `dispatch_capability` cannot dispatch (advance fails with `missing_dispatch_capability`). The continuation handler's own grant is restricted to managing continuation entities — it does not authorize dispatch to target handlers.
 
+The escalation boundary is the install-time in-chain `dispatch_capability` check (§3.1a), **not** an advance-time caller check — see §3.1b. A reactive trigger cannot exceed the owner's pre-authorized `dispatch_capability`.
+
 ### 6.2 Resource Exhaustion via Chains
 
-A continuation chain with dynamic construction could consume unbounded resources. The dispatch layer tracks chain depth and suspends when the implementation-defined maximum is exceeded (§3.8). The `chain_id` field correlates all operations in a chain. Chain depth is a monotonically increasing counter, not reset by fresh bounds.
+A continuation chain with dynamic construction could consume unbounded resources. The dispatch layer tracks `chain_depth` — carried in `system/bounds` (ENTITY-CORE-PROTOCOL §3.11) and inherited across peer boundaries — and suspends with `reason: bounds_exceeded` when the cohort-uniform maximum is exceeded (§3.9). The `chain_id` field correlates all operations in a chain. `chain_depth` is a monotonically increasing counter: it is inherited and `+1`'d per causal advancement, and the §5.9 TTL/budget decrement MUST leave it untouched — on a causal hop it only increments (it never decrements, and resets to 0 only on a fresh root, §3.9).
 
 ### 6.3 Orphaned Continuations
 

@@ -1,6 +1,8 @@
 # SDK Operations — Normative Specification
 
-**Version**: 1.10
+**Version**: 1.11
+
+> **v1.11 — service-owning handlers (new §11.6.9).** §11.6 covered request/response dispatch only, so a handler owning a resource that lives *between* calls — a listener, a background loop, a watcher — had no contract: an implementation could only spawn it inside the body (unstoppable, unowned) or hardcode it into peer startup as a privileged built-in, which defeats the handler abstraction. §11.6.9 adds the opt-in lifecycle (**start** after tree writes and before dispatch, failure compensating per §11.6.4; **stop** before dispatch-unregister, extending §11.6.2's ordering to *stop service → dispatch index → tree entries*), a **mandatory manifest declaration** (`owned_services[]` with closed `kind` / `exposure` enums plus a free-form descriptor), and the **declared-not-gated** boundary rule: declaring a service does not capability-check its traffic, it makes the hole visible. Two MUSTs carry the audit story — an `unmediated-public` service MUST publish its bind address/port, and an unrecognized enum value MUST be surfaced as **unassessable** rather than ignored (a deliberate departure from MUST-ignore-unknowns, which is right for wire extensibility and wrong for auditing). Entity-native handlers MUST NOT be service-owning. Folds `PROPOSAL-SDK-HANDLER-OWNED-SERVICES` including its §6.1 field-shape ruling (2026-07-29). **Additive:** no existing handler is service-owning, `owned_services` absent ⇒ today's behavior exactly. **Not yet built or cohort-validated** — `PROPOSAL-CONNECTION-NODE`'s unwrapped surface is the intended first proof, and until it runs, the contract is unexercised.
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+), SYSTEM-COMPOSITION.md (v1.5+), EXTENSION-COMPUTE.md (v3.18+)
@@ -1101,6 +1103,8 @@ If `types` is provided, type definitions are additionally written at `/{pid}/sys
 1. **Dispatch index first** — stop accepting dispatch immediately.
 2. **Tree entries second** — remove handler entity, interface entity, and grant binding. Type definitions installed via `types` are NOT removed — they have independent lifecycle and may be referenced by other handlers, queries, or remote peers.
 
+> **Service-owning handlers insert a step before both** — *stop service → dispatch index → tree entries*. See §11.6.9.
+
 Close MUST be idempotent. Repeated close is a no-op. In languages where value types are copyable, the SDK MUST return a handle whose semantics are reference-based or MUST make close idempotent with an internal closed-flag.
 
 The SDK MUST provide both:
@@ -1196,6 +1200,68 @@ Application code SHOULD NOT register handlers under `system/runtime/` or directl
 4. **Handler status type.** A `system/handler/status` entity (state: active/declared/disabled, boot_id, bound_at) would help with restart-recovery and posture B precision.
 
 5. **Delivery-token tree binding.** The subscription bridge mints a scoped capability token (delivery token) authorizing the subscription engine to dispatch `receive` onto the subscriber's inbox. This token is currently stored in the content store only — no tree binding. The same "floating entity" pattern that R fixes for handlers applies to these capabilities. Scope: either an addendum to §11.6, a subscription extension amendment, or a cross-cutting "SDK-minted capability lifecycle" proposal.
+
+#### 11.6.9 Service-Owning Handlers
+
+*Added 2026-07-29.* §11.6 covers request/response dispatch: a handler is a body that answers when called. Some handlers additionally **own a resource that lives between calls** — a network listener, a background loop, a filesystem watcher. Nothing above accounts for one, so an implementation's only options are to spawn it inside the body (unstoppable, unowned) or to hardcode it into peer startup (a privileged built-in, which defeats the point of the handler abstraction).
+
+A handler **MAY** declare itself service-owning. If it does, registration and close acquire two obligations.
+
+**1. Start.** The peer invokes the handler's start step as part of registration — **after** the §11.6.1 tree writes succeed and **before** the pattern accepts dispatch. A start failure **MUST** be treated as a registration failure and **MUST** trigger §11.6.4 compensation. **A handler MUST NOT be dispatchable with a failed service.**
+
+**2. Stop.** Close stops the owned service **before** unregistering dispatch, extending §11.6.2's ordering to three steps:
+
+```
+stop service → dispatch index → tree entries
+```
+
+Stop **MUST** be idempotent and **MUST NOT** be relied upon to run via GC or finalizers (§11.6.2's existing rule). Restart survival follows the existing model: an SDK language-native service-owning handler is re-registered — and so restarted — by the application on startup, exactly as §11.3 model 2 already requires for the body.
+
+**Entity-native (compute-backed) handlers MUST NOT be service-owning.** An expression owning a socket breaks transferability, which is model 3's entire purpose.
+
+**Declaration is mandatory and lives in the manifest.** Spawning something in the body is not enough:
+
+```
+system/handler := {
+  ...
+  owned_services?: [ system/handler/service-declaration ]
+                   ; OPTIONAL. Absent or empty ⇒ not service-owning.
+}
+
+system/handler/service-declaration := {
+  fields: {
+    kind:       {type_ref: "primitive/string"}   ; CLOSED enum
+                ; "network-listener" — binds a socket, accepts connections
+                ; "background-loop"  — timer/reaper/periodic task, no external surface
+                ; "filesystem-watcher" — watches a path outside the entity tree
+    exposure:   {type_ref: "primitive/string"}   ; CLOSED enum
+                ; "peer-internal"      — not reachable from outside the peer process
+                ; "entity-mediated"    — reachable, but every request is capability-checked
+                ; "unmediated-public"  — reachable AND not mediated by the capability model
+    descriptor: {map_of: {type_ref: "primitive/any"}, optional: true}
+                ; free-form, kind-specific, diagnostic — nothing gates on it
+  }
+}
+```
+
+An **array**: a handler may own more than one service (a listener *and* its reaper is the common shape).
+
+> **MUST.** A declaration with `exposure: "unmediated-public"` **MUST** carry the bind address and port in `descriptor`. An operator cannot assess exposure from "this handler owns a socket" alone.
+
+> **MUST.** A reader encountering an unrecognized `kind` or `exposure` value **MUST NOT** treat it as benign; it MUST surface it as **unassessable**. This is a deliberate departure from the MUST-ignore-unknowns rule, which is correct for wire extensibility — where an unknown field is something you did not need — and wrong here, where an unknown value is **an exposure you cannot characterize**. Silently ignoring it reports "no holes" for a peer that may be serving the open internet. Adding a value to either enum is a spec change.
+
+**The boundary rule — declared, not gated.** A handler-owned service is frequently outside the capability model *by construction*: a public rendezvous service's entire job is to answer the open network with no grant, no handshake, and no entity encoding. That is a legitimate design, and it is why the declaration matters:
+
+> **A handler-owned service is declared and auditable, never ambient. Declaring it does not capability-check its traffic; it makes the hole visible.**
+
+- **Admission is peer policy, not the handler's choice.** Whether a peer permits service-owning handlers at all — and network-binding ones specifically — is peer configuration. A peer that declines **fails the registration**. A desktop application peer and a deployed rendezvous node want opposite defaults, and neither should be decided by the handler.
+- **No new capability type.** Admission is a peer-config predicate over the declaration, not a grant in the capability graph. A capability kind here would imply the service's *traffic* is capability-mediated, which is precisely what it is not — a misleading abstraction is worse than an honest declaration.
+
+**What this preserves.** The entity system's guarantee is about **entity operations**, not about every byte a process touches. A handler-owned service is an admission that the peer process does something the entity model does not mediate. Making it declarable keeps that guarantee honest; leaving it ambient quietly weakens what "capability-checked" means.
+
+**Cross-impl surface.** Three things MUST agree across implementations, because each is cross-peer observable or produces a divergent failure: the **ordering** (start after tree writes and before dispatch; stop before dispatch-unregister — a peer stopping in the wrong order can dispatch to a handler whose service is gone); the **failed-start semantics** (registration fails and compensates; never a dispatchable handler with a dead service); and the **declaration shape** above, which a remote peer or auditor reads. Language-idiomatic *expression* of start/stop is deliberately unpinned (a Rust `impl Drop`, a Go `Close() error`, a Python `async with`) — §11.6.2 sets that precedent.
+
+**Retrofitting existing precompiled engines onto this contract is out of scope.** Prove the contract on a new extension first; retrofit as a follow-on if it holds.
 
 ### 11.7 Tree-Gated Dispatch (Migration Target)
 
