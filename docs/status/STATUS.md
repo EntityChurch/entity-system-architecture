@@ -1,6 +1,6 @@
 # entity-system-architecture — status
 
-_Updated: 2026-07-31 · public: v0.8.0 (master) · 0.8.1 amendment cycle: bucket-B ratified spec-side · STANDING-MODEL §3+§4 CLOSED (v1.21, nothing owed) · connectivity fold closed — see `HANDOFF-2026-07-31-connectivity-fold-closeout.md`_
+_Updated: 2026-08-02 · public: v0.8.0 (master) · 0.8.1 amendment cycle: bucket-B ratified spec-side · STANDING-MODEL §3+§4 CLOSED (v1.21, nothing owed) · punch: Rust rungs 0–3 (2nd §11.5 impl, loopback); dual-hole ruled+folded (§7.1 step 4) · namespace cleanup SPLIT into 4 workstreams (A+B/C/D) after core-go corrections: B signaling flag-day folded + executed in go (`6b4723d`, Rust's 8 strings pending); C §3.2 re-scoped to extension owners (ENCRYPTION rename REVERTED — content-hash-input); handoff `ROUTING-2026-08-02-namespace-cleanup-and-browser-leg-handoff.md`_
 
 ## Where it is
 
@@ -94,7 +94,16 @@ browser leg:** `PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` (DRAFT) is the "separate sp
 substrate to, and until it folds there is no direct native↔browser path — only relay, which §7.3.1 now pins as
 the correct floor rather than a gap. The native critical path is in the **go and rust trees** (py has not started
 the punch), and it is now blocked on **live infrastructure, not specification**: every punch build in existence
-is loopback.
+is loopback. **Rust landed rungs 0–3 (2026-08-01, `16a05a5`) — the §11.5 gate's second implementation**, and arch
+ruled the one cohort-wide correctness gap it surfaced: **dual-hole sequencing** — both impls built §7.1 step 4 as
+*one dials / one listens*, but a listen-only side fires nothing outbound so its NAT hole never opens and a real-NAT
+punch cannot traverse. Ruled a **§7.1 step 4 de-conflation** (both peers MUST fire outbound; §7.4.1's "responder
+serves" is the HELLO role, not TCP-passivity), folded in place; routed before either impl builds
+(`ROUTING-2026-08-01-punch-dual-hole-ruling-and-rung3.md`). Unvalidated until the cross-NAT gate runs. **Validation
+ladder staged** (`PLAN-2026-08-01-punch-validation-ladder.md`): most risk retires **without a second computer** —
+G1 dual-hole fix → G2 first cross-impl Go↔Rust punch (loopback) → **G3 emulated dual-NAT (`netns`), which validates
+the dual-hole fix + traversal on one host**; only G4 (two real NATs) needs hardware. NAT-type precheck screens G4
+(cone = punchable; cellular/CGNAT often symmetric → relay, which is deferred).
 
 **The connectivity spec surface is now complete (2026-07-31).** `EXTENSION-SIGNALING.md` **v1.0** folds both
 connectivity proposals into a new extension — the rendezvous carrier, the four-mode key derivation, the
@@ -122,19 +131,31 @@ available at the call site?* All four existing fields pass for that same reason.
 alongside it on types inside another spec's namespace: **a type is owned by the spec that defines it, and a spec
 MUST reference rather than restate a type it does not own.**
 
-**The namespace question resolved in two passes, and the first answer was wrong** — see
-`ANALYSIS-CORE-NAMESPACE-CLAIMS-IMPACT.md` + `ROUTING-2026-08-01-inbox-types-namespace-upstream.md`. The flag as
-worded ("extensions claiming core turf") is **not** a violation: core defines `system/protocol/inbox/*` itself
-and `SYSTEM-COMPOSITION.md` is a core-model spec. But the 07-31 conclusion — *therefore the placement is
-correct* — was **circular**, and is withdrawn. The real question is whether these are protocol messages, and
-**they are not.** `system/protocol/**` means wire messages and their components: **seven of its nine members are
-V7 §9.5 Core Type Floor types; the only two that are not are the inbox pair.** The machine spec's own §3.2
-"Protocol Types" excludes them, their §3.9 siblings use `system/subscription/*`, and INBOX §137 puts them in the
-same slot as *any domain-specific message type*. **Routed upstream to `entity-core-protocol`** as one change:
-rename out of the wire namespace (`notification` → `system/subscription/notification`; `delivery` → name
-upstream's call) **plus** the live `result` drift (`core/entity` here vs `primitive/any` upstream — Rust built
-ours, Go is permissive, so it has not bitten). **Not a wire-core change** (neither type is in the floor);
-**keystone impact is regeneration, not migration.** `system/handler/composition` passes — no action.
+**The namespace question took three passes; the current answer is
+`PROPOSAL-INBOX-TYPE-NAMESPACE-CORRECTION` (DRAFT, decided in principle, wanted before the next release).**
+`system/protocol/inbox/delivery` and `/notification` are **defined only in this repo's extension specs**
+(`EXTENSION-INBOX.md:80`; `EXTENSION-SUBSCRIPTION.md:86` + `EXTENSION-INBOX.md:94`) — **no core specification
+mentions either type.** So the original flag was right: an extension is defining types inside a namespace whose
+every core member is a wire message. The V7 §9.5 floor holds **seven** `system/protocol/*` types, all wire
+messages or components; **neither inbox type is among them**, and INBOX §137 puts them in the same slot as *any
+domain-specific message type*. **The rename is entirely arch's — no upstream change** (`notification` →
+`system/subscription/notification`; `delivery` → `system/inbox/delivery`). The sharpest evidence is that **all
+three implementations filed these in their *core* layer**, which only the `protocol` prefix told them to do.
+`system/handler/composition` passes — no action. **Keystone: none** (both absent in all 22 generated peers).
+
+> **Two withdrawn findings from the earlier passes, both traceable to one bad premise.** Pass 1 concluded "core
+> defines them, so the placement is correct" — **circular, and sourced from
+> `ENTITY-CORE-MACHINE-SPEC.md`.** A follow-on corpus audit then reported **"38 duplicated types, 13 drifted,
+> three interoperation-breaking"** — **withdrawn in full**
+> (`ANALYSIS-CORE-CATALOGUE-DUPLICATION-AND-DRIFT.md`, now VOID). **Every one of those comparisons was against
+> the machine spec, which is a generated secondary artifact of this repo that nothing is sourced from and that is
+> not kept in sync.** A stale generated copy differing from its source is not drift, and **no implementation was
+> ever at risk.** The `result` `primitive/any`-vs-`core/entity` "drift" goes with it. **Lesson: an audit is only
+> as good as its premise about which documents are authoritative** — one grep asking *"who sources from this?"*
+> would have saved the cycle. **Consequent recommendation: delete `ENTITY-CORE-MACHINE-SPEC.md` upstream**
+> (arch cannot — sibling repo). The one item that was genuinely in arch's lane and did not depend on the machine
+> spec is **fixed**: `SDK-OPERATIONS`' informal `system/type/field-spec` restatement now carries a canonical
+> pointer.
 
 **SIGNALING v1.0 is largely a fold of already-built work**: the carrier, the key derivation, the coordination
 messages and pool selection are implemented in **all three** implementations — rust `extensions/signaling` plus
@@ -174,7 +195,7 @@ ENCRYPTION confidentiality. Per-extension state (track M-levels in `ROADMAP-EXTE
 | extension | ver | maturity | open work |
 |---|---|---|---|
 | `EXTENSION-NETWORK` | 1.6 | M4 | transport family; v1 publish/relay gate 3-way green. Base wire framing lives in core. **§6.7 reachability facts (A13) + §10.3 live-establishment seam (A14) folded 07-29/07-31 — M2. A14 passed cohort review 07-31 (two independent builds) and fixed in place: `ctx`, stream semantics, identity-check-before-pooling, retry composition; return shape left impl-idiomatic. Seam built in go + rust; `observe-address` responder built in go; the srflx gatherer and `check-reachability` are unbuilt.** |
-| `EXTENSION-SIGNALING` | 1.0 | **M3→M4** | **new 2026-07-31** — folds CONNECTION-NODE + SIGNALING-AND-PUNCH. Client role is the conformance surface; server role optional. **Carrier, key derivation, coordination and pool selection are built in all three** with a `signalingMeet` cross-impl check in Go's validator. **Cohort review folded in place 07-31, two rounds**: §7.4.1 handshake role (initiator = client — MUST, the top cross-impl hang-preventer), §7.2 retry composition, §7.3.1 substrate matrix + native↔browser model — then **§7.2.1**, after building the composition rule broke a working punch: "attempt" was unqualified and a punch has two nested retry layers (crossing = costs only the two peers; exchange = costs third-party reflector + carrier). MUST pinned to the exchange layer, MUST NOT against starving the crossing. **§7 punch built in go (tcp, in-process) + rust (rungs 0–1), loopback only; §9 unwrapped surface unbuilt; §11.5's cross-NAT gate has not run anywhere.** |
+| `EXTENSION-SIGNALING` | 1.0 | **M3→M4** | **new 2026-07-31** — folds CONNECTION-NODE + SIGNALING-AND-PUNCH. Client role is the conformance surface; server role optional. **Carrier, key derivation, coordination and pool selection are built in all three** with a `signalingMeet` cross-impl check in Go's validator. **Cohort review folded in place 07-31, two rounds**: §7.4.1 handshake role (initiator = client — MUST, the top cross-impl hang-preventer), §7.2 retry composition, §7.3.1 substrate matrix + native↔browser model — then **§7.2.1**, after building the composition rule broke a working punch: "attempt" was unqualified and a punch has two nested retry layers (crossing = costs only the two peers; exchange = costs third-party reflector + carrier). MUST pinned to the exchange layer, MUST NOT against starving the crossing. **§7 punch built in go (tcp, in-process) + rust (rungs 0–3, punches — `16a05a5`, the §11.5 gate's 2nd impl), loopback only; §9 unwrapped surface unbuilt; §11.5's cross-NAT gate has not run anywhere.** **Dual-hole ruling 2026-08-01:** §7.1 step 4 corrected in place — both peers MUST fire outbound (a listen-only side opens no NAT hole); §7.4.1 "serves" ≠ TCP-passive. Routed `ROUTING-2026-08-01-…`. |
 | `EXTENSION-RELAY` | 1.2 | M4 | dispatch-fallback seam folded; raw-frame impl gaps tracked in the cohort. |
 | `EXTENSION-ROUTE` | 1.0 | M3 | source-routed multi-hop; one impl build-tested, cohort catching up. |
 | `EXTENSION-SUBSTITUTE` | 1.0 | M4 | CDN release v1 (Tier-1), the storage-substrate mechanism. |

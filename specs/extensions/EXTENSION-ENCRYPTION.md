@@ -177,7 +177,7 @@ The pubkey from §4.1 is published according to the highest tier installed.
 Publish the `system/encryption-pubkey` entity at:
 
 ```
-/{peer_id}/system/encryption/pubkey/{pubkey_content_hash}
+/{peer_id}/system/encryption-pubkey/{pubkey_content_hash}
 ```
 
 Sign it with the peer's V7 keypair via `system/signature` at the invariant pointer per V7 §5.2 / §7.4:
@@ -186,9 +186,9 @@ Sign it with the peer's V7 keypair via `system/signature` at the invariant point
 /{peer_id}/system/signature/{hex(pubkey_content_hash)}
 ```
 
-A sender resolves Tier-A recipient pubkeys by reading `system/encryption/pubkey/{h}` at the recipient's namespace and verifying the invariant-pointer signature with the recipient's V7 peer_id (which is the trust anchor — the V7 peer keypair is self-rooted identity per V7 §1.5 / IDENTITY §1.1 progression item 1).
+A sender resolves Tier-A recipient pubkeys by reading `system/encryption-pubkey/{h}` at the recipient's namespace and verifying the invariant-pointer signature with the recipient's V7 peer_id (which is the trust anchor — the V7 peer keypair is self-rooted identity per V7 §1.5 / IDENTITY §1.1 progression item 1).
 
-Discovery: enumerate the `system/encryption/pubkey/` subtree at the recipient's peer namespace; filter out revoked entries per §11; pick most recent live by `created`.
+Discovery: enumerate the `system/encryption-pubkey/` subtree at the recipient's peer namespace; filter out revoked entries per §11; pick most recent live by `created`.
 
 #### §4.2.b Tier B — +ATTESTATION (no IDENTITY)
 
@@ -245,7 +245,7 @@ Path layout depends on tier.
 
 | Audience | Path | Purpose |
 |---|---|---|
-| Public (the discoverable handle) | `system/encryption/pubkey/{pubkey_hash}` | Senders encrypt to this |
+| Public (the discoverable handle) | `system/encryption-pubkey/{pubkey_hash}` | Senders encrypt to this |
 | Per-key backup | `system/encryption/key-backup/{pubkey_hash}` | Tier 2 passphrase-wrapped backup (§9.2) |
 | Revocation | `system/encryption/revocation/{revocation_hash}` (Tier A) or universal `revocation` kind in ATTESTATION's subtree (Tier B) | Marks a pubkey as revoked |
 
@@ -271,8 +271,8 @@ A sender resolves recipient encryption-pubkeys by reading at the recipient's nam
 **Resolution order (sender does this):**
 
 1. Try Tier C: read `system/identity/public/encryption/` at the recipient. If non-empty, enumerate `find_attestations_with_kind(kind="identity-cert", function="encryption")` filtered through identity's authority chain; filter revoked; pick most recent live.
-2. Try Tier B: read `system/encryption/attestation/` at the recipient. If non-empty, enumerate `find_attestations_targeting(attested in system/encryption/pubkey/...)` with `kind="encryption-key"`; filter revoked via universal `revocation` kind; pick most recent live.
-3. Try Tier A: read `system/encryption/pubkey/` directly at the recipient. Verify each pubkey's `system/signature` at the invariant pointer against the recipient's V7 peer_id; filter revoked via encryption-owned `system/encryption/revocation/`; pick most recent live.
+2. Try Tier B: read `system/encryption/attestation/` at the recipient. If non-empty, enumerate `find_attestations_targeting(attested in system/encryption-pubkey/...)` with `kind="encryption-key"`; filter revoked via universal `revocation` kind; pick most recent live.
+3. Try Tier A: read `system/encryption-pubkey/` directly at the recipient. Verify each pubkey's `system/signature` at the invariant pointer against the recipient's V7 peer_id; filter revoked via encryption-owned `system/encryption/revocation/`; pick most recent live.
 4. None resolved → `403 encryption_recipient_unknown`.
 
 The sender resolves to whichever tier is highest-installed at the recipient.
@@ -286,6 +286,16 @@ The sender resolves to whichever tier is highest-installed at the recipient.
 ## §5 The encrypted entity
 
 ### §5.1 Common fields
+
+> **Namespace note (2026-08-02) — `system/encrypted` and `system/encryption-pubkey` are deliberately NOT
+> consolidated under `system/encryption/`, an explicit exception to `SPECIFICATION-FORMAT.md` §8.4.4.** The
+> content-hash primitive hashes ECF `{data, type}`, so the **type string is hash input**: renaming
+> `system/encrypted` would rebind the `content_hash` of every encrypted entity at rest, and renaming
+> `system/encryption-pubkey` would change every `recipient_key` (which *is* `content_hash(pubkey)`, §4.1) —
+> breaking peer/group encryption for all published keys. ENCRYPTION is **landed with durable data at rest**, so
+> the §8.4.4 one-segment-per-owner ideal yields to the hash-input invariant. Both impls independently ship these
+> flat names — cohort-converged. **Rule: a content-addressed type with durable data at rest is not retroactively
+> renamed.** New encryption types SHOULD go under `system/encryption/`; these two are grandfathered.
 
 Every `system/encrypted` entity carries:
 

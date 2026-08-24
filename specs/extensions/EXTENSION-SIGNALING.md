@@ -83,14 +83,14 @@ The whole discovery surface is *one* keyed rendezvous. The "modes" are only **ho
 
 ```
 payload        = "entity:rdv:v1" ‖ SEP ‖ mode ‖ SEP ‖ canonical(mode_input)
-rendezvous_key = varint(0x00) ‖ SHA-256( ecf_for_hash( "system/nat/rendezvous-key", cbor_bstr(payload) ) )
+rendezvous_key = varint(0x00) ‖ SHA-256( ecf_for_hash( "system/signaling/rendezvous-key", cbor_bstr(payload) ) )
 ```
 
 > **MUST.** Both peers produce a byte-identical hash input **and** byte-identical key bytes.
 
 Divergence here means the two peers derive different keys and **silently never meet** — and that failure is invisible to a same-implementation test, so every free variable is pinned:
 
-- **The hash is the substrate content-hash primitive** (ENTITY-CORE-PROTOCOL.md §1.2), which hashes ECF-encoded `{data, type}`, **not** a bare byte string. Its two inputs are pinned: `type` is the fixed string **`system/nat/rendezvous-key`**, and `data` is **`payload` wrapped as a single CBOR byte string** (`bstr`, minimal-length head). A `tstr` wrapping, a multi-element array, or a bare unwrapped concatenation each yield a different digest.
+- **The hash is the substrate content-hash primitive** (ENTITY-CORE-PROTOCOL.md §1.2), which hashes ECF-encoded `{data, type}`, **not** a bare byte string. Its two inputs are pinned: `type` is the fixed string **`system/signaling/rendezvous-key`**, and `data` is **`payload` wrapped as a single CBOR byte string** (`bstr`, minimal-length head). A `tstr` wrapping, a multi-element array, or a bare unwrapped concatenation each yield a different digest.
 - **The digest format is pinned to the SHA-256 floor** (`content_hash_format` `0x00`, ENTITY-CORE-PROTOCOL.md §8.2) — **not the deriving peer's home format.** A content hash is self-describing and format-carrying, so two conformant peers running different home formats would derive different keys for the same agreed input and never meet, with nothing failing loudly. **A rendezvous key is a lookup token two independent parties must reproduce, not authored content**, so it does not follow the authoring peer's format. It stays in the self-describing wire encoding (`varint(format) ‖ digest`, 33 bytes at the floor) so a future format migration remains expressible, and it is compared **byte-wise**.
 - **`SEP` is `0x1F`** (ASCII US), appearing **after the domain string and after the mode tag** — not only before the input.
 - **`mode`** is one of the exact ASCII tags `pair` / `tag` / `secret` / `lobby`.
@@ -283,7 +283,7 @@ Three entity types carry the exchange. They are ordinary signed entities, opaque
 ### 6.1 Type definitions
 
 ```
-system/nat/connect-request := {          ; A → B
+system/signaling/connect-request := {    ; A → B
   fields: {
     initiator:  {type_ref: "system/peer-id"}
     candidates: {array_of: {type_ref: "system/network/candidate"}}   ; EXTENSION-NETWORK §6.7.3
@@ -291,7 +291,7 @@ system/nat/connect-request := {          ; A → B
   }
 }
 
-system/nat/connect-response := {         ; B → A
+system/signaling/connect-response := {   ; B → A
   fields: {
     responder:  {type_ref: "system/peer-id"}
     candidates: {array_of: {type_ref: "system/network/candidate"}}
@@ -299,7 +299,7 @@ system/nat/connect-response := {         ; B → A
   }
 }
 
-system/nat/punch-sync := {               ; either direction
+system/signaling/punch-sync := {         ; either direction
   fields: {
     nonce:   {type_ref: "primitive/bytes"}       ; echoes
     fire_at: {type_ref: "primitive/uint"}
@@ -360,7 +360,7 @@ Registered behind `EXTENSION-NETWORK.md` §10.3's `establish_live(peer_id)` seam
 3. **Measure and schedule.** A measures the round-trip *through the carrier* and sends `punch-sync` with `fire_at`, so both start sending to each other's `srflx` at approximately the same instant.
 4. **Simultaneous open.** Each side sends to the other's `srflx`. Each side's *outbound* packet punches its own hole; the other's packet, arriving after that hole is open, gets through. After the crossfire both NAT mappings exist and a direct path is open.
 
-   > **Both sides fire outbound — neither is listen-only `[cross-peer seam — MUST; correction absorbed 2026-08-01]`.** Each peer **MUST** issue an *outbound* connection attempt at `fire_at`; **listening alone opens no hole**, because only an outbound packet creates the local NAT mapping. A peer that merely accepts (TCP-passive) never opens its own hole, so the counterpart's SYN reaches a closed NAT and the punch **cannot traverse** — even though it succeeds on loopback and in every same-implementation test (no NAT is present to expose it). The `[§7.4.1]` signaling-role split is **orthogonal to this** and MUST NOT be read as designating one side passive: it selects (a) **which** of the racing sockets survives simultaneous-open (a local tie-break, e.g. peer-id compare) and (b) **who runs the HELLO client** on the survivor — *after* both holes are open. "The responder **serves** the handshake" (§7.4.1) is a statement about the post-socket HELLO exchange, **not** about who dials the socket: on the wire **both** dial. **Cohort finding (2026-08-01):** two independent implementations built step 4 as *lower-id dials, higher-id listens* — collapsing the hole layer into the handshake-role layer — and both are non-traversing by construction; this pins the de-conflation the committed text implied but did not make unmissable. **Validation:** unproven until the §11.5 cross-NAT gate runs — every punch built to date is loopback, which by construction cannot exercise this.
+   > **Both sides fire outbound — neither is listen-only `[cross-peer seam — MUST; correction absorbed 2026-08-01]`.** Each peer **MUST** issue an *outbound* connection attempt at `fire_at`; **listening alone opens no hole**, because only an outbound packet creates the local NAT mapping. A peer that merely accepts (TCP-passive) never opens its own hole, so the counterpart's SYN reaches a closed NAT and the punch **cannot traverse** — even though it succeeds on loopback and in every same-implementation test (no NAT is present to expose it). The `[§7.4.1]` signaling-role split is **orthogonal to this** and MUST NOT be read as designating one side passive: it selects (a) **which** of the racing sockets survives simultaneous-open (a local tie-break, e.g. peer-id compare) and (b) **who runs the HELLO client** on the survivor — *after* both holes are open. "The responder **serves** the handshake" (§7.4.1) is a statement about the post-socket HELLO exchange, **not** about who dials the socket: on the wire **both** dial. **Cohort finding (2026-08-01):** two independent implementations built step 4 as *lower-id dials, higher-id listens* — collapsing the hole layer into the handshake-role layer — and both are non-traversing by construction; this pins the de-conflation the committed text implied but did not make unmissable. **Validation:** exercised as of 2026-08-02 under **emulated dual-NAT**, cross-implementation — the cheapest substrate that can exercise it at all. **Loopback by construction cannot** (§11.5.1): with no NAT in path a listen-only peer's counterpart still reaches it, so the harness reports green for a peer that cannot traverse. Real-NAT diversity remains the terminal gate.
 5. **Upgrade and drop the carrier.** The direct connection becomes the live transport and is returned through the `EXTENSION-NETWORK.md` §10.3 seam. The peers stop using the carrier, keeping it only if the direct link drops.
 6. **On failure** (no direct path within a timeout — symmetric NAT or CGNAT), **fall back to the `relay` candidate** (§10). Correctness is preserved; only the direct-path optimization is lost.
 
@@ -429,6 +429,8 @@ A browser peer has no raw sockets and no `SO_REUSEPORT`; it cannot run the `tcp`
 **The v1 model, pinned:**
 
 1. **The relay ladder is the floor across a substrate boundary.** A peer that shares no punch substrate with its target falls to §10's relay fallback — RELAY Mode-C (live circuit) or Mode-S (async). This is **correct, not degraded**: §7.1 step 6 already makes relay the outcome of every failed punch, and a substrate mismatch is simply a punch that fails at candidate selection instead of at the crossfire. **No connectivity is lost; only the direct-path optimization is.** An implementation MUST NOT treat a substrate mismatch as a dispatch error.
+
+   > **Read the matrix as being about *direct* paths only.** A ❌ cell means "no direct punch between these peer types," **never** "these peers cannot reach each other." A browser peer holding an ordinary live transport to a native peer — a WebSocket, per §6.5.1b's duplex taxonomy — is connected by every measure this spec cares about; the punch would only remove an intermediary. **A `webrtc` substrate is therefore an optimization, not an unblock**, and no browser-facing product capability is gated on it. *(Recorded because the matrix was read the other way in cohort routing, which mis-set the priority of the browser leg.)*
 2. **A native peer MAY publish a `webrtc` transport profile** to become directly punchable by browser peers. It is a **MAY**, deliberately: requiring every native peer to carry a WebRTC stack would impose a large dependency on implementations whose peers may never meet a browser, against this ecosystem's minimal-dependency posture. It is safe as a MAY because the profile is **published and therefore discoverable** — a browser reads the target's transport set and knows whether a direct path exists, rather than guessing. (Contrast §7.2's `fire_at`, where the ambiguity is *undiscoverable* and must therefore be a MUST.)
 3. **Substrate selection is ordinary per-peer profile selection** (`EXTENSION-NETWORK.md` §6.5.1a), not a new mechanism. "Native reaches browser over `webrtc`, browser reaches native over `webrtc`, native reaches native over `tcp`" is the ordinary asymmetric case.
 
@@ -620,16 +622,37 @@ A peer that offers a **server role** additionally implements §5's six bucket se
 
 > **The gate:** two independently written peers, in different languages, that **meet** at a key derived from the same agreed input in each of the four modes, exchange candidates, and establish a **direct punched transport that survives idle**. Prose review does not catch the failures this spec is mostly about — every cross-peer MUST here describes a way to be **self-consistent and still silently never meet**, which is exactly what a same-implementation test cannot see.
 >
-> **What has and has not been exercised — the standing fact, not a build-state snapshot.** The **meet** half of this gate is cross-implementation green: two languages meeting at a derived key, with a `signalingMeet` check in a conformance validator. **The punch half has never run across a real NAT in any implementation.** Every punch built to date is loopback or in-process, which proves the socket choreography and **does not prove traversal** — the two are different claims, and only the second closes this gate. That distinction is durable and belongs here; **who has built what, as of when, does not** — read the dated ledger (`docs/status/STATUS.md`, `docs/status/WORKSTREAMS.md`) and the peers' own reports. *(This note previously enumerated per-implementation build state and was wrong within hours, twice. `docs/DOCTRINE-COHORT-STATE-TRACKING.md` **D8**: build state is peer-reported, dated, and does not live in a normative document.)*
+#### 11.5.1 What each substrate can and cannot prove `[normative — a gate claim is scoped by its substrate]`
+
+> **MUST.** A conformance claim against §11.5 **MUST name the substrate it was obtained on.** A green result on a substrate that cannot exercise a property **is not evidence about that property**, and reporting it as one is an overclaim (`ADR-0012`).
+
+| Substrate | Proves | **Structurally cannot prove** |
+|---|---|---|
+| **Loopback / in-process** | choreography, socket dance, message encoding, key derivation, `fire_at` alignment | **anything whose failure mode is "the NAT has no mapping"** |
+| **Emulated dual-NAT** (`netns` + `iptables`, one host) | traversal, both-sides-fire (§7.1 step 4), endpoint binding (`EXTENSION-NETWORK.md` §6.7.3), keepalive across a mapping | real-world NAT *diversity* — CGNAT, symmetric, carrier quirks, real RTT/jitter |
+| **Two real independent NATs** | the above **plus** NAT diversity — closes this gate | — |
+
+> **The loopback blindness class, stated once and generally `[MUST NOT rely on]`.** **With no NAT in path, every packet reaches the counterpart regardless of which socket sent it or whether the counterpart opened a hole.** So a loopback harness **cannot distinguish a conformant peer from one that violates any mapping-dependent MUST** — it will report green for both. **Two instances have now been demonstrated with real violating peers, not argued:**
+>
+> - **§7.1 step 4 (both sides fire outbound).** A listen-only peer passes on loopback; it cannot traverse a NAT.
+> - **`EXTENSION-NETWORK.md` §6.7.3 (punch from the socket whose mapping was observed).** A peer that advertises one endpoint and punches from another passes on loopback — its dial still lands on the counterpart's listener — and fails under two NATs with `dialed_outbound: true` and no path.
+>
+> **The shape both share:** the peer is *honest in every observable exchange* and wrong only in a value whose consequence lives in a NAT table the harness does not have. **This is the same failure shape as a cross-peer seam equivalence-collapse** — a distinction that is invisible locally and springs apart at the seam — and it is why loopback-green is a statement about choreography and never about traversal.
+>
+> **Consequence for implementers:** a mapping-dependent MUST is **unverifiable** on loopback. Do not write a loopback test for one and record it as covering the requirement; the test will pass forever and mean nothing. Emulated dual-NAT is the cheapest substrate that exercises this class, it is deterministic, and it runs in CI.
+
+> **On the racing-socket tie-break (§7.4.1) — not a conformance surface.** An implementation whose `fire_at` handler **cancels the losing path on first success** can never observe two surviving sockets: cancellation closes the listener and aborts the remaining dial within microseconds, so the second connection never completes. The tie-break's race arm is therefore **defensive and undrivable above unit level**, and its absence from a process-level suite is **not a coverage gap** — a unit test is the only place it can be driven, in any implementation. **An implementation MUST NOT weaken cancel-on-first-success in order to make the tie-break observable**: that trades correctness in the punch hot path for testability of a defensive branch. *(Recorded so it is not re-filed as a gap, and so that an implementation which does change cancellation semantics knows it has changed something observable.)*
+
+> **Build state does not live here.** Which implementation has reached which rung, as of when, is peer-reported and dated — read `docs/status/STATUS.md`, `docs/status/WORKSTREAMS.md`, and the peers' own reports. *(This note previously enumerated per-implementation build state and was wrong within hours, twice. `docs/DOCTRINE-COHORT-STATE-TRACKING.md` **D8**.)*
 
 ## 12. Types Installed
 
 | Type | Description |
 |------|-------------|
-| `system/nat/connect-request` | Initiator's candidate offer (§6.1) |
-| `system/nat/connect-response` | Responder's candidate answer (§6.1) |
-| `system/nat/punch-sync` | Firing alignment; carries `fire_at` as a delay (§6.1, §7.2) |
-| `system/nat/rendezvous-key` | The fixed type string in the key derivation's hash input — a derivation constant, never a stored entity (§3.1) |
+| `system/signaling/connect-request` | Initiator's candidate offer (§6.1) |
+| `system/signaling/connect-response` | Responder's candidate answer (§6.1) |
+| `system/signaling/punch-sync` | Firing alignment; carries `fire_at` as a delay (§6.1, §7.2) |
+| `system/signaling/rendezvous-key` | The fixed type string in the key derivation's hash input — a derivation constant, never a stored entity (§3.1) |
 | `system/signaling/offer-request` / `-result` | Input and output of `offer` (§4.1) |
 | `system/signaling/collect-request` / `-result` | Input and output of `collect` (§4.1) |
 | `system/signaling/advertise-result` | Output of `advertise` (§4.5) |
@@ -639,7 +662,7 @@ A peer that offers a **server role** additionally implements §5's six bucket se
 
 | # | Item | Disposition |
 |---|---|---|
-| 1 | **Message namespace** — `system/nat/*` versus `system/signaling/*` | `system/nat/*` retained from the source proposals. Worth a cohort call at first cross-implementation build: the reframe says connectivity is not NAT-specific, but the types are also not this handler's own operation types, so neither name is obviously right. |
+| 1 | **Message namespace** — ~~`system/nat/*` versus `system/signaling/*`~~ | **RESOLVED 2026-08-02 → `system/signaling/*`** (`PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §3.1). The owner-not-problem-domain rule (`SPECIFICATION-FORMAT.md` §8.4.4): a segment names *who defines the type*, not what it is about; `nat` was a problem domain that would strand its siblings the moment a second substrate (WebRTC) arrived. **This is the flag day** — wire-visible because the derivation hashes the literal type string `system/signaling/rendezvous-key` (§3.1), so all impls + any deployed lobby change in one window; confirm with a cross-impl meet before deploy. |
 | 2 | **Rate-limit thresholds** (§8.2) | **Needs a deployment call before a public unwrapped surface is exposed.** The mechanism and error code are pinned; the numbers are not. |
 | 3 | **TLS / linkability** (§8.5) | Accepted for v1 with the cost stated. Revisit if a deployment's threat model makes rendezvous-key metadata unacceptable. |
 | 4 | **Out-of-band carrier** (QR / short-code) | The zero-infrastructure human-present case. Kept as a secondary carrier under review; message framing would be a `connect-request` / `-response` pair encoded into a QR or short code. |

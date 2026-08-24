@@ -82,8 +82,9 @@ The subscription entity is the source of truth. Internal subscription registries
 The params type for a notification inbox EXECUTE:
 
 ```
-; DEFINED IN EXTENSION-INBOX.md §2.2 — canonical. Reproduced for reading convenience.
-system/protocol/inbox/notification := {
+; CANONICAL — owned here by EXTENSION-SUBSCRIPTION (re-homed 2026-08-02 from
+; system/protocol/inbox/notification; owner-not-problem-domain, SPECIFICATION-FORMAT §8.4.2/§8.4.4).
+system/subscription/notification := {
   fields: {
     subscription_id: {type_ref: "primitive/string"}
     event:           {type_ref: "primitive/string"}           ; "created", "updated", "deleted"
@@ -94,7 +95,7 @@ system/protocol/inbox/notification := {
 }
 ```
 
-> **Ownership (2026-07-31, layering audit).** This type belongs to **`EXTENSION-INBOX.md` §2.2**, which defines it alongside its sibling `system/protocol/inbox/delivery` and installs both. The block above is a **reproduction, not a second definition** — it previously stood as an unqualified `:=` in two specs with neither naming an authority. The two were field-for-field identical when checked, so nothing has drifted; the risk being closed is that a future edit to one would not obviously be an edit to the other. **Change the type in INBOX; update this reproduction to match.**
+> **Ownership (re-homed 2026-08-02, `PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG` §3.2).** This type is now **canonical here** in `EXTENSION-SUBSCRIPTION` — a subscription event belongs to the spec that defines subscriptions (owner-not-problem-domain, `SPECIFICATION-FORMAT.md` §8.4.2). It was previously `system/protocol/inbox/notification`, mis-homed under INBOX by the `protocol` prefix; its sibling `system/inbox/delivery` (async op results) correctly **stays** INBOX-owned. **`EXTENSION-INBOX.md` §2.2 now reproduces this block** for reading convenience (its `receive` handles the type as a payload). **Change the type here; update that reproduction to match.** *(Wire note: this is a type-string rename — a version-mismatched peer sees an unknown type, a loud failure, not the silent never-meet of the §3.1 flag day; impls still update in step.)*
 
 Notifications report what changed and where. By default they carry only `hash` / `previous_hash`, not entity data. When the subscription sets `include_payload` (§2.3), the server MUST bundle the changed entity into the delivery envelope's `included` map (§4.2) — so the subscriber has the bytes atomically with the notification and needs no follow-up cross-peer GET. This is what makes the cross-peer mirror recipe a single hop: the subscriber applies the change locally with `tree:put` + CAS (`expected_hash = previous_hash`), no fetch (see `proposals/PROPOSAL-CONVERGENT-MIRRORING.md`). Absent/`false`, notifications stay lean (the "tell me when, I'll decide whether to read" case).
 
@@ -386,7 +387,7 @@ handle_unsubscribe(ctx, params):
 
 ### 3.3 Inbox Handler — Notification Delivery
 
-Subscription notifications are delivered through the inbox handler's `receive` operation (EXTENSION-INBOX.md §3.1). The notification entity type (`system/protocol/inbox/notification`) carries the semantic information — no separate operation is needed.
+Subscription notifications are delivered through the inbox handler's `receive` operation (EXTENSION-INBOX.md §3.1). The notification entity type (`system/subscription/notification`) carries the semantic information — no separate operation is needed.
 
 Processing follows the standard inbox `receive` pattern (EXTENSION-INBOX.md §3.2). The inbox handler receives the notification EXECUTE, validates the capability, and processes it through write-ahead storage. Continuation behavior — what the subscriber does with the notification — is determined by EXTENSION-INBOX.md §3.3 (delegation to continuation handler when EXTENSION-CONTINUATION is installed, tree storage otherwise).
 
@@ -745,7 +746,7 @@ Subscriptions with expired deliver tokens MUST NOT accumulate. The server MUST v
 ### 7.4 Privacy + cross-peer observability
 
 Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4:
-- Subscription entity bodies (`system/subscription/{id}`) and notification delivery params (`system/protocol/inbox/notification`) are **capability-controlled** — carry subscriber identity, deliver_token hash references, and pattern being watched.
+- Subscription entity bodies (`system/subscription/{id}`) and notification delivery params (`system/subscription/notification`) are **capability-controlled** — carry subscriber identity, deliver_token hash references, and pattern being watched.
 - Subscription request / cancel / redirect in-flight types are **capability-controlled**; subscription `limits` and `system/config/subscription` are **public** (resource budgets and advertised capacity, designed to be discoverable).
 - `system/subscription/redirect` `alternatives` field is **capability-controlled** and SHOULD be omitted in privacy-sensitive deployments (formalizes §2.6's MAY-omit convention).
 

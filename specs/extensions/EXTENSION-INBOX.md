@@ -77,7 +77,7 @@ Step 7 is the key integration point. The inbox handler uses write-ahead processi
 ### 2.1 Inbox Delivery
 
 ```
-system/protocol/inbox/delivery := {
+system/inbox/delivery := {
   fields: {
     original_request_id: {type_ref: "primitive/string"}
     status:              {type_ref: "primitive/uint"}
@@ -88,10 +88,17 @@ system/protocol/inbox/delivery := {
 
 The `result` field is typed as `core/entity` (the materialized form `{type, data, content_hash}`, see ENTITY-NATIVE-TYPE-SYSTEM.md §8.1) because the delivery mechanism is type-agnostic — it carries whatever the handler produced. The value is a full inline entity, not a raw data payload. See §4.1.
 
-### 2.2 Inbox Notification
+### 2.2 Subscription Notification (a received payload type — canonical in EXTENSION-SUBSCRIPTION)
+
+`receive` handles this type as one of its payloads; the shape is reproduced here for reading
+convenience. **Canonical owner: `EXTENSION-SUBSCRIPTION.md` §2.2** — re-homed there 2026-08-02 from
+`system/protocol/inbox/notification` (a subscription event belongs to the subscription spec;
+owner-not-problem-domain, `SPECIFICATION-FORMAT.md` §8.4.2). Its sibling `system/inbox/delivery`
+(§2.1 above) correctly stays INBOX-owned. **Change the type in SUBSCRIPTION; update this reproduction.**
 
 ```
-system/protocol/inbox/notification := {
+; REPRODUCED — canonical in EXTENSION-SUBSCRIPTION.md §2.2.
+system/subscription/notification := {
   fields: {
     subscription_id: {type_ref: "primitive/string"}
     event:           {type_ref: "primitive/string"}
@@ -134,7 +141,7 @@ system/handler := {
 
 Handler entity at pattern path `system/inbox`. Dispatch resolves any URI under `system/inbox/` to this handler via longest-prefix match (ENTITY-CORE-PROTOCOL.md §6.6).
 
-Single `receive` operation accepts any typed entity. The entity's type carries the semantic information — `system/protocol/inbox/delivery` for async operation results, `system/protocol/inbox/notification` for subscription events, `system/protocol/execute` for raw deferred dispatch, or any domain-specific message type.
+Single `receive` operation accepts any typed entity. The entity's type carries the semantic information — `system/inbox/delivery` for async operation results, `system/subscription/notification` for subscription events, `system/protocol/execute` for raw deferred dispatch, or any domain-specific message type.
 
 ### 3.2 Write-Ahead Processing
 
@@ -165,7 +172,7 @@ receive(inbox_path, message_entity, ctx):
     ; Extract result and status based on message type.
     ; For inbox/delivery: use .result and .status fields (result may be null).
     ; For other types: use entire .data as result, status 200.
-    if message_entity.type == "system/protocol/inbox/delivery":
+    if message_entity.type == "system/inbox/delivery":
       extracted_result = message_entity.data.result    ; may be null — that's valid
       extracted_status = message_entity.data.status or 200
     else:
@@ -215,7 +222,7 @@ When EXTENSION-CONTINUATION is installed, the inbox handler checks for continuat
 ```
 delegate_to_continuation(inbox_path, message_entity):
   ; Extract result and status from the message (same logic as §3.2)
-  if message_entity.type == "system/protocol/inbox/delivery":
+  if message_entity.type == "system/inbox/delivery":
     extracted_result = message_entity.data.result    ; may be null
     extracted_status = message_entity.data.status or 200
   else:
@@ -319,7 +326,7 @@ construct_delivery(original_execute, result_status, result_data, local_identity)
 
 The operation is always `"receive"` — the message type carries the semantics.
 
-**Result format.** The `result` field in `system/protocol/inbox/delivery` carries the handler's result as a full inline entity `{type, data, content_hash}`, preserving entity identity through the delivery chain. This is consistent with EXECUTE_RESPONSE (ENTITY-CORE-PROTOCOL.md §3.4), where `result` is an entity, not raw data.
+**Result format.** The `result` field in `system/inbox/delivery` carries the handler's result as a full inline entity `{type, data, content_hash}`, preserving entity identity through the delivery chain. This is consistent with EXECUTE_RESPONSE (ENTITY-CORE-PROTOCOL.md §3.4), where `result` is an entity, not raw data.
 
 The result entity is encoded as an inline CBOR value — a map within the delivery params map. It MUST NOT be byte-string wrapped (CBOR major type 2). Byte-string wrapping produces a different wire format that requires an additional decode step on the receiving end, breaking interop with implementations that expect inline encoding.
 
@@ -471,7 +478,7 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 
 ## 11. Privacy + cross-peer observability
 
-Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: write-ahead entities at `system/inbox/**`, `system/protocol/inbox/delivery` results, and `system/protocol/inbox/notification` params are **capability-controlled** — bodies carry application-defined delivery payloads + identity references. Payloads MAY carry hash references to **sensitive** types (e.g., `deliver_token` referencing `system/capability/token` per ENTITY-CORE-PROTOCOL.md §5); transitive classification applies — the hash reference itself is `capability-controlled` (reveals "a capability of this hash authorizes delivery here") but a hash without the entity is not bearer.
+Per `GUIDE-INSPECTABILITY.md` v1.2 §9 #4: write-ahead entities at `system/inbox/**`, `system/inbox/delivery` results, and `system/subscription/notification` params are **capability-controlled** — bodies carry application-defined delivery payloads + identity references. Payloads MAY carry hash references to **sensitive** types (e.g., `deliver_token` referencing `system/capability/token` per ENTITY-CORE-PROTOCOL.md §5); transitive classification applies — the hash reference itself is `capability-controlled` (reveals "a capability of this hash authorizes delivery here") but a hash without the entity is not bearer.
 
 Per §9 #7:
 - **Transport-only** for the arrival hop — a `receive` EXECUTE arrives FROM a remote peer per §3.1; the cross-peer hop IS the propagation surface for the arrival event.

@@ -820,7 +820,7 @@ system/type.data := {
   (extends, layout, type_params, type_args: optional)
 }
 
-; NOT A DEFINITION — shape sketch only. Canonical: ENTITY-CORE-MACHINE-SPEC.md §3, `system/type/field-spec`.
+; NOT A DEFINITION — shape sketch only. Canonical: ENTITY-CORE-PROTOCOL.md §2.2 `system/type/field-spec`.
 system/type/field-spec ~ {
   ; exactly one of:
   type_ref:    system/type/name
@@ -832,10 +832,12 @@ system/type/field-spec ~ {
 }
 ```
 
-> **`system/type/field-spec` is defined in `ENTITY-CORE-MACHINE-SPEC.md` §3 and is canonical there.** The block
+> **`system/type/field-spec` is defined in `ENTITY-CORE-PROTOCOL.md` §2.2 and is canonical there.** The block
 > above is an **abridged shape sketch** for the surrounding SDK passage — it omits fields and optionality markers
 > and MUST NOT be read as the type's definition. It is written with `~` rather than `:=` for exactly that reason.
 > Implement against the canonical declaration (`SPECIFICATION-FORMAT.md` §8.4.2 — reference, do not restate).
+> *(Do not cite `ENTITY-CORE-MACHINE-SPEC.md` for this or any type: it is a **derived, downstream condensed
+> summary**, not a source — the same standing note `EXTENSION-COMPUTE.md` §2.4 carries for `compute/error`.)*
 
 The stored entity's envelope `type` is the canonical meta-type `system/type` (ENTITY-NATIVE-TYPE-SYSTEM §4.1, §2.6, §4.4). The SDK reader (e.g., `entity-core-rust/bindings/sdk/src/sdk.rs:TypeInfo::from_entity`) reads the stored `Map<field_name, field-spec>` and synthesizes the typed `Array<FieldInfo>` for callers. Implementations writing type entities MUST use the storage shape per §4.1 / §4.2; writing in the typed-output shape (`Array<FieldInfo>`) produces structurally invalid type entities even if the bytes are valid CBOR.
 

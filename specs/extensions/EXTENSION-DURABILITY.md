@@ -23,9 +23,9 @@
 ## 2. Request-side durability marker (optional)
 
 ```
-durability_request: {type_ref: "system/durability-request", optional: true}
+durability_request: {type_ref: "system/durability/request", optional: true}
 
-system/durability-request := {
+system/durability/request := {
   fields: {
     level:     {type_ref: "primitive/string"}
                  ; the requested durability level; vocabulary illustrative, not a frozen enum (§7)
@@ -50,9 +50,9 @@ On accepting an EXECUTE carrying `durability_request`, the receiver reconciles t
 The response is the **status code plus a pinned `durability` field**. One distinct meaning per status number — no overloading.
 
 ```
-durability: {type_ref: "system/durability-result", optional: true}
+durability: {type_ref: "system/durability/result", optional: true}
 
-system/durability-result := {
+system/durability/result := {
   fields: {
     requested:     {type_ref: "primitive/string"}
     applied:       {type_ref: "primitive/string"}
@@ -101,7 +101,7 @@ Status meaning is fixed and is the only branch a consumer needs:
 
 ## 6. Finding it again (the handle)
 
-**Handle-in-response.** The receiver returns the address in the response: when `applied != none` (or on `202`, where the committed entry will land), `system/durability-result.handle` carries the absolute tree path of the durable entry. The sender reads it as any tree path — `tree:get` / sync / subscription. The receiver chooses storage layout; the sender follows the path.
+**Handle-in-response.** The receiver returns the address in the response: when `applied != none` (or on `202`, where the committed entry will land), `system/durability/result.handle` carries the absolute tree path of the durable entry. The sender reads it as any tree path — `tree:get` / sync / subscription. The receiver chooses storage layout; the sender follows the path.
 
 **The receiver decides layout, not the spec.** The inbox is **one example** of a durable store; a receiver MAY preserve a durable entry anywhere in its tree (under `system/inbox/...`, under a per-tenant namespace, behind a content-addressed path, anywhere it pleases). A receiver that wants offline-constructable addresses — so senders can derive paths without first seeing the response — MAY use an invariant-pointer-style scheme per ENTITY-CORE-PROTOCOL.md §3.5. Optional, not required. (The spec does not mandate the inbox path, an invariant-pointer scheme, or any specific layout.)
 
@@ -125,7 +125,7 @@ These obligations apply only to peers that install this extension. A peer that d
 - Never silently discard a `durability_request`; always answer with status + the `durability` field per §5.
 - `applied` MUST report only durability physically in place at response time; MUST NOT report a not-yet-achieved (promised) level in `applied`. A promised strength MUST be carried in `committed` with status 202 only.
 - Status 412 MUST mean the operation was not performed (refused at acceptance). 412 is returned when (i) a `must_have` request's required durability cannot be met at a *recognized* level, or (ii) the requested level is **not recognized** by the receiver and `must_have` is true (§5 fail-closed rule).
-- The `durability` field MUST follow the pinned `system/durability-result` shape; `committed` MUST appear only with 202; `max_available` only with 412.
+- The `durability` field MUST follow the pinned `system/durability/result` shape; `committed` MUST appear only with 202; `max_available` only with 412.
 - The `handle` field MUST be present in the response when `applied != none`, and on 202 (naming where the `committed` entry will land); MUST be absent otherwise. The `handle` is the sender's lookup address (§6); the receiver chooses the path.
 - A durable request whose `(author, request_id)` matches a previously preserved entry MUST be rejected with **409 `duplicate_request_id`** (§5). The receiver enforces uniqueness over the pair regardless of storage layout. Idempotency caching (returning the cached verdict before issuing 409) is implementation-defined.
 - A `durability_request` with a `level` value the receiver does not recognize MUST fail closed: `must_have: true` → 412 with `reason: unknown_level` and `max_available` = the strongest level the receiver does recognize (or `none`); `must_have: false` → 200 with `applied: none, reason: unknown_level` (best-effort fallback) (§5).

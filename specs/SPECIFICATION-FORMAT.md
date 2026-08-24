@@ -354,6 +354,40 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 
 **Corollary — a core-model spec may extend a core namespace.** The ownership half of this rule constrains *cross-owner* definition, not layering as such: a core-model document defining a type inside a core namespace is core extending core, which is ordinary. The placement half above still applies to it.
 
+#### 8.4.3 Derived documents are never authoritative `[normative]`
+
+> **A generated, condensed, or summarizing document is downstream of its sources and MUST NOT be cited as the definition of anything.** Ownership belongs to the spec that defines a type; a derived document only *reproduces* it. **A derived document that disagrees with its source is stale, not evidence of a defect** — and reconciling it is the maintainer's regenerate-or-retire hygiene, never a conformance gate and never a cohort action.
+
+**Every derived document MUST say so in its header**, and every citation of one MUST resolve to the source instead. `ENTITY-CORE-MACHINE-SPEC.md` is the standing example: a derived condensed summary of the core specs plus this corpus, sourced from nothing and kept in sync with nothing. *(`EXTENSION-COMPUTE.md` §2.4 carries this note for `compute/error`.)*
+
+**Why this is normative and not a style preference.** A derived copy is indistinguishable from a source at a glance — same format, same declarations, same authority-looking prose — so an auditor comparing a spec against it will find real differences and report them as real defects. **That has happened here**: one audit cycle produced thirteen "drifted types," three escalated as interoperation-breaking, every one of them an artifact of diffing specs against their own stale output. **Before measuring conformance to a document, establish that something is actually sourced from it.**
+
+#### 8.4.4 One top-level namespace segment per owner `[normative]`
+
+> **A specification owns exactly one top-level `system/<segment>`, named for itself, and everything it defines nests beneath that segment.** A specification MUST NOT hold two top-level segments. A specification MUST NOT use a hyphenated top-level name (`system/foo-request`) where a nested path (`system/foo/request`) expresses the same thing.
+
+**Hyphens separate words; `/` separates scopes.** `system/durability-request` and `system/durability-result` are not two concepts — they are one concept's request and result, spelled with the wrong separator, and they consume two top-level segments as a result.
+
+**Name the segment for the owner, never for the problem domain.** `system/nat/*` describes *what the messages are about*; `system/signaling/*` describes *who defines them*. Only the second answers the question a namespace exists to answer — **given a type, which specification defines it?** A problem-domain segment also strands its siblings: the moment a second substrate arrives, the domain name no longer covers it and a third segment gets invented.
+
+**This is a flat scheme on purpose, and it is not a status ranking.** A namespace segment costs nothing to peers that do not implement the extension — it is a prefix on types only its implementers hold. **The tiering test in §8.4.1 does NOT extend here**, and importing it would be applying a rule past its rationale: §8.4.1 exists because a field on a core type is carried, preserved and hashed by *every peer forever*, and that cost asymmetry is absent for a namespace. Nesting one extension's segment inside another's to signal that it is "less core" would also violate §8.4.2 — a specification does not define types inside a namespace another specification owns.
+
+> **Precondition — a rename is not a cleanup until this is answered `[MUST, applies to §8.4.2 and §8.4.4 alike]`.** **The type string is content-hash input.** `Hash::compute` hashes ECF `{data, type}` (`ENTITY-CORE-PROTOCOL.md` §1.2), so renaming a type **rebinds the `content_hash` of every entity of that type** — universally, for every type, not as a special case. Before renaming anything, answer both in writing:
+>
+> 1. **Is there durable data of this type at rest?** An entity already written carries the **old** type string in its bytes. After a rename, a handler dispatching on the new string **does not match it** — the data is not corrupted, it is *orphaned*.
+> 2. **Is any entity's `content_hash` referenced by something else?** A rename changes the hash, so every stored reference to it dangles.
+>
+> **If either is yes, the rename is a data migration, not a cleanup, and the type is NOT retroactively renamed.** Record the exception where the type is defined. **New types in the same family SHOULD adopt the correct namespace** — the grandfathering is for what already exists.
+>
+> **Worked example (`EXTENSION-ENCRYPTION.md` §5.1):** `system/encrypted` and `system/encryption-pubkey` keep their flat names. Renaming would rebind the hash of every encrypted entity at rest **and** change every `recipient_key` — which *is* `content_hash(pubkey)` — breaking peer/group encryption for all published keys. Both implementations independently ship the flat names, so the spec renaming away from them would have *manufactured* drift out of a cohort-converged surface.
+>
+> **This precondition exists because it was skipped.** The 2026-08-02 namespace pass classified that rename as a cheap in-step cleanup and had to revert it. The ideal in this section yields to the hash-input invariant, every time.
+
+**Legitimate exceptions, which MUST be documented where they occur:**
+
+- **Roots that belong to no extension** — `primitive/*` (core scalar primitives).
+- **A distinct authored artifact, as opposed to an operational surface.** `compute/*` (the expression-language node types an author writes: `literal`, `lookup`, `apply`, `if`, `lambda`) is deliberately separate from `system/compute/*` (the handler's operation surface a peer invokes). The test for this exception is narrow: **two genuinely different kinds of thing, authored by different parties for different purposes** — not merely two groups of types from one spec.
+
 ### 8.5 Conformance
 
 Extension specs have their own conformance section. An implementation MAY be conformant to the core protocol without implementing any extensions. Extension conformance is independent.

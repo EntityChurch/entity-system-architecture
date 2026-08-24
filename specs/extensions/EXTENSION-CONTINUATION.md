@@ -502,7 +502,7 @@ advance_forward(continuation, result, status, continuation_path):
       operation: error_delivery_spec.operation or "receive"
       resource:  {targets: [error_delivery_spec.uri]}
       params:    {
-        type: "system/protocol/inbox/delivery"
+        type: "system/inbox/delivery"
         data: {original_request_id: context.request_id, status: status, result: result}
       }
     })
@@ -557,7 +557,7 @@ advance_forward(continuation, result, status, continuation_path):
           operation: error_delivery_spec.operation or "receive"
           resource:  {targets: [error_delivery_spec.uri]}
           params:    {
-            type: "system/protocol/inbox/delivery"
+            type: "system/inbox/delivery"
             data: {original_request_id: context.request_id, status: dispatch_result.error.status, result: dispatch_result.error}
           }
         })
