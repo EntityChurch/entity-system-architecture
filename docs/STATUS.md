@@ -1,15 +1,47 @@
 # entity-system-architecture — status
 
-_Updated: 2026-08-24 · public: **v0.8.0** (`master`) · working: **0.8.2 cut in the headers, not
-tagged**._
+_Updated: 2026-08-24 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
+CHANGELOG heading._
 
-_**The published surface was four documents short and nobody had looked.** `CANONICAL-DOCS.toml`
-is a **keep-list** — everything not declared in it is dropped at publish — and it had not gained a
-document since **2026-06-30**. Two months of landed work was silently unpublished, including
-`EXTENSION-SIGNALING` v1.1, a spec this repo's own CHANGELOG was already counting (26 claimed, 25
-published; applications 4 claimed, 3 published). **All four now publish** by operator ruling; disk
-and keep-list reconcile **76 = 76**. Surfaced by `entity-core-papers`' render report — see
-`COHORT-OPEN-ITEMS.md` §0c and `ROUTING-2026-08-24-a`._
+_**The release number is 0.8.2, following `entity-core-protocol` rather than the
+implementations** (operator, 2026-08-24). The specs are not semantically versioned as a set — each
+spec's own header is authoritative for that document — so the repo-level number tracks the core
+protocol it layers on, not py/rust/go's 0.9.0. Arch has never carried a release number before; the
+`v0.8.0` tag on this repo was a fleet-wide Genesis tag, not an arch release line._
+
+_**OPEN — the proposal and exploration corpora, and it is a mechanism problem, not a content one.**
+Operator ruled that **proposals publish**: 82 files, cited **41 times** by published specs and
+guides, and the repo's own rule (*spec text is not our log — rationale lives in the proposal*) means
+that dropping them leaves normative text whose derivation exists **nowhere** a reader can follow.
+Explorations (35) and the two doctrine documents were ruled in with them; `ABSORPTION-*` reviews
+(22, cited **zero** times) and the 251 dated status snapshots stay internal._
+
+_**What blocks it: `proposals/`, `research/` and `explorations/` are all themselves recognized
+doc-roots in the publication filter** (`canon.go:63`), so moving the corpus to a top-level
+`proposals/` does **not** protect it — the natural name is the one name that cannot work. The
+keep-list takes exact paths with no globs, so the declared route costs 117 hand-written entries,
+which the operator rejected as not being a mechanism. **The protected route is a top-level directory
+whose name is not on that list**, and it is defensible on the filter's own stated principle —
+*"the filter read 'under a doc root' as 'is documentation.' **Location is not function**."* If
+proposals are product, they do not belong on the dev-doc surface. **Not executed: it is a
+224-reference rewrite plus arch-tools config, and the operator is still triaging which documents
+belong in the published set.** Sequence the move after that triage, not before._
+
+_**Two lines to decide if explorations publish**, both quotations and therefore not silently
+edited: `EXPLORATION-BRIDGE-HOST-AND-ANY-NATIVE-COMPUTE.md:45` and
+`EXPLORATION-NAMING-LANDSCAPE-AND-THE-DNS-MAPPING.md:314` (a §4.9 section heading). They are the
+record of how a question was actually posed; sanitising them is a call to make deliberately._
+
+_**The published surface needed two different fixes and I graded them backwards the first time.**
+`CANONICAL-DOCS.toml` is a **keep-list**, but it governs only `docs/` and loose root documents —
+`specs/` and `guides/` are always kept, declared or not (`canon/canon.go:10`). So the four
+undeclared specs and guides were **never at risk** — they survive the filter today as undeclared
+files, measured — while the five undeclared **root** documents were the ones a cut would delete.
+I had both in front of me in one sweep and called the harmless set the emergency. The keep-list
+had genuinely gained no document since **2026-06-30**, and the CHANGELOG had been contradicting it
+in print (26 extensions claimed, 25 declared; applications 4 and 3) — so all four are declared now
+and disk reconciles **76 = 76**. Surfaced by `entity-core-papers`' render report, severity
+corrected by meta. See `COHORT-OPEN-ITEMS.md` §0c and `ROUTING-2026-08-24-a`._
 
 _**Also cleared: `egui` is gone from the specs and guides** — 48 lines, 15 files. It named a real,
 unrelated third-party Rust GUI crate this project used briefly and fully removed, so a reader met a
@@ -22,11 +54,23 @@ survive the repo split and their topology pin could not be regenerated. It is
 `entity-system-arch-tools/spec-tool/`, live and extended — **this team owns three repos, and the
 tooling is the third.** `spec topology` is the command._
 
-_**Release-blocking set is exactly two, and neither is arch's text.** (1) `entity-core-keystone`'s
-`AGENTS-STANDARD.md` is canonical and cites a commit that resolves in no repo. (2)
-`entity-browser-rust`'s release workflow pins `CORE_RUST_REF` to a `dev`-only ref on four checkout
-legs — it must be the **tag** `v0.8.2`, and a push alone does not fix it. Both are routed. Everything
-else found this cycle is hygiene, UX, or deliberately deferred._
+_**Arch is next in the release order** (operator, 2026-08-24). **Nothing blocks it.** The one
+mechanical blocker meta routed — K1, five public root documents declared nowhere, which a cut would
+have deleted — **is fixed and verified by running the publication filter**, not by reading the
+config. `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` and `CLAUDE.md` all
+dropped at `3e1f3b6` and all survive now._
+
+_**The two items this log carried as release-blocking are both stale, and neither was arch's.**
+keystone's dead `AGENTS-STANDARD.md` pin is **CLOSED** — they shipped 0.8.2 on 08-24 and `e8524ed`
+appears nowhere in their public tree; arch's finding is why it was caught pre-cut. The
+`CORE_RUST_REF` pin is **still live and is now meta's B1**: the fix arch asked for was applied, the
+value is a tag name — and `entity-core-rust` shipped as **0.9.0** and was never tagged, so the
+defect survived its own fix with a new value. It does not gate arch._
+
+_**Fleet:** six public — arch-tools 0.8.1 · protocol 0.8.2 · py/rust/go 0.9.0 · keystone 0.8.2.
+Uncut: **arch (next)** · workbench-go · formalization · browser-rust. **`v0.8.0` tags exist on
+public GitHub for all seven repos**; nothing cut in *this* release has been tagged, which is meta's
+B1 and is settled with browser-rust in the room._
 
 _Arch gates: `check` **exit 0** · `ledger` **0** · `sdksync` **0 err** (47 unpinned, held as
 backlog) · `pins` reader-mode. The spec corpus lives in `entity-core-protocol`; `spec corpus` is
@@ -71,11 +115,12 @@ still read "Draft"); the M-level in `ROADMAP-EXTENSIONS.md` is authoritative.
 and Python reference implementations at **0-FAIL** and exercised by the keystone cohort (15
 generated peers all `--profile core` 0-FAIL). Maturity: **public research preview, v0.8.0** — the
 v1 extension set is mature; the network/resolution family is still converging.
+
 ## Where we left off
 
 **The release is a sequencing problem now, not a specification problem.** Nothing on the arch board
-blocks a cut, and the two blockers that exist are build-surface defects in other seats' trees, both
-routed 2026-08-23.
+blocks a cut. Arch is next in the order and the tree is ready; assembly, the oracles, the six gates
+and the fork push are meta's, per their release-curation runbook.
 
 **What the last cycle established, in order:**
 
@@ -89,9 +134,10 @@ routed 2026-08-23.
   siblings present, both coupled pairs build end to end — browser-rust produces its wasm bundle,
   workbench-go produces its five binaries. The documented sibling workflow is accurate; the open
   item is the error a user gets when they *skip* the sibling, which is UX.
-- **Release order is a DAG, not a cycle.** `entity-core-rust` tags first; browser-rust's
-  `CORE_RUST_REF` can carry `v0.8.2` **today**, before that tag exists, because a tag name is
-  knowable in advance where a SHA is not. That is the whole reason the pin must be a tag.
+- **Release order is a DAG, not a cycle**, and a tag name is knowable in advance where a SHA is
+  not — which is why the pin must be a tag. **The fix was applied and the defect survived it**:
+  `CORE_RUST_REF` is a tag name now, `v0.9.0`, and `entity-core-rust` shipped as 0.9.0 without ever
+  being tagged. Correct reasoning, correct application, same failure with a new value. Meta's B1.
 - **CI ships basic and iterates on a branch.** `.github/` does not exist on browser-rust's public
   `master`, so tagging today triggers nothing. A minimal workflow has to land on `master` at release
   for `workflow_dispatch` to be dispatchable at all; the full six-leg matrix is iterated on a side

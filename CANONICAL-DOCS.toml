@@ -40,6 +40,81 @@ title = "Status"
 blurb = "Current project status — where the project is, recent work, backlog, and what's next."
 group = "Overview"
 
+# ── Community health ──────────────────────────────────────────────────────────
+# K1, routed by meta 2026-08-24 and applied here. These five are ON public `master`
+# already and were declared NOWHERE, so a cut proposed to delete them: `canon-filter`
+# is a keep-list and drops any prose it is not told to keep. They survived v0.8.0
+# because that cut ran the old release-builder path, where the overlay INJECTED them;
+# the promote path selects instead, and nothing carried the declaration across.
+#
+# Declared rather than waived, deliberately. The fast way past a `[6/6] public-regress`
+# abort is to widen `.release-removals`, and that path ends with SECURITY.md — the
+# vulnerability-reporting address — deleted from a public repo, and the Code of Conduct
+# going quiet on a project whose Code of Conduct the operator wrote. Declare the files,
+# do not declare the removal.
+#
+# All six already-shipped repos declare all of these. Arch was not unusual; it was the
+# smallest instance of a gap the three uncut repos share.
+[[doc]]
+path  = "CHANGELOG.md"
+title = "Changelog"
+blurb = "What changed in each release line, per [ADR-0015] — the release-line record a reader checks before depending on a version."
+group = "Community health"
+
+[[doc]]
+path  = "CONTRIBUTING.md"
+title = "Contributing"
+blurb = "How to contribute: DCO sign-off from an accountable human, Apache-2.0 for code, the spec licensed separately, and the quality bar that applies however much tooling was used."
+group = "Community health"
+
+[[doc]]
+path  = "CODE_OF_CONDUCT.md"
+title = "Code of Conduct"
+blurb = "The behavioural contract for participation in this project."
+group = "Community health"
+
+[[doc]]
+path  = "SECURITY.md"
+title = "Security Policy"
+blurb = "How to report a vulnerability, and what to expect after you do."
+group = "Community health"
+
+# CLAUDE.md — DECLARED, not waived, and meta explicitly left this one to arch.
+# It is a two-line shim that imports AGENTS-STANDARD.md and AGENTS.md ([ADR-0016]).
+# Both of those are canonical by operator ruling as of 2026-08-23, so the pointer to
+# them should not be the one file that goes missing — a reader who finds the imports
+# but not the file that names them is worse served than one who finds neither. Every
+# shipped repo in the cohort declares it.
+[[doc]]
+path  = "CLAUDE.md"
+title = "CLAUDE.md — agent entry point"
+blurb = "The entry point that sends any agent to AGENTS-STANDARD.md (ecosystem conventions) and AGENTS.md (this repo's specifics). Guidance is written for any agent, not only Claude."
+group = "Community health"
+
+# ── Working here ──────────────────────────────────────────────────────────────
+# Declared because PUBLISHED documents already cite them, and a keep-list that
+# drops a cited target ships broken links on the public surface:
+#   DISCIPLINE-CHARTER              <- specs/SYSTEM-ARCHITECTURE.md, AGENTS.md, METHODOLOGY.md
+#   DOCTRINE-COHORT-STATE-TRACKING  <- EXTENSION-NETWORK, EXTENSION-SIGNALING, METHODOLOGY.md
+# The charter also declares itself "Canonical, undated, edited in place" and is the
+# companion to AGENTS.md, which publishes by operator ruling as of 2026-08-23.
+#
+# These two are declared individually because they ARE two files. The proposal and
+# exploration corpora are a different problem and are deliberately NOT solved this
+# way — 117 hand-written entries is not a mechanism, it is a mechanism's absence
+# written out longhand. See docs/STATUS.md for where that stands.
+[[doc]]
+path  = "docs/DISCIPLINE-CHARTER.md"
+title = "Discipline Charter — the assembled rule set and anti-pattern catalog"
+blurb = "This repo's lifecycle disciplines, the anti-pattern catalog, and the doctrines it runs, at the AUTHORING tier. Rules are earned on evidence: one incident makes a candidate, a second in a different shape ratifies it, and a discipline with no enforcement point is theater."
+group = "Working here"
+
+[[doc]]
+path  = "docs/DOCTRINE-COHORT-STATE-TRACKING.md"
+title = "Doctrine — tracking cohort build state without asserting it stale"
+blurb = "How a claim about what another implementation has built is made, dated and re-verified. Written after the same defect recurred: a measurement true when taken, plausible forever after, and invisible to review."
+group = "Working here"
+
 # ── Extensions ────────────────────────────────────────────────────────────────
 [[doc]]
 path  = "specs/extensions/EXTENSION-ATTESTATION.md"
