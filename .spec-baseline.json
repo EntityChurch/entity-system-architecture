@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Accepted narrative debt in NORMATIVE specs only. Informative arch-docs/charters are class-exempt (arch-tools 2d52deb), not listed here. --update-baseline may only lower a count.",
-    "total": 458,
+    "total": 457,
     "files": 30,
     "rules": [
       "amendment-provenance",
@@ -136,7 +136,7 @@
       "amendment-provenance": 11,
       "date-in-body": 2,
       "impl-team-ref": 5,
-      "proposal-citation": 2
+      "proposal-citation": 1
     },
     "specs/extensions/EXTENSION-ROLE.md": {
       "date-in-body": 1,

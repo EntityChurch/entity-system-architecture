@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.12
+**Version**: 1.14
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -502,7 +502,7 @@ data: {
   ],
   name_format_dispatch: [                                     ; meta-resolver routing
     {
-      pattern:        <POSIX shell-glob>,
+      pattern:        <closed wildcard pattern — `*` is the ONLY metacharacter; see "pattern grammar" below>,
       backend_kinds:  [<kind>]                                ; which backends to consult for this format
     }
   ]
@@ -511,9 +511,30 @@ data: {
 
 Stored at `system/registry/resolver-config` (peer-local; not synced).
 
-**`name_format_dispatch` is a filter, not a routing table, and it expresses no precedence.** Two entries in any realistic configuration match the same name — a catch-all matches everything, and a domain-shaped pattern and a bare `authority` pattern overlap on every dotted authority. A name matching several entries is eligible at the **union** of their `backend_kinds`; evaluation does not stop at the first matching entry. **Precedence is `resolver_chain[].priority`** — the filtered backends are consulted in ascending priority order (§4.1 step 3) and the first validated hit wins (§4.1.1). A name matching no entry is treated as matching the catch-all (§4.1a). What bounds a broad pattern is therefore not its position in the list but **what it is permitted to name** — §4.1 step 2's catch-all MUST.
+**`name_format_dispatch` is a filter, not a routing table, and it expresses no precedence.** Two entries in any realistic configuration match the same name — a catch-all matches everything, and a domain-shaped pattern and a bare `authority` pattern overlap on every dotted authority. A name matching several entries is eligible at the **union** of their `backend_kinds`; evaluation does not stop at the first matching entry. **Precedence is `resolver_chain[].priority`** — the filtered backends are consulted in ascending priority order (§4.1 step 3) and the first validated hit wins (§4.1.1). What bounds a broad pattern is therefore not its position in the list but **what it is permitted to name** — §4.1 step 2's configuration MUST.
+
+**A name matching no entry yields the empty set, and the chain reports `chain_exhausted` (§4.1 step 4, fail-closed) `[MUST, v1.14]`.** This is the same disposition §4.1a already gives the mirror case — a dispatch entry narrowing to a backend absent from the chain — reached from the other side. **It is not "no filtering":** an unmatched name resolving through the *whole* chain would consult every name-transmitting backend in it, which is a strictly larger disclosure than the one this section's MUST forbids, arriving by fallthrough. A name that resolves nowhere is a visible, recoverable misconfiguration; a name that resolves everywhere is an irreversible disclosure.
+
+> **Earlier text here read *"a name matching no entry is treated as matching the catch-all"*, and that sentence could never execute.** The catch-all is `*`, which matches **every** name — so if a catch-all row is configured, no name fails to match one, and if none is configured, the sentence names a row with no referent. Two implementations read it as *"no filtering"*, which is the one meaning it cannot carry: the catch-all is the most **restrictive** row in the recommended list.
 
 **`pattern` grammar.** The `name_format_dispatch[].pattern` field matches against the **user-facing name string** — not against a tree path — and it is therefore a **registry-local matcher**, scoped to this field. `*` matches any run of characters within the name, including none. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
+
+**The grammar is CLOSED, and every character that is not `*` is a LITERAL `[MUST, v1.13]`.** The matcher is a pure wildcard match over the whole name string, anchored at both ends:
+
+```
+dispatch_match(pattern, name):
+  ; `*`  — matches any run of characters, including none.
+  ; ANY other byte, including `?` `[` `]` `\` `.` `:` `@` `/`, matches only itself.
+  ; Any NUMBER of `*` is permitted — `*@*.*` is three, and it is in the table below.
+  ; `/` is NOT a separator here: a name is a flat string with no segment structure.
+  ; The match spans the WHOLE name; there is no unanchored/substring form.
+```
+
+**Implementations MUST NOT delegate this to a path-glob or shell-glob library.** Go's `path.Match`, POSIX `fnmatch`, and their equivalents all give `?` and `[…]` character-class meaning this grammar does not grant, and most of them stop `*` at a `/`. **A matcher that merely *omits* those features and one that treats them as literals are indistinguishable until a name or a pattern carries one** — the same reason `**` had to be rejected rather than left unmentioned in `EXTENSION-REVISION` §2.4.
+
+**No pattern is invalid, so there is no write-time rejection here** — every string is a well-formed pattern, because every non-`*` byte is a literal. That is a deliberate difference from `EXTENSION-REVISION`'s four closed forms, which need a `400` because that grammar *can* be violated. **State it rather than infer it:** a registry MUST NOT reject a dispatch pattern for containing `?`, `[`, or `\`.
+
+**Conformance `REG-DISPATCH-GRAMMAR-1` (REQUIRED, cross-impl-observable).** Four rows: pattern `a?c` matches the literal name `a?c` and **not** `abc`; pattern `a[bc]d` matches `a[bc]d` and **not** `abd`; pattern `*@*.*` matches `alice@example.com`; pattern `x*z` matches `x/y/z` — **`*` crosses `/`**, which is the row that fails against every path-glob implementation.
 
 **This is not `ENTITY-CORE-PROTOCOL` §5.4 and MUST NOT be read as it.** §5.4 governs *paths*, where `pattern/*` is a subtree prefix match; a name is a flat string with no segment structure and no peer-id head, so the path matcher's forms (`/*/` peer strip, trailing `/*` subtree) have nothing to bind to here. The two are separate matchers over separate domains, and neither confers a reading on the other. **No `**` token exists in either.**
 
@@ -524,13 +545,45 @@ When `meta_resolve(name)` is called:
 1. **Pinned bindings** override everything. If `name` matches a pinned entry, return the synthesized result (§4.1.2) immediately.
 1a. **Authority-part peer-id decode precedes glob dispatch (MUST).** For a name of the form `name@X`, attempt to decode `X` as a V7 §1.5 Base58 peer-id **before** applying step 2. If it decodes, `X` is a **verification pin**, not a targeting instruction: resolve `name` through the ordinary chain and require the result's `peer_id` to equal `X`, refusing fail-closed and advancing the chain on mismatch (§6a.4's disposition — a pin that resolves elsewhere is the §6a.1a substitution case caught one layer up). This ordering is normative because a broad `*@*` dispatch entry would otherwise capture `alice@z6Mk…` and send a private name to a remote registry to answer a question the consumer can answer locally.
 
-2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose dispatch pattern matches the queried `name` (the registry-local name matcher defined above — **not** `ENTITY-CORE-PROTOCOL` §5.4). Backends without a `name_format_dispatch` entry default to "match all" (no filtering); backends with one are consulted ONLY when the pattern matches. **This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority. **Consequently the catch-all MUST NOT name a backend whose consultation transmits the queried name.** The catch-all is the path every unscoped name takes, so a name-transmitting binding there discloses **every bare name a user types** — including a private handle or a typo — silently, on the happy path, in a configuration the user did not choose, and irreversibly.
+2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose `backend_kind` is eligible for the queried `name`, using the registry-local name matcher defined above (**not** `ENTITY-CORE-PROTOCOL` §5.4).
+
+**Eligibility is a pure function of the name `[MUST, v1.14]`:**
+
+```
+eligible_kinds(config, name):
+  rules := config.name_format_dispatch
+  if rules is absent or empty:
+      return ALL                                          ; the filter is disabled — see below
+  matched := [ r for r in rules if dispatch_match(r.pattern, name) ]
+  return union( r.backend_kinds for r in matched )        ; the EMPTY SET if nothing matched
+
+; a resolver_chain entry is consulted IFF entry.backend_kind ∈ eligible_kinds(config, name)
+```
+
+**A kind reaches eligibility only by being named.** There is no per-backend default and no "match all" for a kind that appears in no rule: `matched` is a set union over the rules, so a kind named nowhere is eligible nowhere. Row order is irrelevant — the union is order-free, which is why this list carries no precedence (§4) and `resolver_chain[].priority` carries all of it.
+
+**An absent or empty `name_format_dispatch` disables the filter entirely**, and that is the only place "no filtering" is correct. It is a real discontinuity — zero rules admit every kind, one non-matching rule admits none — and it is deliberate: it is the ordinary filter-absent versus filter-present-and-excluding distinction, and a peer whose chain holds only name-blind backends transmits nothing either way. What makes it safe is the MUST below, which reaches it.
+
+> **This paragraph previously carried a second, per-backend sentence** — *"backends without a `name_format_dispatch` entry default to match all; backends with one are consulted ONLY when the pattern matches"* — **and it contradicted the union rule above.** It was a category error rather than a wording problem: rules name `backend_kinds`, not backends, so *"a backend without an entry"* has no referent. Three implementations reached three behaviours from one paragraph. The mechanism is now stated once, as a function.
+
+**This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority.
+
+**Consequently: a distribution's shipped `system/registry/resolver-config` MUST NOT make a name-transmitting backend eligible for an unscoped name `[MUST, v1.14]`.** The name-transmitting kinds are `dns-txt`, `well-known-url`, `did-web` and `consensus-anchored` (the table below). **The rule binds the configuration as a whole, not one row**, and it has two doors:
+
+- naming such a kind in **any** rule whose pattern matches unscoped names — the catch-all `*` is the usual one, and an unscoped name is the path every bare name takes; and
+- shipping an **absent or empty** `name_format_dispatch` while such a kind sits in the `resolver_chain` — the filter is disabled, every kind is eligible, and there is no catch-all row to inspect.
+
+A third door — leaving a name-transmitting kind out of every rule so it "defaults to match all" — is closed **by construction** by the union rule above, and needs no clause.
+
+An unscoped name discloses **every bare name a user types** — including a private handle or a typo — silently, on the happy path, in a configuration the user did not choose, and irreversibly. An operator MAY override this on their own peer; a distribution MUST NOT ship it.
+
+> **Stated at the width of the invariant, not of the instance.** An earlier form bound only *the catch-all row*, which made it evadable by not writing that row.
 
 **The banned property is name transmission, not remoteness**, and the two are not the same thing:
 
 | Backend kind | Catch-all | Why |
 |---|---|---|
-| `local-name`, `self-certifying` | **MAY** | No network consultation at all. *(A **pinned** binding never reaches this table — §4.1 step 1 returns it before dispatch runs.)* |
+| `local-name`, `self-certifying`, `out-of-band` | **MAY** | No network consultation at all. *(A **pinned** binding never reaches this table — §4.1 step 1 returns it before dispatch runs. `out-of-band` is the **kind** a pin's synthesized binding carries (§4.1.2), and per §6a.4 it matches only when explicitly configured as its own chain entry — so it is dispatchable where `pinned` is not.)* |
 | `peer-issued` **resolved per §6a.4 through the signed root** | **MAY** | Every request is content-addressed. The queried name is matched inside a node already fetched and never appears in a request. |
 | `dns-txt`, `well-known-url`, `did-web`, `consensus-anchored` | **MUST NOT** | Consultation *is* disclosure — the name goes to a third party as a query, a path segment, or a document name. |
 
@@ -557,15 +610,15 @@ The `#` column numbers the rows for reference; it is **not** an evaluation order
 | 3 | `*.eth` | `["consensus-anchored"]` | scheme-typed by suffix |
 | 4 | `*@*.*` | `["dns-txt", "well-known-url"]` | domain-scoped — **dotted** authority |
 | 5 | `*@*` | `["peer-issued"]` | registry-scoped — **undotted** handle |
-| 6 | `*` | `["local-name", "self-certifying", "peer-issued"]` | catch-all — **no name-transmitting backend (MUST)** |
+| 6 | `*` | `["local-name", "self-certifying", "out-of-band", "peer-issued"]` | catch-all — **no name-transmitting backend (MUST)** |
 
 **Two tokens were corrected here `[v1.12]`, and both were dead config in every conformant peer.** §2.4.1 is the canonical `backend_kind` vocabulary and neither appeared in it, so §4.2's forward-compat rule — *an unknown `backend_kind` MUST cause the entry to be skipped with a warning* — **discarded rows this spec recommends shipping.**
 
 - **`did-key` → `self-certifying`.** Row 2's own Shape column already said *self-certifying*: a `did:key:` name carries its key, so the self-certifying backend decodes it. No new vocabulary is needed and none is added.
 - **`pinned` → removed** (replaced by `self-certifying`, which the catch-all table below already admits). **`pinned` is not a backend kind and cannot be reached from dispatch:** §4.1 step 1 returns a pinned match **immediately**, before the step-2 filter runs, and §4.1.2 uses `pinned` as a **`backend_id`** on the synthesized result — a result label, not a dispatch target. Naming it in `backend_kinds` was a category error that no configuration could act on.
 
-**Rules 4 and 5 overlap, and `priority` resolves it — not the row order.** A POSIX glob cannot
-express "undotted", so `*@*` necessarily also matches a dotted authority: `alice@example.org` is
+**Rules 4 and 5 overlap, and `priority` resolves it — not the row order.** The dispatch matcher cannot
+express "undotted" — it has one metacharacter — so `*@*` necessarily also matches a dotted authority: `alice@example.org` is
 eligible at `dns-txt`, `well-known-url` **and** `peer-issued`. The dispatch list does not choose
 between them; `resolver_chain[].priority` orders them and §4.1.1 returns the first validated hit.
 A deployment that does not want a dotted name reaching its peer-issued registry expresses that by
@@ -609,6 +662,10 @@ Empty `transports` on a pin is acceptable; pins assert binding authority. Transp
 ### §4.2 Schema versioning
 
 New backend kinds will be added over time. Resolver-config is forward-compatible: an unknown `backend_kind` MUST cause the entry to be skipped with a warning, NOT cause the whole config to be rejected.
+
+**An unknown kind is not a name-transmitting kind, and MUST NOT be treated as one `[MUST, v1.14]`.** The §4.1 step-2 refusal is scoped to the four kinds this spec **declares** name-transmitting (`dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`); an undeclared kind falls to the rule above and is skipped, so it consults nothing and discloses nothing. Refusing a whole configuration because a broad pattern names a kind this build does not recognize rejects a deployment authored against a **newer** vocabulary, which is the case this section exists to permit.
+
+**The forward risk this raises is real and is discharged by *when* the check runs, not by refusing early.** A kind that is unknown today may be declared name-transmitting tomorrow, and a config validated once would then carry a violation nobody re-examined. §11.1 requires the check **at load** — so the peer that upgrades its vocabulary re-runs it against the same stored config on its next load, and the entry that was inert becomes a refusal at the moment it stops being inert. A write-time-only check is the variant that fails here; a load-time check does not need to be conservative about kinds it cannot classify.
 
 ---
 
@@ -1489,7 +1546,8 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 - Service advertisement (§3b) — `system/registry/service-advertisement` entity: signature-verify against the pinned deployment identity, fail-closed on tamper/expiry (§3b), the OPTIONAL `services` field on `ResolutionResult` with **absent as a valid floor** (§3b.1), and the §3b.2 per-service-type selection rules including the §3b.3 byte-pinned rendezvous-hash for `signaling`.
   - **Vectors.** Publish a signed advertisement → `resolve` returns it in `services`; a tampered and an expired advertisement each fail closed with no silent downgrade; a Tier-0 zone carrying no advertisement resolves normally with `services` absent. **The selection vector MUST use a two-member pool** — a one-member pool makes every construction agree and proves nothing (§3b.3).
 
-- **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** A resolver-config whose catch-all entry names a remote backend MUST be refused or normalized at load; and resolving a bare (unscoped) name MUST produce no read against any remote registry. **The observable is the absence of a request**, so the check asserts on the registry peer receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
+- **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** **The discriminator is name transmission, not remoteness `[v1.14]`.** A resolver-config that makes a **name-transmitting** backend (`dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`) eligible for an unscoped name MUST be refused or normalized at load — whether by naming it in a rule that matches unscoped names or by carrying no `name_format_dispatch` at all; and resolving a bare (unscoped) name MUST produce no request carrying that name to any third party. **The observable is the absence of a request**, so the check asserts on the third-party endpoint receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
+  - **`peer-issued` resolved per §6a.4 through the signed root is explicitly admitted** and MUST NOT be asserted against: it is a read of a **remote** registry, and it is name-blind (§4.1 step 2's table). **Asserting on remoteness here contradicts §4.1a row 6**, which recommends `peer-issued` in the catch-all — the vector was written at v1.7 when the catch-all was `["local-name", "pinned"]` and the two properties coincided, and the re-key to name transmission did not reach it. A fixture asserting *"no read against any remote registry"* fails the default list this spec ships.
 - **Hostile-origin vectors (§6a.1a).** The four pre-existing peer-issued vectors all pass on an implementation open to both defects below, because each tests a forgery the origin never attempts. **A suite where every implementation passes every vector while all of them share one hole is not evidence of convergence; it is evidence the suite does not reach the surface.**
   - **`REG-PEERISSUED-NAME-SUBSTITUTION-1`** — a **validly signed, current, unrevoked** binding for name *X*, served at `by-name/{Y}`. The resolver MUST refuse and advance the chain (§6a.4 `binding.name == norm`). Contrast with `REG-PEERISSUED-VERIFY-FAIL-1`, which covers a binding signed by a **non-pinned key** — the origin forging its own binding, which every implementation already refuses. Substitution requires no forgery at all.
   - **`REG-PEERISSUED-NULL-TTL-1`** — a peer-issued binding with `ttl: null`; the resolver MUST refuse and advance (§6a.3, §6a.4).

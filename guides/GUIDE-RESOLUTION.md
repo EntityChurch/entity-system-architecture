@@ -89,7 +89,7 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 ## 6. Name syntax & semantics — "name at registry"
 
-**The mechanism is fixed; the syntax is a convention.** Every lookup is one call: `system/registry:resolve(name)`. Which backend answers is decided in two stages: `name_format_dispatch` (REGISTRY §4.1 step 2) — a list of **POSIX-glob → backend-kinds** rules matched against the name string — decides which backends are **eligible**, and then `resolver_chain` **priority** decides the order they are tried in, first validated hit winning (REGISTRY §4.1 step 3, §4.1.1). The dispatch list is a **filter**; it carries no precedence of its own. So *the name's shape selects the naming authority*, and the substrate does not care what the shape is. This guide standardizes **four shapes** so apps, links, and registries all speak the same grammar. **No substrate change** — the grammar is realized by the default `name_format_dispatch` globs a distribution ships.
+**The mechanism is fixed; the syntax is a convention.** Every lookup is one call: `system/registry:resolve(name)`. Which backend answers is decided in two stages: `name_format_dispatch` (REGISTRY §4.1 step 2) — a list of **wildcard-pattern → backend-kinds** rules matched against the name string (`*` is the only metacharacter — REGISTRY §4's closed grammar, **not** a POSIX/shell glob) — decides which backends are **eligible**, and then `resolver_chain` **priority** decides the order they are tried in, first validated hit winning (REGISTRY §4.1 step 3, §4.1.1). The dispatch list is a **filter**; it carries no precedence of its own. So *the name's shape selects the naming authority*, and the substrate does not care what the shape is. This guide standardizes **four shapes** so apps, links, and registries all speak the same grammar. **No substrate change** — the grammar is realized by the default `name_format_dispatch` globs a distribution ships.
 
 ### 6.1 The four shapes (recommended grammar)
 
@@ -97,13 +97,13 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 | Shape | Example | Means | Routes via glob (example) | Backend |
 |---|---|---|---|---|
-| **bare name** | `alice` | "resolve through my default chain" | `*` (catch-all) | local-name, pinned — **local only** (REGISTRY §4.1 step 2) |
+| **bare name** | `alice` | "resolve through my default chain" | `*` (catch-all) | local-name, self-certifying, out-of-band, peer-issued — **no name-transmitting backend** (REGISTRY §4.1 step 2, §4.1a row 6) |
 | **registry-scoped** (email-shaped) | `alice@entity-church` | "this name **at** this registry" | `*@entity-church` | peer-issued (the named registry) |
 | **domain-scoped** | `alice@example.org` | "resolve via this DNS domain" | `*@*.*` (dotted authority) | dns-txt / well-known-url |
-| **scheme-typed** | `did:web:example.org`, `did:key:z6Mk…`, `example.eth` | a naming system with its own syntax | `did:web:*`, `did:key:*`, `*.eth` | did-web / did-key / consensus |
+| **scheme-typed** | `did:web:example.org`, `did:key:z6Mk…`, `example.eth` | a naming system with its own syntax | `did:web:*`, `did:key:*`, `*.eth` | did-web / **self-certifying** / consensus-anchored |
 | **self-certifying** | `z6Mk…` (a Base58 peer_id) | the name **is** the key | decodes as V7 §1.5 peer-id | none — self-verifying |
 
-This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* the Entity Church Registry" — the `@authority` names *which* registry, the local part is the name *within* it. Bare `alice` resolves against **your own local handles and pins** — the catch-all is local-only (REGISTRY §4.1 step 2), so reaching a registry is what the `@authority` form is *for*. `@authority` is not decoration: it is the user naming the authority they are willing to tell.
+This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* the Entity Church Registry" — the `@authority` names *which* registry, the local part is the name *within* it. Bare `alice` resolves against **your own local handles and pins** — the catch-all admits no backend that would transmit the name (REGISTRY §4.1 step 2), so telling a *third party* about a name is what the `@authority` form is *for*. `@authority` is not decoration: it is the user naming the authority they are willing to tell.
 
 ### 6.2 Why `@` (email-shaped) for the primary registry-scoped form
 
@@ -144,7 +144,7 @@ The grammar above names every backend the substrate is *designed* to carry. Most
 ### 6.4a What the grammar is NOT
 
 - **Not a new substrate surface.** It is `name_format_dispatch` globs + a documented convention — nothing in the kernel. **The defaults are now normative: `EXTENSION-REGISTRY` §4.1a carries the default list, §4.1 step 2 carries the catch-all MUST, and §4.1 step 1a carries the dispatch-on-X decode.** The table in §6.1 above is the teaching form of that list; §4.1a is its authority. The list is a **filter** — it decides eligibility, never precedence; `resolver_chain` priority does that.
-- **The catch-all is the one part you may not vary.** `*` routes to local-only backends. A default that sends unscoped names to a remote registry discloses every bare name a user types, silently and irreversibly — see §7a.
+- **The catch-all is the one part you may not vary.** `*` routes to **name-blind** backends only — never `dns-txt`, `well-known-url`, `did-web` or `consensus-anchored`. **The rule binds your whole shipped config, not just that row:** shipping no `name_format_dispatch` at all, while one of those kinds sits in your chain, is the same violation reached by omission (REGISTRY §4.1 step 2). A default that sends unscoped names to a third party discloses every bare name a user types, silently and irreversibly — see §7a. *(Note the discriminator: **name transmission, not remoteness.** `peer-issued` through the signed root is a remote read and is admitted, because the name never appears in a request.)*
 - **Not a global parser.** A deployment MAY ship different globs; the grammar is the *recommended interoperable default*, not a wire format. Two peers that ship the standard globs interoperate; one that doesn't simply routes its own way.
 
 ---
