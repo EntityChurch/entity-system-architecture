@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.3
+**Version**: 1.4
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -12,7 +12,7 @@
 >
 > **✅ Landed + implemented (v1):** resolver substrate (§2–§5); local-name backend (§6); peer-issued resolve + curated registration (§6a.1–§6a.8).
 >
-> **🟡 Design folded, build in flight / deferred:** peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — designed 2026-08-13 (v1.3); `pending-binding` schema, by-request pointer, approve/deny. Unbuilt in all three: rust withheld `pending_hash` pending this schema, python built an approve path against the reserved section, go's oracle asserts the handle. Route before building.**); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
+> **🟡 Design folded, build in flight / deferred:** peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — ruled 2026-08-13 (v1.3), corrected 2026-08-14 (v1.4). Built in all three within a day of the ruling and measured green: `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6`; go's `registry_issuer` oracle 27/27 against each sibling, 0F. Source-read in each tree 2026-08-14, not carried from a report — a dated observation, not a standing fact: re-read the peers' trees before citing it (`docs/DOCTRINE-COHORT-STATE-TRACKING.md` D8).** The four gaps the builds exposed — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability — are **ruled in v1.4** and are the remaining fold for all three); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
 >
 > **🔴 NOT yet designed — outstanding work before this extension is "done":**
 > - **`domain-control` DNS-challenge format** (§6a.9.1) — must be ONE mechanism shared with the web-native `dns-txt`/`well_known_url` backends; settles with *that* proposal, not here.
@@ -634,11 +634,26 @@ system/registry/peer-issued:register-request(request)
 ```
 type: "system/registry/register-result"
 data: {
-  status:        "bound" | "pending_review",   ; which outcome; snake per STYLE (status code)
+  status:        "bound" | "pending_review" | "denied",  ; which outcome; snake per STYLE (status code)
   binding_hash?: <system/hash>,                ; REQUIRED on "bound",         absent otherwise
   pending_hash?: <system/hash>                 ; REQUIRED on "pending_review", absent otherwise
 }
 ```
+
+> **`"denied"` added `[2026-08-14]` — the defect this box was written about, recurring one subsection
+> later, in the section written to fix it.** §6a.9.3's operations table returns `register-result
+> {status: "denied"}` from `deny-request`, and this declaration enumerated two values. **Both
+> `binding_hash` and `pending_hash` are absent on `"denied"`** — the request is decided and nothing was
+> published, so there is no hash to hand back; the decided head is reached through the by-request pointer
+> (§6a.9.3). All three implementations emitted `"denied"` as the table said and recorded the
+> enumeration as the stale half; **that reading is correct and is now the text.**
+>
+> **The recurrence is the finding, not the fix.** This box already stated the general rule — *"an
+> operation whose declared return type does not enumerate every branch of its own pseudocode is an
+> interop bug already in flight"* — and the very next subsection reproduced it, because the rule was
+> written as prose next to one instance instead of as a check over the corpus. A rule that can only be
+> obeyed by whoever remembers reading it does not bind the next author, who is usually the same author.
+> Routed to the corpus gate as a mechanical rule (declared enumeration vs. emitted value).
 
 > **Why this was a three-way divergence, and it is our defect `[2026-08-12]`.** The signature above previously read `→ binding_hash | rejection` — **two outcomes** — and then step 5 introduced a **third** in the pseudocode without extending the return type. `pending_hash` appeared **nowhere in this specification at all.** So each implementation invented a carrier: one a dedicated result type, one a result field, one `system/protocol/status`. **Three shapes is what an undeclared outcome produces**, and no implementation was wrong — there was nothing to be wrong against. **An operation whose declared return type does not enumerate every branch of its own pseudocode is an interop bug already in flight.**
 >
@@ -761,10 +776,12 @@ So the reference oracle currently fails a seat for withholding a value the spec 
 compute. **A `MUST` whose referent is unspecified is not a requirement, it is a trap**, and this
 section removes it.
 
-*Python's shape is ratified rather than replaced — it is the only worked implementation and it
-already follows §6.3's body/pointer split. **One seat is not convergence**, so the additions below
-(the by-request pointer, the decision states, deny, retention) are arch's design and are marked as
-such; they are the parts no implementation has built.*
+*Python's shape was ratified rather than replaced — at ruling time it was the only worked implementation
+and it already followed §6.3's body/pointer split. **One seat is not convergence**, so the additions
+below (the by-request pointer, the decision states, deny, retention) were arch's design and were marked
+unbuilt. **They are built in all three as of 2026-08-14** (pins in the outcome note at the end of this
+section); the marking is kept because it is what the reader needs to know about how the section was
+derived, not because the build state is still open.*
 
 **The storage shape follows §6.3 exactly — an immutable content-addressed body plus a mutable tree
 pointer.** This is not a new pattern; re-deriving one here is how the two would drift.
@@ -829,6 +846,17 @@ queued request *is* issuing a binding.
   live binding. *(Python already returns exactly this.)*
 - **A decision on an already-decided request returns `409 already_decided`** — approve and deny are
   not idempotent-by-replay, and re-approving would mint a second binding for one request.
+- **A decision on a *superseded* head returns `404 not_found` `[MUST]` `[RULED 2026-08-14]`.**
+  Supersession repoints the by-request pointer and deliberately leaves the prior body in the store for
+  audit, so a stale `pending_review` body stays fetchable forever and an operator holding an old
+  `pending_hash` can address it. Deciding it would issue a binding on terms the operator's queue no
+  longer shows and leave the pointer naming a different head than the one decided — an inconsistency no
+  later read untangles. `already_decided` is wrong (it was never decided) and `name_taken` is wrong (the
+  name is free), so this reuses the pinned `404` rather than inventing a cohort-divergent code.
+  **"One pending head per pair" is a rule about what is *decidable*, not only about what is listed** —
+  that sentence is the one the section was missing. *(All three implementations reached this reading
+  independently and two record that their first draft let the case through, which is why the vector
+  below matters more than the code choice.)*
 - **The decision states are the reason deny is not a delete `[MUST]`.** A denied request MUST leave
   a `status: "denied"` head reachable through the by-request pointer; the registry MUST NOT simply
   remove the entry. A requester polling a vanished pointer cannot distinguish *denied* from *never
@@ -839,6 +867,33 @@ queued request *is* issuing a binding.
   with the ordinary `tree`/`query` machinery, exactly as every other registry read works (§6a.3).
   Adding an operation for a list a tree walk already answers is the live-registry cost the coral-reef
   posture (§7.4) exists to avoid.
+
+**The decision operations take an un-typed input, and handlers MUST decode by shape `[MUST]`
+`[RULED 2026-08-14]`.** Every other write operation on this handler names a `system/registry/*` params
+type; these two deliberately do not. **No implementation may register a type definition for
+`system/registry/approve-request` or `.../deny-request`** — the names are not carried by this
+specification, and publishing a definition for one would manufacture a cross-impl type-census divergence
+out of a spec gap, making the divergence the publisher's. A handler MAY name a local type on the wire for
+its own dispatch, but **MUST NOT assert the params type on receipt**: an operator tool sending a
+differently-typed params entity carrying `pending_hash` interoperates. *(This is the narrow exception,
+not the pattern. It is chosen because the alternative — arch inventing two type names right now — pins a
+wire surface that no operator tooling exists to consume, and the corpus's own history says an invented
+name is the one the next implementation invents differently. When operator tooling lands, the types land
+with it.)*
+
+**Supersession must be observable, and the schema alone does not make it so `[MUST]`
+`[RULED 2026-08-14]`.** A `register-request` retry carries a fresh `nonce`, but `pending-binding` does
+**not** carry the nonce, so two retries of one intent inside a single millisecond encode to identical
+bytes and content-address to **one** body — at which point the 202's "new `pending_hash`" is the old
+`pending_hash` and a superseding write is indistinguishable from a no-op. **That collapse is correct and
+intended** — one head, one hash, and adding the nonce to the body would defeat the dedup for no gain.
+What follows from it is a conformance obligation, not a schema change: **`REG-PENDING-DECIDE-1`'s
+supersession half MUST vary a field the schema actually carries** (`requested_ttl` or `transports`), and
+an implementation MUST NOT rely on the returned `pending_hash` *changing* as its supersession signal.
+The observable invariant is the one stated above — **exactly one head reachable through the pointer for
+the pair** — which holds whether or not the two bodies collide. *(Raised by `entity-core-rust` while
+building the vectors; recorded because the next author to write a supersession test will reach for the
+nonce first.)*
 
 **Retention `[SHOULD]`.** A decided pending-binding (`approved` / `denied`) is GC-eligible after a
 configured retention window; the body stays content-addressed and auditable independently of the
@@ -859,11 +914,21 @@ keeps the queue an operator's inbox rather than a log.)*
   `approved` head; deny leaves a `denied` head **and publishes nothing** (assert the name does not
   resolve — a deny that silently issued would pass an outcome-only check); a second decision on
   either returns `409 already_decided`; a superseding request leaves exactly **one** head for the
-  pair.
+  pair; and **a decision on the superseded head returns `404 not_found`** — the case the section's own
+  supersession rule creates, which neither of the other assertions visits (`GUIDE-CONFORMANCE` §5.4a: a
+  reachable state no vector visits). The supersession steps MUST vary a field `pending-binding` actually
+  carries (`requested_ttl` / `transports`), never the request `nonce` — see the observability ruling
+  above, or the two bodies collide and the assertion is vacuous.
 
-**This unblocks Rust immediately** — the referent it was withholding a `MUST` for now has a shape
-— and it is a spec-side change for Python (deny states, supersession, retention) rather than a
-defect report.
+**Outcome, measured `[2026-08-14]`.** All three implementations built this section within a day of the
+ruling — `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6` — and go's
+reference oracle reports **27/27, 0F for each of them** on `registry_issuer`. Rust's withheld
+`pending_hash` was the correct posture and is discharged; Python's remove-on-approve was corrected to a
+retained `approved` head. **The four items ruled above (`denied` in the enumeration, the un-typed
+decision input, the superseded-head `404`, supersession observability) were each found by a build, not by
+review, and three of the four were reached independently by all three seats before anything was ruled** —
+which is the signal that the text was under-determined rather than misread, and the reason they are
+ratified as written rather than re-litigated.
 
 ### §6a.10 What the peer-issued backend does NOT do (v1)
 

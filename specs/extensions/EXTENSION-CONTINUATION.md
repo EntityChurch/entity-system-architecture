@@ -1,6 +1,6 @@
 # Continuation Extension — Normative Specification
 
-**Version**: 1.21
+**Version**: 1.22
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
@@ -903,10 +903,14 @@ execute_dispatch(continuation, raw_result):
   ; not `final_params`. This holds identically for pass-through, inject, and
   ; merge assembly modes.
 
-  ; Step 4: Chain link
+  ; Step 4: Chain link — the deliver_token is NOT a new primitive; its three
+  ; slots are already pinned by §4.2's capability table (result deliver_token
+  ; row). Minted per §3.6a; `servicing_peer` is the peer that will execute this
+  ; EXECUTE and therefore perform the delivery.
   if continuation.data.deliver_to != null:
     execute.deliver_to = continuation.data.deliver_to
-    execute.deliver_token = generate_internal_deliver_token(continuation.data.deliver_to)
+    execute.deliver_token = mint_result_deliver_token(continuation.data.deliver_to,
+                                                      servicing_peer)   ; §3.6a
 
   ; Step 5: Capability — dispatch_capability MUST be present for dispatching continuations.
   ; Revocation is handled automatically by dispatch-layer verify_request
@@ -956,6 +960,86 @@ resolve_or_default_resource(value, transform, field_name, default):
 ```
 
 `resource_extract` has special handling because the `resource` field is `system/protocol/resource-target` (`{targets: [...]}`) but the extracted value is typically a URI string or array of URI strings. The resolve wraps a string into the targets array structure. If the extracted value is already a well-formed resource target object (has a `targets` field), it is used as-is.
+
+### 3.6a Result deliver_token — `mint_result_deliver_token` (normative; v1.22)
+
+Step 4 previously read `execute.deliver_token = generate_internal_deliver_token(...)`. **That name was
+defined nowhere in the corpus** — it was the only call site, and no section, guide, or appendix said what
+it returned. This subsection defines it. Nothing here is a new design: §4.2's capability table already
+pins every slot, and this is that row written as the algorithm Step 4 invokes.
+
+```
+mint_result_deliver_token(deliver_to, servicing_peer):
+  ; The host peer (the peer running this continuation) mints from its own authority
+  ; over the inbox it owns. deliver_to.uri is in the host peer's namespace.
+  return mint_capability({
+    parent:     null                       ; self-rooted at the inbox owner — §4.2 table
+    granter:    host_peer_identity
+    grantee:    servicing_peer             ; the peer that will author the delivery EXECUTE
+    handlers:   [handler_of(deliver_to.uri)]
+    operations: [deliver_to.operation or "receive"]
+    resources:  {include: [deliver_to.uri]}   ; one path — see the scope MUST below
+    expires_at: <= the continuation's own dispatch window
+  })
+```
+
+- **Scope `[MUST]`.** The token grants **exactly one handler, one path, and one operation**. A broader
+  token is a standing grant to the servicing peer over the host's inbox namespace, which is not what a
+  single deferred delivery needs.
+- **`grantee` is the servicing peer, not the caller `[MUST]`.** The delivery EXECUTE is authored by the
+  peer that serviced the dispatch. The receiver's ordinary `grantee == author` check
+  (ENTITY-CORE-PROTOCOL.md §5.2) therefore requires the servicing peer in that slot. A token naming the
+  *caller* — the shape a `HandlerGrant` passed through the token slot produces — names a delivery it does
+  not authorize, and the receiver refuses it correctly.
+- **Transport.** The token entity and the signature entities for its chain MUST ride the dispatched
+  EXECUTE's `included` map, per §4.3.
+
+**When `deliver_token` is absent or does not name the delivering peer, the receiver MUST refuse the
+delivery `[MUST]`.** It MUST NOT fall back to the connection's session capability, to the inbound
+dispatch capability, or to any other capability it happens to hold. There is no permissive reading here:
+the field exists precisely to authorize this delivery, and a peer that substitutes a broader credential
+when it is missing is authorizing the delivery on authority the sender never conferred.
+
+> **Why this is a MUST and not a SHOULD, recorded because the cost was measured.** With the mint
+> undefined, each implementation improvised the *absent-field* case differently, and both improvisations
+> were locally reasonable: one receiver fell back to the connection's session capability, which verifies
+> on a dialed connection; the other presented the inbound dispatch capability and authored as itself,
+> failing the sender's `grantee == author` check. **Same-implementation pairings passed** — both ends
+> improvised the same way — so the only signal in the entire system was a single cross-implementation
+> failure, which was then routed at the peer that reported it, twice, across two cycles. A `MAY`-shaped
+> silence at a cross-peer seam does not produce two conformant readings; it produces one bug that only
+> the cross-peer pairing can see. (`GUIDE-EXTENSION-DEVELOPMENT.md` interop pitfall (a).)
+
+### 3.6b Advance authority — what the advance's caller capability is (normative; v1.22)
+
+**The continuation advances under its own `dispatch_capability`, and that capability — not the trigger's
+— is the caller capability of the advance context `[MUST]`.** §3.1b already says a trigger *reaches* a
+continuation and does not *own* it; this states the same rule at the layer that was actually consulting
+the wrong value.
+
+- **Level 1 — the dispatch gate.** Decided on the executing handler's grant, never on a propagated
+  caller capability (ENTITY-CORE-PROTOCOL.md §6.8, "Propagated caller capability is not a dispatch
+  gate").
+- **Level 2 — the handler's own path check** (`check_path_permission`, ENTITY-CORE-PROTOCOL.md §6.3;
+  sole enforcement when `resource` is absent). It consults the caller capability **of the chain the
+  handler is executing in**. For a continuation advance that is the `dispatch_capability` set at Step 5,
+  because the advance **is a new chain root**: the continuation was armed at install with a stated
+  authority, and the delivery that woke it is a trigger, not a caller.
+- **An implementation MUST NOT let the advance's onward dispatch run under the authority of the delivery
+  that triggered it `[MUST]`.** That is the confused-deputy escalation ENTITY-CORE-PROTOCOL.md §6.8
+  forbids in as many words, and it is worse than a local escalation: the effective authority of a
+  continuation then depends on *which peer delivered the trigger and how broad that peer's connection
+  grant was*. The same continuation succeeds or fails on facts outside its own entity. Authorization
+  that varies with the trigger is not a capability model.
+
+**Consequence — the `dispatch_capability` must cover the resource, which §4.2 already requires.** §4.2
+("When present") says the capability MUST grant the continuation's `target`, `operation`, **and
+`resource`**. A `dispatch_capability` scoped to handler and operation only is **already non-conformant**;
+it works today only where something broader is inherited underneath it. A vector whose fixture is scoped
+that way is asserting the escalation, not the rule — **fix the fixture, not the rule.** Where the target
+is resolved at advance time (`target_extract`), scope by pattern; §2.2's capability-interaction note
+already establishes that a pattern-scoped `resources.include` authorizes any dynamically-extracted path
+matching it, so nothing is lost in expressiveness.
 
 ### 3.7 Resume Operation
 
@@ -1288,6 +1372,30 @@ The dispatch capability token is created by the caller when setting up the conti
 
 For **cross-peer dispatch to a remote target**, envelope inclusion is *not* limited to the leaf `dispatch_capability`: the **full** authority chain up to the root the target peer recognizes MUST travel in the dispatched EXECUTE's `included` map — see §4.2 ("Chain transport"). The general ENTITY-CORE-PROTOCOL.md §3.1 / §3.2 rule places only the leaf cap (it alone is referenced from the EXECUTE `data` fields); the transitive parent/granter chain is referenced from *within* the cap entities and MUST be bundled explicitly by the dispatching peer.
 
+**Identity entities are part of that bundle `[MUST]` (normative; v1.22).** The bundle MUST carry a
+`system/peer` identity entity for **every `granter` and every `grantee`** appearing in the transported
+chain — not only for those that happen to also be a granter, and not on a best-effort basis. A bundler
+that cannot resolve one of them locally MUST fail **at bundle time** with `chain_unreachable` (§8.1)
+rather than dispatch an incomplete bundle.
+
+> **This completes §4.2's "Chain transport" rather than adding to it**, and it closes a
+> MUST-against-best-effort mismatch that was live in the corpus. ENTITY-CORE-PROTOCOL.md §5.5's step-2a
+> requires **every** capability in the chain to have a `grantee` resolving to a `system/peer` present in
+> `included`, failing `401 UnresolvableGrantee` otherwise. §4.2's transport rule enumerated cap links and
+> per-link signatures and stopped there, so implementations collected identities best-effort and silently
+> omitted what they could not resolve. **A MUST on the verifier paired with best-effort on the bundler is
+> an interop bug by construction** — the same shape as a `MUST` naming an undefined referent, one layer
+> out. It is invisible for a self-rooted capability, where granter and grantee collapse onto peers both
+> sides already hold, and it springs apart at exactly the §4.2 case-3 chain, where a third-party
+> installer is neither the EXECUTE author nor the peer serving the request: whether B can authorize at
+> all then depends on **whether A's store happened to hold the installer's identity** when A built the
+> bundle. That is authorization varying with the sender's cache state.
+>
+> **Fail at bundle time, not at the verifier**, because the sender is the only party that can fix it and
+> a `401` at the receiver is indistinguishable from a genuine authorization failure — it misroutes the
+> diagnosis to the peer that is behaving correctly. Over-inclusion stays free for the same reason §4.2
+> gives: content-addressing dedups anything the receiver already holds.
+
 ---
 
 ## 5. Suspended Continuation Lifecycle
@@ -1407,6 +1515,9 @@ A conformance suite SHOULD assert the install-time and additive MUSTs (§8.1) no
 - `transform_ops` (when transforms are supported): MUST implement the agreed op set with total/pure/bounded semantics, apply ops after `extract`/`select` and before the `*_extract` fields, and reject an unrecognized `op` at install (fail-closed) with `400 unknown_transform_op` — never silently skip (§2.2)
 - Cross-peer / remote-target dispatch (§4.2 case 3): the `dispatch_capability` chain MUST be rooted at the target peer's conferred authority, with the installer in-chain as the re-attenuation leaf granter (a chain rooted at the installer is non-conformant for a remote target), **and granted to the dispatching host peer — the `grantee` MUST be the identity that authors the dispatched EXECUTE (the continuation's host peer), so the target's `grantee == author` check (ENTITY-CORE-PROTOCOL.md §5.2) passes; granting to the installer (self-wielded) is non-conformant whenever the installer is not the host peer**; and the **full** authority chain (leaf → target-recognized root) MUST travel in the dispatched envelope's `included` map (the leaf-only reading of §4.3 is insufficient cross-peer)
 - Install handler MUST surface 404 `chain_unreachable` when any link in the cap's authority chain is missing from envelope `included` and local content store
+- **Bundle completeness (v1.22, §4.3):** the transported chain MUST carry a `system/peer` identity entity for **every** `granter` and `grantee` in it; a bundler that cannot resolve one MUST fail at bundle time with `chain_unreachable` rather than dispatch an incomplete bundle. Best-effort omission is non-conformant
+- **Result deliver_token (v1.22, §3.6a):** when `deliver_to` is set, the dispatched EXECUTE MUST carry a `deliver_token` self-rooted at the peer that owns `deliver_to`, granted to the servicing peer, and scoped to that one handler / path / operation. A receiver whose `deliver_token` is absent or does not name it MUST refuse the delivery and MUST NOT substitute the session capability, the inbound dispatch capability, or any other held credential
+- **Advance authority (v1.22, §3.6b):** the advance's caller capability MUST be the continuation's own `dispatch_capability`; an implementation MUST NOT let the advance's onward dispatch run under the authority of the delivery that triggered it. The `dispatch_capability` MUST cover the `resource` of the dispatch it authorizes (§4.2), not only the handler and operation
 - Advancement algorithm: resolve continuation at path, dispatch based on type (§3.3)
 - Forward continuation advancement algorithm (§3.4)
 - `remaining_executions` lifecycle — CAS decrement on successful advancement, do not advance when exhausted (§3.4)

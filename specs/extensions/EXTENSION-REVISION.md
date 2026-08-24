@@ -1,6 +1,6 @@
 # System Revision Extension
 
-**Version**: 3.8
+**Version**: 3.9
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
@@ -170,8 +170,11 @@ system/revision/merge-config := {
     pattern:              {type_ref: "system/tree/path"}
                            ; Path pattern (glob)
     strategy:             {type_ref: "primitive/string"}
-                           ; Strategy name: "three-way", "source-wins", "target-wins",
-                           ;   "lww", "keep-both", "manual", or a handler path for custom
+                           ; Strategy name — the §2.3 built-in table:
+                           ;   "three-way", "source-wins", "target-wins",
+                           ;   "lww", "keep-both", "manual", or "handler"
+                           ;   (custom dispatch: sentinel + the `handler` field
+                           ;    below; NOT a bare path — corrected v3.9)
     handler:              {type_ref: "system/tree/path", optional: true}
                            ; Custom merge handler path (for strategy = handler path)
     deletion_resolution:  {type_ref: "primitive/string", optional: true}
@@ -200,7 +203,11 @@ Stored at `system/revision/config/merge/path/{name}` (per-path) or `system/revis
 
 **KeepBoth bindings are versioned.** The additional binding at the `.keep-both-` path falls under the prefix and is included in the version snapshot. Subsequent merges see it as a normal binding. If a future merge also produces keep-both at the same original path, a new `.keep-both-{different_hash_prefix}` binding is created — keep-both paths accumulate until manually cleaned up or until a different strategy resolves the divergence.
 
-**Custom strategies.** When `strategy` is a handler path (e.g., `app/merge/text-handler`), the revision handler delegates content-level merge to that handler. The custom handler receives base, local, and remote entities and returns a merged entity or conflict.
+**Custom strategies `[corrected v3.9]`.** `strategy: "handler"` — the sentinel — with the handler path in the companion **`handler`** field (e.g. `{strategy: "handler", handler: "app/merge/text-handler"}`). The revision handler delegates content-level merge to that handler, which receives base, local, and remote entities and returns a merged entity or conflict.
+
+> **This paragraph previously read *"when `strategy` is a handler path"*, and that reading is retracted.** Two encodings of custom dispatch were live in this document at once: a *closed enumeration plus a `handler` path field*, and *any path string as the strategy value*. §5.2's `apply_strategy(strategy, …, handler_path)` takes the two as separate arguments and branches on `strategy == "handler"`, so the sentinel is the one the algorithm implements — and it is the only one compatible with §2.3's **write-time strategy-rejection contract** (`400 invalid_strategy`), which cannot exist over a value set that admits any path string. The open-value reading is the leg that goes.
+
+> **The merge-strategy vocabulary is the built-in table above, and it disagreed with itself in three places `[ruled 2026-08-14]`.** Found by the corpus coherence gate, not by review. The table names `three-way` / `manual`; §5.2's dispatch branched on `field-level` and had no `manual` arm; the per-type config block declared `"field-level" | … | "handler"` and omitted both `three-way` and `manual`. **`field-level` is the name of the algorithm §5.2 runs, not of a strategy an operator may select** — so a config carrying `strategy: "three-way"`, this spec's own documented default and the value used in its own §4.4.18 and merge-params examples, reached the dispatch's `else` arm and silently degraded to a conflict entity. All three sites now read from the table. Because `400 invalid_strategy` is pinned at config-write time, the disagreement was directly cross-impl-observable: which values a peer rejects depended on which of the three lists its implementer read.
 
 **Deletion-vs-entity resolution (v3.1, Amendment 4).** When the three-way merge classifies a (local, remote) pair as "both changed differently" and exactly one side is a deletion-marker binding (per §4.4.4 and ENTITY-NATIVE-TYPE-SYSTEM.md §4.9 `system/deletion-marker`), the `deletion_resolution` strategy applies. Default is `preserve-on-conflict`. Strategies:
 
@@ -2775,11 +2782,18 @@ apply_strategy(strategy, base_hash, local_hash, remote_hash, path, handler_path)
     return {resolved: true, hash: local_hash}
   elif strategy == "lww":
     return {resolved: true, hash: lww_resolve(local_hash, remote_hash)}
-  elif strategy == "field-level":
+  elif strategy == "three-way":
+    ; v3.9: this branch read `strategy == "field-level"`, which is the name of
+    ; the *algorithm* (§5.2 field-level comparison), not of the strategy. The
+    ; §2.3 built-in table has always called the strategy `three-way`, and it is
+    ; the documented default — so a config carrying the spec's own default value
+    ; fell to the `else` below and silently became a conflict entity.
     result = three_way_merge(base_hash, local_hash, remote_hash, path)
     if result.resolved:
       return {resolved: true, hash: result.hash}
     return null
+  elif strategy == "manual":
+    return null    ; always a conflict entity, even when auto-resolvable (§2.3)
   elif strategy == "keep-both":
     ; KeepBoth only applies to edit-vs-edit conflicts (both non-null).
     ; Delete-vs-edit conflicts (one side null) fall through to conflict —
@@ -2818,7 +2832,7 @@ dispatch_merge_handler(handler_path, base_hash, local_hash, remote_hash):
 system/revision/config/merge/type/{type_name} := {
   type: "system/revision/merge-config"
   data: {
-    strategy: "field-level" | "source-wins" | "target-wins" | "lww" | "keep-both" | "handler"
+    strategy: "three-way" | "source-wins" | "target-wins" | "lww" | "keep-both" | "manual" | "handler"
     handler:  system/tree/path (optional, when strategy is "handler")
   }
 }

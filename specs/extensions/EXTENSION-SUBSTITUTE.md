@@ -1,6 +1,6 @@
 # EXTENSION-SUBSTITUTE
 
-**Version**: 1.0
+**Version**: 1.1
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-CONTENT.md (v3.6+) — this extension exists to be consulted on CONTENT's local-miss path and hooks it at §5; without CONTENT there is no miss to substitute for. (The dependency is one-directional: not installing this leaves CONTENT's 404 behavior unchanged, §1.)
 **Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); EXTENSION-BRIDGE-HTTP (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above)
@@ -227,6 +227,21 @@ Dispatch is normal V7 §6 handler-URI dispatch — installing a convention makes
 
 For v1 the registered convention is **`system/substitute/http:try`** (§7). Future conventions (`peer-to-peer`, `nix-cache`, …) each ship in their own extension and bind to this contract.
 
+**A convention handler MUST refuse an entry whose `substitute_type` is not its own `[MUST]`
+`[RULED 2026-08-14]`** — `400 wrong_substitute_type`, refused **before any outbound fetch**. §6 pinned the
+orchestrator's routing and said nothing about the receiving end, and the cohort diverged on exactly that:
+one implementation refuses, another proceeds — an entry declaring `substitute_type: "peer-to-peer"` handed
+to the http convention built the URL and attempted the GET, answering `502 network_error`. Neither was
+violating anything written, which is why this is a spec defect and not a peer's bug.
+
+> **It is ruled toward refusal because of what the input is.** `entry` is publisher-supplied data reaching
+> a component whose entire job is making an outbound request on someone else's behalf. A publisher that
+> wrote `peer-to-peer` addressed that entry to a convention with a different — possibly far more
+> restricted — trust and network posture; honouring it from the http convention performs a fetch the
+> publisher never asked this handler to perform. "The orchestrator routes correctly, so handlers may
+> assume it" is a true statement about the *orchestrator* and an unsafe assumption for a handler that can
+> also be dispatched to directly. **The safe direction is the one that does nothing.**
+
 ---
 
 ## §7 The HTTP convention (`substitute_type: "http"`)
@@ -316,6 +331,52 @@ Required for v1 (cross-impl convergent):
 - HTTP convention: `TV-CDN-CORE-1..6` (URL build per layout; expected-hash threaded; cap-denied abort; transient advance); `TV-CDN-SIG-1..4` (manifest signature valid/missing/invalid/wrong-identity); `TV-CDN-FRESH-1..3` (`seq` first-seen/higher/lower); `TV-CDN-URL-1..2` (endpoint mismatch warn-may-accept); `TV-CDN-TLS-1` (reject `http://` at consume); `TV-CDN-DESC-1..2` (prefer current manifest / fall back to descriptors); `TV-CDN-PUB-1` (not-yet-uploaded hash → network_error + advance).
 
 SHOULD-implement / documented-acceptable: §3.2 informative 404 meta (dev SHOULD, prod MAY omit); `TV-SS-DISP-*` (against the http convention if installed); `TV-SS-TRANS-1`.
+
+### §9.1 How the §3 vectors are reached — they are in-process for v1 `[RULED 2026-08-14]`
+
+**The §3 vectors above are `in-process` for v1, not wire-driven, and this section previously failed to say
+so.** The §3 chain fires only for a caller supplying `claimed_source_peer_id`, which the storage-substitute
+cross-impl rulings make **local dispatcher context and explicitly not a wire field** on
+`system/content:get-request` — the same deferral §10 records ("a wire-level claimed-source field is
+deferred and scoped to the relay when a driver emerges"). So **no conformance client can enter the §3
+chain over the wire in any implementation**, by design, while §9 listed roughly sixteen vectors that
+exercise it as *"required for v1 (cross-impl convergent)."* All three implementations independently
+deferred the driver and left a comment saying so at the call site.
+
+- Each implementation MUST satisfy the `TV-SS-*` §3 vectors **in-process**, against its own dispatcher
+  seam, and MUST declare them under the `GUIDE-CONFORMANCE` §5.2b.1 declared-exclusion discipline —
+  **satisfied-by plus an executed mutation** proving the in-process check can fail. A declaration without
+  a mutation is the shape that lets a whole category read as covered while asserting nothing.
+- The **driver** — the SDK closure-fetch / dispatcher tree-walk that would make these wire-reachable — is
+  named here as **owed and unscheduled**, and it is *not* this extension's to define. It lands with the
+  consumer-side work; when it does, these vectors convert to wire-driven and this subsection retires.
+
+> **The cost of the silence was measured, and it is why this is a rule and not a note.** With ~16 vectors
+> listed as required and no statement of how any is reached, **this extension had zero behavioural checks
+> in any of the three implementations for its entire life — and it read as covered.** The first checks
+> ever written against it (2026-08-13) immediately found a real non-conformance in the implementation that
+> wrote them. **A conformance section may not list a vector the specification's own design makes
+> unreachable**; if a required behavior has no entry point, the section MUST say what the entry point is
+> or that there is none yet. This is the same rule as *"a `MUST` may not name a referent the corpus does
+> not define"* (`EXTENSION-REGISTRY` §6a.9), applied to the conformance artifact instead of the normative
+> one — and the most security-sensitive surface here is §8's fail-closed gate on an arbitrary-caller-
+> triggered outbound fetch plus forced ingestion, which is exactly what was going unasserted.
+
+### §9.2 "Required for v1" binds the implementation, not every deployment `[RULED 2026-08-14]`
+
+§6 and §9 disagreed and both readings were defensible: §6 makes a peer with no http convention installed a
+normal, supported deployment (its entries yield `not_found` and the chain advances), while §9 lists the
+http convention Mechanism A as required for v1. The ruling splits them:
+
+- **The implementation MUST provide a conformant `system/substitute/http:try`** — the module/crate exists,
+  is conformant, and is installable. This is what §9's "required for v1" means.
+- **A deployment MAY omit it.** §6's uninstalled-handler path is unchanged and remains conformant; it is
+  the whole point of the convention-dispatch model.
+- **A peer offered for conformance measurement MUST have it installed `[MUST]`.** Otherwise the category
+  reports a skip, and a skip counts as a failure (ADR-0012) — the suite would be scoring a deployment
+  choice as a defect. An implementation whose default peer binary omits the convention is **not
+  non-conformant**; it owes the harness a peer that has it, and the correct ask to that seat is *"install
+  it on the peer under test,"* never *"you have a bug."*
 
 ---
 
