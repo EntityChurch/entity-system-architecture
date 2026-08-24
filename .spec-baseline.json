@@ -1,0 +1,191 @@
+{
+  "meta": {
+    "note": "Accepted narrative debt in NORMATIVE specs only. Informative arch-docs/charters are class-exempt (arch-tools 2d52deb), not listed here. --update-baseline may only lower a count.",
+    "total": 489,
+    "files": 30,
+    "rules": [
+      "amendment-provenance",
+      "date-in-body",
+      "document-history-section",
+      "impl-team-ref",
+      "proposal-citation"
+    ]
+  },
+  "categories": {
+    "specs/SYSTEM-COMPOSITION.md": "core-model-spec",
+    "specs/applications/APP-CONVENTION-EMBED.md": "application-convention",
+    "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md": "application-convention",
+    "specs/domains/DOMAIN-LOCAL-FILES.md": "domain-spec",
+    "specs/extensions/EXTENSION-ATTESTATION.md": "extension-spec",
+    "specs/extensions/EXTENSION-CLOCK.md": "extension-spec",
+    "specs/extensions/EXTENSION-COMPUTE.md": "extension-spec",
+    "specs/extensions/EXTENSION-CONTENT.md": "extension-spec",
+    "specs/extensions/EXTENSION-CONTINUATION.md": "extension-spec",
+    "specs/extensions/EXTENSION-DISCOVERY.md": "extension-spec",
+    "specs/extensions/EXTENSION-DURABILITY.md": "extension-spec",
+    "specs/extensions/EXTENSION-ENCRYPTION.md": "extension-spec",
+    "specs/extensions/EXTENSION-GROUP.md": "extension-spec",
+    "specs/extensions/EXTENSION-IDENTITY.md": "extension-spec",
+    "specs/extensions/EXTENSION-INBOX.md": "extension-spec",
+    "specs/extensions/EXTENSION-NETWORK.md": "extension-spec",
+    "specs/extensions/EXTENSION-QUORUM.md": "extension-spec",
+    "specs/extensions/EXTENSION-REGISTRY.md": "extension-spec",
+    "specs/extensions/EXTENSION-RELAY.md": "extension-spec",
+    "specs/extensions/EXTENSION-REVISION.md": "extension-spec",
+    "specs/extensions/EXTENSION-ROLE.md": "extension-spec",
+    "specs/extensions/EXTENSION-ROUTE.md": "extension-spec",
+    "specs/extensions/EXTENSION-SIGNALING.md": "extension-spec",
+    "specs/extensions/EXTENSION-SUBSCRIPTION.md": "extension-spec",
+    "specs/extensions/EXTENSION-SUBSTITUTE.md": "extension-spec",
+    "specs/extensions/EXTENSION-TREE.md": "extension-spec",
+    "specs/extensions/EXTENSION-TYPE.md": "extension-spec",
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md": "sdk-spec",
+    "specs/sdk/SDK-IDENTITY-INFRASTRUCTURE.md": "sdk-spec",
+    "specs/sdk/SDK-OPERATIONS.md": "sdk-spec"
+  },
+  "debt": {
+    "specs/SYSTEM-COMPOSITION.md": {
+      "proposal-citation": 1
+    },
+    "specs/applications/APP-CONVENTION-EMBED.md": {
+      "impl-team-ref": 17,
+      "proposal-citation": 2
+    },
+    "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md": {
+      "amendment-provenance": 2,
+      "impl-team-ref": 16,
+      "proposal-citation": 1
+    },
+    "specs/domains/DOMAIN-LOCAL-FILES.md": {
+      "amendment-provenance": 1,
+      "date-in-body": 2,
+      "impl-team-ref": 4
+    },
+    "specs/extensions/EXTENSION-ATTESTATION.md": {
+      "amendment-provenance": 2,
+      "proposal-citation": 1
+    },
+    "specs/extensions/EXTENSION-CLOCK.md": {
+      "date-in-body": 2
+    },
+    "specs/extensions/EXTENSION-COMPUTE.md": {
+      "date-in-body": 4,
+      "impl-team-ref": 5,
+      "proposal-citation": 9
+    },
+    "specs/extensions/EXTENSION-CONTENT.md": {
+      "amendment-provenance": 8,
+      "impl-team-ref": 1,
+      "proposal-citation": 3
+    },
+    "specs/extensions/EXTENSION-CONTINUATION.md": {
+      "amendment-provenance": 1,
+      "date-in-body": 1,
+      "impl-team-ref": 6,
+      "proposal-citation": 6
+    },
+    "specs/extensions/EXTENSION-DISCOVERY.md": {
+      "date-in-body": 2,
+      "impl-team-ref": 4,
+      "proposal-citation": 3
+    },
+    "specs/extensions/EXTENSION-DURABILITY.md": {
+      "amendment-provenance": 1,
+      "impl-team-ref": 1
+    },
+    "specs/extensions/EXTENSION-ENCRYPTION.md": {
+      "date-in-body": 2,
+      "impl-team-ref": 14,
+      "proposal-citation": 1
+    },
+    "specs/extensions/EXTENSION-GROUP.md": {
+      "amendment-provenance": 1,
+      "proposal-citation": 7
+    },
+    "specs/extensions/EXTENSION-IDENTITY.md": {
+      "amendment-provenance": 4,
+      "proposal-citation": 4
+    },
+    "specs/extensions/EXTENSION-INBOX.md": {
+      "date-in-body": 2,
+      "impl-team-ref": 2,
+      "proposal-citation": 2
+    },
+    "specs/extensions/EXTENSION-NETWORK.md": {
+      "amendment-provenance": 52,
+      "date-in-body": 19,
+      "impl-team-ref": 20,
+      "proposal-citation": 5
+    },
+    "specs/extensions/EXTENSION-QUORUM.md": {
+      "amendment-provenance": 2,
+      "impl-team-ref": 1,
+      "proposal-citation": 5
+    },
+    "specs/extensions/EXTENSION-REGISTRY.md": {
+      "date-in-body": 26,
+      "impl-team-ref": 19,
+      "proposal-citation": 12
+    },
+    "specs/extensions/EXTENSION-RELAY.md": {
+      "amendment-provenance": 3,
+      "impl-team-ref": 5,
+      "proposal-citation": 6
+    },
+    "specs/extensions/EXTENSION-REVISION.md": {
+      "amendment-provenance": 11,
+      "date-in-body": 2,
+      "impl-team-ref": 5,
+      "proposal-citation": 2
+    },
+    "specs/extensions/EXTENSION-ROLE.md": {
+      "date-in-body": 1,
+      "impl-team-ref": 1,
+      "proposal-citation": 2
+    },
+    "specs/extensions/EXTENSION-ROUTE.md": {
+      "impl-team-ref": 1,
+      "proposal-citation": 4
+    },
+    "specs/extensions/EXTENSION-SIGNALING.md": {
+      "date-in-body": 25,
+      "impl-team-ref": 16,
+      "proposal-citation": 4
+    },
+    "specs/extensions/EXTENSION-SUBSCRIPTION.md": {
+      "date-in-body": 4,
+      "impl-team-ref": 8,
+      "proposal-citation": 7
+    },
+    "specs/extensions/EXTENSION-SUBSTITUTE.md": {
+      "date-in-body": 6,
+      "impl-team-ref": 5
+    },
+    "specs/extensions/EXTENSION-TREE.md": {
+      "amendment-provenance": 1,
+      "date-in-body": 6,
+      "impl-team-ref": 4,
+      "proposal-citation": 5
+    },
+    "specs/extensions/EXTENSION-TYPE.md": {
+      "amendment-provenance": 1,
+      "proposal-citation": 4
+    },
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md": {
+      "amendment-provenance": 1,
+      "impl-team-ref": 10,
+      "proposal-citation": 4
+    },
+    "specs/sdk/SDK-IDENTITY-INFRASTRUCTURE.md": {
+      "amendment-provenance": 1,
+      "impl-team-ref": 1,
+      "proposal-citation": 1
+    },
+    "specs/sdk/SDK-OPERATIONS.md": {
+      "amendment-provenance": 2,
+      "date-in-body": 9,
+      "impl-team-ref": 7,
+      "proposal-citation": 8
+    }
+  }
+}
