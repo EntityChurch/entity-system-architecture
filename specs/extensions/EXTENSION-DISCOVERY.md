@@ -1,9 +1,9 @@
 # EXTENSION-DISCOVERY
 
-**Version**: 1.0
+**Version**: 1.1
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
-**Related**: EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
+**Related**: EXTENSION-SIGNALING.md (the carrier the `rendezvous` backend rides, §5.5); EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
 **Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
@@ -51,7 +51,7 @@ backend surfaces candidate
 type: "system/discovery/candidate"
 data: {
   peer_id:       <Base58 peer-id per V7 §1.5 | null>,  ; absent until IDENTIFY completes
-  backend:       <"mdns" | "qr" | ...>,
+  backend:       <"mdns" | "rendezvous" | "qr" | ...>,   ; "rendezvous" — §5.5
   observed_at:   <ms-since-epoch>,
   endpoint_hint: <opaque>,                  ; e.g. LAN address + port, or QR payload
   identity_hint: <system/hash, BARE | null>,  ; hash of an IdentityClaim (see §2.2); null = TOFU
@@ -142,7 +142,8 @@ Candidate entities under `system/discovery/candidate/{backend}/*` are reaped per
 1. **mDNS goodbye records (TTL=0)** MUST cause immediate removal of the corresponding candidate entity.
 2. **TTL expiry without renewal** — a candidate is reaped when `now - last_seen > grace_window`, where `grace_window` defaults to `2 × last_TTL` per mDNS RFC 6762 §10.5 reap discipline. `grace_window` is operator-configurable.
 3. **Explicit `:scan` re-invocation** refreshes `last_seen` for candidates still observed; missing candidates from the new query age out per (2).
-4. **One-shot backend candidates** (QR, etc.) have no TTL semantic; impls keep them per §7's `decision_retention_window` policy — they're only reaped on explicit unbind or operator GC.
+4. **Backends with no departure signal** (QR and other one-shot exchanges) have no TTL semantic; impls keep them per §7's `decision_retention_window` policy — they're only reaped on explicit unbind or operator GC. **The distinction this rule draws is the *signal*, not the shape of the call `[v1.1]`** — a backend that is not mDNS but *does* observe departures is rule 5, not this one. Reading rule 4 as "every non-mDNS backend" leaves a departed peer on the list forever, showing a user someone they can no longer meet.
+5. **Backends with a carrier-native departure signal `[v1.1]`** — a candidate absent from the carrier's current observation is reaped **immediately**, with no local grace window. `rendezvous` (§5.5) is the first: the carrier reaps a deposit at its own TTL, so a counterpart that stops re-offering falls out of the bucket within one TTL. That is a stronger signal than rule 2's inference-from-silence, because it is the carrier's own contract. **No second grace window is applied on top of the carrier's** — doing so doubles the disappearance latency for no gain.
 
 `last_seen` is a per-impl operational field, not stored in the candidate entity (entities are immutable). Impls keep it in a session-local index.
 
@@ -242,13 +243,43 @@ REGISTRY and DISCOVERY are distinct concerns:
 
 **Registry-assisted discovery** — a candidate carrying a name that REGISTRY can resolve — is a later DISCOVERY backend, not a coupling at the substrate layer. The boundary stays clean.
 
+### §5.5 EXTENSION-SIGNALING — the `rendezvous` backend `[v1.1]`
+
+`EXTENSION-SIGNALING`'s keyed mailbox is a DISCOVERY **carrier**, and `rendezvous` is the backend that rides it. This is the pattern the two landed backends already use — §5.2 pairs mDNS with WebRTC's `discovery:mdns` carrier; §6 pairs QR with `manual:qr` — and the seam is stated from both sides: SIGNALING §1.2 is *"the key introduces; it never authorizes,"* and §2 here is *"discovery is the **initiator** of the grant, never the **authority**."*
+
+#### §5.5.1 Only three of the four key modes are discovery `[MUST]`
+
+`EXTENSION-SIGNALING` §3.2 defines four rendezvous key modes. **`tag`, `secret` and `lobby` are discovery: they surface a counterpart you did not already know. `pair` is not** — its derivation input is the two peer-ids, so the caller already holds the counterpart's identity and nothing is discovered. A backend MUST NOT surface `pair`-mode meetings as candidates; `pair` is an establishment path (`EXTENSION-NETWORK` §10.3), not a discovery one.
+
+#### §5.5.2 `identity_hint` MUST be absent, and TOFU is the ceiling rather than a fallback `[MUST]`
+
+**The rule:** a `rendezvous` candidate MUST carry `identity_hint` absent, and a backend MUST NOT synthesize an `identity-claim` for a peer that stood at a key.
+
+**The reason, which is not obvious at the call site:** a carrier whose deposits are signed (SIGNALING §6.3) hands the backend a *cryptographically verified* signer at the moment it surfaces a candidate, and the rule requires discarding it. That is deliberate. **A signature at a mailbox proves who deposited a blob — not that the channel admission later opens belongs to that peer.** Binding `identity_hint` to the depositor would make §2.2.1's fail-closed IDENTIFY comparison assert a relationship nobody promised, and it would refuse admission whenever the peer you end up talking to differs from the depositor.
+
+**The consequence, stated here so each implementer does not re-derive it:** §2.2.1's fail-closed comparison — the strongest check this extension defines — is **structurally unavailable to every `rendezvous` candidate.** For this backend TOFU is the ceiling, not a degraded mode. The §2 grant decision is the trust anchor.
+
+#### §5.5.3 `endpoint_hint` is at deposit granularity, and is mode-dependent `[MUST]`
+
+**Deposit granularity, not bucket granularity.** A key is reachable by anyone who holds its input, so two counterparts at one `tag` produce candidates identical in `backend`, `peer_id` (absent), `identity_hint` (absent) and — at bucket granularity — `endpoint_hint`, differing only in `observed_at`. **A consumer then cannot distinguish two peers from one peer observed twice**, and `observed_at` cannot settle it because re-observation also moves the timestamp. `endpoint_hint` MUST therefore identify **the specific deposit** — carrier node, mode, and an opaque per-deposit identifier — which is also what the admission path needs in order to act on that deposit.
+
+**A `secret`-mode candidate MUST NOT carry the secret or the derived key.** For `tag` and `lobby` the derivation input is publishable — SIGNALING §3.2 types a tag as a *"public label — discovery convenience, not access control,"* and a lobby constant is a published deployment name. **A `secret` input *is* the access control, and the derived key is equivalent to it.** A candidate entity exists to be displayed for the §2 decision and is written to the tree at rest, so carrying either discloses the credential through the one surface whose job is display. Omit the label for `secret` mode; the local peer already holds the configuration it supplied. **A backend that handles all three modes uniformly here ships a credential leak that every test passes.**
+
+#### §5.5.4 The successor chain
+
+`rendezvous` follows §2.2's two-entity pattern without variation: `candidate_0` with `peer_id` absent when a counterpart is observed at the key; IDENTIFY completes over the admitted channel; `candidate_1` with `peer_id` populated and `supersedes` set to `candidate_0`'s content hash. `candidate_0` remains as the observation record — entities are immutable — and `decision.candidate` SHOULD reference the head of the chain. Per §2.1's wire convention, unset optional fields are **absent, not explicit-null**.
+
+#### §5.5.5 A key is a meeting point; the peer met is what gets a name
+
+Binding a rendezvous **key input** as a REGISTRY local-name is a category error: the name would resolve to a meeting point rather than to a peer, and the next occupant of that key inherits it. Binding the **peer** is ordinary — after IDENTIFY the successor candidate carries a verified `peer_id`, and binding that to a local petname is REGISTRY's local-name backend.
+
 ---
 
 ## §6 Staged growth (deferred from v1, named for shape)
 
-Discovery is expected to keep growing as the holder for peer-finding:
+Discovery is expected to keep growing as the holder for peer-finding. **`rendezvous` has landed and is no longer on this list — it is §5.5.**
 
-- **QR / short-code backend** — out-of-band candidate exchange; pairs with WebRTC `manual:qr` signaling. Near-term, small.
+- **QR / short-code backend** — out-of-band candidate exchange; pairs with WebRTC `manual:qr` signaling. Near-term, small. **Shape only: no entity shape, no backend token, and no composition subsection are defined — do not build against it as though it were settled.** It is the same mold as §5.5's `rendezvous` (out-of-band candidate exchange, then §2.2's successor chain), with one difference: a QR payload MAY legitimately carry an `identity-claim`, because the displaying peer asserts its own peer-id in the payload it controls — where §5.5.2 forbids one for a key rendezvous. Build `rendezvous` and QR is an additive second backend, not a second design.
 - **Registry-assisted discovery** — surface peers a trusted registry knows about.
 - **Relay / DHT / gossip backends** — internet-scale peer-finding. Later, driver-gated.
 

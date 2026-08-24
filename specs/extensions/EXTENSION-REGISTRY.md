@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.19
+**Version**: 1.20
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -743,6 +743,18 @@ New backend kinds will be added over time. Resolver-config is forward-compatible
 
 `set-resolver-config` MUST therefore **diff `pinned_bindings` against the stored config** and, when they differ, require **both** `registry-configure` **and** `registry-pin`; absent the latter, refuse **`403 not_entitled`** and write nothing. A write that leaves the pin list byte-identical needs only `registry-configure`. *(This is what makes the §5 split real: an operator may now be granted pin authority without whole-config authority, or the reverse, and each grant means what §5 says it means.)*
 
+**The diff is over raw bytes `[MUST]`.** "Differ" means the submitted `pinned_bindings` bytes are not byte-identical to the stored config's. A comparison over a decoded-and-re-encoded form is **fail-open**: any §4.2 forward-compatible key a pin carries that the comparing type does not model is dropped before the compare, so adding or stripping such a key reads as "no change" and rewrites the most privileged row in the file under `registry-configure` alone. This is `ENTITY-CORE-PROTOCOL.md` §1.8's byte-preservation discipline applied to a byte-identity **decision**, and it is the same rule that forbids re-encoding on receive.
+
+#### §4.3.1 Pin authority is the operation `pin-bindings` `[MUST, v1.20]`
+
+**`system/capability/registry-pin` is authority over the operation `pin-bindings` on the registry handler.** That name is what a grant carries and what a conformance client mints.
+
+**Why an operation name and not a resource path.** A `system/capability/grant-entry` scopes on exactly two axes, `path-scope` resources and `id-scope` operations. Per `ENTITY-CORE-PROTOCOL.md`, path locations are **not** structurally fixed — they are communicated through the grant, and peers that diverge remain conformant — so a resource-path discriminator cannot be relied on by a party that did not receive the grant, which is precisely the position of a conformance client minting a capability for a foreign peer. The operation axis is the portable one. *(A path split is also unavailable in fact: `pinned_bindings` is a **field of** `system/registry/resolver-config`, not a path beneath it.)*
+
+**`pin-bindings` MUST NOT be dispatchable.** Nothing routes to it, it appears in no operation table, and a peer MUST reject it as an EXECUTE operation. It exists solely as the capability-check discriminator. *(Stated because a checkable-but-not-callable operation name is unusual enough that an implementation may reasonably expose it, and doing so adds an undeclared operation to this handler's wire surface.)*
+
+**Capability checks precede config validation `[MUST]`.** A `set-resolver-config` that both changes `pinned_bindings` and violates §4.1 step 2, submitted with `registry-configure` alone and no `acknowledge_name_disclosure`, MUST return **`403 not_entitled`** — never `403 policy_rejected`. Two reasons: the order is otherwise a cross-peer-observable divergence between conformant peers; and this operation's violation response is deliberately exhaustive (*every* violation, above), so validating first discloses a config-shaped violation list to a caller holding no authority to change it. **Authorize, then validate.**
+
 **Out-of-band seeding still works and is still not an override `[MUST]`.** §6a.9.2's store-first rule applies unchanged: a config written directly to the tree is the stored config. Such a write bypasses this operation and therefore carries **no** acknowledgement, so a violating seeded config is surfaced at every load and never silently honored. **This is the seam that keeps the operation from being security theatre** — it is a control on the *documented* path, and the undocumented path is loud rather than blocked.
 
 ---
@@ -767,13 +779,18 @@ The substrate's cap surface:
 |---|---|---|
 | `system/capability/registry-resolve` | who may invoke `:resolve` against the registry handler | `:resolve` |
 | `system/capability/registry-configure` | who may edit the resolver-config | **the two operations defined in §4.3** (`set-resolver-config` / `get-resolver-config`); tree-write `system/registry/resolver-config` remains the out-of-band seed path |
-| `system/capability/registry-pin` | who may add or remove pins | **the §4.3 `set-resolver-config` write whose submitted `pinned_bindings` differ from the stored ones** (`[MUST, v1.19]`, checked there); the out-of-band tree-write of `resolver-config` remains the seed path and carries no check, per §6a.9.2 |
+| `system/capability/registry-pin` | who may add or remove pins | **`pin-bindings`** — a **non-dispatchable** operation name (`[MUST, v1.20]`, §4.3), checked when a `set-resolver-config` write changes `pinned_bindings`; the out-of-band tree-write of `resolver-config` remains the seed path and carries no check, per §6a.9.2 |
 | `system/capability/registry-cache-control` | who may invalidate cached resolutions | `:invalidate-cache(name | null)` (null = flush all) |
 | `system/capability/registry-local-name-bind` | who may create or update local-names (§6) | `:bind`, `:update-transports` |
 | `system/capability/registry-local-name-unbind` | who may remove local-names (§6) | `:unbind` |
 | `system/capability/registry-local-name-list` | who may enumerate local-names (§6) | `:list` |
 
-**Every row's operations column names an operation, and that is the property this table is maintained for.** A capability whose operations column is a bare tree-write is a declared authority with nowhere to be checked — three rows here were that shape and each was closed by defining the operation it needed (`registry-manage-issuer-policy` → §6a.9.2; `registry-configure` → §4.3; `registry-pin` → §4.3's pin-delta clause). A new row is not landable without naming the operation the check runs at.
+**Every row's operations column names an operation a grant can carry, and that is the property this table is maintained for `[MUST, v1.20]`.** Two ways a row fails it, and the second is subtler than the first:
+
+- **Nowhere to check.** A row whose operations column is a bare tree-write is a declared authority with no enforcement point — a raw write cannot refuse selectively and cannot carry a qualifier. Three rows were this shape and each was closed by defining the operation it needed (`registry-manage-issuer-policy` → §6a.9.2; `registry-configure` → §4.3; `registry-pin` → §4.3).
+- **Nothing to distinguish.** A row that names *a condition on another row's operation* — "the write whose field X changed" — reads as compliant and is not. A `system/capability/grant-entry` scopes on `path-scope` resources and `id-scope` operations only, and per `ENTITY-CORE-PROTOCOL.md` path locations are communicated **through the grant** rather than being structurally fixed, so **the operation name is the only discriminator a stranger's grant can rely on.** Two rows naming the same operation and the same resource are one capability to every conformant grant, and no conformance vector can mint either without the other.
+
+**A new row is not landable without naming an operation name that `id-scope` can literally match.** A runtime data condition does not satisfy this.
 
 Per-backend caps for backends shipped in their own proposals (e.g., "may publish a binding to the peer-issued registry") live in those backend extension specs.
 
@@ -1672,6 +1689,7 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
   6. **The override arm:** row (a)'s config re-offered with `acknowledge_name_disclosure: true` → **accepted and stored**. Without this row the operator `MAY` is unexercised, and a peer that refuses unconditionally — deleting the `MAY` — scores identically to a conformant one on rows 1–5.
   7. **Classifier rows (§4.1b), each naming `did-web` as its `backend_kinds`:** `*.*` → **refused** · `*.e*` → **refused** · `*.eth` → **accepted** · `a.b` → **accepted** · `*.lab` → **refused**. These five are where independent readings of the old undefined predicate diverged; a peer classifying by "does any literal exist" passes rows 1–6 and fails `*.*` and `*.lab`.
   8. **Pin-delta rows (§4.3):** a config differing from the stored one **only** in `pinned_bindings`, offered with `registry-configure` alone → **`403 not_entitled`, nothing written**; the same offer carrying `registry-pin` as well → **accepted**; and a config with `pinned_bindings` byte-identical, `registry-configure` alone → **accepted**. The third row is the control — without it a peer that demands `registry-pin` on every write passes both others.
+     **The client mints both capabilities scoping `id-scope.operations` on `pin-bindings` (§4.3.1) `[MUST, v1.20]`** — the configure-only cap omits it, the configure+pin cap includes it. Until v1.20 named that operation this row was **not constructible**: `registry-pin` and `registry-configure` named the same operation, so no conformant grant distinguished them and a client minting one implementation's private encoding would have scored a **conformant** peer as `403` on the accept row. *(A row whose discriminator rides an unruled encoding is a false-red generator, not a check.)*
 - **`REG-NAME-CONSTRAINTS-GRAMMAR-1` (§6a.9.1, §4).** `name_constraints` uses §4's matcher, and the spec's own `*.lab` example cannot discriminate that from a shell-glob. Against a live-mode issuer policy, four rows plus a control:
   1. `name_constraints: "a?c"` → a register-request for the literal name **`a?c`** is admitted; **`abc`** is refused `403 not_entitled`. *(Inverted under `path.Match` / `fnmatch`.)*
   2. `name_constraints: "a[bc]d"` → **`a[bc]d`** admitted, **`abd`** refused.

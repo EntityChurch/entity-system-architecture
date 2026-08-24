@@ -1,7 +1,16 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.23
+**Version**: 3.25
 **Status**: Active
+**v3.25 — the v3.24 primitives' four corners close** (§3.5, §9.1): the first implementation of v3.24
+found three corners that determine boundary bytes, and a fourth surfaced while ruling them. `group-by`
+returns **`system/compute/group{key, members}`** — the key is in the result, restored from the shape the
+design record ruled and the v3.24 fold narrowed away. `assoc`'s out-of-range index is
+**`index_out_of_range`**, correcting a v3.24 clause that contradicted §2.2's cross-impl ruling that an
+out-of-domain magnitude is not a type error. `range`'s negative or oversized `n` is the new
+**`count_out_of_range`**, following `cast_out_of_range`'s precedent rather than overloading either
+neighbour. Error-as-value flow-through needed no new rule — §7.2's consumed-operand `[MUST]` already
+decides all seven positions, and §3.5 now cites it instead of leaving it to be re-derived.
 **v3.23 — `is_error` is defined, and it is kind-based** (§4.1): the predicate the evaluator branches on
 39 times was used throughout and defined nowhere, so a `compute/error` reaching a `compute/construct`
 field embedded in one implementation, propagated in a second, and embedded-without-materializing in a
@@ -1018,6 +1027,10 @@ Builtins **MUST** produce identical result hashes for identical input hashes (ex
 | `system/compute/builtins/filter` | `eval` | `system/compute/filter-args` (collection + fn) |
 | `system/compute/builtins/fold` | `eval` | `system/compute/fold-args` (collection + fn + initial) |
 | `system/compute/builtins/store` | `eval` | `system/compute/store-args` (path + value) |
+| `system/compute/builtins/range` | `eval` | `system/compute/range-args` (n) — **v3.24** |
+| `system/compute/builtins/group-by` | `eval` | `system/compute/group-by-args` (collection + fn) — **v3.24** |
+| `system/compute/builtins/concat` | `eval` | `system/compute/concat-args` (collections) — **v3.24** |
+| `system/compute/builtins/assoc` | `eval` | `system/compute/assoc-args` (collection + index + value) — **v3.24** |
 
 The collection builtins (`map`, `filter`, `fold`) and `store` use dedicated args types because they have no inline form. **These args types are pinned in this spec — not implementation-owned** (a transferable IR requires every peer to agree on their shape; the §3.5 override-prohibition determinism guarantee extends to them). All four are defined here.
 
@@ -1057,7 +1070,70 @@ system/compute/fold-args := {
 
 **Observable semantics (normative, pinned).** `map` applies `fn` to each element in index order, returning a new array of the results. `filter` returns a new array of the elements for which `fn` (the predicate) evaluates truthy, in index order. `fold` threads `initial` through `fn(acc, element)` left-to-right and returns the final accumulator. All three are defined over `compute/index`/`compute/length` (§2.2) — a canonical compute-expression definition over `index`/`length`/recursion MAY serve as the implementation, or a native implementation that produces hash-equal results.
 
-**Collection-builtin evaluation (SHOULD).** Because `map`/`filter`/`fold` apply a caller-provided closure per element, they need the evaluator's scope/budget/context — a real handler-dispatch boundary would lose these. Implementations SHOULD therefore evaluate the collection builtins *internally within the evaluator* (as the inline expression types are), not via a separate dispatched handler. Consequently `system/compute/builtins/{map,filter,fold}` is a **canonical/logical operation name**; on such implementations it MAY NOT resolve to a distinct handler entity in the tree (a `tree:get` of that path need not return a handler). The pinned args types + observable semantics above are the contract; dispatch-vs-internal is an implementation detail.
+#### The v3.24 collection primitives — `range`, `group-by`, `concat`, `assoc`
+
+Four additions, all **MUST-given-COMPUTE** (§10.1): they produce boundary bytes, so a peer that computes different results is not a slower peer but a divergent one. Their args types are pinned here on the same reasoning as `map`/`filter`/`fold` above.
+
+```
+system/compute/range-args := {
+  fields: { n: {type_ref: "system/hash"} }        ; Hash of a non-negative integer expression
+}
+
+system/compute/group-by-args := {
+  fields: {
+    collection: {type_ref: "system/hash"}          ; Hash of array expression
+    fn:         {type_ref: "system/hash"}          ; Hash of a unary closure (element → key)
+  }
+}
+
+; group-by's RESULT element. The one result type this section pins; the others
+; return arrays of the input's own element type and need no declaration.
+system/compute/group := {
+  fields: {
+    key:     {type_ref: "primitive/any"}           ; The derived key, as fn returned it
+    members: {array_of: {type_ref: "primitive/any"}}  ; The group's elements, in input index order
+  }
+}
+
+system/compute/concat-args := {
+  fields: { collections: {array_of: {type_ref: "system/hash"}} }   ; Hashes of array expressions
+}
+
+system/compute/assoc-args := {
+  fields: {
+    collection: {type_ref: "system/hash"}          ; Hash of array expression
+    index:      {type_ref: "system/hash"}          ; Hash of an integer expression
+    value:      {type_ref: "system/hash"}          ; Hash of the replacement element
+  }
+}
+```
+
+**Observable semantics (normative, pinned).**
+
+- **`range(n)`** returns the array `[0 … n-1]`, empty when `n` is `0`. **Single-argument form only** — a start offset is expressed inside the lambda, not as a second parameter. It exists because `map`/`filter`/`fold` pass an element and not its index, so every program that needs an index carries a static index array and indexes back into its data. **A negative `n`, or an `n` exceeding the maximum representable array length, is a `count_out_of_range` error-as-value `[MUST, v3.25]`** — *not* `type_mismatch`, on §2.2's ruled reasoning that `int`/`uint` are annotations rather than distinct value types, so any integer bit-pattern is a well-formed *argument* and an out-of-domain **magnitude** is not a type error. It is likewise not clamped to the empty array: `n` is a loop bound, so a silent `[]` propagates through every downstream `map`/`filter`/`fold` and yields a well-formed wrong answer carrying no error.
+- **`group-by(collection, fn)`** applies `fn` to each element to derive a key and returns the elements grouped by that key in **one pass**. **The result is an array of `system/compute/group`, each carrying its `key` and its `members` `[MUST, v3.25]`** — the key is part of the result and is not dropped, because the shapes this primitive exists to serve (a histogram, a bucketed aggregation, a router) are exactly the ones whose output is unreadable without its labels. Within each group, elements retain their input index order; **groups are ordered by first appearance of their key** — not by key sort order, which would require a total order over arbitrary key types that this extension does not define. Key **equality** is byte-identity over the canonical ECF encoding of the derived key — the protocol's own value identity, which is defined for every key type `fn` may return. The prior expression — a filter per candidate key — is `O(B·N)`. *(`partition-by` is subsumed by this and is not separately adopted: a two-way partition is `group-by` with a boolean key.)*
+
+  > **`system/compute/group` is a pinned type *name*, not a type-extension registration.** Per §2.3 N1 and §4.1's materialization rule, a constructed entity is encoded **by the runtime kind of the evaluated value, never by the constructed type's declared schema** — so a peer with no type extension produces byte-identical groups. The cost of the key-carrying shape is one agreed string.
+- **`concat(...collections)`** joins arrays **order-preserving, one level** — it does not flatten recursively. Element types MUST match; a mismatch is a `type_mismatch` **error-as-value**, not a fault. **A `compute/error` element is type-transparent to that check `[MUST, v3.25]`**: it neither matches nor mismatches, and flows through untouched. Per §1.5 an error is *"the same model as NaN propagation in IEEE 754"* — a poisoned value **of** the array's element type, not a value of a different type — and §7.2 scopes `concat` to consuming its `collections`, never their elements, so inspecting elements for errors is the one behaviour it must not have. `concat()` with no arguments is the empty array; `concat(a)` is `a`. There is otherwise no way to join k arrays: `fold` cannot (the accumulator step needs the append that does not exist), `map` yields k arrays, and `construct` changes the entity shape, which boundary equivalence forbids.
+- **`assoc(collection, index, value)`** returns a new array identical to `collection` except at `index`, which carries `value`. **An out-of-range `index` — negative, or ≥ the collection's length — is an `index_out_of_range` error-as-value `[MUST, v3.25]`**, the same code and the same condition as `compute/index` (§2.2). *(v3.24 said `type_mismatch` here. That contradicted §2.2's ruling — reached on the compute corpus's first cross-impl run — that an out-of-bounds magnitude is not a type error, and it is corrected rather than carried: one document must not answer one malformed program with two codes depending on which array operation it reached.)* **`assoc` MUST NOT be an implicit lowering target `[MUST]`** — `map` and `fold` are never lowered onto it. It is an explicit author choice, because an indexed update buys scatter at the cost of sharding: a program written as a sequence of `assoc` updates is inherently sequential, where the same computation expressed as a fold over a read-only input shards. **A lowering pass that "optimizes" a fold into `assoc` would silently remove the parallelism**, which is why the choice stays the author's.
+
+**Error-as-value flow-through is governed by §7.2, not by a rule of its own `[v3.25]`.** An error already present in an input is not a new question for these four primitives: §7.2's short-circuit `[MUST]` binds *"all expression types that **consume values**"* and its `store` worked example already settles the other side — *"a builtin's write payload is not a consumed operand."* Applied here, so that no implementer re-derives it:
+
+| Primitive | Position | Class | Behaviour |
+|---|---|---|---|
+| `range` | `n` | consumed — the magnitude is read to size the array | **short-circuit** |
+| `group-by` | derived key | consumed — compared to assign a group | **short-circuit** |
+| `group-by` | element | copied into `members` | contain |
+| `assoc` | `index` | consumed — read to position the write | **short-circuit** |
+| `assoc` | `value` | placed into the output — the SA-9 `store` case | contain |
+| `concat` | each `collection` | consumed — its length is read to copy | **short-circuit** |
+| `concat` | element | copied into the output | contain |
+
+A `compute/error` **key** short-circuits even though the key now has an output position (`system/compute/group.key`), because key equality is byte-identity over the canonical encoding: grouping by an error would make its message string structurally load-bearing, so two failures worded differently would become two groups and one reworded message would change the result's shape.
+
+**Adopting `concat` does not bless an in-compute sharded step `[not ruled]`.** A self-dispatch fan-out rejoined by `concat` additionally requires the tick contract to state a fairness posture — either a bound on synchronous fan-out width, or a nested-eval yield guarantee. **Termination was never the question; occupancy of the serve loop is.** Adopting the primitive and blessing the pattern are two decisions and only the first is made here.
+
+**Collection-builtin evaluation (SHOULD).** Because `map`/`filter`/`fold` apply a caller-provided closure per element, they need the evaluator's scope/budget/context — a real handler-dispatch boundary would lose these. Implementations SHOULD therefore evaluate the collection builtins *internally within the evaluator* (as the inline expression types are), not via a separate dispatched handler. Consequently `system/compute/builtins/{map,filter,fold,range,group-by,concat,assoc}` is a **canonical/logical operation name**; on such implementations it MAY NOT resolve to a distinct handler entity in the tree (a `tree:get` of that path need not return a handler). The pinned args types + observable semantics above are the contract; dispatch-vs-internal is an implementation detail.
 
 The `store-args` type is defined here as well — `store` is the one impure builtin tied to core semantics:
 
@@ -2321,8 +2397,9 @@ ECF encoding (ENTITY-CBOR-ENCODING.md; ENTITY-CORE-PROTOCOL.md §1.3) ensures id
 | `cascade_limit` | Reactive cascade depth exceeded |
 | `permission_denied` | Capability does not cover the target path or operation |
 | `installation_grant_invalid` | Installation grant revoked, expired, or missing |
-| `index_out_of_range` | `compute/index` index is negative or ≥ array length |
+| `index_out_of_range` | An array index is negative or ≥ array length — `compute/index`, and `compute/builtins/assoc` (§3.5) |
 | `cast_out_of_range` | `compute/numeric-cast` float→integer target out of range, `NaN`, or ±`Inf` |
+| `count_out_of_range` | `compute/builtins/range` `n` is negative, or exceeds the maximum representable array length (§3.5) |
 | `scope_unreachable` | A `kind:"entity"` scope binding's hash resolves in neither the local content store nor the envelope `included` (§2.3 N8) — error-as-value at status 200 |
 
 ### 9.2 Standard Operations
