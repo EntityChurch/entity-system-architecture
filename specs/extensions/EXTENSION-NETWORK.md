@@ -4,7 +4,7 @@
 
 > **Amendment 12 — partial fold: the §A1/§5.4 join (new §5.4a; §5.4 pseudocode corrected; §12.1 bullet; two new vectors) `[2026-08-12]`.** Amendment 12 remains **ratified but not folded** as a whole; this folds the one part a cohort implementation proved was load-bearing, ahead of the rest. `entity-core-go` found that the §A1 transport-error eviction **destroyed the keepalive loop that owes the §5.4 `suspect → disconnected` escalation, at the moment it became owed** — so the peer stayed `suspect` forever, §4.1 reconnect never fired, and the §A3 consumer latency contract was silently unmet on every transport-error-first path (the *common* path — a transport error is how a dead peer is usually noticed first). **Root cause is a fold gap made worse by this spec's own pseudocode:** §A1 lives only in the proposal, §5.4 lives here, nothing owned the composition — and §5.4's reference pseudocode put the escalation *inside* the ping loop, so the defect was a faithful implementation of what this section said. **The pseudocode is corrected, not merely annotated** (the §8.3 containment lesson: when pseudocode and prose disagree, implementations follow the pseudocode). §5.4a states the join as a MUST, pins the `suspect`-guard scope so §10.2 fallback and RELAY terminal-hop evictions still MUST NOT demote, orders the grace `sleep` before the status read, and **rules `reason` preservation** — the escalation carries the episode's *originating* reason (`transport-error` on the seam path, `keepalive-miss` on the idle path), because re-stamping asserts pings that were never sent and destroys the only signal distinguishing the path that was broken. Both halves vectored; the negative half is required, since escalating on any *unbound* peer rather than any *`suspect`* peer passes the positive vector and breaks the §A1 seam scope. **Second gap of this exact shape in two cycles** (after the §5.5a granter frame): a reachable state all impls agree on by construction that **no vector visits**, so conformance-green said nothing about it — found by an implementation, not by prose review, both times. *(Observed: `entity-core-go`, source-read at `b55101f`, 2026-08-12.)*
 >
-> **Amendment 12 — second partial fold: §A6.6, the `chain_id` spelling (§2.4 field declaration; §4.1 pseudocode) `[2026-08-13]`.** §4.1 minted `chain_id = "network/maintain/" + session_id` — **three path segments** — and that is not a style question. `chain_id` is **interpolated as a path segment** of `EXTENSION-CONTINUATION` §3.10.1's marker path `.../lost/{chain_id}/{step_index}/{reason}/{marker_hash}`, so a value containing `/` forks the marker tree into extra levels and makes the scheme unwalkable at a fixed depth: given `lost/network/maintain/abc/req-1/connection_failed/<hash>` nothing can tell where `chain_id` ends and `step_index` begins. **The old form was therefore internally inconsistent with CONTINUATION's own landed path scheme, not merely stale** — this spec and that one could not both be satisfied. Corrected to `"network-maintain-" + session_id`; the single-segment rule itself belongs to and is routed to `ENTITY-CORE-PROTOCOL` §3.11, where `chain_id` is declared. **No wire change, no renumber:** `chain_id` is opaque (§3.11 gives it no format, nothing parses one), so this is three impls emitting a different generated string. **Found by an audit of arch's own fold debt, and the sharpest evidence is that the reference conformance oracle already rejected this spec:** `entity-core-go`'s `validate-peer` FAILs any peer whose `maintain-result.chain_id` contains `/` (`cmd/internal/validate/network.go:125`, source-read at `a02ab5e`), so **a peer implementing §4.1 as written failed the conformance run** — while go, rust and python had all three independently converged on the single-segment form and recorded in their own source comments that the spec's version was non-conformant (go `ext/network/session.go:118`, rust `extensions/network/src/lib.rs:726`, py `entity_handlers/network.py:373`). Three-way convergence against stale pseudocode is the strongest signal this method produces; the failure was that nothing carried it back here for four weeks. *(Confirmed by `entity-core-go`, `ROUTING-2026-08-13-k`, with the CONTINUATION-inconsistency argument above supplied by them and adopted in preference to arch's weaker "three impls disagree" framing.)* **The remaining Amendment 12 deltas — §A3 floor framing, §A4, §A6.1 — are still unfolded and still owed.**
+> **Amendment 12 — second partial fold: §A6.6, the `chain_id` spelling (§2.4 field declaration; §4.1 pseudocode) `[2026-08-13]`.** §4.1 minted `chain_id = "network/maintain/" + session_id` — **three path segments** — and that is not a style question. `chain_id` is **interpolated as a path segment** of `EXTENSION-CONTINUATION` §3.10.1's marker path `.../lost/{chain_id}/{step_index}/{reason}/{marker_hash}`, so a value containing `/` forks the marker tree into extra levels and makes the scheme unwalkable at a fixed depth: given `lost/network/maintain/abc/req-1/connection_failed/<hash>` nothing can tell where `chain_id` ends and `step_index` begins. **The old form was therefore internally inconsistent with CONTINUATION's own landed path scheme, not merely stale** — this spec and that one could not both be satisfied. Corrected to `"network-maintain-" + session_id`; the single-segment rule itself belongs to and is routed to `ENTITY-CORE-PROTOCOL` §3.11, where `chain_id` is declared. **No wire change, no renumber:** `chain_id` is opaque (§3.11 gives it no format, nothing parses one), so this is three impls emitting a different generated string. **Found by an audit of arch's own fold debt, and the sharpest evidence is that the reference conformance oracle already rejected this spec:** `entity-core-go`'s `validate-peer` FAILs any peer whose `maintain-result.chain_id` contains `/` (`cmd/internal/validate/network.go:125`, source-read at `a02ab5e`), so **a peer implementing §4.1 as written failed the conformance run** — while go, rust and python had all three independently converged on the single-segment form and recorded in their own source comments that the spec's version was non-conformant (go `ext/network/session.go:118`, rust `extensions/network/src/lib.rs:726`, py `entity_handlers/network.py:373`). Three-way convergence against stale pseudocode is the strongest signal this method produces; the failure was that nothing carried it back here for four weeks. *(Confirmed by `entity-core-go`, `ROUTING-2026-08-13-k`, with the CONTINUATION-inconsistency argument above supplied by them and adopted in preference to arch's weaker "three impls disagree" framing.)*
 >
 > **Amendment 12 — third partial fold: §A2 / §A6.2 / §A6.3 / §A6.4 / §A6.5, the retry lifecycle (new §2.2.1, new §2.11; §2.2 gains two OPTIONAL bounds) `[2026-08-13]`.** `system/peer/status` carried a bare three-state enum, so no consumer could tell *why* a peer left and none could choose a recovery — a transient drop, an auth rejection and a deliberate shutdown were one value. §2.11 lands the `reason` vocabulary and its recovery mapping; §2.2 gains `max_attempts`/`max_elapsed_ms` (**both default unset ⇒ retry forever, which §A6.2 now states normatively** so no implementation invents its own cap); exhausting a bound is a `reason` (`retry-exhausted`), **not** a fourth status. §2.2.1 pins the retry schedule as a **pure function of `(failing_since, cfg, now)`**, with `attempt`/`next_attempt_at` **derived and explicitly never stored** — storing them is a tree write per attempt, the exact fan-out §6.6 rejected — and with the three divergence points (1-indexed `k`, `attempt` counts retries *fired*, `elapsed_to(0)=0`) pinned, because an unpinned derivation relocates a divergence rather than removing it. **The fields themselves are declared upstream at `ENTITY-CORE-PROTOCOL` §3.13 (`9829c6f`), not here** — this spec owns the lifecycle semantics only; two specs declaring fields on one entity is how implementations end up with two shapes. **Additive: all OPTIONAL, no wire change, no renumber; today's behavior is preserved exactly when the bounds are unset.** *(Adopted from convergence, not legislated ahead of it: `failing_since` was **measured on the wire 3-of-3** — go, rust `1152d35`, py `ad0ef98`, `network_reconnect_anchor` PASS 5/5 with 0 skips per seat — reported by `entity-core-go` at `a02ab5e`, whose own conformance check had been holding this at WARN on a stale build-state comment that survived because **a WARN is invisible in a green run.** Three implementations interoperating on a field no landed spec carried: the same shape as the `chain_id` defect corrected the same day, caught one step earlier.)*
 
@@ -492,7 +492,7 @@ handle_maintain_peer(ctx, params):
       reconnect_continuation
     )
 
-    ; Backoff continuation for retry
+    ; Backoff continuation for retry — STANDING, and it handles its own failure
     backoff_continuation = {
       type: "system/continuation"
       data: {
@@ -501,12 +501,17 @@ handle_maintain_peer(ctx, params):
         resource:             {targets: ["system/network"]}
         params:               params             ; same config
         result_field:         null
-        remaining_executions: 1                  ; one-shot per retry
+        remaining_executions: null               ; STANDING — see below [MUST]
+        on_error:             {                  ; the loop re-arms itself [MUST]
+          target:    "system/network"
+          operation: "maintain-peer"
+          params:    params
+        }
         dispatch_capability:  ctx.handler_grant.content_hash
       }
     }
     ctx.entity_tree.put(
-      "system/inbox/network/" + peer_id + "/on-reconnect-backoff",
+      "system/network/peers/" + peer_id + "/on-reconnect-backoff",
       backoff_continuation
     )
 
@@ -552,6 +557,40 @@ handle_maintain_peer(ctx, params):
     }
   }
 ```
+
+#### 4.1.1 The backoff continuation is STANDING, lives in the managed namespace, and handles its own failure `[MUST]`
+
+**The backoff continuation MUST be standing (`remaining_executions: null`).** A one-shot cannot work
+here, and the reason is **ordering, not timing**: the re-install lands *inside* the dispatch, while
+the advance's consume runs *after* the dispatch returns — and deletes the path the dispatch just
+wrote.
+
+> **An operation MUST NOT re-arm its own trigger through a continuation that consumes itself around
+> the dispatch.** The one-shot always loses the race.
+
+The observable cost of getting this wrong is that **an offline peer is never recovered**: the loop
+manages exactly two dials against a dead peer and then stops silently — no marker, no error, a `200`.
+**This generalizes beyond this operation: any *re-arm by re-dispatch* pattern MUST use a standing
+continuation.**
+
+**The continuation MUST carry an `on_error` routing back to the retry re-arm.** A reconnect failure is
+neither *silent* — `system/peer/status` broadcasts it, which is the whole point of the liveness
+surface — nor *unhandled*: the loop re-arms, and **that re-arm is the handler**. Binding a
+silent-burn `EXTENSION-CONTINUATION` §3.10 lost-error marker for an expected retry failure is
+therefore a **category error**, and it is an expensive one: a dead peer's marker tree grows by
+roughly 1,440 nodes/day. With `on_error` present the marker is left doing its actual job — catching
+the *exceptional* failure, where the `on_error` dispatch itself fails.
+
+> **The `on_error` target rule, corrected.** Earlier guidance said to route `on_error` to a
+> `chain-errors` sink and **never** to `system/inbox/*`. That is too broad, and it left this delta
+> with no legal target. **The rule is: inbox-routing advances the continuation bound there — use it
+> when the error is *meant* to drive the next step (a retry); use a `chain-errors` sink for *passive
+> observation*.** The hazard is unintended advancement, not inbox-routing itself.
+
+**The install path is `system/network/peers/{peer_id}/on-reconnect-backoff`** — the §11 managed
+namespace, not `system/inbox/*`. **The continuation graph is handler-managed state, and it belongs in
+the namespace the handler's own grant authorizes** — `system/inbox/*` is a delivery surface, and
+binding management state there conflates *what advances this* with *where messages arrive*.
 
 ### 4.2 Release Peer
 
@@ -757,7 +796,9 @@ keepalive_loop(peer_id, config):
         return escalate_after_grace(peer_id, timeout_ms)
     else:
       missed = 0
-      update_last_seen(peer_id, now())
+      ; Implementation-INTERNAL bookkeeping, NOT a tree write (§5.4.1).
+      ; It already exists for adaptive suppression below.
+      note_last_seen_internal(peer_id, now())
 
 
 ; Owed by the failure episode, not by the connection (§5.4a). Reachable from
@@ -776,6 +817,28 @@ escalate_after_grace(peer_id, timeout_ms):
 ```
 
 **Adaptive pinging.** When the connection is actively exchanging messages, keepalive pings are suppressed. Any successful message exchange resets the missed counter. Keepalive only fires during idle periods.
+
+#### 5.4.1 `system/peer/status` is transition-written; per-tick freshness is implementation-internal `[MUST]`
+
+**`system/peer/status/{peer}` MUST be written only on a transition** — a change of `status` or of
+`reason`. A successful keepalive tick MUST NOT produce a tree write.
+
+**This section's own rationale convicts the alternative.** `system/peer/status` is *the subscribed
+lifecycle signal*, so a per-tick write is write amplification on exactly the entity every lifecycle
+consumer is subscribed to: **two non-transition events per minute per peer per side**, delivered to
+every subscriber — each of whom must then diff for a transition that did not happen — and roughly
+**2,880 superseded status entities per peer per day** accreting in the content store, which nothing
+collects. §6.6 rejected a `last_active` field on the session entity *for this precise reason*, and
+then §5.4 put the same amplification on a more heavily subscribed entity.
+
+- **`last_seen` stays OPTIONAL** (`ENTITY-CORE-PROTOCOL` §3.13). At a transition write its meaning is
+  *"last heard as of this transition"* — on a demotion write, that is the demotion's own evidence.
+- **Superseded operational-state entities are GC-eligible.** §3.13 self-description is explicitly
+  non-durable; the collection mechanism is implementation-defined.
+- **Consumers already have a freshness contract and it is not a heartbeat**: `status == connected`
+  plus the §5.4/§A3 demotion envelope (`interval_ms × max_missed + timeout_ms`). **A cadence-visible
+  heartbeat surface is deliberately deferred** until a consumer demonstrates it needs one — adding it
+  speculatively re-introduces the amplification this rule exists to remove.
 
 ### 5.4a The escalation is owed by the failure episode, not by the connection `[MUST]` `[RULED 2026-08-12]`
 
@@ -1294,7 +1357,7 @@ data: {
 
 - **`held_capability`** (REQUIRED) — the capability the *remote* granted *this peer* at handshake. §10 dispatch reads this to authenticate an outbound EXECUTE and skip re-handshake. `chain` is an array of `system/hash` pointers, **leaf→root, length ≥ 1** (full-wire-form hashes — format byte ‖ digest, length per that byte, §8.4.5 — per the ENTITY-CORE-PROTOCOL.md §3.5 wire form), resolved through the content store at reuse — entities are referenced by hash, never inlined (ENTITY-CORE-PROTOCOL.md §1.7 dedup model). `chain` carries **only** `system/capability/token` content-hashes — no signature/identity/granter padding (a verification bundle does not belong here; the verifier resolves the chain from the content store).
 - **`minted_capability`** (OPTIONAL) — the *connection-handshake* cap *this peer* issued *to the remote*, recorded for R3a idempotency (a re-dial returns the same cap rather than minting a churny new one) and for revocation. **It is NOT a reverse-delivery cap.** In a bidirectional pair, A's `minted_capability` for B is the *same cap entity* as B's `held_capability` from A — one cap, recorded from both ends. Back-direction **delivery** authorization is the per-delivery `deliver_token` (granted at subscribe/continuation time, EXTENSION-INBOX / EXTENSION-SUBSCRIPTION), unchanged by this amendment. The session entity moves ONLY the handshake cap; it MUST NOT be built to solve generic back-direction dispatch. **Carve-out — symmetric establishment.** This one-directional mint is the *asymmetric* case (dial-by-address). A **§6.5 (b) symmetric rendezvous** establishment (`EXTENSION-SIGNALING.md` §6.5) adds one reciprocal grant — the *dialer* mints, for the acceptor, the grant it would issue that peer **as an inbound dialer** (`EXTENSION-SIGNALING.md` §6.5 (b) Contents: the assembled floor ∪ policy, advertisement-filtered — a symmetric *construction*, not a byte-copy of this handshake cap) — yielding bidirectional authority *by design*, which is not the generic back-direction dispatch this MUST NOT forbids but a match to the establishment's own symmetry (back-direction-authority taxonomy, `guides/GUIDE-CAPABILITIES.md` §4a). That reciprocal grant is **connection-scoped** and is deliberately **not** recorded here (it is establishment-scoped, drop-on-disconnect; a stale grant reused on reconnect without re-meeting at the key would authorize outside its establishment). Reaching a profile-less peer by reusing a connection it opened (the V7 §6.11 reentry seam surfacing in §10 dispatch; `GUIDE-CONFORMANCE.md` §7a.2a) is **resolution, not authority**: a dispatch over it still needs a row-1/2/3 cap, and a *generic* dispatch to a profile-less peer over an asymmetric connection is authorized by its trigger's `deliver_token` where one exists and **fails closed** otherwise — the prohibition holds for every asymmetric connection.
-- **`granted_at`** — handshake time. There is deliberately **no** `last_active` field: per-message liveness is `system/peer/status.last_seen`'s job (keepalive-updated, ENTITY-CORE-PROTOCOL.md §3.13); putting it here would force a tree write per message (write amplification → subscription/revision/history fan-out) on the auth record.
+- **`granted_at`** — handshake time. There is deliberately **no** `last_active` field: per-message liveness is `system/peer/status.last_seen`'s job (**snapshot at transition; per-tick freshness is implementation-internal — §5.4.1**, ENTITY-CORE-PROTOCOL.md §3.13); putting it here would force a tree write per message (write amplification → subscription/revision/history fan-out) on the auth record. *(§5.4.1 applies the same reasoning to the status entity itself, which is where it had leaked back in.)*
 - There is deliberately **no** `status` field: connection lifecycle is `system/peer/status`'s job, and cap validity is derivable from `expires_at` (+ revocation check). The auth record needs no separate status.
 - **`remote_public_key`** (OPTIONAL) — a denormalization. `peer_id` is a *hash* of the key, not the key, so the pubkey is not trivially derivable without the identity entity; 32 bytes for signature-verify-without-fetch is cheap. Peers MAY omit it and dereference `remote_identity_hash`.
 
@@ -1798,6 +1861,34 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
   - candidates are **never** written as durable `system/peer/transport/*` profiles (§6.7.3)
   - a published `srflx` candidate is the mapping of the **socket the peer punches from** (§6.7.3)
   - both operations are capability-gated (`network-reflect` / `network-dialback`) and rate-limited (§6.7.4)
+
+#### 12.1.1 The liveness slice is the required floor and is independently conformant `[MUST]`
+
+§4.1 `maintain-peer` bundles connect + subscription + reconnect-continuation + keepalive +
+pending-drain into one operation. That is the **full** build. **This names the minimal composable
+slice every consumer actually blocks on, so it can be shipped first and independently.**
+
+> **The liveness slice.** Write `system/peer/status/{peer}` on connection state change — on establish
+> (`connected`, §6.2), on transport error (`suspect`), on keepalive miss (`suspect → disconnected`,
+> §5.4/§5.4a) — **and nothing more.** These are ordinary tree entities, therefore subscribable via
+> `system/subscription`, therefore consumers react without polling. The slice requires **none** of
+> `maintain-peer`, the continuation graph, or the outbox; those compose on top of it.
+
+- **Keepalive is inside the floor.** The slice's three writes include the keepalive-miss demotion, so
+  the floor is the status writes **plus** the §5 keepalive loop. §12.1 already makes keepalive a MUST;
+  **the status writes alone are a build stage, not a claimable conformance point.**
+- **Consumer latency contract.** A consumer of any NETWORK-conformant peer MAY rely on an idle-dead
+  connection demoting within the keepalive envelope (`interval_ms × max_missed + timeout_ms`;
+  defaults ≈ 100 s, values implementation-defined per §12.4).
+- **`system/connection/{peer}` is NOT in the floor.** It remains MUST at full NETWORK conformance
+  (above), written on transition per `ENTITY-CORE-PROTOCOL` §3.13. **The floor's observable contract
+  is `system/peer/status` only, and a consumer of a floor-only peer MUST NOT assume the connection
+  entity exists.** The division is deliberate: `status` answers *is the peer here* (subscribe);
+  `connection` answers *how am I attached right now* (read-on-demand diagnostics).
+
+**The §4.1 automation SHOULD be built on this slice rather than beside it.** This changes no
+mechanism — it names a shipping boundary, and it exists because consumers were blocking on the whole
+of §4.1 to get a signal the three status writes already provide.
 
 ### 12.2 SHOULD Implement
 

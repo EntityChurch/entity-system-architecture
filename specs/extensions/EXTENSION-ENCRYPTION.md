@@ -268,7 +268,7 @@ Path layout depends on tier.
 |---|---|---|
 | Internal (per-agent private) | `system/identity/internal/cert/{cert_hash}` | This agent's own encryption-cert (its decryption private key lives off-tree per §9; this is the cert) |
 | Public (contact-discoverable) | `system/identity/public/cert/{cert_hash}` | The discoverable handle for senders to encrypt to this identity — **discriminated by `properties.function == "encryption"`, not by a path segment** |
-| Per-relationship | `system/identity/relationships/{contact_id}/cert/{cert_hash}` | Per-contact encryption key for forward-secrecy hygiene (same function filter) |
+| Per-relationship | `system/identity/relationships/{contact_id}/cert/{cert_hash}` | Per-contact encryption key for forward-secrecy hygiene (same function filter). Reachable by the named contact and no one else — **§4.4 step 1a**, which that contact walks ahead of the public handle |
 | Per-key backup | *(IDENTITY-owned; see the ownership rule)* | Tier 2 passphrase-wrapped backup (§9.2) |
 
 > **Namespace ownership — stated once, generally `[MUST]`.**
@@ -296,7 +296,7 @@ For **self-mode storage** (encrypting your own data), the local internal cert is
 
 For **peer-mode sending** (to another identity / peer), the recipient's public cert is the one referenced.
 
-For **per-relationship hygiene** (rotating the contact-side key independently per relationship), the relationships path applies (Tier C only).
+For **per-relationship hygiene** (rotating the contact-side key independently per relationship), the relationships path applies (Tier C only) — and **§4.4 step 1a is how a sender reaches it.** Publishing one is conformant *and* resolvable; the two halves are joined there rather than left to be inferred.
 
 ### §4.4 Discovery (tier-aware)
 
@@ -304,7 +304,19 @@ A sender resolves recipient encryption-pubkeys by reading at the recipient's nam
 
 **Resolution order (sender does this):**
 
-1. Try Tier C: enumerate identity-cert attestations at the recipient's **mode-derived IDENTITY path** — `system/identity/public/cert/` for the discoverable case (`EXTENSION-IDENTITY` §4.2; ENCRYPTION defines no path here, see §4.3) — with `kind="identity-cert"` **and `properties.function == "encryption"`**, filtered through identity's authority chain. Drop what is not live, project the rest, take the first per the total order — both defined below. If nothing survives, fall through.
+1. Try Tier C: enumerate identity-cert attestations at the recipient's **mode-derived IDENTITY paths** (`EXTENSION-IDENTITY` §4.2; ENCRYPTION defines no path here, see §4.3) with `kind="identity-cert"` **and `properties.function == "encryption"`**, filtered through identity's authority chain. Tier C is walked in **two steps, most-specific first `[MUST]`** — see below. Drop what is not live, project the rest, take the first per the total order — both defined below. If nothing survives either step, fall through.
+
+   **1a — the per-relationship cert, if the recipient published one for this sender.** Enumerate at `system/identity/relationships/{contact_id_hex}/cert/`, where `{contact_id_hex}` is **the sending peer's own** `system/peer` identity hash in the form `EXTENSION-IDENTITY` §5.1 pins — `[derive-to-meet]`, at the ECFv1-SHA-256 floor whatever either peer's home format. That subtree's audience is exactly one contact, so **the sender's own id names it, never the recipient's**, and it is a path the named contact constructs for itself. **A subtree that is absent or unreadable is not an error `[MUST]`** — it means no per-relationship key was published to this sender, and the walk continues at 1b.
+
+   **1b — the public cert**, `system/identity/public/cert/` — the discoverable handle, and the only Tier-C shape a sender with no prior relationship can reach.
+
+   **1a and 1b are separate steps, not one merged candidate set `[MUST]`.** If 1a yields a live candidate the walk ends there; a per-relationship subtree that is non-empty but **wholly dead falls through to 1b** rather than terminating, exactly as a tier does.
+
+   **Why most-specific-first, and not one ordered union.** A per-relationship encryption cert exists precisely to give one contact a *different* key from the published handle. Merged into a single set, the total order below decides between the two by `created` — so a later-minted public key silently shadows the dedicated one, and the publisher cannot observe it: it published a key for this contact, and this contact encrypted to a different one. The precedence is the same shape as the tier ladder itself — most specific installed wins, wholly-dead falls through — which is why it adds no concept.
+
+   **Two senders resolving the same recipient may legitimately bind different keys, and this does not weaken the cross-peer order below.** Each sender sees its own relationships subtree and cannot see another's. The determinism §4.4 requires is per **(sender, recipient)** pair — the candidate set is a function of that pair, and both ends of one pair compute the same set from the same bytes.
+
+   **`internal` and `embedded` are outside the walk `[MUST]`, so a sender reads two paths and only two.** An `internal` cert's audience is the identity's own agents — it is the self-mode cert of §4.3 and never a sender-side candidate. An `embedded` cert has no tree path at all and is out of scope for `function="encryption"`; `EXTENSION-IDENTITY` §4.2's registration row is the authority for that vocabulary and states both.
 2. Try Tier B: read `system/encryption/attestation/` at the recipient. If non-empty, enumerate `find_attestations_targeting(attested in system/encryption-pubkey/...)` with `kind="encryption-key"`. Same liveness filter, same projection, same order. If nothing survives, fall through.
 3. Try Tier A: read `system/encryption-pubkey/` directly at the recipient. Verify each pubkey's `system/signature` at the invariant pointer against the recipient's V7 peer_id. Same liveness filter, same order (projection is the identity function here — the carrier *is* the pubkey entity).
 4. None resolved → `403 encryption_recipient_unknown`.
@@ -1202,7 +1214,7 @@ readings disagree, and the spec resolves it. It is not a defect report against w
 
 **So this vector is a pinned-input differential, on the model the `ENC-*-KAT-*` rows already use for primitive bytes:** a shared row file of authored candidate sets with expected selections, which **each implementation runs inside its own suite**. That is the only crossing this rule can have. Required properties of a conformant row set:
 
-1. **Coverage** — tier-ladder precedence at all three pairings; `created` descending; the tie-break **direction asserted** (not merely order-independence); `created` outranking `content_hash`; carrier→pubkey projection with two carriers over one key deduplicating to one candidate; revocation at **both** granularities (pubkey-targeted kills, carrier-targeted leaves a live sibling carrier standing); `expires` dropping a candidate; a non-empty-but-fully-dead tier falling through; both step-4 error cases.
+1. **Coverage** — tier-ladder precedence at all three pairings; **the Tier-C sub-walk (§4.4 step 1a/1b)** — a live per-relationship candidate selected over a **newer** live public one, so that a resolver merging the two into one ordered set fails the row rather than passing it by coincidence; a wholly-dead per-relationship subtree falling through to the public handle; and an absent relationships subtree resolving at 1b with no error; `created` descending; the tie-break **direction asserted** (not merely order-independence); `created` outranking `content_hash`; carrier→pubkey projection with two carriers over one key deduplicating to one candidate; revocation at **both** granularities (pubkey-targeted kills, carrier-targeted leaves a live sibling carrier standing); `expires` dropping a candidate; a non-empty-but-fully-dead tier falling through; both step-4 error cases.
 2. **Order-independence** — every row re-checked with its candidate set enumerated in reverse.
 3. **Negative control `[MUST]`** — deliberately-wrong resolvers run against the shipped rows, each caught by a **named** row. A guard that cannot be made to fire (the permutation check against a correct resolver) needs its own injected-fault control or it is coverage-shaped and measures nothing.
 4. **Declared exclusions** — a row set deliberately silent on an open question declares that silence **in the file**, in a machine-checked field, so a row added later cannot quietly encode one implementation's reading of an unruled question.

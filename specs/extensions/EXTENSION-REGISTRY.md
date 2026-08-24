@@ -398,6 +398,19 @@ The selection vector **MUST**:
    rather than by weight fails.
 4. **Exercise the tier rule (§3b.3)** with at least one member outside the lowest `priority` tier
    present, so that hashing before partitioning fails.
+5. **Use a real rendezvous key.** `k` MUST be well-formed per `EXTENSION-SIGNALING.md` §3.1 —
+   `varint(format) ‖ digest`, 33 bytes, with the format at the **SHA-256 floor `0x00`** and never
+   the deriving peer's home format — and the vector MUST publish the §3.1 derivation inputs
+   (`mode`, `mode_input`) **alongside** the key bytes, so `k` is auditable rather than asserted.
+   A leading tag no conformant derivation emits yields a key an implementation may reject before it
+   hashes anything, and a fixture that will not load discriminates nothing; opaque bytes that merely
+   start at the floor parse cleanly and leave a reviewer nothing to check. **An implementation
+   consumes the published bytes** — the inputs are there to be recomputed, not to make §3.1 a
+   prerequisite for a selection test.
+
+Properties 2–4 constrain which member wins and 5 removes `k` from the free variables, so the search
+that satisfies all four runs over the endpoint strings, the `priority` assignment and the
+`mode_input`. **That search is the oracle's work, and it is why the bytes are not authored here.**
 
 > **`[§11.5-class]` — single-impl-invisible.** This is the same invisibility as
 > `EXTENSION-SIGNALING.md` §7.2 `fire_at`, and it is why the pin went unnoticed while three

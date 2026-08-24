@@ -286,6 +286,60 @@ Extensions MUST declare which normative specs they depend on. Types from depende
 
 Extension specs define new types that layer on core protocol types. Extensions MUST NOT redefine core types. Extensions MAY define types that reference core types via `type_ref`.
 
+### 8.2a The availability descriptor — the standard shape for a field that may have no value
+
+**A field that can be absent has four distinct causes, and collapsing them is the dishonesty the
+substrate floor forbids** (*deliver-or-signal, never silently drop*). A value may be missing because the
+platform **cannot** produce it, because the caller is **not permitted** to see it, because it **has not
+been measured**, or it may genuinely **have** a value. *"Field missing"* and *"zero"* answer none of
+those questions, and **every heterogeneous surface re-invents this distinction unless it is standardized
+once.**
+
+An **availability descriptor** wraps an optional typed value `T` as an ordinary ECF map — **no new wire
+mechanism**:
+
+```
+availability<T> := {
+    state:     "value" | "unsupported" | "denied" | "unknown",   ; REQUIRED
+    value:     <T>,        ; present IFF state = "value"; omitted otherwise
+    fidelity:  "exact" | "coarse"    ; OPTIONAL; meaningful only when state = "value"
+}
+```
+
+| `state` | Meaning | The consumer's next move |
+|---|---|---|
+| `value` | present and known (see `fidelity`) | use `value` |
+| `unsupported` | this platform or build **cannot** produce the field | **never retry** — a structural no |
+| `denied` | producible, but the caller's grant does not cover it | **retry with a broader grant** |
+| `unknown` | not measured or not yet probed — **distinct from zero** | **re-poll** later |
+
+**The split is exhaustive and each state drives different consumer behaviour**, which is the whole
+reason it is four values and not a boolean.
+
+**Rules `[MUST]`:**
+
+- An implementation emitting an availability-typed field **MUST** set `state`.
+- **`value` MUST be present when `state = "value"` and MUST be omitted otherwise — omitted, not
+  `null`.** A conditional encode, never a null placeholder.
+- **`fidelity: "coarse"` MUST be set when the value has been deliberately coarsened** — bucketed,
+  rounded, or clamped for privacy — so a consumer never mistakes a bucket for a measurement.
+  **An omitted `fidelity` reads as `exact`**, never as absent or unknown.
+- **A reader MUST treat an unrecognized `state` as `unknown`**, per the MUST-ignore-unknowns discipline,
+  so future states degrade safely.
+
+**Extensions SHOULD reuse this shape rather than inventing a per-field "missing" convention.** Where a
+standalone descriptor result needs a type name it is `system/availability`.
+
+> **This is a synthesis, not an invention, and each source covers only one axis.** The support axis is a
+> platform feature query (*can this build do it*); the permission axis is a permission-state query
+> (`granted` / `denied` / `prompt`); the presence axis is a hardware-state enum (`Enabled` / `Absent` /
+> `UnavailableOffline`). **No surveyed system unifies support, permission and measurement into one
+> field** — that union is the contribution. A *health* axis is deliberately excluded: health and alerting
+> are monitoring concerns, not properties of a read-only field.
+
+**Not an error type.** `denied` and `unsupported` are **normal field states**, not operation failures —
+an operation-level failure still returns the ordinary coded error.
+
 ### 8.3 New Operations
 
 Extensions that add handler operations define them as `system/handler/operation-spec` entries:
@@ -439,6 +493,18 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 ### 8.5 Conformance
 
 Extension specs have their own conformance section. An implementation MAY be conformant to the core protocol without implementing any extensions. Extension conformance is independent.
+
+**Availability-descriptor vectors (§8.2a).** A surface using the descriptor pins **both** conditional-field
+rules, not only the four states — the conditional rules are where implementations diverge:
+
+- one vector **per `state`** — `value` / `unsupported` / `denied` / `unknown`;
+- a **`coarse`-fidelity** vector (`{state: "value", fidelity: "coarse"}`), pinning the coarsen signal;
+- a **`value`-with-`fidelity`-omitted** vector, pinning the **default-`exact`** rule — a reader must read
+  an omitted `fidelity` as `exact`, never as absent or unknown;
+- the **omit-not-null** rule exercised directly: a non-`value` state serializes with `value` **absent**,
+  never `value: null`. **This one needs its own vector because it is invisible to a reader that only
+  checks `state`** — a peer emitting `value: null` passes every state assertion and still breaks a
+  consumer that branches on field presence.
 
 ---
 

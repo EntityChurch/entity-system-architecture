@@ -1,6 +1,6 @@
 # Continuation Extension — Normative Specification
 
-**Version**: 1.22
+**Version**: 1.23
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
@@ -600,6 +600,22 @@ internal Python inconsistency. State this once here; §3.5 references it rather 
 
 Observability of a forward dispatch's downstream verdict. Forward continuations are fire-and-forget by design (a closure invocation, not an RPC). Three cases produce observable failure markers (all informational, none reactive), all of type `system/runtime/chain-error-lost`, bound at a **per-occurrence** path `system/runtime/chain-errors/lost/{chain_id}/{step_index}/{reason}/{marker_hash}` (v1.20 path scheme — canonical home is §3.10.1):
 
+**The bind obligation is for *unhandled* failure, and a handled loop MUST NOT manufacture markers `[MUST]`.**
+The three cases below are `MUST`-bind. That obligation exists because a silent chain failure is
+unacceptable — **not** because every failure deserves a record. A failure that is **broadcast on an
+observable surface** *and* **handled by a re-arming loop** is neither silent nor unhandled, and binding a
+marker for it adds **zero** observability at unbounded cost.
+
+The concrete shape, because it is the common one: a retry loop whose continuation carries **no `on_error`**
+makes every expected retry failure the no-`on_error` case below, so a dead counterpart mints markers
+forever — roughly 1,440 per day, per dead peer. **Every implementation would be required to write a record
+that nothing is required to collect.**
+
+> **The fix is at the source, not in collection.** A chain that **fails by design, repeatedly, MUST handle
+> its own failure** — give the loop an `on_error` that re-arms it. The no-`on_error` case then stops firing
+> and the marker returns to catching the *exceptional* failure: the `on_error` dispatch itself failing.
+> **The marker is a backstop, not a log.**
+
 **Path-scheme cross-reference (v1.20).** The path strings below show the v1.16-era per-reason form `.../{reason}` for historical continuity; the v1.20 normative form appends `/{marker_hash}` as a terminal segment per §3.10.1 (each distinct observation lands at its own path; tree IS the event log; redelivery dedupes when impls capture `timestamp` at failure-origination per §3.10.6). Treat any v1.16/v1.13/v1.9 path string in this section as superseded by §3.10.1; the historical idempotency claims (re-binding-overwrites / flap-doesn't-multiply) were structurally false under v1.16/v1.19 (latent since v1.9 A.1 when `timestamp` body field was introduced) and are corrected by §3.10.1's v1.20 path scheme.
 
 - **(A.1, v1.10) `on_error` dispatch itself fails** — `reason: "on_error_dispatch_failed"`. See "Lost-error marker (`on_error` delivery failure)" below.
@@ -612,7 +628,7 @@ Neither marker triggers advancement, retry, or any reactive behavior; all preser
 
 **Lost-error marker (`on_error` delivery failure).** The two `on_error` dispatches above are best-effort by design — a compensation path, not guaranteed delivery (adding suspension would create recursive error-handling complexity with diminishing returns). The hazard that leaves is a chain whose `on_error` delivery *itself* fails (mis-shaped error result, wrong delivery URI, downstream handler not ready) having **no observable surface at all** — from the developer's side: "I installed the chain, fed it input, nothing happened, no errors anywhere."
 
-When an `on_error` dispatch fails (transient or permanent), implementations SHOULD bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** — at `system/runtime/chain-errors/lost/{chain_id}/{step_index}/on_error_dispatch_failed/{marker_hash}` (v1.20 path scheme; canonical home §3.10.1) capturing:
+When an `on_error` dispatch fails (transient or permanent), implementations **MUST** bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** — at `system/runtime/chain-errors/lost/{chain_id}/{step_index}/on_error_dispatch_failed/{marker_hash}` (v1.20 path scheme; canonical home §3.10.1) capturing:
 
 - the original error code and status,
 - the `on_error` delivery URI that failed,
@@ -622,11 +638,11 @@ When an `on_error` dispatch fails (transient or permanent), implementations SHOU
 
 **Path and type are pinned (cross-impl)**: the marker entity `type` MUST be `system/runtime/chain-error-lost` so the marker's content hash agrees across implementations. `{step_index}` is the **original request ID** of the dispatch whose `on_error` delivery failed — there is no numeric step counter. **Under v1.20** (per §3.10.1): each distinct failure observation lands at its own `{marker_hash}` terminal segment under `.../{step_index}/on_error_dispatch_failed/`. A retried-and-still-failing delivery produces a new observation (new `timestamp` per §3.10.6 timestamp-capture discipline → new `content_hash` → new path); the tree records the full retry history rather than overwriting. Bytes-identical redeliveries (same logical event redelivered) dedupe by content-addressing (same `content_hash` → same path → `tree:put` no-op). Distinct reasons at the same step occupy distinct sibling `{reason}` subtrees (unchanged). The v1.16 "re-binding overwrites" framing was structurally false under any version since v1.9 A.1 introduced the body `timestamp` field — corrected by v1.20.
 
-The marker is informational. Consumers MAY aggregate it for diagnostics or operator surfacing. The marker MUST NOT trigger advancement, retry, or any other reactive behavior — it is an observation sink, not a control path; this preserves the best-effort semantics above (the marker adds visibility, not delivery). Implementations MAY garbage-collect markers after a configured retention window (suggested default: 24 hours).
+The marker is informational. Consumers MAY aggregate it for diagnostics or operator surfacing. The marker MUST NOT trigger advancement, retry, or any other reactive behavior — it is an observation sink, not a control path; this preserves the best-effort semantics above (the marker adds visibility, not delivery). **Collection is `MUST` for any peer that binds `[MUST]`, and the collector is the binder.** A `MUST`-write paired with a `MAY`-collect is a leak by construction, whatever default the `MAY` suggests — and elevating the bind obligation above created exactly that pairing. The actor falls out of §3.10.7's invariant: markers are bound in the **observing peer's own tree under its own authority**, so the binder can always collect them. *The authority answer and the actor answer are the same answer.* **Retention is configured at `system/config/chain-errors` → `retention_ms`, default 24 hours** — the value this section already suggested, now with a home, since *"a **configured** retention window"* had named a knob no document defined.
 
 This codifies `system/runtime/chain-errors/` as the conventional sub-purpose for chain-error sinks (per `GUIDE-PEER-CONCERNS-AND-NAMESPACES` §4.1 — "specs describing particular purposes enumerate sub-purposes"); `.../lost/` is the lost-error sink (covering both the A.1 `on_error`-delivery-failure case above and the v1.13 no-`on_error` forward-dispatch non-2xx case below).
 
-**Lost-error marker (no-`on_error` forward dispatch non-2xx — v1.13; reason vocabulary AMENDED v1.19).** When a forward continuation with no `on_error` receives a handler-level non-2xx response, implementations SHOULD bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** (same type as the A.1 case above) — at:
+**Lost-error marker (no-`on_error` forward dispatch non-2xx — v1.13; reason vocabulary AMENDED v1.19).** When a forward continuation with no `on_error` receives a handler-level non-2xx response, implementations **MUST** bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** (same type as the A.1 case above) — at:
 
 ```
 system/runtime/chain-errors/lost/{chain_id}/{step_index}/{result.data.code}/{marker_hash}
@@ -646,11 +662,11 @@ where `{result.data.code}` is the response's `code` value verbatim per §3.10.5 
 
 **`{step_index}` for v1.13 markers (v1.14 pin).** `{step_index}` MUST be the **original request ID** of the forward dispatch that returned non-2xx — identical to the A.1 convention pinned above. Not the cascade depth, not an internal step counter; the request ID is the only stable, content-addressable key for the logical step. **Under v1.20** (per §3.10.1): step-identity stability is still required (so redeliveries of the same logical step's same observation land at the same `(chain_id, step_index, reason, marker_hash)` coordinate and dedupe via content-addressing). The retry-idempotency framing of v1.14 is now interpreted as same-content re-bind idempotency (per §3.10.1 + §3.10.6 timestamp-capture discipline); distinct observations within the same logical step occupy distinct `{marker_hash}` terminal segments. Cross-impl absorption found Rust picked `cascade_depth` (not stable across the impl's internal book-keeping) while Go picked `RequestID`; this pin matches Go and the A.1 convention.
 
-The marker is informational. Consumers MAY aggregate it for diagnostics or operator surfacing. The marker MUST NOT trigger advancement, retry, or any other reactive behavior — `remaining_executions` is still decremented normally; the dispatch is still classified as a completed forward dispatch (per the v1.10 classification above); the chain still advances. The marker adds visibility, not behavior. Implementations MAY garbage-collect markers after a configured retention window (suggested default: 24 hours; same as the A.1 case).
+The marker is informational. Consumers MAY aggregate it for diagnostics or operator surfacing. The marker MUST NOT trigger advancement, retry, or any other reactive behavior — `remaining_executions` is still decremented normally; the dispatch is still classified as a completed forward dispatch (per the v1.10 classification above); the chain still advances. The marker adds visibility, not behavior. Collection is `MUST` and self-collected, on the `system/config/chain-errors` → `retention_ms` window (§3.4 A.1).
 
 This closes the silent-burn observability gap that v1.10's "Known limitation (flagged, not closed here)" note deliberately deferred. Per `proposals/PROPOSAL-CONTINUATION-NO-ON-ERROR-SINK.md` (I-8). The fix is purely additive — no behavioral change to dispatch, no new entity types beyond the existing A.1 marker, no wire-format change.
 
-**Lost-error marker (merge-mode non-map value — v1.16).** When a continuation with `result_merge: true` (§2.2 dispatch-mode table) reaches the assembly step with a post-transform value that is **not a map**, the merge degrades to static-`params`-only and the intended dynamic fields are silently dropped — the dispatch proceeds, but with incomplete params (and so usually returns non-2xx downstream). Because this is an assembly-phase misconfiguration that causally precedes — and is masked by — the downstream outcome, implementations SHOULD bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** — at `system/runtime/chain-errors/lost/{chain_id}/{step_index}/merge_value_not_map/{marker_hash}` (v1.20 path scheme; canonical home §3.10.1) capturing:
+**Lost-error marker (merge-mode non-map value — v1.16).** When a continuation with `result_merge: true` (§2.2 dispatch-mode table) reaches the assembly step with a post-transform value that is **not a map**, the merge degrades to static-`params`-only and the intended dynamic fields are silently dropped — the dispatch proceeds, but with incomplete params (and so usually returns non-2xx downstream). Because this is an assembly-phase misconfiguration that causally precedes — and is masked by — the downstream outcome, implementations **MUST** bind a lost-error marker entity — entity **`type`: `system/runtime/chain-error-lost`** — at `system/runtime/chain-errors/lost/{chain_id}/{step_index}/merge_value_not_map/{marker_hash}` (v1.20 path scheme; canonical home §3.10.1) capturing:
 
 - the post-transform value's type (what was produced instead of a map),
 - the dispatched target URI,
@@ -658,7 +674,7 @@ This closes the silent-burn observability gap that v1.10's "Known limitation (fl
 - a timestamp,
 - `reason: "merge_value_not_map"`.
 
-`{step_index}` is the original request ID (same convention as above). The marker is informational — MUST NOT trigger advancement, retry, or any reactive behavior; the dispatch proceeds with static-only params regardless; the chain advances. Same retention as the other lost-error markers. The per-reason subsegment is load-bearing here: this marker is the **root cause** and the dispatch it precedes usually emits a `forward_dispatch_non2xx` marker (the **symptom**) for the same step — under the old shared path the symptom would overwrite the cause within milliseconds and post-hoc poll/list inspection would never recover it. Per `proposals/implemented/PROPOSAL-CONTINUATION-MERGE-ASSEMBLY.md`.
+`{step_index}` is the original request ID (same convention as above). The marker is informational — MUST NOT trigger advancement, retry, or any reactive behavior; the dispatch proceeds with static-only params regardless; the chain advances. Same retention obligation as the other lost-error markers — `MUST`-collect, self-collected (§3.4 A.1). The per-reason subsegment is load-bearing here: this marker is the **root cause** and the dispatch it precedes usually emits a `forward_dispatch_non2xx` marker (the **symptom**) for the same step — under the old shared path the symptom would overwrite the cause within milliseconds and post-hoc poll/list inspection would never recover it. Per `proposals/implemented/PROPOSAL-CONTINUATION-MERGE-ASSEMBLY.md`.
 
 **Chain-trace anomaly detection.** A forward dispatch that completes with NEITHER (i) a `remaining_executions` decrement visible on the continuation entity at `<install_path>` NOR (ii) a chain-error marker under `system/runtime/chain-errors/{lost,rejected}/{chain_id}/{step_index}/` is **anomalous** — it indicates a dispatcher-level silent drop. Inspect consumers MAY treat this case as a §9 #8 anomaly signal (per `GUIDE-INSPECTABILITY.md` v1.1 §9 #8); `validate-peer` MAY treat it as a `CAT-CHAIN-COMPLETION` conformance failure for forward-dispatch chains. The substrate provides no behavior on detecting the anomaly — it's an observability invariant that lets tooling distinguish "the chain ran and completed (success or marked failure)" from "the chain never ran or silently dropped." Per the chain-participation-invariants proposal §2.1.
 
@@ -1220,6 +1236,40 @@ For each category of failure, the canonical home for the `code` is per ENTITY-CO
 
 The marker entity body carries the same `code` value denormalized (per §3.10.6).
 
+**A handler originating a dispatch that belongs to a known chain MUST set `bounds.chain_id` to that
+chain's id `[MUST]`.** A retry or timer-fired dispatch has no inbound context, so §3.6 step 6 mints it a
+**fresh** id — correct by the sub-chain model, but it scatters every failure of one long-lived relationship
+across unrelated nodes and leaves the id the operator actually has appearing nowhere. The handler already
+holds that id; supplying it is not a new mechanism. With it, every failure of one relationship lands under a
+single node and *"which relationship is failing, and for how long?"* is answered by the field that already
+works.
+
+**A constant sentinel is NOT a conformant coordinate `[MUST]`.** Emitting a fixed `{chain_id}` or
+`{step_index}` — `internal`, `unknown`, or any other constant — collapses every marker from every chain and
+every peer into one node. It satisfies the letter of the bind obligation while delivering none of its
+purpose. **A `MUST` whose conformant implementation carries zero information is not a `MUST`**, and this is
+pinned so a conformance probe can reject it.
+
+**Path-safety applies to EVERY interpolated coordinate, not only `{reason}` `[MUST]`.** `{chain_id}` and
+`{step_index}` are **wire-supplied**, so a hostile peer ignores any producer-side constraint by definition —
+and these markers bind under **component-owned authority** (§3.10.7), which removed the accidental
+containment a caller-capability bind used to provide. **Substrate authority plus an attacker-controlled path
+segment is a write-anywhere primitive.** The `rejected` variant is the sharpest case: it binds *precisely
+because* a sender's capability check failed, so an unauthorized caller reaches it **by construction**.
+
+- **An implementation MUST validate every interpolated segment path-safe at construction**, whatever its
+  source, and MUST NOT trust `bounds.chain_id`, the request id, or `result.data.code` as path components.
+- **Interior `..` is the escape that matters.** A leading `../` is what naive cleaners reject; an *interior*
+  `..` is **resolved** by path-cleaning, so a value like `../../../../authority/keys` leaves `system/`
+  entirely.
+- **A segment that fails validation collapses to a fixed sentinel, and the body carries the original.**
+  One sentinel per coordinate (`{reason}` → `unspecified_error`, below). **Collapsing loses no occurrence** —
+  each distinct observation still lands at its own `{marker_hash}` terminal, so distinctness was never
+  carried by the intermediate node. **Do not hash the unsafe value:** hashing is a one-way loss in the one
+  marker whose purpose is observing a hostile failure, and a distinct hash per hostile value mints
+  **unbounded path nodes** — the sentinel bounds it to a single quarantine node.
+- **Safe values pass through byte-identical**, so no conformant coordinate changes.
+
 **Path-safety (normative).** Codes used as `{reason}` path segments MUST conform to ENTITY-CORE-PROTOCOL.md §1.4 path-segment rules (UTF-8; no null bytes; no empty segments; no embedded `/`). A handler emitting a non-path-safe `code` SHOULD have it sentinel-substituted (`{reason}` = `unspecified_error`) by the dispatching engine with the raw `code` preserved in the marker body's `code` field per §3.10.6.
 
 **Fallback for missing `code`.** Handlers SHOULD always include `code` on error responses per ENTITY-CORE-PROTOCOL.md §3.3. If a handler emits an error response with `status >= 400` but no `code` field, the engine SHOULD bind under `{reason}` = `protocol_error` (ENTITY-CORE-PROTOCOL.md §6.12; the missing-code condition IS a protocol violation by the responding handler, surfaced at the transport-consumer boundary).
@@ -1316,7 +1366,7 @@ This was an amendment in v1.19. Prior v1.18 framing treated `{reason}` and `Erro
 
 - Marker binds are content-addressed; under v1.20 path scheme, distinct observations land at distinct `{marker_hash}` terminal segments under the `(chain_id, step_index, reason)` prefix — flapping targets DO multiply markers within the slot (intentionally: the tree IS the event log), while same-content redelivery dedupes (genuine `tree:put` no-op) per §3.10.1 + §3.10.6 timestamp-capture discipline
 - Markers are passive runtime state, not events: subscriptions match per the normal mechanism but the markers themselves have no reactive behavior
-- Markers MAY be GC'd after a retention window (impl-defined; v1.9 §3.4 A.1 already authorized this for the lost kind; same applies to rejected)
+- Markers **MUST** be collected after the `system/config/chain-errors` → `retention_ms` window (default 24h), by the peer that bound them (§3.4 A.1); applies to both kinds
 - Reproducer test for the rejected variant (v1.20 path scheme; v1.19 vocabulary): two-peer setup with restricted caps that do NOT include the chain handler's receive operation; observe inbound dispatch attempt; expect both a receiver-side marker at `.../rejected/{chain_id}/{step_index}/capability_denied/{receiver_marker_hash}` AND a sender-side marker at `.../lost/{chain_id}/{step_index}/capability_denied/{sender_marker_hash}` with `rejected_marker_hash` body field on the sender-side marker equal to `{receiver_marker_hash}` (per §3.10.4 — same value, two surfaces). Both kinds bind under the same `{reason}` segment (`capability_denied`) — the kind segment tells you which side observed it; the `{marker_hash}` segments differ because the two markers' bodies differ (receiver-side has `requesting_peer_id` + `attempted_uri`; sender-side has `target_peer_id` + `target_uri` + `rejected_marker_hash` mirror; both have `timestamp` captured at failure-origination per §3.10.6).
 
 #### 3.10.11 Appendix A reference (v1.19)
@@ -1509,6 +1559,10 @@ A conformance suite SHOULD assert the install-time and additive MUSTs (§8.1) no
 ### 8.1 MUST Implement
 
 - Continuation handler at `system/continuation` with `install`, `advance`, `resume`, and `abandon` operations (§3.1)
+- **Lost-error markers are `MUST`-bind for all three §3.4 cases** — `on_error` dispatch failure, no-`on_error` forward non-2xx, and merge-value-not-map — bound under **component-owned authority** (§3.10.7) so the bind cannot fail on the misconfiguration it exists to observe. **The obligation is for *unhandled* failure**: a chain that fails by design and handles it with `on_error` does not produce them (§3.4)
+- **Every interpolated marker coordinate is validated path-safe at construction** — `{chain_id}` and `{step_index}` are wire-supplied and MUST NOT be trusted as path components; a failing segment collapses to a fixed sentinel with the original preserved in the body (§3.10.5)
+- **A handler originating a dispatch on a known chain sets `bounds.chain_id` to that chain's id**, and a constant sentinel coordinate is non-conformant (§3.10.5)
+- **Markers are self-collected after `system/config/chain-errors` → `retention_ms`** (default 24h) by the peer that bound them (§3.4)
 - `install` operation as the proper create path for `system/continuation` and `system/continuation/join` entities (§3.2, CT1)
 - Install handler MUST verify the embedded `dispatch_capability` via `check_creator_authority` (ENTITY-CORE-PROTOCOL.md §5.5) as an **in-chain** check — the writer's identity (`ctx.execute.data.author`) MUST appear as a granter **anywhere in** the collected authority chain (§3.1a, §3.2 step 4); reject with 403 `embedded_cap_unauthorized` when it does not (CT2). This is *not* a chain-*root* check; the prior "chain root against author" wording was correct only for the local case and is reconciled in §3.1a — implementing it as a root check breaks cross-peer continuations
 - Install handler MUST persist the embedded `dispatch_capability` and its full authority chain to local content store after the in-chain check succeeds (§3.2 step 5)
@@ -1534,9 +1588,9 @@ A conformance suite SHOULD assert the install-time and additive MUSTs (§8.1) no
 - Cross-impl SDKs SHOULD expose a re-attenuation mint helper (B-rooted `dispatch_capability`, installer as leaf granter, **`grantee` = an explicit dispatching-peer parameter — NOT self-wielded to the installer**) and a dispatch chain-walk + bundle helper (full chain → envelope `included`) (§4.2 case 3, C-3)
 - Lost-error markers use the per-occurrence path `system/runtime/chain-errors/lost/{chain_id}/{step_index}/{reason}/{marker_hash}` (v1.20 path scheme; v1.16 per-reason subsegment + v1.20 terminal hash segment) — distinct reasons coexist as sibling `{reason}` subtrees; distinct observations within a reason coexist as sibling `{marker_hash}` children; same-content re-binding is genuine content-addressed no-op (§3.10.1)
 - Chain-error marker `{reason}` segment IS `result.data.code` (v1.19 §3.10.5; same value across all kinds and categories; no separate reason vocabulary)
-- Lost-error marker on `on_error` delivery failure — bind an informational marker at `.../{chain_id}/{step_index}/on_error_dispatch_failed/{marker_hash}` with `code: "on_error_dispatch_failed"` (Appendix A); no reactive behavior; MAY GC after a retention window (§3.4 + §3.10 + Appendix A; v1.20 path scheme)
-- Lost-error marker on no-`on_error` forward dispatch non-2xx — bind an informational marker at `.../{chain_id}/{step_index}/{result.data.code}/{marker_hash}` with `code` = the response's `result.data.code` (e.g., `capability_denied` for 403); same type as the A.1 marker; trigger range status ≥ 400; trigger timing every occurrence (each occurrence binds its own marker at a distinct `{marker_hash}` segment per §3.10.1 + §3.10.6 timestamp-capture discipline); no reactive behavior; MAY GC after a retention window. **v1.13 reason `"forward_dispatch_non2xx"` deprecated as of v1.19; v1.20 path scheme — see §3.4 deprecation note + §3.10.5 + §3.10.1.**
-- Lost-error marker on merge-mode non-map value — when `result_merge: true` meets a non-map post-transform value, bind an informational marker at `.../{chain_id}/{step_index}/merge_value_not_map/{marker_hash}` with `code: "merge_value_not_map"` (Appendix A); dispatch proceeds with static-only params; no reactive behavior; MAY GC after a retention window (§3.4, v1.16; Appendix A canonical home as of v1.19; v1.20 path scheme)
+- Lost-error marker on `on_error` delivery failure — bind an informational marker at `.../{chain_id}/{step_index}/on_error_dispatch_failed/{marker_hash}` with `code: "on_error_dispatch_failed"` (Appendix A); no reactive behavior; **MUST** self-collect after `retention_ms` (§3.4 + §3.10 + Appendix A; v1.20 path scheme)
+- Lost-error marker on no-`on_error` forward dispatch non-2xx — bind an informational marker at `.../{chain_id}/{step_index}/{result.data.code}/{marker_hash}` with `code` = the response's `result.data.code` (e.g., `capability_denied` for 403); same type as the A.1 marker; trigger range status ≥ 400; trigger timing every occurrence (each occurrence binds its own marker at a distinct `{marker_hash}` segment per §3.10.1 + §3.10.6 timestamp-capture discipline); no reactive behavior; **MUST** self-collect after `retention_ms`. **v1.13 reason `"forward_dispatch_non2xx"` deprecated as of v1.19; v1.20 path scheme — see §3.4 deprecation note + §3.10.5 + §3.10.1.**
+- Lost-error marker on merge-mode non-map value — when `result_merge: true` meets a non-map post-transform value, bind an informational marker at `.../{chain_id}/{step_index}/merge_value_not_map/{marker_hash}` with `code: "merge_value_not_map"` (Appendix A); dispatch proceeds with static-only params; no reactive behavior; **MUST** self-collect after `retention_ms` (§3.4, v1.16; Appendix A canonical home as of v1.19; v1.20 path scheme)
 - Chain-error rejected variant (cap-rejection) — receiver-side dispatcher binds marker at `system/runtime/chain-errors/rejected/{chain_id}/{step_index}/capability_denied/{receiver_marker_hash}` (the canonical 403 code per ENTITY-CORE-PROTOCOL.md §3.3 line 736); sender side mirrors at `lost/{chain_id}/{step_index}/capability_denied/{sender_marker_hash}` with `rejected_marker_hash` body field per §3.10.4 (value equals `{receiver_marker_hash}` — same value, two surfaces). Per §3.10.3; v1.19 vocabulary; v1.20 path scheme; companion to `ErrorData.rejected_marker` wire field
 - `resolve_or_default` fallback to static values when extraction path is absent or navigation fails (§3.6)
 - `resource_extract` string-to-targets wrapping (§3.6)
