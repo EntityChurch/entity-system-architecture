@@ -192,14 +192,18 @@ subscribe(params: SubscribeParams) → SubscriptionInfo
 
   SubscribeParams := {
     pattern:         string       ; Path pattern (exact match or prefix/*)
-    events:          [string]?    ; Event types to filter ("put", "remove"); null = all
+    events:          [string]?    ; Event types to filter ("created", "updated", "deleted");
+                                  ; null = all three. (0.8.1, SA-2 — this line read
+                                  ; ("put", "remove"), which matches nothing on the wire.)
     deliver_to:      string       ; URI where notifications go (usually inbox)
     deliver_token:   hash         ; Capability token authorizing inbox delivery
     include_payload: bool?        ; Bundle changed entity in notification's included (default false; v3.14)
     limits: {
       max_events:      uint?     ; Stop after N events
       max_duration_ms:  uint?    ; Stop after N ms
-      rate_limit:      uint?     ; Max events per second
+      rate_limit:      uint?     ; Max notifications per MINUTE (0.8.1, SA-3 — this
+                                 ; line read "per second"; EXTENSION-SUBSCRIPTION §2.4
+                                 ; is the normative schema and says per minute)
     }?
   }
 
@@ -530,7 +534,9 @@ find(expression: QueryExpression) → QueryResult
     type_filter:  string?        ; Type glob pattern
     field_filters: [{
       field:    string
-      operator: string           ; eq, neq, in, exists, gt, lt, gte, lte, prefix, substring, contains
+      operator: string           ; eq, not_eq, in, exists, gt, lt, gte, lte, prefix,
+                                 ; substring, contains  (0.8.1, SA-4 — this list read
+                                 ; `neq`; EXTENSION-QUERY §4.4 spells it `not_eq`)
       value:    any
     }]?
     path_filter:  string?        ; Path prefix
@@ -540,11 +546,18 @@ find(expression: QueryExpression) → QueryResult
     cursor:       string?        ; Pagination
   }
 
-  QueryResult := {
-    entries: [{path: string, content_hash: hash, entity?: Entity}]
-    cursor:  string?
-    total:   uint?
+  QueryResult := {                 ; = system/query/result (EXTENSION-QUERY §4.3, normative)
+    matches:  [{path?: string, hash: hash, type: string}]
+                                   ; system/query/match. `path` is OPTIONAL — absent for
+                                   ; content-store-only entities (EXTENSION-QUERY §5.4).
+    total:    uint
+    has_more: bool
+    cursor:   string?
   }
+  ; (0.8.1, SA-4 — this block read `entries: [{path, content_hash, entity?}]`, with no
+  ; `has_more` and a mandatory `path`. Under `include_entities` the handler returns a
+  ; `system/envelope` carrying the entities in `data.included`; entities are NOT inlined
+  ; per match. An SDK SHOULD unwrap that envelope so callers never branch on it.)
 ```
 
 **count** — Count matching entities.

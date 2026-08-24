@@ -1,0 +1,43 @@
+{
+  "meta": {
+    "note": "Which normative span each SDK restatement was written against, and how that span read when someone last reviewed it. Gate: `spec sdksync`. A pin proves the source is byte-identical to the last review; it does NOT prove the block was correct then. Re-pin with --update only after re-reading. Unpinned blocks are a visible backlog and do not gate.",
+    "pins": 4
+  },
+  "pins": {
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md::QueryExpression": {
+      "anchor": [
+        "system/query/expression",
+        "system/query/field-predicate"
+      ],
+      "digest": "sha256:592c06e14772f82f832af0074c4cbbd4",
+      "source": "specs/extensions/EXTENSION-QUERY.md",
+      "why": "SA-4: the operator list restated here spelled not-equal `neq`; the normative registry spells it `not_eq`. Loud failure (400 invalid_operator), one debugging session per SDK author."
+    },
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md::QueryResult": {
+      "anchor": [
+        "system/query/result",
+        "system/query/match"
+      ],
+      "digest": "sha256:294db92abc14200d89d44bb8a0bd5533",
+      "source": "specs/extensions/EXTENSION-QUERY.md",
+      "why": "SA-4: this block restated `entries: [{path, content_hash, entity?}]` with no `has_more` and a mandatory `path`. The normative shape is `matches` of system/query/match, `path` optional per EXTENSION-QUERY \u00a75.4."
+    },
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md::SubscribeParams": {
+      "anchor": [
+        "system/subscription/request",
+        "system/subscription/limits"
+      ],
+      "digest": "sha256:3a109f0316bf6effe445653bf4e37063",
+      "source": "specs/extensions/EXTENSION-SUBSCRIPTION.md",
+      "why": "SA-2 and SA-3, the two worst in the batch and both silent. `events` restated a two-value vocabulary the engine can never match, so a subscription was created, returned an id, and never fired for its lifetime; `rate_limit` restated the unit as per-second against a per-minute normative field, 60x, surfacing on the subscriber as unexplained missing events."
+    },
+    "specs/sdk/SDK-EXTENSION-OPERATIONS.md::SubscriptionInfo": {
+      "anchor": [
+        "system/subscription"
+      ],
+      "digest": "sha256:3574c612c282e50aa29a7d6e3026de5e",
+      "source": "specs/extensions/EXTENSION-SUBSCRIPTION.md",
+      "why": "Pinned with SubscribeParams because it echoes the stored subscription entity, and SA-3's diagnosis turned on the fact that it echoes the stored number without the window it will be applied in."
+    }
+  }
+}

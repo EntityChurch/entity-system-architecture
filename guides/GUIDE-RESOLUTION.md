@@ -130,7 +130,7 @@ The grammar above names every backend the substrate is *designed* to carry. Most
 | **self-certifying** (name = peer_id) | **built** (trivial) | — |
 | **local-name** (your own handles) | **built v1.0** | — |
 | **pinned / out-of-band** | **built** | — |
-| **peer-issued** (a registry vouches; the Entity Church Registry path) | **spec'd, backend not built** | the registration flow + the backend handler that fetches+verifies a signed binding (REGISTRY §7.4 specs the flow; the impl is the unblock) |
+| **peer-issued** (a registry vouches; the Entity Church Registry path) | **built** — resolve backend, curated issuance (REGISTRY §6a.8) and live `register-request` (§6a.9) | nothing in the substrate. What remains is a **deployment**: a registry peer that runs, its bindings, and the pinned key a distribution ships (REGISTRY §7.4) |
 | **dns-txt** | **paper** — *working out the kinks* | record format; DNSSEC/DoH trust qualification; the resolver backend |
 | **well-known-url** | **paper** — *working out the kinks* | the `.well-known/` path + binding artifact shape; the resolver backend |
 | **did-web / did-key** | **paper** — *working out the kinks* | DID-document ↔ binding mapping; inbound resolve + outbound present-as |
