@@ -81,12 +81,25 @@ if NETWORK.reachable(peer_id):                         ; try direct (the common 
     dispatch(peer_id, envelope)                         ; → lands in B's inbox (§1–§8 take over)
 else:
     mx = fetch(peer_id, "system/peer/inbox-relay")      ; where to store (MX lookup)
+                                                        ; ⚠ SEE THE NOTE BELOW — this line
+                                                        ;   needs a name or a prior relationship
     verify_signed_by(mx, peer_id)                        ; self-certifying (better than DNSSEC)
     RELAY.put(mx.relay, mx.namespace, envelope)          ; store-and-forward (SMTP queue)
 ; B reconnects, polls its own peer_id namespace (RELAY §5.5 self-poll grant),
 ; fetches two-hop, verifies the inner signature directly — relay never trusted.
 ; A reply lands at my_reply_path → CONTINUATION advances (DSN).
 ```
+
+> **⚠ The `fetch(peer_id, "system/peer/inbox-relay")` line has a precondition, and it is the one gap
+> in this composition.** B is offline on this branch — that is why we are here — so the declaration
+> cannot come from B. RELAY §3.5 answers this correctly: it is *"served by an always-on holder,"*
+> **REGISTRY primary**, *"the A+MX-in-one-zone pattern"* — which means **you need the name**, not just
+> the `peer_id`. §3.5 states the residue itself: *"a peer with no registry presence and no prior
+> relationship is reachable by a stranger only via a cached copy."*
+> **So this composition is complete when you resolved a name, and incomplete when you were handed a
+> bare `peer_id`** — from a roster, a grant, a `runtime-peer-set`. That is not a defect in this
+> pattern; it is the stack-wide `peer_id` → reachable gap, and **all three reachability rungs have
+> it.** The map is **`GUIDE-NETWORKING-MODEL` §4a**; the fix is tracked as **R-22 / R-25**.
 
 **Touch points — the whole surface:** REGISTRY (resolve), the inbox-relay declaration
 (where-to-store), NETWORK (try direct), RELAY Mode S (store-and-forward), INBOX
