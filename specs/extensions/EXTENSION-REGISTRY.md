@@ -617,27 +617,67 @@ data: {
 The request **MUST carry a `system/signature` by `target_peer_id`** (target-matching, V7 §5.2; invariant-pointer at `system/signature/{hex(request.content_hash)}`). This is **ownership-proof layer 1** and is always required: it proves the requester holds the key they are binding the name to, so no one can register *someone else's* peer-id under a name. Handler op:
 
 ```
-system/registry/peer-issued:register-request(request) → binding_hash | rejection
+system/registry/peer-issued:register-request(request)
+    → system/registry/register-result  (200 approve | 202 queue)
+    | system/protocol/error            (4xx reject)
   1. verify request signature by target_peer_id          ; layer-1 (always)
   2. apply issuer-policy admission (§6a.9.1)              ; layer-2 → approve | reject | queue
   3. on approve: registry-issue-binding(...) (§6a.8)      ; signs with K_registry, publishes, sets by-name pointer
-     return binding_hash
+     return 200 register-result { status: "bound", binding_hash }
   4. on reject:  error (name_taken | not_entitled | policy_rejected)   ; REGISTRY code domain
-  5. on queue:   status "pending_review"                  ; manual mode
+  5. on queue:   store the pending request (§6a.9.3)      ; manual mode
+     return 202 register-result { status: "pending_review", pending_hash }
 ```
 
-**Statuses `[MUST]` `[RATIFIED 2026-08-11]`.** §6a.9 pinned the reject *codes* and left the *statuses* open, the way §6a.9.2 later pinned `400` / `501`. Three implementations converged on the same answers with no MUST to point at — go first, rust and py by deference — which is agreement that drifts, so it is now text:
+**Result type `[MUST]` `[RULED 2026-08-12]` — `system/registry/register-result`.**
 
-| Outcome | Status | Code |
-|---|---|---|
-| layer-1 proof absent / wrong signer | **401** | `signature_invalid` |
-| manual mode — queued for review | **202** | `pending_review` |
-| name already bound | **409** | `name_taken` |
-| layer-2 admission refused | **403** | `not_entitled` \| `policy_rejected` |
+```
+type: "system/registry/register-result"
+data: {
+  status:        "bound" | "pending_review",   ; which outcome; snake per STYLE (status code)
+  binding_hash?: <system/hash>,                ; REQUIRED on "bound",         absent otherwise
+  pending_hash?: <system/hash>                 ; REQUIRED on "pending_review", absent otherwise
+}
+```
 
-401 (not 403) for layer 1 follows V7 §5.2a's discriminator: an unverifiable signer is an **authentication** failure, and §4.2/§4.4's F32 ruling already put that class at 401. The `409` / `403` rows are **derived** from V7 §3.3's class rules rather than measured — the cohort converged on the first two rows only, so treat these two as new and report a divergence rather than assuming it is yours.
+> **Why this was a three-way divergence, and it is our defect `[2026-08-12]`.** The signature above previously read `→ binding_hash | rejection` — **two outcomes** — and then step 5 introduced a **third** in the pseudocode without extending the return type. `pending_hash` appeared **nowhere in this specification at all.** So each implementation invented a carrier: one a dedicated result type, one a result field, one `system/protocol/status`. **Three shapes is what an undeclared outcome produces**, and no implementation was wrong — there was nothing to be wrong against. **An operation whose declared return type does not enumerate every branch of its own pseudocode is an interop bug already in flight.**
+>
+> **`system/protocol/error` MUST NOT carry the 202.** An error entity denotes a *failed* operation; `202` denotes *accepted-pending*. Emitting one on the other makes the status line and the result type disagree by construction, and a client branching on result type reaches the opposite conclusion from one branching on status. *(Adopted from `entity-core-go`'s design argument, which stands on its own merits and not on how many implementations held it — see `GUIDE-CONFORMANCE` §4: the spec arbitrates, the cohort does not vote.)*
+>
+> **A generic status type is rejected on structure, not on taste.** The 200 must carry `binding_hash` and the 202 must carry a poll handle, so a carrier with no room for either forces the payload somewhere else and re-opens the divergence one field down. **`register-request` also MUST NOT borrow another operation's result type** because the payload happens to match — that coupling breaks silently the first time either operation's result grows a field.
+>
+> **The value's spelling does not change.** `pending_review` stays snake_case: `STYLE-NAMING-CONVENTIONS` puts **error and status codes** in snake regardless of which field carries them. Only the carrier is being ruled.
+
+**`pending_hash` `[MUST]` `[RULED 2026-08-12]` — it names the stored pending request entity, not the request the client sent.** It is the `content_hash` of the `system/registry/pending-binding` entity the registry stored at step 5 (§6a.9.3), resolvable by the ordinary `tree:get` / `content:get` machinery every other registry read uses (§6a.3). **A handle the client can already compute is not a handle** — echoing the request hash tells the requester nothing it did not have before sending, and nothing is fetchable at it. The divergence here was real and undecidable from the text: one implementation named the stored entity, another named the request.
+
+**Owed, named rather than invented `[2026-08-12]`:** the manual-approval path itself — the `system/registry/pending-binding` schema, the by-request pointer a requester polls when it no longer holds the 202 response, and the operator's approve/deny operation — is **not specified anywhere in this document**, which is why step 5 could say "queue" and stop. §6a.9.3 is reserved for it. **This ruling pins the cross-peer-observable surface (result type, status value, what `pending_hash` refers to) and deliberately stops there**; the approval protocol is a spec delta owed, not something to settle inside a status-code correction.
+
+**Statuses `[MUST]` `[RATIFIED 2026-08-11]` `[RATIONALE CORRECTED 2026-08-12]`.** §6a.9 pinned the reject *codes* and left the *statuses* open, the way §6a.9.2 later pinned `400` / `501`. It is now text:
+
+| Outcome | Status | Value | Carried by |
+|---|---|---|---|
+| layer-1 proof absent / wrong signer | **401** | `signature_invalid` | `system/protocol/error` `.code` |
+| manual mode — queued for review | **202** | `pending_review` | `register-result` `.status` — **not an error code** |
+| name already bound | **409** | `name_taken` | `system/protocol/error` `.code` |
+| layer-2 admission refused | **403** | `not_entitled` \| `policy_rejected` | `system/protocol/error` `.code` |
+
+> **The fourth column exists because its absence caused the divergence `[added 2026-08-12]`.** This table shipped with the third column headed **`Code`**, which is a category error on the `202` row: `pending_review` is a **status field value**, and §6a.9's own pseudocode said so (`on queue: status "pending_review"`) while the table said otherwise. **An implementation that trusted the table emitted an error entity on a 2xx** — a faithful reading, and the same failure shape as §5.4/§8.3, where the normative artifact and the prose disagreed and the artifact won. **A status table that names a value without naming what carries it is under-specified by exactly one column**, and the missing column is the one a wire implementer needs.
+
+401 (not 403) for layer 1 follows V7 §5.2a's discriminator: an unverifiable signer is an **authentication** failure, and §4.2/§4.4's F32 ruling already put that class at 401. The `409` / `403` rows are **derived** from V7 §3.3's class rules rather than measured — the cohort converged on the first two rows' **statuses** only (and *not* on their codes — see the correction below), so treat these two as new and report a divergence rather than assuming it is yours.
+
+> **Correction `[2026-08-12]` — the ratification rationale was wrong, and the error is worth more than the fix.** This paragraph previously read *"Three implementations converged on the same answers with no MUST to point at — go first, rust and py by deference."* **That was never verified against py's tree, and it is false.** What the cohort converged on was the **status**; the **code** diverged and still does. Read live 2026-08-12: `entity-core-go` `419a715` answers `signature_invalid` (`RegistryErrSignatureInvalid`, `core/types/registry_peerissued.go`); `entity-core-rust` `21eb223` answers `signature_invalid` (`REG_ERR_SIGNATURE_INVALID`, `extensions/registry/src/registration.rs`, converged at `0caf911` **from** `invalid_signature` — so rust did not agree at ratification time either); **`entity-core-py` `2c1aa1b` answers `401 proof_failed`** at all three layer-1 sites (`_error(status, code, message)` in `entity_handlers/registry.py` — `proof_failed` is the *code* argument, not the message). py's own comment still reads *"The spec pins neither code; this converges on core-go"* — true when written, now wrong twice over: the spec does pin it, and py matched go's **status** while diverging from go's **code**.
+>
+> **We asserted a cohort build-state fact inside a normative table without opening the tree** — the failure this repo's `AGENTS.md` foregrounds, this time committed by us, in the one place where a wrong build-state claim gets cited as authority. The rule stands unchanged (`signature_invalid` is normative and correct on its merits — see the 401 derivation above); only the claim that the cohort had already converged on it is retracted. **`entity-core-py` is non-conformant on this row and is owed that plainly.**
 
 **Error *strings* are free; codes are the contract.** The `code` values above are normative and are what a peer branches on. Human-readable messages accompanying them are impl-local and MAY differ — **a conformance check MUST NOT assert on message text.** *(py observed the strings diverging three ways and left them deliberately, correctly noting no check reads them. Stated here so "no check reads them" stays a design choice rather than becoming a latent expectation.)*
+
+**Conformance `[MUST]` `[RULED 2026-08-12]` — a check of a pinned row MUST assert the `code`, not the status alone.** A layer-1 refusal check that asserts only `401` cannot distinguish a conformant peer from one answering an unpinned code, so it scores the contract's *weaker* half and reports green on a divergence. This is not hypothetical: it is exactly why the py divergence above survived a full cohort cycle. In the cross-impl instrument that found it, the **layer-2** rows were asserted as `status != 403 || code != not_entitled` while every **layer-1** row was asserted as `status != 401` — the same file, two rows apart, one of them checking the contract and the other checking half of it. `REG-REGISTER-PROOF-1` / `REG-REVOKE-PROOF-1` / `REG-RENEW-PROOF-1` therefore assert **status + code + publishes-nothing**, all three.
+
+**Scope `[extended 2026-08-12]` — this is not confined to the layer-1 row.** The cohort audit prompted by this ruling found the same status-only shape on two further pinned rows, both naming their code **only inside the check's own failure string**: **§6a.9's `202 pending_review`** and **§6.5's `409 bind_already_exists`**. The rule binds every row of every pinned status table in this specification, not the three named vectors.
+
+> **And audit the extractor in the same pass — `[MUST]`, because a check can be unpassable by construction.** The same audit found the harness helper feeding these assertions harvested a `code` only when `status >= 400`, encoding *"codes ride failures."* **§6a.9 pins a code on a 2xx row**, so `pending_review` was silently dropped to `""` and that assertion **could not have passed against any peer, however conformant.** Moving the gate to `>= 300` does not fix it — 202 is still excluded; **the status class was never the right discriminator, the result's type is.** Gate on the body being error-shaped, keeping the status class only as a fallback trigger. This matters cohort-wide because the failure presents as a *sibling* bug: anyone auditing assertions without auditing their plumbing writes checks that cannot pass and then hunts a peer defect that is not there. Generalized at `GUIDE-CONFORMANCE` §5.2b.2.
+
+> **This is the third member of the family §2.4a opened, and the shape is now stable enough to name.** `GUIDE-CONFORMANCE` §2.4a was *a surface the suite reaches and scores backwards* (asserting acceptance certifies the hole). `EXTENSION-NETWORK` §5.4a was *a reachable state no vector visits* (the §A1/§5.4 join). This one is *a pinned value nothing asserts* — the spec made `code` the contract and the instrument measured `status`. **Common root: what gets implemented and what gets scored are both driven by the vector list, not the prose** — the same finding §6a.9 already records one screen up, where all three impls skipped layer 1 on exactly the two ops with no named vector. **A row pinned in a table is not covered until a vector reads that row's value.**
 
 Two follow-on ops, with explicit schemas (the design fold left these as bare "follow-on ops"; cohort impl surfaced the gap — each impl guessed a different shape, so they are pinned here):
 

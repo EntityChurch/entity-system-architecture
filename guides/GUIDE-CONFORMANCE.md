@@ -138,7 +138,7 @@ The `signature` category uses fixed Ed25519 seeds named in the `.diag` as 32-byt
 
 **Corollary — do not audit for this by grepping declaration strings.** The declaration is not the check, and name-grepping scores it wrong in *both* directions: core-go's `authz` category scores **0/11** on a refusal-word grep while *being* the negative halves, and `encryption`'s `sender_auth_peer` reads as a single positive declaration while carrying two tamper vectors. **Read the implementation.** An audit that reports coverage from category names has measured its own vocabulary.
 
-This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, and **§2.4a is a surface the suite reaches and scores backwards.**
+This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, **§2.4a is a surface the suite reaches and scores backwards**, and §5.2c is a surface the suite reaches only **by accident**.
 
 ---
 
@@ -316,6 +316,36 @@ comm -23 <(peer-flags | sort) <(harness-passthrough-flags | sort)
 
 **Why per-check review cannot find these.** Every component is individually correct: the flag is real and honored, the peers start, the handler works, the defense is implemented. The failure exists **only in the combination**, and nothing in any single check is wrong. No amount of reading finds it — **only turning the knob does.** That makes this the conformance-side twin of the `SPECIFICATION-FORMAT.md` §8.4.5 width lock (invisible while one value ships) and of §11.5.1's loopback-blindness (green for a peer that cannot traverse). Same shape, three layers.
 
+#### §5.2b.1 The second sub-shape — *no knob exists* `[added 2026-08-12]`
+
+The three instances above are all *"the harness cannot turn a knob that exists."* The harder sub-shape is **no knob exists at the wire**: the state a rule describes is not constructible by a conformance client at all, whatever the harness passes.
+
+**Canonical instance.** `EXTENSION-NETWORK` §5.4a's negative half requires a peer *unbound yet still `connected`* — reachable only from the paths §A1's scope deliberately excludes from demoting, all of which need an optional extension deployed. **The scope pin is exactly why the state is unreachable**, so the rule and the obstacle have one cause.
+
+**The authoring rule `[MUST]`.** **Before a vector is pinned MUST, the state it requires MUST be shown constructible by a conformance client.** Where it is not, the spec **states the satisfaction mode at the point of the MUST** — typically: wire-driven where the enabling surface is installed, in-process with a **declared exclusion + the mutation it was verified against** otherwise. A vector pinned without this check is a rule that cannot be discharged, which the next implementer discovers instead of the author.
+
+*This one was authored by architecture and caught by an implementation the same cycle — §5.4a invoked the "not validated until a cross-impl vector exercises it" meta-rule and then pinned a vector that could not exist.*
+
+**The mutation MUST be executed and dated, not described `[MUST]` `[strengthened 2026-08-12]`.** A declared exclusion names the mutation the in-process test was verified against. **Naming it is not enough: run it, and record the date and result.** *A declared exclusion whose mutation is only described is an honest zero that nobody has checked is still zero* — it decays exactly like a build-state claim, silently, the first time a refactor makes the test pass with the guard removed.
+
+*Adopted from the implementation that drew the distinction, and their reason is the argument: in the prior cycle their control **and its mutation test** both ran against a malformed probe, so **neither could have failed**. A mutation that is asserted rather than run is the same class of evidence as a conformance number carried forward across a commit change — plausible, previously true, and unverified.*
+
+**Rejecting the proxy is usually right `[MUST]`.** The tempting fix is a nearby reachable state. **A proxy that cannot fail the way the real case fails MUST NOT be recorded as covering it.** In the §5.4a instance the proxy — a live idle counterpart — stays *bound*, so it exercises a timer-driven escalation and never the scope-pin defect the vector exists to catch. **It reads as coverage while missing the case, which is worse than a declared exclusion**, because §5.2b's entire failure mode is a scoreboard reading *covered* over an unreached surface. **A declared exclusion is an honest zero; a proxy is a false one.**
+
+#### §5.2b.2 Audit the extractor, not only the checks `[added 2026-08-12]`
+
+**An assertion is only as reachable as the plumbing that feeds it.** A harness helper that harvests a value under an assumption the spec does not share makes every downstream assertion **unpassable against any peer, however conformant** — and the failure presents as a sibling bug, so the hunt starts in the wrong tree.
+
+**Instance.** A cohort validator's response extractor harvested an error `code` only when `status >= 400`, encoding *"codes ride failures."* `EXTENSION-REGISTRY` §6a.9 pins a code on a **2xx** row (`202 pending_review`), so that code was silently dropped to `""` and the assertion could not have passed. **Moving the gate to `>= 300` did not fix it** — 202 is still excluded. **The status class was never the right discriminator; the result's *type* is.** Gate on the response body being error-shaped, keeping the status class only as a fallback trigger so a `>= 400` response with a non-error body still reports something rather than nothing.
+
+**The rule `[MUST]`.** When auditing checks against a pinned table, **audit the extractor that feeds them in the same pass.** Anyone who audits assertions without auditing their plumbing will write assertions that cannot pass and then go hunting a peer bug that is not there. **Both the original error and the insufficient first fix belong in the source comment**, not quietly corrected — the near-miss is the part that transfers.
+
+**Run the audit against the extractor's *shape*, not against the one bug you know `[MUST]` `[extended 2026-08-12]`.** When this rule was first applied cohort-wide, **not one of three implementations came back empty, and no two had the same mechanism**: one gated on **status class**, one gated on **field name** (harvesting `result.data.code` only, so its own 2xx-carried status value recorded as absent), and one **dropped the result body entirely on one transport** at the handshake — thirteen sites across seven files, so every coded refusal a responder built arrived at the dialer as a bare number. **The class is "the extractor's assumption is narrower than the spec's surface"; the mechanism varies per tree.** An audit that greps for the sibling's specific bug will pass while the local variant survives.
+
+**And audit the paths that BYPASS the extractor `[MUST]` `[added 2026-08-12]`.** This rule as first written said *audit the extractor that feeds your checks* — which **cannot see a check that routes around it.** A check driving a raw socket, a hand-rolled transport, or a bespoke decode path has its own extraction inline, unaudited and invisible to exactly the sweep prescribed above. *(Named by an implementation whose one check asserting a handshake refusal code drove a raw socket for that reason.)* **Enumerate the checks that do not use the common extractor and audit each one's inline extraction individually.** A bypass is not an exception to the rule — it is an instance of it with no shared code to fix.
+
+**Where the doctrine points an agent, the blindness compounds.** In one tree the blind extractor was also the tool that repo's `AGENTS.md` sends agents to **first** on a cross-impl failure. **An instrument named in a doctrine is load-bearing beyond its own checks** — it shapes where every future investigation starts, so a gap in it sends the next several investigations down the wrong path before anyone questions the tool. Audit doctrine-referenced instruments first.
+
 ### §5.3 Growth triggers
 
 Per Appendix E §E.5, two things trigger growth:
@@ -324,6 +354,26 @@ Per Appendix E §E.5, two things trigger growth:
 2. **A new cross-impl divergence found in production** — i.e., a wire bug surfaced by live cross-impl matrix runs that the fixture didn't catch — MUST be reduced to a vector and added to the corpus. The vector is the artifact-of-record; the bug report points at it. Mandatory.
 
 Discretionary growth (covering corners we've thought of but haven't hit) is fine and encouraged; it's the conformance discipline that prevents the W2 pattern.
+
+### §5.2c A flaky check is a surface reached *by accident* `[added 2026-08-12]`
+
+The fourth member of the family, and the one that disguises itself best. §5.2a is a rule with **no** observable surface; §5.2b is a surface the suite **cannot reach**; §2.4a is a surface the suite reaches and **scores backwards**. This is a surface the suite reaches **only sometimes, for reasons unrelated to the rule** — and the intermittency is the *only* thing that draws a human's attention to it.
+
+**The rule `[MUST]`.** **A flaky conformance check is not noise to be stabilised. It is a defect whose reachability is accidental.** Before a flaky check is quieted, widened, retried, or marked known-flaky, two questions MUST be answered in writing:
+
+1. **What makes this only sometimes-reachable?** A mechanism, not a hypothesis. *A jitter theory predicts a spread; it does not predict 6 s or never.*
+2. **Is the same state deterministic somewhere else in the cohort?** If it is, the flake was never the defect — it was the instrument.
+
+**A flake is closed by explaining it, never by making it stop.** Widening a margin converts a real conformance failure into a permanently invisible one, and the widened check will then certify the defect for every implementation that has it.
+
+**The inversion, which is the reason this section exists.** One implementation's §5.4a escalation defect surfaced as a **1-in-4 flake** because two code paths raced there. A sibling had **no race** — its transport seam always won — so the identical spec defect was unreachable **100 % of the time**: deterministic, silent, and green. **The flakiness was the lucky version: a check that fails sometimes gets investigated; a check that never fails gets believed.**
+
+Two corollaries follow, and both cut against ordinary triage:
+
+- **Flake rate measures the local implementation's accidental structure, not the defect's severity.** The same defect is 25 % visible in one tree and 0 % visible in another. Ranking work by flake rate ranks it by luck.
+- **A green sibling is not evidence that the flaking implementation is uniquely broken.** It may be evidence that the sibling *cannot observe* the defect it also has. **"Two impls green, one flaky" is equally consistent with three defective implementations and one accidental instrument** — which is exactly what it turned out to be. Investigate before converging, and treat the flaking tree as the one holding the evidence.
+
+*This is `ADR-0012`'s "conformance-green ≠ correct" in its sharpest form: not a test asserting the wrong thing, but a correct test whose ability to fail is an artifact of one implementation's internals. Raised by an implementation, not by review — the cohort's own §5.2b twin, one layer down.*
 
 ---
 
