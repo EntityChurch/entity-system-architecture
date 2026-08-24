@@ -65,8 +65,8 @@ system/registry:invalidate-cache(name | null) → ()    ; null = flush all
   transports:    [<endpoint per NETWORK §6.5>],         ; reachable endpoints, ordered
   attestations:  [<hash of supporting attestation entities>],
   trust_anchor:  <variant identifying which backend resolved>,
-  ttl:           <ms-since-epoch duration | null>,      ; positive-result cache hint
-  neg_ttl:       <ms-since-epoch duration | null>,      ; OPTIONAL negative-cache hint on not_found / chain_exhausted; SHOULD per backend
+  ttl:           <ms duration | null>,                  ; positive-result cache hint (§3 is the canonical declaration)
+  neg_ttl:       <ms duration | null>,                       ; OPTIONAL negative-cache hint on not_found / chain_exhausted; SHOULD per backend
   backend_id:    <peer_id_hash | identifier>,           ; which backend produced this
   services:      <system/registry/service-advertisement | absent>
                                                         ; OPTIONAL — the deployment's shared infrastructure
@@ -197,6 +197,10 @@ Per V7 §989 invariant-pointer carriage, the signature MUST also be reachable vi
 Receiver verifies by:
 1. Locating the `system/signature` entity via target-matching (`data.target == binding.content_hash`) in `included`, OR by invariant-pointer fetch at `system/signature/{hex(binding.content_hash)}` if not inlined.
 2. Verifying signature cryptographically against the issuer's published key (varies by kind: DNS resolver result; HTTPS fetch; cached registry peer's identity).
+2a. **Checking `binding.name` against the name the binding was located under (MUST).** A signature proves *who issued* a binding, never *what it was issued for*. Any binding located through an index the receiver did not itself author — a by-name pointer, a served listing, a manifest entry — was located at a position **the party serving the bytes chose**, while the signature covers only the body. A receiver that skips this accepts a validly-signed binding for name *X* in answer to a query for name *Y*.
+
+   **This step is here, at §3, rather than in a backend section, because it is a property of the body and not of any backend.** Every `kind` carrying an `issuer_signature` over a body containing `name` — `peer-issued` today, and `dns-txt` / `well-known-url` / `did-web` / `consensus-anchored` when their backends ship — inherits the identical substitution. Scoping the rule to §6a would make the next backend's author re-derive it, which is exactly the separability that the defect consists of.
+
 3. Applying receiver policy to the `trust_anchor` variant returned by the backend.
 
 ### §3.0a Unknown binding `kind` (forward-compat, mirrors §4.2)
@@ -252,7 +256,7 @@ system/registry/service-advertisement := {
                       policy: "open" / "members" / "metered"}]       ; TURN URI (§3b.0) — optional
     ? inbox_relay:[+ {peer_id: <peer_id>, priority: uint}]           ; RELAY Mode-S — optional
   },
-  ttl: uint                     ; ms since Unix epoch, per §2.1
+  ttl: uint                     ; ms DURATION, per §3 (NOT since-epoch)
 }
 ```
 
@@ -507,6 +511,8 @@ data: {
 
 Stored at `system/registry/resolver-config` (peer-local; not synced).
 
+**`name_format_dispatch` is an ORDERED list, first-match-wins (MUST).** Two entries in any realistic configuration match the same name — a catch-all matches everything, and a domain-shaped pattern and a bare `authority` pattern overlap on every dotted authority — so an unordered reading does not merely under-specify the config, it routes the overlap to whichever entry the implementation visits first. Evaluation stops at the first matching entry. A name matching no entry is treated as matching the catch-all (§4.1a).
+
 **`pattern` grammar.** The `name_format_dispatch[].pattern` field is a **POSIX shell-glob**, matched against the user-facing name string. This deliberately reuses the same glob grammar already chosen for BRIDGE-HTTP §4-RES.2 (URL patterns) rather than introducing a second matcher language. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
 
 ### §4.1 Precedence order on resolution
@@ -514,11 +520,42 @@ Stored at `system/registry/resolver-config` (peer-local; not synced).
 When `meta_resolve(name)` is called:
 
 1. **Pinned bindings** override everything. If `name` matches a pinned entry, return the synthesized result (§4.1.2) immediately.
-2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose dispatch pattern matches the queried `name` (POSIX shell-glob). Backends without a `name_format_dispatch` entry default to "match all" (no filtering); backends with one are consulted ONLY when the pattern matches. **This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority.
+1a. **Authority-part peer-id decode precedes glob dispatch (MUST).** For a name of the form `name@X`, attempt to decode `X` as a V7 §1.5 Base58 peer-id **before** applying step 2. If it decodes, `X` is a **verification pin**, not a targeting instruction: resolve `name` through the ordinary chain and require the result's `peer_id` to equal `X`, refusing fail-closed and advancing the chain on mismatch (§6a.4's disposition — a pin that resolves elsewhere is the §6a.1a substitution case caught one layer up). This ordering is normative because a broad `*@*` dispatch entry would otherwise capture `alice@z6Mk…` and send a private name to a remote registry to answer a question the consumer can answer locally.
+
+2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose dispatch pattern matches the queried `name` (POSIX shell-glob). Backends without a `name_format_dispatch` entry default to "match all" (no filtering); backends with one are consulted ONLY when the pattern matches. **This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority. **Consequently the catch-all MUST route to local-only backends (`local-name`, `pinned`, self-certifying decode) and MUST NOT name a remote backend** (`peer-issued`, `dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`) in a shipped default. The catch-all is the path every unscoped name takes, so a remote binding there discloses **every bare name a user types** — silently, on the happy path, in a configuration the user did not choose, and irreversibly. A remote registry stays fully reachable through an explicit scoped form (`alice@entity-church`), which is the user stating which authority they are willing to tell. An operator MAY override this on their own peer; a distribution MUST NOT ship it as the default.
 3. **Filtered resolver-chain backends in priority order** — try each, returning the first validated result.
 4. If all backends miss / fail validation: return `chain_exhausted` (fail-closed; no silent fallback).
 
 The local-name backend (§6) participates as a resolver-chain entry like any other backend. Local-name-first ordering is a deployment convention realized by setting the local-name entry's `priority` to `0` (or another low value); the substrate stays uniform.
+
+### §4.1a The recommended default dispatch list
+
+A distribution **SHOULD** ship the ordered list below; the catch-all rule inside it is a **MUST**
+(§4.1 step 2). It realizes the four name shapes of `guides/GUIDE-RESOLUTION.md` §6.1 as routing.
+
+| # | `pattern` | `backend_kinds` | Shape |
+|---|---|---|---|
+| 1 | `did:web:*` | `["did-web"]` | scheme-typed |
+| 2 | `did:key:*` | `["did-key"]` | scheme-typed, self-certifying |
+| 3 | `*.eth` | `["consensus-anchored"]` | scheme-typed by suffix |
+| 4 | `*@*.*` | `["dns-txt", "well-known-url"]` | domain-scoped — **dotted** authority |
+| 5 | `*@*` | `["peer-issued"]` | registry-scoped — **undotted** handle |
+| 6 | `*` | `["local-name", "pinned"]` | catch-all — **local only (MUST)** |
+
+**Rule 4 precedes rule 5, and the ordering is the discriminator.** A POSIX glob cannot express
+"undotted", so `*@*` is necessarily broad and the dotted form must be taken first. Reversed, every
+domain-scoped name routes to the peer-issued backend, fails to resolve there, and falls through
+toward a catch-all that must not see it either.
+
+**Entries naming a backend that is not in the resolver-chain are inert, not harmful.** Rules 1–4
+name backends that are not yet built; a dispatch entry narrowing to an absent backend yields the
+empty set and the chain reports `chain_exhausted` (§4.1 step 4, fail-closed). **Reserving the
+routing now is deliberate:** without these entries a web-native name shape falls through to the
+catch-all, which is the disclosure §4.1 step 2 forbids, reached by a different door.
+
+**Deployments MAY override.** This is the interoperable default, not a wire format: two peers
+shipping it interoperate; one that does not simply routes its own way. The catch-all MUST is the
+exception, and it binds what a distribution ships rather than what an operator may configure.
 
 ### §4.1.2 Synthesized result for pinned bindings
 
@@ -767,6 +804,19 @@ The peer-issued backend is the second v1 concrete backend. Where local-name (§6
 
 A registry peer is **just a peer** (§1 position 4); its bindings are ordinary entities in its tree. The backend reads them with the **normal `tree:get` / `content:get` machinery against the registry peer** and **does not know or care** whether that peer is reached over http-poll (a static coral-reef, the demo case) or a live socket — *how* the registry is reached is the **transport layer's** job (NETWORK §6.5; http-poll = SUBSTITUTE §7 Mode S). The backend's only registry-specific substance is **trust verification** (§6a.4 step 3). The backend MUST NOT perform or select a transport itself.
 
+#### §6a.1a The fourth actor — the party that serves the bytes
+
+**Because the backend's reads are transport-agnostic, the party serving the bytes is not necessarily the registry.** For a static registry — the coral-reef deployment this section is written for — the registry *signs* and an origin (a bucket, a CDN, a mirror) *serves*. When this extension's threat model was written those two were one party, and every actor in it is a **requester**, the **registry itself**, or the **consumer's own fallback chain**. **There is no actor for the byte-server**, and no review of the existing rows finds a missing row.
+
+The static deployment splits them, and the split hands the origin two powers that no signature revokes:
+
+- **It may substitute which signed artifact answers a read.** Every artifact it serves is genuinely signed by the registry; it chooses *which one* answers *which name*. This is the §6a.4 association check's entire reason for existing.
+- **It may withhold an artifact indefinitely** — most consequentially a revocation. It cannot be caught doing so: a withheld revocation and a revocation that was never issued are byte-identical at the consumer. This is why §6a.3 requires a finite `ttl`; **the TTL is the only bound on a withheld revocation**, so a null one makes a binding permanently unrevokable.
+
+**What this actor cannot do, and the limits are what make the two rules sufficient rather than merely helpful:** it cannot forge a signature, alter a body, or move the consumer's clock. So every remaining defense is one the consumer computes locally over bytes it has verified — which is exactly the shape of the two `require`s added at §6a.4.
+
+Consumers pinning a registry SHOULD understand that pinning the registry's **key** does not pin its **host**, and that the honest revocation bound against a hostile origin is *the binding's TTL*, not *the revocation's publication*.
+
 ### §6a.2 Backend identity
 
 The peer-issued backend identifies as `backend_kind: "peer-issued"` in resolver-config. Its `backend_id` is the **registry peer-id**, which doubles as the **pinned trust root**: a resolver-chain entry for peer-issued names carries that peer-id and accepts a binding only if signed by it.
@@ -780,6 +830,22 @@ Two-layer storage, the direct analog of §6.3:
 - **By-name pointer** at `system/registry/binding/by-name/{nfc(name)}` → the bare `system/hash` of the current binding body. This is the live name→hash index — same pattern as local-name's `local-name/{name}` pointer, different prefix. Served over http-poll like any tree node (with the `tree_leaf_suffix` disambiguator, SUBSTITUTE §2.2).
 
 **Name-path safety (normative):** identical to §6.3 — no `/`, no C0/DEL control chars, NFC at issue time. Domain-shaped names (`billslab.com`) are fine (dots allowed).
+
+**Units — `ttl` is a duration, `issued_at` is an instant (pointer, not a redefinition).** Both are declared canonically at **§3**: `issued_at: <ms-since-epoch>`, `ttl: <ms duration | null>`. Stated here because a reader working from §6a never reaches §3 and has twice implemented `ttl` as an absolute timestamp. §3 remains the only home; this is a cross-reference.
+
+**A `kind: "peer-issued"` binding MUST carry a non-null `ttl` `[MUST]`.** §6a.4's expiry check is the **only** check on this path that a hostile byte-server cannot influence — it cannot forge a signature, alter a body, or move the consumer's clock, but it *can* withhold a revocation indefinitely. The stated bound on a withheld revocation is *"ttl + revocation"*; with `ttl: null` that bound is not weak, it is **absent**, and the binding is **permanently unrevokable**. The `(or ttl null)` allowance is scoped to the **local-trust kinds** (`local-name`, `pinned`), where stickiness is the user's own assertion and the user is the trust root. It has no place on an *issued* binding, whose trust root is the registry.
+
+**A `kind: "peer-issued"` binding MUST carry a non-empty `transports` `[MUST]`.** §4.1.2's *"transport resolution per NETWORK §6.5 finds reachable endpoints"* is sound for a pin and for a live target, and **has no static counterpart**: NETWORK §6.5.4 makes profile discovery out-of-band in v1, so for a statically published peer there is nothing to find. A consumer resolves a peer-id and stops. The §4.1.2 **pin carve-out is unchanged**, and the contrast is the reason: a pin is the *user's* assertion, so reaching the peer is the user's problem; an issued binding is the *registry's* assertion and is worth nothing operationally without a way to reach the target.
+
+#### §6a.3a Enumerating a registry — the walk is the authority, the listing is a menu
+
+**The authenticated form of *"what names does this registry carry"* is a walk of the published trie from `published-root.root_hash`** (`EXTENSION-TREE.md` §3.1, §3.5). Trie leaves are `[key, value_hash]` — **the key is in the node** — so walking every node from the signed root yields the complete key set the signature commits to. No new mechanism is required and none is added.
+
+A registry intending to be browsable **SHOULD** publish at `prefix: "system/registry/binding/by-name/"`, so the trie's key set **is** the name set. This is the same per-purpose tracked-prefix ruling `EXTENSION-TREE.md` §3.3a already gives for any other published extent.
+
+**A served listing artifact (`{path}{tree_listing_suffix}`) is a transport-trusted convenience and MUST NOT be presented as the registry's authoritative contents.** Keep it — it is one fetch instead of O(N) and it is the right first-paint artifact — but resolve every listed name through the signed root before presenting it as a binding. **The asymmetry is the point:** a hostile origin can omit an entry from a served listing undetectably, and **cannot omit a node from the walk without the walk failing.** *Silently hidden* becomes *visibly incomplete*, which is the strongest completeness property a static origin admits of.
+
+*(Note: `EXTENSION-TREE.md` §3.4.2's "consumers use LocationIndex rather than walking trie subtree structure" is about **efficient prefix scan** under hash-keyed routing, which scatters related keys. It is not a claim that the key set is unrecoverable, and for a registry the distinction dissolves, because the registry chooses its own published prefix.)*
 
 ### §6a.4 Resolve algorithm (normative)
 
@@ -800,8 +866,10 @@ peer_issued.resolve(name, config):           ; config = the resolver_chain entry
   require sig.signer == content_hash(canonical(registry.system_peer))   ; signer is a hash (V7 §1.5/§5.2)
   require verify_crypto(sig, pinned_key_of(registry))                   ; §6a.5 trust-anchor floor
   require ("peer_issued:" + registry) in config.accepted_trust_anchors  ; empty set ⇒ fail-closed
+  require binding.name == norm            ; ← THE ASSOCIATION CHECK. See below.
+  require binding.ttl != null             ; §6a.3: peer-issued MUST carry a finite ttl
   require not revoked(registry, binding_hash)                           ; §6a.6
-  require binding.issued_at + binding.ttl > now()  (or ttl null)
+  require binding.issued_at + binding.ttl > now()
 
   ; 4. surface
   return ResolutionResult {
@@ -810,7 +878,15 @@ peer_issued.resolve(name, config):           ; config = the resolver_chain entry
     trust_anchor: "peer_issued:" + registry, ttl: binding.ttl, backend_id: registry }
 ```
 
-**Fail-closed (normative):** any verify / revocation / expiry failure returns `None`/dead-end at this rung; the meta-resolver (§4.1) advances the chain. It **MUST NOT** silently downgrade to an `out_of_band` pin — a pin matches only if explicitly configured as its own chain entry.
+**The association check (`binding.name == norm`) is normative, and it closes a live substitution `[MUST]`.** A signature proves **who issued a binding**, never **what it was issued for**. The by-name pointer at `system/registry/binding/by-name/{norm}` is *transport-supplied* — for a static registry it is a file on an origin — so the party serving the bytes chooses which signed binding answers which name. Without this comparison, an origin repoints one pointer file and `foundation.example` resolves to the binding the registry legitimately issued for `protocol.example`: **valid signature, correct signer, unexpired, unrevoked, wrong name.** Every other `require` above passes.
+
+The fix costs nothing because **the association was already committed**: the signature covers a body that contains `name`, so `sig(R, {name, target_peer_id, …})` *is* the registry's assertion of the pairing. The defect is not a missing commitment, it is a **discarded** one — the resolver decodes the body (it reads `issued_at`, `ttl`, `target_peer_id` from it) and never compares the one field that binds the result to the question asked. Zero extra fetches, zero new artifacts, no publishing change.
+
+**Framing to carry, because the wrong one was in circulation:** this is *not* "per-binding signatures give authenticity but not association." They give both. It is "the verifier throws the association away."
+
+**Fail-closed (normative):** any verify / association / revocation / expiry failure returns `None`/dead-end at this rung; the meta-resolver (§4.1) advances the chain. It **MUST NOT** silently downgrade to an `out_of_band` pin — a pin matches only if explicitly configured as its own chain entry.
+
+**Local diagnostics SHOULD distinguish the failures; the chain value MUST NOT.** The rule above collapses signature failure, name mismatch, expiry, revocation and unsupported-kind into one undifferentiated dead end, which surfaces to an operator as *"the registry is broken"* — and a unit error, a clock skew and an active substitution attempt are then indistinguishable during exactly the incident where telling them apart matters. A resolver **SHOULD** surface which `require` failed **to its own operator**, and **MUST NOT** let that distinction change what the chain sees or what crosses a peer boundary. There is **no confidentiality argument against this**: V7 §5.5a's `Denied`-vs-`NotFound` discipline governs what a peer tells a **remote requester**, and this is a local resolver reporting to the operator running it.
 
 **Levels (P2/P3):** the backend returns `not_found` + a first-class `neg_ttl` slot on the negative result (backend-scoped); the meta-resolver collapses a whole-chain miss to `chain_exhausted` (§4.1) carrying the aggregated `neg_ttl`. `neg_ttl` is a defined optional top-level field, not an opaque hint-bag entry.
 
@@ -823,6 +899,10 @@ The v1 trust anchor is an **Ed25519 identity-multihash** registry peer-id: the p
 ### §6a.6 Revocation (by-target index, normative)
 
 `revoked(registry, binding_hash)` is an O(1) index lookup, **not** a scan: `system/registry/revocation/by-target/{hex(binding_hash)}` → the revocation entity (presence = revoked, if it verifies against `registry` per §3.1). This is the revocation analog of the §6a.3 by-name index. A live registry MAY layer subscription-driven invalidation on top (§3.1).
+
+**The index is a performance structure and carries no integrity (MUST NOT be read as evidence).** A resolver **MUST NOT** treat a missing `by-target/{hex(binding_hash)}` key as proof that the binding is not revoked. The key is served by the party §6a.1a names as the fourth actor, and an absent key and a withheld key are byte-identical at the consumer — so **presence proves revocation, absence proves nothing.** The bound on a withheld revocation remains the binding's `ttl` (§6a.3), exactly as §6a.1a states, and moving from a scan to a keyed lookup does not change that bound.
+
+**What the keyed form does change is the cost of a *targeted* withholding, and that is worth stating plainly.** Under a prefix scan, suppressing one revocation means manipulating a listing; under a keyed lookup it means answering `404` to one URL. A resolver that wants better than the TTL bound does **not** get it from this index — it walks the published trie from the signed root over the revocation prefix (§6a.3a), where withholding a node makes the walk **fail visibly** instead of returning a short answer. *(Both shapes ask the host the same question. The index makes the question cheap, not trustworthy.)*
 
 ### §6a.7 Signed binding-manifest (OPTIONAL — format pinned, v1 = per-name index)
 
@@ -1002,8 +1082,15 @@ Two separable proof layers:
 - **Resolution order is store-first `[MUST]`.** The issuer reads `system/registry/issuer-policy` from its tree; out-of-band arming (a CLI flag, an operator write) is a **seed for that entity**, never a parallel source consulted at request time. *(This order is load-bearing and predates the operations: it is what lets a conformance run drive all three modes against a **single** peer by writing the entity, which is how `registry_issuer` reached 12 checks — core-go `559f44c`. An implementation that let a flag shadow the stored entity would make that untestable.)*
 - **Unset is not a mode.** With no policy entity stored, the registry does not run live registration at all (§6a.9's handler is unregistered) — it is a conformant curated-only registry per §6a.8. `get-issuer-policy` returns `404`; it MUST NOT synthesize a default `open`, which would silently turn a curated registry into a first-come-first-serve one.
 - **`domain-control` remains deferred** (§6a.9.1) — `set-issuer-policy` MUST reject `mode: "domain-control"` with `400 unsupported_mode` until the challenge format lands, rather than storing a policy it cannot enforce.
-- **A stored `domain-control` policy fails closed with `501` `[MUST]`** *(ratified 2026-08-10 (b); core-go read it this way and asked)*. The `400` above binds `set-issuer-policy`, which refuses to *store* the mode; it does not answer what a registry does when the entity is already there — seeded out-of-band, written directly to the tree, or predating the refusal. **The registry MUST answer live registration `501 unsupported_mode` and MUST NOT fall back to `open`, `manual`, or an unset-style `404`.** Falling back to `open` turns an operator's unenforceable curation into first-come-first-serve, which is the §6a.9 threat model exactly inverted; falling back to `404` reports "no policy" while a policy is stored. This is a cross-impl-observable answer with four plausible codes, so it is pinned rather than left to converge.
+- **A policy that could mint an invalid binding is refused at write `[MUST]`.** `set-issuer-policy` MUST reject with **`400`** a policy running live registration (any mode that can reach *approve*) whose `default_ttl` is `null`. §6a.3 requires a peer-issued binding to carry a finite `ttl`; a request may omit `requested_ttl`, so a policy with no `default_ttl` can resolve to a null `ttl` and mint a binding **no conformant resolver will honor** (§6a.4). Same reason and same subsection as the `domain-control` refusal above: *rather than storing a policy it cannot enforce.* **The gate is here because this is where the missing input lives** — `default_ttl` is the operator's field, set through the operator's operation, under `registry-manage-issuer-policy`. Refusing the *requester's* register-request instead would bill a well-formed request for the registry's own misconfiguration, and would teach requesters to send `requested_ttl` defensively — handing TTL selection to the party §6a.1a treats as untrusted.
+- **A stored `domain-control` policy fails closed with `501` `[MUST]`.** The `400` above binds `set-issuer-policy`, which refuses to *store* the mode; it does not answer what a registry does when the entity is already there — seeded out-of-band, written directly to the tree, or predating the refusal. **The registry MUST answer live registration `501 unsupported_mode` and MUST NOT fall back to `open`, `manual`, or an unset-style `404`.** Falling back to `open` turns an operator's unenforceable curation into first-come-first-serve, which is the §6a.9 threat model exactly inverted; falling back to `404` reports "no policy" while a policy is stored. This is a cross-impl-observable answer with four plausible codes, so it is pinned rather than left to converge.
 - **`get-issuer-policy` takes no params content**, so callers send the `ENTITY-CORE-PROTOCOL.md` §3.2 **empty-params shape** — a `primitive/any` entity whose `data` is canonical-CBOR `a0`. It is **not** a zero-value entity (rejected `400 invalid_params` at the envelope layer, before the handler) and **not** a `primitive/map` (a handler SHOULD reject a mismatched params *type* with `400 unexpected_params`). *Stated here because a unit test that calls the handler directly never crosses the envelope layer and cannot see either failure — core-go found both on first contact with a live peer.*
+
+**Fail closed when the stored policy is already bad `[MUST]`.** §6a.9.2's refusal binds `set-issuer-policy`; it does not answer the policy that is **already there** — seeded out-of-band by a CLI flag, written directly to the tree, or predating the rule, all of which §6a.9.2's store-first resolution admits. When the resolved `ttl` for a register-request would be null (the request omitted `requested_ttl` and the stored policy has no `default_ttl`), the registry MUST refuse with **`403 policy_rejected`** and **MUST publish nothing** — no binding, no queue entry.
+
+It **MUST NOT substitute an implementation-chosen default.** That is the same move §6a.9.2 already rejects one bullet up, where `get-issuer-policy` MUST NOT synthesize a default `open`: it converts an operator's omission into a silently-invented policy. On a security-relevant field it is worse — two registries would answer identically-stored policies with different binding lifetimes, a §5.10 cross-peer determinism split the operator never sees. A protocol-wide TTL floor is rejected for that reason plus one more: there is no defensible number, and choosing one makes every unconfigured registry look configured.
+
+*(Structure mirrors `REG-ISSUER-DOMAINCTRL-STORED-1` beside `REG-REGISTER-DOMAINCTRL-1` — the write-time refusal cannot be the only thing standing between a bad stored policy and a bad outcome.)*
 
 **Replay defense (normative discriminator).** A signed request carries `nonce` + `issued_at` (the registry tracks seen `nonce`s per requester within an `issued_at` window; a replayed request is rejected) **iff replay has a non-idempotent state effect.** This holds for `register-request` (replay can roll a name back to a superseded binding) and `renew-request` (replay can extend a binding's life past intended lapse). It does **not** hold for `revoke-request`, which is monotonic on a content-addressed target (replay cannot un-revoke and cannot reach a later re-issued binding) — so revoke omits `nonce` / `issued_at`. The discriminator, not the op name, decides: future ops are replay-defended exactly when their replay mutates state.
 
@@ -1011,9 +1098,9 @@ Two separable proof layers:
 
 **Implementation status:** the **design is pinned here**; the `open` / `allowlist` / `manual` modes are buildable now (no external dependency); `domain-control` waits on the web-native domain-proof co-design. A registry shipping curated-only (§6a.8) is conformant — it simply does not run the handler.
 
-##### §6a.9.3 The manual-approval path — `pending-binding`, the by-request pointer, approve / deny `[RULED 2026-08-13]`
+##### §6a.9.3 The manual-approval path — `pending-binding`, the by-request pointer, approve / deny
 
-**Reserved on 2026-08-12, filled here.** The 08-12 ruling pinned *what `pending_hash` refers to*
+**Reserved earlier, filled here.** The earlier ruling pinned *what `pending_hash` refers to*
 — the `content_hash` of the stored `system/registry/pending-binding` — and then stopped, because
 that entity had **no schema anywhere in this document**. That left `pending_hash` naming a shape
 nobody had defined, and the three seats split accordingly: **Rust deliberately emits no
@@ -1028,7 +1115,7 @@ section removes it.
 *Python's shape was ratified rather than replaced — at ruling time it was the only worked implementation
 and it already followed §6.3's body/pointer split. **One seat is not convergence**, so the additions
 below (the by-request pointer, the decision states, deny, retention) were arch's design and were marked
-unbuilt. **They are built in all three as of 2026-08-14** (pins in the outcome note at the end of this
+unbuilt. **They are built in all three implementations** (pins in the outcome note at the end of this
 section); the marking is kept because it is what the reader needs to know about how the section was
 derived, not because the build state is still open.*
 
@@ -1095,7 +1182,7 @@ queued request *is* issuing a binding.
   live binding. *(Python already returns exactly this.)*
 - **A decision on an already-decided request returns `409 already_decided`** — approve and deny are
   not idempotent-by-replay, and re-approving would mint a second binding for one request.
-- **A decision on a *superseded* head returns `404 not_found` `[MUST]` `[RULED 2026-08-14]`.**
+- **A decision on a *superseded* head returns `404 not_found` `[MUST]`.**
   Supersession repoints the by-request pointer and deliberately leaves the prior body in the store for
   audit, so a stale `pending_review` body stays fetchable forever and an operator holding an old
   `pending_hash` can address it. Deciding it would issue a binding on terms the operator's queue no
@@ -1117,8 +1204,7 @@ queued request *is* issuing a binding.
   Adding an operation for a list a tree walk already answers is the live-registry cost the coral-reef
   posture (§7.4) exists to avoid.
 
-**The decision operations take an un-typed input, and handlers MUST decode by shape `[MUST]`
-`[RULED 2026-08-14]`.** Every other write operation on this handler names a `system/registry/*` params
+**The decision operations take an un-typed input, and handlers MUST decode by shape `[MUST]`.** Every other write operation on this handler names a `system/registry/*` params
 type; these two deliberately do not. **No implementation may register a type definition for
 `system/registry/approve-request` or `.../deny-request`** — the names are not carried by this
 specification, and publishing a definition for one would manufacture a cross-impl type-census divergence
@@ -1130,8 +1216,7 @@ wire surface that no operator tooling exists to consume, and the corpus's own hi
 name is the one the next implementation invents differently. When operator tooling lands, the types land
 with it.)*
 
-**Supersession must be observable, and the schema alone does not make it so `[MUST]`
-`[RULED 2026-08-14]`.** A `register-request` retry carries a fresh `nonce`, but `pending-binding` does
+**Supersession must be observable, and the schema alone does not make it so `[MUST]`.** A `register-request` retry carries a fresh `nonce`, but `pending-binding` does
 **not** carry the nonce, so two retries of one intent inside a single millisecond encode to identical
 bytes and content-address to **one** body — at which point the 202's "new `pending_hash`" is the old
 `pending_hash` and a superseding write is indistinguishable from a no-op. **That collapse is correct and
@@ -1339,6 +1424,12 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 - Peer-issued backend (§6a) — `peer_issued.resolve` per §6a.4 over transport-agnostic reads; signature-verify against the pinned trust root; by-name index (§6a.3); by-target revocation index (§6a.6); ttl + fail-closed (no pin-downgrade). Conformance vectors `REG-PEERISSUED-{RESOLVE,VERIFY-FAIL,REVOKED,EXPIRED,PRECEDE,OFFLINE-NOTFOUND}-1` — all six landed 3-way GREEN (Go/Rust/Python), injected-reader. The signed manifest (§6a.7) is NOT a v1 MUST (format pinned, impl deferred); `REG-PEERISSUED-MANIFEST{,-ABSENCE}-1` gate it when an impl ships it.
 - Service advertisement (§3b) — `system/registry/service-advertisement` entity: signature-verify against the pinned deployment identity, fail-closed on tamper/expiry (§3b), the OPTIONAL `services` field on `ResolutionResult` with **absent as a valid floor** (§3b.1), and the §3b.2 per-service-type selection rules including the §3b.3 byte-pinned rendezvous-hash for `signaling`.
   - **Vectors.** Publish a signed advertisement → `resolve` returns it in `services`; a tampered and an expired advertisement each fail closed with no silent downgrade; a Tier-0 zone carrying no advertisement resolves normally with `services` absent. **The selection vector MUST use a two-member pool** — a one-member pool makes every construction agree and proves nothing (§3b.3).
+
+- **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** A resolver-config whose catch-all entry names a remote backend MUST be refused or normalized at load; and resolving a bare (unscoped) name MUST produce no read against any remote registry. **The observable is the absence of a request**, so the check asserts on the registry peer receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
+- **Hostile-origin vectors (§6a.1a).** The four pre-existing peer-issued vectors all pass on an implementation open to both defects below, because each tests a forgery the origin never attempts. **A suite where every implementation passes every vector while all of them share one hole is not evidence of convergence; it is evidence the suite does not reach the surface.**
+  - **`REG-PEERISSUED-NAME-SUBSTITUTION-1`** — a **validly signed, current, unrevoked** binding for name *X*, served at `by-name/{Y}`. The resolver MUST refuse and advance the chain (§6a.4 `binding.name == norm`). Contrast with `REG-PEERISSUED-VERIFY-FAIL-1`, which covers a binding signed by a **non-pinned key** — the origin forging its own binding, which every implementation already refuses. Substitution requires no forgery at all.
+  - **`REG-PEERISSUED-NULL-TTL-1`** — a peer-issued binding with `ttl: null`; the resolver MUST refuse and advance (§6a.3, §6a.4).
+  - **`REG-ISSUER-NULLTTL-POLICY-1`** — two-stage, matching `REG-ISSUER-DOMAINCTRL-STORED-1`: `set-issuer-policy` with a live mode and `default_ttl: null` MUST be refused `400`; then write that policy entity **directly** and attempt live registration with a request omitting `requested_ttl` — MUST refuse `403 policy_rejected` and publish nothing.
 
 (Resolution-log is SHOULD per §11.2 — moved out of MUST to avoid the write-amplification hot-path issue surfaced by the cohort review.)
 

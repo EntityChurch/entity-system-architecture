@@ -71,3 +71,37 @@ A multi-tenant host, or a CDN-fronting peer that serves a federated view of many
 ---
 
 *Operator guidance for `EXTENSION-NETWORK.md §6.5.3/§6.5.3.1/§6.5.6`. The normative surface is those sections + CONTENT §6.4 + V7 §3.9 (`next_page`); this guide is the how-and-why. The universal-address-space model is V7 §1.4 + §1.7 — this guide points at it, does not restate it as authority.*
+
+## 8. Telling a user what a verified page actually proves
+
+An app that follows a `signed_pointer` to a signed root and verifies it has proved two things and
+**not** a third. Getting the third wrong in the UI is how a security property becomes a lie the user
+believes.
+
+**Proved:** the bytes are authentic (signed by the peer-id you pinned), and they are not a rollback
+(`seq` is not lower than one you already accepted).
+
+**Not proved: that this is the publisher's newest content.** `published_at` is a signed *lower bound
+on the artifact's age* — the publisher signed no earlier than T. It cannot tell you the origin
+served you the newest root it has, because **a publisher that hasn't republished and an origin
+withholding a newer root are byte-identical at your end**: same signature, same `seq`, same
+`published_at`. There is no field to check. See `EXTENSION-TREE.md` §3.3a.
+
+**So show three states, and never collapse them into two:**
+
+| State | Show | Do not show |
+|---|---|---|
+| **Never checked** | *"Not verified"* — no signature has been checked in this session | a neutral/blank chrome that reads as "fine" |
+| **Failed** | *"Verification failed"* — signature invalid, `seq` rollback, or the closure walk did not complete | a soft warning; this is the hostile-origin signal |
+| **Verified** | *"Verified as of {published_at}"* — with the timestamp, always | a bare *"Verified"* or a green check with no date |
+
+**The date is the whole point of the third row.** *"Verified"* alone is read by every user as *"this
+is current"*, which is the one claim the artifact does not support. *"Verified as of 3 March"* is
+honest, is exactly as strong as the cryptography, and lets a user notice a stale site themselves —
+which, against a withholding origin, is the only detection mechanism that exists.
+
+**Do not invent a freshness indicator.** If you find yourself adding *"last checked N minutes ago"*
+as though it bounded the content's age, stop: it bounds *your fetch*, not the publisher's
+republish, and it will be read as the latter. The one real bound is `EXTENSION-NETWORK.md` §6.5.6's
+30 s convergence MUST, and it binds a **cooperating** publisher's republish cadence — not a hostile
+origin's serving behavior.

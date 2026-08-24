@@ -65,6 +65,7 @@ domain doesn't have to revisit it later.
 |---|---|---|
 | `APP-CONVENTION-EMBED` | Foundational — the generic rich-content typed node + two-level registry + output shape | Draft v0.2.3 — spine locked 3-way; **next: vectors** |
 | `APP-CONVENTION-SEMANTIC-CONTENT-SITE` | First consumer — content sites built on Embed (document / content / compute anatomy) | Draft v0.4.2 — spine locked 3-way; `pages` cut; ordering floor pinned, semantic feeds open; v1 = manifest/page/nav/`.list`; **next: vectors** |
+| `APP-CONVENTION-SHARE` | The share record + audience binding — a share is a titled grant; the audience is the `grantee`, never the `peers` scope | Draft v0.1 — **authored, NOT ratifiable**: ships zero vectors (charter #5) and leaves the follow `strategy` vocabulary open. **Next: the six-vector set in §8** |
 
 ## Provenance
 

@@ -308,6 +308,35 @@ Rationale: firing once per config is the only option that preserves each config'
 
 Stored at `system/revision/{H}/config` where `{H}` is the prefix hash (§3.1). See §3.1.1 for the complete path inventory.
 
+**`glob_match` is a domain-local matcher for this document's `exclude` fields, and it is NOT the
+protocol's pattern rule.** The protocol's pattern rule is `ENTITY-CORE-PROTOCOL.md` §5.4
+`matches_pattern`: `pattern/*` is a **subtree prefix match** that crosses `/` (`path starts with
+prefix`), bare `*` matches everything, and the only segment-scoped wildcard in the protocol is the
+`/*/` peer-id strip. That rule governs capability scopes, subscription patterns, dispatch and tree
+paths, and it is not re-decided here.
+
+**Consequences for this document, normative:**
+
+1. §6.1's Reentrancy exclusion is satisfied by `system/revision/*` under §5.4 — a subtree match already
+   reaches `system/revision/head/{prefix_hash}/…` at any depth. **No second wildcard token is required
+   for it**, and implementations MUST NOT infer one from the examples below.
+2. The one thing §5.4's vocabulary genuinely cannot express is **matching by filename or extension at
+   arbitrary depth** (`**/*.cache`) — a narrow, revision-local need arising from `exclude` being an
+   ignore-list over a versioned prefix. An extension MAY define a matcher for its own domain-specific
+   need; this is that case.
+3. **That matcher is scoped to `exclude` and `exclude_types` in this document and nowhere else.** It
+   confers no reading on `*` anywhere in the protocol, and a `*` appearing outside these two fields —
+   including elsewhere in this spec — is §5.4's `*`.
+
+**The token collision is an open defect, not a settled design.** Spelling the depth-suffix matcher with
+`*`/`**` gives one syntax two meanings in one system, which is hash-determining here (the matcher decides
+trie membership, membership decides the version `root`, and `root` is the version entry's identity — two
+peers on different readings produce different hashes for identical content, with no error anywhere).
+Resolution — including whether the depth-suffix form gets a distinct spelling that cannot be confused
+with §5.4 — is tracked in
+`docs/proposals/active/extensions/PROPOSAL-REVISION-AUTO-VERSION-EXCLUDE-PARITY.md`. Until it lands, the
+exclude examples in this document are illustrative of intent, not a pinned matcher.
+
 **Exclude patterns.** When computing bindings for a version, paths matching any `exclude` pattern are omitted. When syncing, excluded paths are not transferred. This is the entity equivalent of `.gitignore` — but stored as typed configuration, not a text file.
 
 ```
@@ -332,7 +361,7 @@ system/revision/{H}/config := {
 
 **Trie root exclude.** When a versioned prefix encompasses `system/tree/root/`, the exclude patterns SHOULD include `system/tree/root/**`. Trie root hashes are derived state — including them in versioned bindings creates a circular dependency (the trie root hash depends on all bindings under the prefix, including itself). The version entry's `root` field already captures the trie root at each commit point, making the tracked root path redundant for version purposes. See EXTENSION-TREE.md §3.4.1 for the full rationale.
 
-**Exclude applies to trie building.** The `compute_versioned_bindings` call during `commit` applies the exclude filters:
+**Exclude applies to trie building — on EVERY path that emits a version, not only `commit`.** The `compute_versioned_bindings` call applies the exclude filters; §6.1's auto-version path performs the identical computation (see §6.1). A version entry's `root` is exclude-filtered regardless of which path emitted it:
 
 ```
 compute_versioned_bindings(tree, prefix, config):
@@ -740,12 +769,41 @@ system/revision/log-params := {
   fields: {
     prefix: {type_ref: "system/tree/path"}
     limit:  {type_ref: "primitive/uint", optional: true}    ; Default: 50
-    since:  {type_ref: "system/hash", optional: true}       ; Start after this version
+    start_at: {type_ref: "system/hash", optional: true}
+                     ; INCLUSIVE walk anchor. Listing begins AT this version
+                     ; and proceeds toward OLDER versions (reverse-chronological,
+                     ; the direction `log` already walks). Absent ⇒ begin at HEAD.
+                     ; RENAMED from `since` (0.8.2) — see the note below.
   }
 }
 ```
 
-Returns a `system/envelope` whose root is a `system/revision/log-result` containing version content hashes in reverse chronological order. The envelope's `included` map SHOULD contain the corresponding version entities, keyed by content hash.
+Returns a `system/envelope` whose root is a `system/revision/log-result` containing version content hashes in reverse chronological order.
+
+**`log` takes `start_at`, not `since`, and the rename is a determinism fix rather than a style call
+(0.8.2).** One field name meant **opposite directions** in the two operations that carry it, and the
+result sets are not merely off-by-one — they are **disjoint**. Measured on a live engine over a DAG
+`v1 → v2 → v3`:
+
+| call | returns | direction |
+|---|---|---|
+| `fetch(since: v2)` | `[v3]` | **newer** than the anchor, exclusive — a *watermark*: "I have up to v2, send what I lack" |
+| `log(since: v2)` | `[v2, v1]` | **older** than the anchor, inclusive — a *cursor*: "start listing here and walk back" |
+
+**Both readings are defensible for their own operation, which is exactly why this could not be fixed by
+picking an inclusivity.** `fetch` genuinely wants a watermark; `log` genuinely wants a start cursor.
+The defect is the shared name: a caller who learns `since` from one operation and carries the intuition
+to the other gets a disjoint answer **with no error**, and no conformance vector distinguishes a peer
+that guessed differently from one that is wrong.
+
+So the collision is removed rather than adjudicated: **`fetch` keeps `since`** (exclusive watermark,
+walks toward newer — unchanged, §4.4.6), and **`log` takes `start_at`** (inclusive anchor, walks toward
+older). Per this ecosystem's no-backward-compatibility rule there is no installed base to migrate; the
+old spelling is simply gone. Implementations MUST NOT accept `since` on `log`.
+
+*(This also settles a second, quieter mismatch: §4.4.2's prose read "start after this version" — an
+**exclusive** phrasing — while at least one engine returned the anchor itself. `start_at` is
+**inclusive**, stated here, and the prose no longer describes a third behavior.)* The envelope's `included` map SHOULD contain the corresponding version entities, keyed by content hash.
 
 #### 4.4.3 status
 
@@ -2518,7 +2576,7 @@ handle_fetch_diff(ctx, params):
 
 2. **Cross-peer pull reconcile.** Caller (A) directly asks the remote executor (B) for B's diff: `peer_at(B).revision_fetch_diff(prefix, base=A.last_seen_head_for(B))`. A then applies the returned envelope locally. Used by `ReconcileSinceLastSeen`-style SDK helpers (e.g., `entity-workbench-go/entitysdk/reconcile.go`).
 
-Implementations **MUST NOT** reject cross-peer dispatch of `fetch-diff` (no `400 invalid_dispatch` or analog). Only the error codes in the table below apply. The earlier `PROPOSAL-REVISION-DIFF-SINCE-LOCAL-HEAD` framing about "reads local state ambiguously cross-peer" applied to a *different*, deferred op (in `proposals/deferred/`) with ambiguous-local semantics — `fetch-diff` is not that op; its target-implicit shape was chosen precisely to keep semantics single-valued.
+Implementations **MUST NOT** reject cross-peer dispatch of `fetch-diff` (no `400 invalid_dispatch` or analog). Only the error codes in the table below apply. The target-implicit shape is what makes this well-defined: under every dispatch shape the executor's own head and content store are the single-valued referents, so there is no ambiguous-local reading for an implementation to refuse. A hypothetical op that *did* read local state ambiguously under cross-peer dispatch would warrant such a refusal — `fetch-diff` is not one.
 
 Capability requirement under cross-peer dispatch: as with all read ops, caller MUST hold `revision:fetch-diff` (or sufficient revision-read) on the executor's prefix (the `capability_denied/403` row below applies identically under local and cross-peer dispatch). Capability is not affected by call pattern.
 
@@ -3286,10 +3344,26 @@ Auto-version's contract is CRDT-style collaborative editing. When `auto_version`
 ; Invoked once per matching tree write event, after structural summaries
 ; have updated system/tree/root/{prefix} (see "Emit ordering" below).
 auto_version_on_write(event, prefix, version_config):
+  ; The emission gate. This suppresses emitting a version FOR an excluded
+  ; write; it is NOT the filter that shapes the root (see below).
   if event.path matches version_config.exclude:
     return
 
-  root = current_tracked_root(prefix)          ; from system/tree/root/{prefix}
+  ; The version root is the EXCLUDE-FILTERED trie — the same computation
+  ; handle_commit performs (§4.4). It is NOT the raw tracked root.
+  ;
+  ; Fast path (normative): when version_config.exclude and .exclude_types
+  ; are both empty/absent, the filtered trie IS current_tracked_root(prefix)
+  ; by construction, and an implementation MAY adopt it directly — the O(1)
+  ; case is preserved for every config that does not filter.
+  if version_config.exclude is empty and version_config.exclude_types is empty:
+    root = current_tracked_root(prefix)        ; from system/tree/root/{prefix}
+  else:
+    root = build_trie(compute_versioned_bindings(tree, prefix, version_config))
+
+  ; Amendment-2 marker augmentation runs HERE, before the dedup check below
+  ; (v3.3 D3 ordering). It is expressible only because a trie is built.
+  root = augment_with_deletion_markers(root, parent_version_root(prefix))
   current_head = tree.get("system/revision/" + prefix_hash + "/head")
 
   if current_head is not null:
@@ -3312,6 +3386,20 @@ auto_version_on_write(event, prefix, version_config):
   if active_branch is not null:
     tree.put("system/revision/" + prefix_hash + "/branches/" + active_branch, version_hash)
 ```
+
+**The version root is exclude-filtered regardless of which path emitted it (MUST).** A version entry's
+identity is its `root`, so a root that depends on *how the version was created* forks the DAG with no
+content difference: two peers over identical tree state and identical config produce different
+`system/revision/entry` hashes, and entity exchange cannot converge them.
+
+**The emission gate is not the filter, and conflating them is the trap.** Suppressing the version entry
+for an excluded write does **not** suppress that path's contribution to the tracked root — so under the
+previous formulation the very next *non-excluded* write emitted a version whose root committed to data
+the config says is not versioned. **On the auto-version path the exclude did not work at all**, one write
+late. The tracked root cannot carry the filter: `system/tree/root/{prefix}` is produced by
+`EXTENSION-TREE.md` §3.4.1a's structural-summary consumer from a `system/tree/tracking-config` that has
+no knowledge of any revision `exclude`, and TREE states the binding is *"a direct pointer"* with no
+filtering stage.
 
 Auto-version does not trigger push to remotes. Cross-peer propagation is not the revision extension's concern — see §6.3 for the subscription+continuation composition.
 

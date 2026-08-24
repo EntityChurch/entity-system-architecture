@@ -93,6 +93,8 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 ### 6.1 The four shapes (recommended grammar)
 
+*Normative home for the default globs that realize these: `EXTENSION-REGISTRY` §4.1a.*
+
 | Shape | Example | Means | Routes via glob (example) | Backend |
 |---|---|---|---|---|
 | **bare name** | `alice` | "resolve through my default chain" | `*` (catch-all) | local-name, then default registry |
@@ -141,7 +143,8 @@ The grammar above names every backend the substrate is *designed* to carry. Most
 
 ### 6.4a What the grammar is NOT
 
-- **Not a new substrate surface.** It is `name_format_dispatch` globs + a documented convention. Promoting it to normative = a short proposal that pins the default globs + the dispatch-on-X rule, nothing in the kernel.
+- **Not a new substrate surface.** It is `name_format_dispatch` globs + a documented convention — nothing in the kernel. **The defaults are now normative: `EXTENSION-REGISTRY` §4.1a carries the ordered list, §4.1 step 2 carries the catch-all MUST, and §4.1 step 1a carries the dispatch-on-X decode.** The table in §6.1 above is the teaching form of that list; §4.1a is its authority.
+- **The catch-all is the one part you may not vary.** `*` routes to local-only backends. A default that sends unscoped names to a remote registry discloses every bare name a user types, silently and irreversibly — see §7a.
 - **Not a global parser.** A deployment MAY ship different globs; the grammar is the *recommended interoperable default*, not a wire format. Two peers that ship the standard globs interoperate; one that doesn't simply routes its own way.
 
 ---
@@ -170,6 +173,41 @@ resolver_chain (priority asc):
 1. **Chained config (BUILT today)** — the chain above *is* "consult several registries." Priority order + `name_format_dispatch` route the query. Most of the felt need is already here.
 2. **Static aggregation via precedes (BUILT)** — a distribution preloads signed bindings from many registries, each verifiable against its own issuer (REGISTRY §7). A union baked at build time; works offline; only lacks live freshness.
 3. **Live federation / aggregator (DEFERRED)** — a Mode-A relay subscribes to N registries and serves the live union as one backend (REGISTRY §8.2); deferred on cross-peer subscription. Does **not** re-sign — receivers verify originals.
+
+### 7a. Pinning a registry's key does not pin its host
+
+**A static registry is two parties, and operators keep reading it as one.** The registry **signs**;
+an origin — a bucket, a CDN, a mirror — **serves**. You pin the registry's key, which is exactly
+right, and that key says nothing about who hands you the bytes.
+
+**What the origin can do, even though every artifact it serves is genuinely signed:**
+
+| It can | It cannot |
+|---|---|
+| **Choose which signed binding answers which name** — serve you the real binding for `protocol.example` when you asked for `foundation.example` | forge a signature |
+| **Withhold an artifact indefinitely** — most importantly a revocation | alter a body |
+| | move your clock |
+
+The first is closed by the resolver: REGISTRY §6a.4 requires `binding.name == norm`, so a
+substituted binding is refused and the chain advances. **You get this for free from a conformant
+resolver; there is nothing to configure.**
+
+**The second is not closable, and the honest sentence is the one to plan around:**
+
+> **Against a hostile origin, a revocation is bounded by the binding's TTL — not by the
+> revocation's publication.**
+
+You cannot detect withholding. A revocation the origin is sitting on and a revocation that was
+never issued are byte-identical at your end. **So the TTL is your only lever, and that is what makes
+it an operational decision rather than a default to accept.** Short TTLs mean faster revocation and
+more re-fetching; long TTLs mean the reverse. A peer-issued binding may not carry `ttl: null` at all
+(REGISTRY §6a.3) — that would make it permanently unrevokable — and if you are running the registry,
+`default_ttl` is the field this decision lives in.
+
+**If you need to resolve offline indefinitely, use a pin, not a long TTL.** Pins are the user's own
+assertion, are sticky, and override the chain (REGISTRY §4, §4.1.2). Stretching a binding's TTL to
+approximate one only moves the cliff, and it weakens the revocation bound for everyone using that
+registry.
 
 **Registries vouching for registries** (cross-reference / hierarchy) is expressible via `issuer_attestation` on a peer-issued binding (REGISTRY §3 — "the registry's authority cert"): registry A can attest to registry B's authority, letting a receiver who trusts A extend trust to B. This is the consensus/hierarchy direction; **named, not yet specified** — lives with the peer-issued backend proposal (§8).
 
