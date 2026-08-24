@@ -674,7 +674,7 @@ The grants we issue to the remote peer come from the local peer's connection gra
 > }
 > ```
 >
-> Left as a GAP because the reciprocal-grant flow rides the §10.3 `establish_live` traversal seam (unbuilt, S3), so the exact SDK carriage is not yet designed. Pin the two-slot model + precedence now; refine the surface when the seam lands.
+> Left as a GAP because the reciprocal-grant flow rides the §10.3 `establish_live` traversal seam (unbuilt, S3), so the SDK **ergonomic** surface is not yet designed. **The *wire* carriage is settled (EXTENSION-SIGNALING.md §6.5(b), corrected 2026-08-05, Go↔Rust V3 4/4): wielding is an ordinary EXECUTE rooted at `capability` = the cap hash; the dialer resolves from its minted-and-delivered ledger, NOT the content store — the §7a.2a in-band triple (§7.1 below) is the *conformance-handler* reentry shape, not this.** Pin the two-slot model + precedence now; refine the SDK surface when the seam lands.
 
 ### 7.2 listen
 

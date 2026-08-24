@@ -174,9 +174,31 @@ A2 63 6D6170 44 10000000 64 64617461 81 81 82 60 58 21 <H>
 
 Where: `A2` map(2); `63 6D6170` "map"; `44 10000000` bytes(4) bitmap; `64 64617461` "data"; `81` array(1) (one entry in data); `81` array(1) (bucket with one tuple); `82` array(2) (`[key, value_hash]`); `60` empty text string ""; `58 21` bytes(0x21 = 33); `<H>` 33-byte value hash. **All implementations MUST produce this exact byte sequence given identical canonical-normalize on the empty-string relative_key.** This is conformance fixture #2 — the canonical fuzzer seed for catching SHA-256-input ambiguity (relative-key vs absolute-path) and bitmap-convention ambiguity at fuzzer-touch time.
 
-**Trie bindings use prefix-relative keys.** Bindings in the trie are keyed by path segments relative to the prefix used when the snapshot was created. These are not paths — they are structural keys within a subtree produced by trimming a known prefix from the stored path: `relative_key = trim_prefix(path, "/" + peer_id + "/" + operation_prefix)`. This is standard prefix removal where both the peer ID and the operation prefix are known. The prefix is an operational parameter to `snapshot`, `extract`, and `merge` — not stored in the snapshot entity. Full paths are reconstructed by the consumer: `prefix + relative_key`. A non-empty prefix **MUST** end with `/`.
+**Trie bindings use prefix-relative keys.** Bindings in the trie are keyed by path segments relative to the prefix the trie was built under. These are not paths — they are structural keys within a subtree, produced by trimming that prefix in **absolute form** from the stored path:
+
+```
+relative_key = trim_prefix(path, absolute_prefix)
+```
+
+`absolute_prefix` is the configured prefix (§3.4.1a) resolved to absolute form. **The three admissible shapes, and what each yields `[MUST; ruled 2026-08-08]`:**
+
+| Configured `prefix` | `absolute_prefix` | `relative_key` for `/{peer_id}/system/attestation` |
+|---|---|---|
+| `"system/"` (peer-relative subtree) | `/{peer_id}/system/` | `attestation` |
+| `"/{peer_id}/"` (peer-qualified — the peer's whole namespace) | `/{peer_id}/` | `system/attestation` |
+| `"/"` (universal tree) | *(empty — the trim is a **no-op**)* | `/{peer_id}/system/attestation` |
+
+**The universal case is a no-op trim and its keys are fully qualified.** The universal tree spans every peer's namespace (`ENTITY-CORE-PROTOCOL.md` §1.4 — a peer's root is the set of peer-ids it holds), so "the peer_id" is not a single value there: trimming the local peer's id would leave every other peer's keys qualified and produce a **mixed key space**, which is worse than either uniform answer.
+
+> **Superseded formula (do not reintroduce).** This rule previously read `relative_key = trim_prefix(path, "/" + peer_id + "/" + operation_prefix)`. That form is **ill-defined for the universal tree** — it yields `"/" + peer_id + "/" + "/"`, i.e. `/{peer}//`, against which an implementation silently tracks nothing (reported by `entity-core-rust`, 2026-08-08) — and it double-qualifies the peer-qualified shape, whose prefix already contains the peer-id. §3.4.1a's *"the universal case collapses to the empty string"* governs the **storage path** in §3.4.1's substitution table, **not** this formula; the two were conflated.
+
+Full paths are reconstructed by the consumer: `absolute_prefix + relative_key`. A non-empty prefix **MUST** end with `/`.
+
+**Where the prefix comes from, and the one entity that carries it.** For `snapshot`, `extract`, and `merge` the prefix is an **operational parameter of the request** and is deliberately *not* stored in the snapshot entity (§12.1). A **published root** has no request — it is fetched by a consumer who was not present at publish time — so it **MUST** carry its prefix in the entity (§3.3a). Do not generalize the published-root field back onto the snapshot entity; the two differ precisely in whether a request channel exists.
 
 **The SHA-256 input is the relative_key, not the absolute path.** Two impls hashing different forms of the path produce different routing positions and silently divergent root hashes. Canonical-normalize follows the existing rules in the spec (see §5.4 and ENTITY-CORE-PROTOCOL.md §5.4); the resulting `UTF-8-bytes(canonical-normalize(relative_key))` is the SHA-256 input for routing per §3.3.
+
+> **This rule is unchanged by the universal case, and is not an exception to it.** Under `prefix: "/"` the `relative_key` **is** the absolute path — because the trim is a **no-op**, not because the rule was skipped. The hash input is still the relative_key in every case. Conformance fixture #2 (single binding at `relative_key = ""`) is unaffected.
 
 Cross-peer comparison is natural: snapshot of `/alice_id/local/files/` and `/bob_id/local/files/` both produce bindings keyed by the same relative paths — and the same trie root hash if content is identical. Diff and merge operate on these relative paths.
 
@@ -271,6 +293,39 @@ build_trie(bindings):
 **"Same trie structure" means precisely:** byte-identical CBOR encoding of every node. The §3.1 empty-root and 1-binding test vectors are the byte-level conformance anchors for the simplest cases; the cross-impl byte-identical-output fuzzer extends this to arbitrary binding sets. If two impls produce different bytes for the same binding set under the same parameters, one of them is non-conformant — the test vectors plus fuzzer narrow down which.
 
 Reference implementation: [go-hamt-ipld v3.4.1](https://github.com/filecoin-project/go-hamt-ipld/tree/v3.4.1) (algorithm reference; wire encoding differs per §3.1).
+
+### 3.3a The published root — `system/peer/published-root`
+
+*Landed here 2026-08-08 (`PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH` D1). Provenance: this type was defined as `NORMATIVE-LOCKED cgid-10-219` in `PROPOSAL-PEER-MANIFEST-STATIC-HANDSHAKE` §4, which lives in the **pre-split legacy archive** and never crossed into this corpus — while three landed MUSTs in `EXTENSION-NETWORK.md` (§6.5.3 `signed_pointer`, the `MANIFEST_GET` body, §6.5.6 Amendment 10) cited it as "(planned)". All three implementations built to that locked definition. This section supersedes it and is now the normative home; the legacy document is historical record only.*
+
+A **published root** is a signed, mutable pointer to a trie root that a publisher commits to serving. It is the anchor of the walk-from-signed-root threat model: a consumer fetches it, verifies the signature, and walks the hash-chain from `root_hash` — never trusting paths the host claims outside that chain.
+
+```
+system/peer/published-root := {
+  fields: {
+    peer_id:      {type_ref: "system/peer-id"}      ; whose root this is (pubkey IS identity, V7 §1.5)
+    root_hash:    {type_ref: "system/hash"}         ; BARE — the committed trie root
+    prefix:       {type_ref: "system/tree/path"}    ; REQUIRED. The prefix these trie keys are
+                                                    ; relative to, per §3.3. MUST end with "/".
+                                                    ; "/" designates the universal tree.
+    seq:          {type_ref: "primitive/int"}       ; monotonic freshness; MUST increase per republish
+    published_at: {type_ref: "primitive/int"}       ; ms since Unix epoch, UTC
+    predecessor:  {type_ref: "system/hash", optional: true}
+                                                    ; BARE — prior published-root content_hash;
+                                                    ; absent only on the first publish
+  }
+}
+```
+
+**Signature carriage.** Per `ENTITY-CORE-PROTOCOL.md` §5.2 target-matching at the invariant-pointer path `system/signature/{hex(published_root.content_hash)}`. The `MANIFEST_GET` envelope includes that signature entity under `envelope.included`. This entity carries **no `refs:` block** (V7 refless contract, as REGISTRY §3 and DISCOVERY §2.1).
+
+**Verification.** The signature MUST verify against `peer_id`'s public key (derived locally from the Base58 form, V7 §1.5). `seq` monotonicity is the rollback defense: a consumer MUST reject `seq` lower than one it has already accepted for that `peer_id`.
+
+**`prefix` is REQUIRED, and this is the field the type was missing `[MUST; ruled 2026-08-08]`.** Without it a consumer holds `relative_key`s and not the operand needed to reconstruct a single absolute path — §3.3's reconstruction rule is unsatisfiable, and the hash-chain walk that is the whole security model is underspecified at its first step. It is required rather than optional-with-a-default because **any default would have to be one of §3.3's three shapes**, silently promoting one implementation's convention to "the answer you get for saying nothing" — the same asymmetry, in a form that is harder to see.
+
+**It lives on the root, not on the manifest.** The root is the *signed artifact*, and `prefix` is what makes its contents interpretable. Putting the key convention in a separately-signed entity would mean a consumer that has verified the root's signature still cannot read it without verifying a second chain — and the two could disagree, with no rule for which wins. **Keep the interpretation of a signed artifact inside the signed artifact.**
+
+**Two conformant publishers may legitimately publish different extents.** `prefix` is what distinguishes them: a publisher at `prefix: "system/"` commits to a strictly smaller set than one at `prefix: "/"`. A consumer MUST read the extent from `prefix` and MUST NOT infer it from the publisher's identity or from what it happens to find.
 
 ### 3.4 Trie Root Tracking
 
@@ -1430,8 +1485,12 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 - Merge is additive — does not remove target paths absent from source (§5.4)
 - `dry_run` support on merge
 - Prefix placement on merge via `source_prefix` and `target_prefix` parameters
-- Snapshot entities contain only `root` — no `prefix` field
+- Snapshot entities contain only `root` — no `prefix` field. *(This is **not** in tension with §3.3a: a snapshot's prefix rides the request; a published root has no request. See §3.3's closing paragraph.)*
 - Non-empty prefix validation (must end with `/`)
+- **Absolute-prefix trim (§3.3)** — `relative_key = trim_prefix(path, absolute_prefix)` across all three prefix shapes, with the universal case (`prefix: "/"`) a **no-op** yielding fully-qualified keys. An implementation MUST NOT emit the superseded `"/" + peer_id + "/" + operation_prefix` form, which is ill-defined for the universal tree.
+- **Published-root `prefix` (§3.3a)** — a published root MUST carry `prefix`; consumers MUST use it (never a default or an inference) to reconstruct paths and to determine the published extent.
+- **Key-form assertion (§3.3a / §3.3)** — the conformance oracle MUST take an absolute path known to be bound in the published subtree, derive `relative_key` from the publisher's **declared `prefix`**, and assert the trie resolves *that* key. **A trie-rebuild equality check does not satisfy this**: a rebuild takes its keys from the trie and is therefore self-consistent by construction on key *form*, so an implementation keying by absolute path rebuilds to its own root and passes. Equality proves the routing algorithm; only this assertion proves the key convention. *(This distinction is why a three-way-green `published_root` category coexisted with a three-way key divergence for months — `entity-core-go`, 2026-08-08.)*
+- **Reconstruction round-trip (§3.3)** — `absolute_prefix + relative_key` MUST reproduce the absolute path the publisher bound.
 - Error codes as specified (Appendix A)
 - ECF deterministic encoding for snapshot content hashing
 - Handler-level capability checks using `get` and `put` grants (§11)

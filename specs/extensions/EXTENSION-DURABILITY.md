@@ -62,7 +62,7 @@ system/durability/result := {
                      ; a strength committed to a pathway that completes ASYNCHRONOUSLY. Present ONLY with status 202.
     max_available: {type_ref: "primitive/string", optional: true}
                      ; the best the receiver could offer. Present ONLY with status 412.
-    handle:        {type_ref: "system/path", optional: true}
+    handle:        {type_ref: "system/tree/path", optional: true}
                      ; absolute tree path where the durable entry can be read (the sender's lookup address).
                      ; Present when applied != none; on 202, names where the committed entry will land.
                      ; The RECEIVER chooses the path — the spec does NOT prescribe layout. See §6.
