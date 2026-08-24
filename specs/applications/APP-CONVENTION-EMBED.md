@@ -5,7 +5,7 @@
 + refined per the v0.2.1 base-plurality-and-output-basis refinement
 + the v0.2.2 raw-role-and-reserved-kinds refinement
 + **joint cross-team round folded** per the joint embed/site convergence synthesis (PF-2/5/6/7;
-spine locked three ways by workbench-go + godot + egui). Pairs with `APP-CONVENTION-SEMANTIC-CONTENT-SITE` v0.4.
+spine locked three ways by workbench-go + godot + entity-browser-rust). Pairs with `APP-CONVENTION-SEMANTIC-CONTENT-SITE` v0.4.
 **Next: cut joint conformance vectors → ratify** (the three-substrate round was the high-yield sweep; the vector
 sprint is the lock). Proposal: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`.
 **Domain:** `applications/` (first member — see `CHARTER.md`). **Charter class:** FORMAT-only.
@@ -163,7 +163,7 @@ sandbox-constraint = {                       ; substrate-NEUTRAL (no "iframe"/"w
 (`child` payload; entity-native; **the v1 mode**, sufficient for the panel consumers); (b) **inline directive** in
 a host document body. **The inline-directive grammar belongs to the consuming convention (e.g. the SITE
 convention), NOT to EMBED** (godot) — and **an inline directive MUST lower to a `child` payload; it is sugar, not
-a parallel format** (workbench-go/egui round-trip pin: "edit in egui, view in workbench" requires the directive
+a parallel format** (workbench-go/entity-browser-rust round-trip pin: "edit in entity-browser-rust, view in workbench" requires the directive
 and the child entity be the same thing). v1 embeds **append** (no interleave) until the site convention defines an
 inline directive.
 
@@ -271,7 +271,7 @@ box-layout = "group" / "columns" / "card" / "figure"           ; minimal layout 
   rendered by the base floor (§1.1). GFM tables lower structurally **at the markdown layer** (godot's concern is
   handled there, not here).
 - **No `chart`** — a chart has no agreed sub-grammar; left as a free `box_kind` it silently diverges across
-  renderers (egui + godot). A chart returns as its **own** sub-convention `APP-CONVENTION-EMBED-CHART` (real
+  renderers (entity-browser-rust + godot). A chart returns as its **own** sub-convention `APP-CONVENTION-EMBED-CHART` (real
   schema) when there is a real use case. Likewise a rich/sortable table → `APP-CONVENTION-EMBED-TABLE` (distinct
   from a GFM table, which is markdown).
 - **No `figure` primitive** — a figure is **composition**: `box{layout:"figure", children:[image, text(caption)]}`.
@@ -400,7 +400,7 @@ A FORMAT convention is not validated until vectors exercise it (PRIMER meta-rule
   hash.
 - An `EmbedOutput` of **each of the five variants** (`text/image/box/raw/fallback`) and each `box.layout` — CBOR +
   expected hash.
-- **`raw`-dropped-clean** vector (egui — the spine of cross-substrate interop, previously untested): a `raw`
+- **`raw`-dropped-clean** vector (entity-browser-rust — the spine of cross-substrate interop, previously untested): a `raw`
   output with an unsupported `format` is **omitted from presentation, not rendered as text**.
 - **Unknown-`layout`** vector (pinned single behavior — renders `children` as `group`, never breaks).
 - **Unknown-`kind`** vector (forward-compat for reserved kinds §4.0a): an `EmbedOutput` carrying an unrecognized
@@ -443,6 +443,6 @@ they are markdown, covered by the CommonMark/GFM conformance suite (§1.1), not 
 ## 11. Provenance
 - Synthesis / v1 lock: the content-site v1-lock synthesis (`e8a33c5`) §2 (output lock), §4 (pins), §5 (strains), §7 (G1).
 - Arch first pass: the L5 semantic-content-site arch-first-pass review (`4351f73`).
-- Cross-team passes: egui/Dom, workbench-go (`G-PIN-1..4`, `S-1..11`), godot (`[ASK-ARCH-OUTPUT-SHAPE]`).
+- Cross-team passes: entity-browser-rust, workbench-go (`G-PIN-1..4`, `S-1..11`), godot (`[ASK-ARCH-OUTPUT-SHAPE]`).
 - Substrate grounding: `expression_path` core-stable (V7 §3.7/§6.6, EXTENSION-COMPUTE); `system/handler/*`
   dispatch; self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4). Charter: `applications/CHARTER.md`.

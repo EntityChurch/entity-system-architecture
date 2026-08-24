@@ -1246,7 +1246,7 @@ Both patterns coexist. Whichever is used, the layout MUST be explicitly enumerat
 
 Application code SHOULD NOT register handlers under `system/runtime/` or directly under another extension's namespace.
 
-**Deprecation.** The previous reservation `system/sdk/{purpose}/{identifier}` is deprecated. Existing impls using `system/sdk/...` continue to function during a deprecation window; new machinery uses the per-extension or `system/runtime/` patterns above. (entity-core-go and entity-workbench-go never adopted `system/sdk/...`; entity-core-rust's egui-app uses it in `entity-sdk/src/subscription.rs` and migrates as part of `proposals/implemented/PROPOSAL-OPERATIONAL-STATE-AND-SDK-CONVERGENCE.md`.)
+**Deprecation.** The previous reservation `system/sdk/{purpose}/{identifier}` is deprecated. Existing impls using `system/sdk/...` continue to function during a deprecation window; new machinery uses the per-extension or `system/runtime/` patterns above. (entity-core-go and entity-workbench-go never adopted `system/sdk/...`; entity-core-rust's entity-browser-rust uses it in `entity-sdk/src/subscription.rs` and migrates as part of `proposals/implemented/PROPOSAL-OPERATIONAL-STATE-AND-SDK-CONVERGENCE.md`.)
 
 #### 11.6.8 Open Questions (Deferred)
 

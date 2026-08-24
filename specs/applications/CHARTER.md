@@ -71,4 +71,4 @@ domain doesn't have to revisit it later.
 
 - Arch first pass: the L5 semantic-content-site architecture first-pass review (commit `4351f73`) §5 proposed this domain.
 - Cross-team synthesis / v1 lock: the content-site v1-lock synthesis (commit `e8a33c5`) §6 ratified it.
-- All three L5 teams (egui/Dom, workbench-go, godot) endorsed factoring `APP-CONVENTION-EMBED` as foundational.
+- All three L5 teams (entity-browser-rust, workbench-go, godot) endorsed factoring `APP-CONVENTION-EMBED` as foundational.

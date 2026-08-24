@@ -1,7 +1,7 @@
 # Guide: Entity Workbench App
 
 **Status**: Active
-**Source:** A workbench-go four-pass UI-conventions reconciliation review; a three-pass workbench-go response (with §13 synthesis); an egui-side UI-alignment review; the Godot app architecture doc; and workbench-go Stage 5 implementation feedback (three findings — §5.3 reframed, §5.4 schema refocused, new §10.1).
+**Source:** A workbench-go four-pass UI-conventions reconciliation review; a three-pass workbench-go response (with §13 synthesis); an entity-browser-rust-side UI-alignment review; the Godot app architecture doc; and workbench-go Stage 5 implementation feedback (three findings — §5.3 reframed, §5.4 schema refocused, new §10.1).
 
 ---
 
@@ -100,7 +100,7 @@ flat:    app/{app-id}/workspace/windows/{id}/state
 nested:  app/{app-id}/workspace/screens/{id}/windows/{id}/state
 ```
 
-Per-presentation-context state (the `screens/` layer in egui terminology, "workspaces" in Godot terminology) is optional. Apps that don't differentiate use the flat form. Both impls' state schemas share fields.
+Per-presentation-context state (the `screens/` layer in entity-browser-rust terminology, "workspaces" in Godot terminology) is optional. Apps that don't differentiate use the flat form. Both impls' state schemas share fields.
 
 ### 3.2 Path-position-invariance
 
@@ -126,7 +126,7 @@ A clarifying frame. `app/state/tree-browser` is a **type name**. The correspondi
 - **`app/state/{type_name}`** — **cross-impl portable canonical types**. Implementations consuming these types MUST follow the canonical schema. The slot table (§4.2) enumerates the current cross-impl canonical types.
 - **`app/{app-id}/{type_name}`** — **app-internal types** that are NOT cross-impl portable. Schema is the implementing app's own contract. Cross-impl observers MUST NOT assume schema portability of types whose name begins with `app/{app-id}/`.
 
-> **Disambiguation (load-bearing — egui + workbench-go cosigned).** This rule scopes the `entity_type` *field* (the type-name string written into entities), NOT the instance-path prefix. The two namespaces parallel each other but apply to different concepts:
+> **Disambiguation (load-bearing — entity-browser-rust + workbench-go cosigned).** This rule scopes the `entity_type` *field* (the type-name string written into entities), NOT the instance-path prefix. The two namespaces parallel each other but apply to different concepts:
 > - **Type-name namespace (this §4.1.1 rule)**: governs strings written into `entity_type`. `app/state/...` = portable; `app/{app-id}/...` = app-internal.
 > - **Instance-path namespace (§3 / §4.2)**: governs tree paths where instances of those types live. ALL instances — both portable-type instances and app-internal-type instances — live under `app/{app-id}/...` paths per §3. The instance path is per-app regardless of whether the type itself is portable.
 >
@@ -134,13 +134,13 @@ A clarifying frame. `app/state/tree-browser` is a **type name**. The correspondi
 >
 > The slot table (§4.2) describes type-name → instance-path conventions; this rule (§4.1.1) describes the type-name conventions independently.
 
-**Implementations writing app-specific types** SHOULD place them under `app/{app-id}/{type_name}` rather than appending app-suffixes within `app/state/{type_name}`. The canonical pattern from egui: `app/entity-browser/connection`, `app/entity-browser/listener-state`, etc. (verified cross-impl).
+**Implementations writing app-specific types** SHOULD place them under `app/{app-id}/{type_name}` rather than appending app-suffixes within `app/state/{type_name}`. The canonical pattern from entity-browser-rust: `app/entity-browser/connection`, `app/entity-browser/listener-state`, etc. (verified cross-impl).
 
 **Type-name promotion** — when a previously-app-specific type proves convergeable across impls (e.g., `connection` shape stabilizes), promote it from `app/{app-id}/{type}` to `app/state/{type}` and update the slot table. Pre-publication, migration is natural-overwrite acceptable; in-process parsing unaffected. Post-publication this requires a spec amendment with a published cutover schedule (peers running older codebases would not recognize a renamed type without coordination).
 
 ### 4.2 Slot table
 
-Three-impl consensus across Go + egui-Rust + Godot.
+Three-impl consensus across Go + entity-browser-rust + Godot.
 
 | Slot | Type name (full type entity at `system/type/{name}`) | Status |
 |---|---|---|
@@ -158,7 +158,7 @@ Three-impl consensus across Go + egui-Rust + Godot.
 
 - **Portable vs decoration.** `app/state/{content_type}` is the cross-impl portable contract; renderers add their own decoration outside it.
 - **Bundled state per window** (one CBOR map per window, multi-field) — settled. Per-field-entities at T3 outputs only.
-- **ViewState vs RenderState** distinction is **per-impl**, not per-convention. Some impls (egui) split persisted vs runtime view state; some don't. The convention names what's persisted and portable; impls split or bundle internally as they please.
+- **ViewState vs RenderState** distinction is **per-impl**, not per-convention. Some impls (entity-browser-rust) split persisted vs runtime view state; some don't. The convention names what's persisted and portable; impls split or bundle internally as they please.
 - **Persisted-state vs T3-output namespace split** is pinned now (`app/state/...` vs `app/ui/output/...`) even with T3 deferred — prevents retrofit.
 
 The slot table commits to what each slot *means*. Per-content-type field-by-field alignment happens through ongoing T2 alignment with concrete impl reference points (Go's `DetailOutput` / `ArticleViewOutput`, Rust's `KnowledgeBaseOutput`, Godot's day-one panels). T2 schemas may also ship as types in `entity-sdk` crate exports, reducing re-derivation cost across impls.
@@ -190,7 +190,7 @@ Two `tree-browser` panels in the same screen viewing different peer trees: each 
 | `set_filter` | no (panel) |
 | `toggle_raw` | no (panel) |
 
-**Convention for content-type authors, not runtime dispatch metadata.** Implementation experience across the three reference impls (workbench-go Stage 5, egui, Godot) converged on a per-panel-slot + per-context-aggregate model where the publisher already knows at publish time whether to write to the aggregate. The publisher writes:
+**Convention for content-type authors, not runtime dispatch metadata.** Implementation experience across the three reference impls (workbench-go Stage 5, entity-browser-rust, Godot) converged on a per-panel-slot + per-context-aggregate model where the publisher already knows at publish time whether to write to the aggregate. The publisher writes:
 
 - to its own slot at `app/{app-id}/workspace/panels/{panel_id}/selection` (always), and
 - to the screen aggregate at `app/{app-id}/workspace/screens/{screen_idx}/selection` (iff the publisher's configuration says it should propagate).
@@ -230,7 +230,7 @@ updated_at     uint          # epoch ms; staleness signal
 
 **Status note (absorbed from the cross-impl alignment cycle).** The named action-event vocabulary below and the wire shape `(window_id, event_name, value)` are **speculative / schema-anchor for cross-impl wire persistence and replay** — NOT a load-bearing runtime requirement today.
 
-**Verified cross-impl reality:** no implementation in the workbench ecosystem (egui, workbench-go, Godot) currently emits named action events as distinct wire-shape triples. Cross-panel co-orientation rides on **selection state updates** (writes to `app/{app_id}/workspace/selection`) in all three impls. The vocabulary below exists as schema documentation — egui's `src/action_event.rs` explicitly notes "zero in-repo call sites by design... no Rust callers until wire-shape persistence/replay lands."
+**Verified cross-impl reality:** no implementation in the workbench ecosystem (entity-browser-rust, workbench-go, Godot) currently emits named action events as distinct wire-shape triples. Cross-panel co-orientation rides on **selection state updates** (writes to `app/{app_id}/workspace/selection`) in all three impls. The vocabulary below exists as schema documentation — entity-browser-rust's `src/action_event.rs` explicitly notes "zero in-repo call sites by design... no Rust callers until wire-shape persistence/replay lands."
 
 **Normative position:**
 - Named action events are **SHOULD-level for cross-impl wire persistence/replay**. Implementations that persist or replay action history SHOULD use the vocabulary below.
@@ -420,7 +420,7 @@ External:
 
 - Workbench-go four-pass cross-impl UI-conventions reconciliation review.
 - Workbench-go three-impl response with §13 synthesis.
-- Egui-side parallel UI-alignment review.
+- entity-browser-rust-side parallel UI-alignment review.
 - The Godot binding's architecture notes (that binding is archived and its
   documents are not published).
 

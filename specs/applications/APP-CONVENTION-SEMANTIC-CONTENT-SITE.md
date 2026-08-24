@@ -15,11 +15,11 @@ the network-reserved-word-extensibility-and-site-prefix proposal.
 **v0.4.2:** joint cross-team round folded per
 the joint embed/site convergence synthesis (spine locked three ways; `.entsite` pinned,
 `.list` discovery folded, nav/directive/tree-version fixes). **v0.4.1: `pages` field REMOVED** (arch scaffolding;
-redundant with `nav`; reintroduced the index anti-pattern — §4.2). **v0.4.2: ordering tightened (egui)** — pin one
+redundant with `nav`; reintroduced the index anti-pattern — §4.2). **v0.4.2: ordering tightened (entity-browser-rust)** — pin one
 determinism floor (lexicographic-by-name presentation rule); frontmatter is optional local flavor not the
 contract; **semantic feeds flagged OPEN / still-researching, deferred to a named post-v1 extension** (L5 — guidance
 now, lock later). v1 primitives: `manifest`/`page`/`nav`/`.list`. Reconciled to **APP-CONVENTION-EMBED v0.2.3**.
-Supersedes the scattered design set (egui `SPEC-SEMANTIC-CONTENT-SITE` Rev 0.1/0.2 + the v1-lock synthesis).
+Supersedes the scattered design set (entity-browser-rust `SPEC-SEMANTIC-CONTENT-SITE` Rev 0.1/0.2 + the v1-lock synthesis).
 **Next: cut joint conformance vectors → ratify** (no further team cycle on the contracts — the vector sprint is
 the lock; folds recirculate as a confirm).
 **Domain:** `applications/` (second member, first consumer of EMBED — see `CHARTER.md`). **Charter class:** FORMAT-only.
@@ -163,7 +163,7 @@ Embeds enter a page body two ways:
 - **Child transclusion** (the v1-sufficient mode, EMBED §3): the page references a sibling `Embed` entity by
   path/hash. Always available.
 - **Inline directive** — sugar inside a markdown body. **It MUST lower to a `child` payload** (EMBED §10
-  round-trip pin: "edit in egui, view in workbench" requires the directive and the child entity be *the same
+  round-trip pin: "edit in entity-browser-rust, view in workbench" requires the directive and the child entity be *the same
   thing*). The directive is **not a parallel format**; it is a serialization of a child reference.
 
 v1 directive grammar (leaf form, CommonMark-directive style):
@@ -228,7 +228,7 @@ a **visited-set** (cycle detection), enforce a **max depth (recommend 32)**, and
 **Discovery is lazy, one-level-at-a-time `.list` over the site namespace** — the scalable v1 default. A renderer
 walks the tree namespace level by level (like a filesystem) and **never requires downloading a full index to
 render the first page.** This avoids the "download the index" anti-pattern at scale (huge-index →
-index-of-indexes, our SCALE landscape; egui `discovery.rs`, `cd283a5`). **Paging belongs to `.list`** — it is
+index-of-indexes, our SCALE landscape; entity-browser-rust `discovery.rs`, `cd283a5`). **Paging belongs to `.list`** — it is
 inherently incremental — never to a manifest field.
 
 **The manifest carries identity + one optional human menu (`nav`) — and NO page-collection field.** v0.4 sketched
@@ -252,7 +252,7 @@ is a **renderer presentation choice, not a tree property** — we are *not* givi
 
 - **Determinism floor (the one pinned cross-impl rule):** a renderer presenting raw `.list` as a browse / sitemap
   / auto-sidebar view **MUST sort by page-name segment, byte-wise lexicographic ascending.** This is the *only*
-  ordering contract v1 needs — it stops two impls scrambling the same site differently (egui already does this via
+  ordering contract v1 needs — it stops two impls scrambling the same site differently (entity-browser-rust already does this via
   a name-keyed `BTreeMap`). It is a **presentation rule, not a claim the tree is sorted.**
 - **Naming-convention bridge (advice, NOT required):** name pages `YYYY-MM-DD-post` (ISO date) or `001-intro`
   (zero-pad) and the pinned name-sort *coincides* with chronological / sequential — free, self-documenting, no
@@ -319,7 +319,7 @@ standard **closure-complete-bundle helper** that sequences those and emits **one
 enough to add the A4 ingest guardrail, producing a complete bundle should not be an un-blessed two-step every L5
 app re-implements.*
 
-**Until A4 lands** (the EXTENSION-CONTENT ingest-completeness erratum — proposal-first, co-authored egui+arch),
+**Until A4 lands** (the EXTENSION-CONTENT ingest-completeness erratum — proposal-first, co-authored entity-browser-rust+arch),
 publishers MUST use the **transactional wrapper**: extract into a **staging** sub-namespace → `ensure_closure` →
 **rename live** (never ship the silent-success-now / 404-later path).
 
@@ -386,12 +386,12 @@ not need to be carried in the manifest). Cross-peer caching under `/{other_id}/�
   policy keyed by **(consuming-peer-id, site-root-hash)** (trusting a site under peer A ≠ under peer B); **C5**
   `expression_path` install is a **distinct SDK surface** (`InstallSiteScopedCompute`), not a side door of
   generic handler registration. Grant is **read-only-within-site** scoped; auto-install-without-review is **never**
-  the default. Owners: arch + egui.
+  the default. Owners: arch + entity-browser-rust.
 - **G2 — web HTML sanitization** (gates `format:"html"` / raw-HTML embeds on the **web** front-end). Audit the
   sanitizer (allowlist completeness; text-escaping ≠ sanitization). Non-DOM substrates (Godot/terminal) sidestep
   this by having no DOM — a property of the ladder. **Republish clause:** a front-end re-publishing a site it did
   not author attaches a **`passthrough_of: {origin_peer_id}` marker** so downstream renderers apply origin-trust
-  policy (closes the HTML-laundering hop). Owners: egui (web renderer) + arch review.
+  policy (closes the HTML-laundering hop). Owners: entity-browser-rust (web renderer) + arch review.
 
 Neither gate blocks the **v1 passive floor** (markdown + passive media + fallback — no active code, no raw HTML by
 default).
@@ -419,7 +419,7 @@ Cross-impl byte-equality on these + EMBED's is the **joint v1 lock signal.**
 
 ## 10. Open / deferred
 - `[PROPOSAL-FIRST]` **A4** — EXTENSION-CONTENT ingest-completeness guardrail (loud-reject on absent chunk
-  closure, or explicit `partial:true` ingest mode). Co-authored egui+arch; this convention is input, not the edit.
+  closure, or explicit `partial:true` ingest mode). Co-authored entity-browser-rust+arch; this convention is input, not the edit.
 - `[DEFER → G1 build]` active/interactive embeds (Part 3); WASM handler host (named future, no date). v1 is
   passive (Parts 1+2).
 - `[DEFER, named]` field-level manifest merge (nav union / root conflict-error) with the propose-back/edit arc;

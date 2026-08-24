@@ -1,7 +1,26 @@
 # entity-system-architecture — status
 
-_Updated: 2026-08-23 · public: **v0.8.0** (`master`) · working: **0.8.2 cut in the headers, not
+_Updated: 2026-08-24 · public: **v0.8.0** (`master`) · working: **0.8.2 cut in the headers, not
 tagged**._
+
+_**The published surface was four documents short and nobody had looked.** `CANONICAL-DOCS.toml`
+is a **keep-list** — everything not declared in it is dropped at publish — and it had not gained a
+document since **2026-06-30**. Two months of landed work was silently unpublished, including
+`EXTENSION-SIGNALING` v1.1, a spec this repo's own CHANGELOG was already counting (26 claimed, 25
+published; applications 4 claimed, 3 published). **All four now publish** by operator ruling; disk
+and keep-list reconcile **76 = 76**. Surfaced by `entity-core-papers`' render report — see
+`COHORT-OPEN-ITEMS.md` §0c and `ROUTING-2026-08-24-a`._
+
+_**Also cleared: `egui` is gone from the specs and guides** — 48 lines, 15 files. It named a real,
+unrelated third-party Rust GUI crate this project used briefly and fully removed, so a reader met a
+false claim about what the system depends on. Now `entity-browser-rust`; the four places where it
+genuinely means the library are untouched. And two published specs stopped citing repositories that
+do not publish._
+
+_**Their one ask was already built.** `entity-core-papers` reported that `tools/spec/` did not
+survive the repo split and their topology pin could not be regenerated. It is
+`entity-system-arch-tools/spec-tool/`, live and extended — **this team owns three repos, and the
+tooling is the third.** `spec topology` is the command._
 
 _**Release-blocking set is exactly two, and neither is arch's text.** (1) `entity-core-keystone`'s
 `AGENTS-STANDARD.md` is canonical and cites a commit that resolves in no repo. (2)

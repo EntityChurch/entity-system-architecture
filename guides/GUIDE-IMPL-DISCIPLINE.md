@@ -30,7 +30,7 @@ The entity-protocol ecosystem builds OS-foundation substrate. Production-grade r
 
 Disciplines D1–D8 were codified by the Godot frontend team during the substrate-sandwich reframe. D9, D10, D11 come from the foundation audit that surfaced a catastrophic phantom-host accumulation. D12 comes from the γ.4.2 misframing retrospective (the LLM-summary-confidence failure mode).
 
-All twelve have been adopted ecosystem-wide. Workbench-go and egui-rust have mapped them to their own existing practices and cosigned.
+All twelve have been adopted ecosystem-wide. Workbench-go and entity-browser-rust have mapped them to their own existing practices and cosigned.
 
 ### 1.2 Discipline catalog
 
@@ -252,7 +252,7 @@ Cross-boot stability + headed-only paths + real-store inspection. Universal test
 
 The principle generalizes; the enforcement is per-impl (Godot's `HEADED=1` gates / `UI.boot_main_scene` / `viewport.push_input`; workbench-go's `perfreview/` build-tag probe pattern). Tests must verify what survives a real boot, not just synthetic harness state.
 
-Workbench-go's `perfreview/` is the canonical reference shape (per arch promotion decision; see Amendment D promotion-candidate decisions). Per-impl: workbench-go publishes the build-tag pattern; egui-rust and Godot port to their respective runtime models.
+Workbench-go's `perfreview/` is the canonical reference shape (per arch promotion decision; see Amendment D promotion-candidate decisions). Per-impl: workbench-go publishes the build-tag pattern; entity-browser-rust and Godot port to their respective runtime models.
 
 ---
 
@@ -335,7 +335,7 @@ Internal:
 - The Godot report-absorption proposal (Amendment D) — the proposal that authored this guide
 - The Godot frontend-report response (§5) — the D9/D10/D11 promotion verdicts
 - The workbench-go cross-impl-alignment feedback — adoption mappings
-- The egui-rust review of the Godot report-absorption proposal
+- The entity-browser-rust review of the Godot report-absorption proposal
 - `CROSS-IMPL-PARITY-MATRIX.md` — the load-bearing structural artifact
 - The outer-limits status board — items O-21 / O-22 / O-23 / O-24 / O-25
 

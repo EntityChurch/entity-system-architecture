@@ -55,7 +55,7 @@ Peers are indexed by **name** (a local user-chosen alias) inside `~/.entity/peer
 
 A peer is one tree (one DB), one keypair, one optional identity binding, one config. There is no separate "app peer" vs "network peer" at the persistence layer — there are just peers. Whether a peer's tree happens to host application namespaces (`app/workbench-01/...`, `app/calculator/...`) or only system + protocol state is a property of the tree's contents, not a property of the on-disk structure.
 
-If a user runs multiple impls of the same conceptual application (Go workbench, egui-Rust workbench, Godot workbench), they spin up peers under different names — `peers/workbench-go/`, `peers/workbench-egui/`, `peers/workbench-godot/`, or whatever the user picks. Different names = different keypairs = different peer-ids = no interference. They can also share, by pointing multiple impls at the same `peers/{name}/`, but that means running the same peer through different impls — uncommon and not generally recommended (concurrent live runs of the same peer-id is not supported behavior).
+If a user runs multiple impls of the same conceptual application (Go workbench, entity-browser-rust workbench, Godot workbench), they spin up peers under different names — `peers/workbench-go/`, `peers/workbench-entity-browser-rust/`, `peers/workbench-godot/`, or whatever the user picks. Different names = different keypairs = different peer-ids = no interference. They can also share, by pointing multiple impls at the same `peers/{name}/`, but that means running the same peer through different impls — uncommon and not generally recommended (concurrent live runs of the same peer-id is not supported behavior).
 
 ### 1.3 Runtime state lives in the tree, not on disk
 
@@ -185,7 +185,7 @@ Simple form: back up `~/.entity/` (or whatever the configuration directory resol
 
 Richer backup tooling (incremental backup, encrypted backup, off-machine custody) is operator territory and not specified here.
 
-### 8.3 Web (egui-WASM) persistence
+### 8.3 Web (entity-browser-rust) persistence
 
 The configuration-directory abstraction maps to IndexedDB / OPFS / LocalStorage on browser WASM rather than a filesystem path. SDK-IDENTITY-INFRASTRUCTURE §8.0 covers the computation/I/O separation for identity bundles; the same pattern applies to the tree's storage backend — pure logic + platform-specific persistence layer. Specific WASM persistence specifics land when an impl commits to an approach.
 

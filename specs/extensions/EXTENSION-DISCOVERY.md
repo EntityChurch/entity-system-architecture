@@ -353,7 +353,7 @@ All retention windows are operator-configurable knobs; defaults conservative.
 - **Identity verification.** EXTENSION-IDENTITY's IDENTIFY handshake establishes peer identity post-admission. Discovery just surfaces the candidate.
 - **REGISTRY (name lookup).** Distinct extension; see EXTENSION-REGISTRY.md.
 - **WebRTC transport.** Currently a DRAFT proposal; DISCOVERY v1 lands without it.
-- **Inspect-before-grant UI** — fetching a candidate's public manifest / sites BEFORE the user decides is L5 territory; pilot lives in egui-Dom; promote to `GUIDE-L5-BROWSE-RESOLUTION` when SPACES validates the policy shape. Substrate stays at find-and-prompt.
+- **Inspect-before-grant UI** — fetching a candidate's public manifest / sites BEFORE the user decides is L5 territory; pilot lives in entity-browser-rust; promote to `GUIDE-L5-BROWSE-RESOLUTION` when SPACES validates the policy shape. Substrate stays at find-and-prompt.
 
 ---
 

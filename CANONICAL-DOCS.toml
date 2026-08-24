@@ -162,6 +162,12 @@ blurb = "EXTENSION-ROUTE is a storage plane: it holds a peer's routing table —
 group = "Extensions"
 
 [[doc]]
+path  = "specs/extensions/EXTENSION-SIGNALING.md"
+title = "Signaling Extension — Normative Specification"
+blurb = "Two peers both behind NAT cannot dial each other, and there is no public party holding a socket to either. This extension provides the mutually reachable third party that carries an opaque exchange between them."
+group = "Extensions"
+
+[[doc]]
 path  = "specs/extensions/EXTENSION-SUBSCRIPTION.md"
 title = "Subscription Extension — Normative Specification"
 blurb = "The subscription extension enables peers to receive notifications when entity tree paths change."
@@ -221,6 +227,12 @@ group = "Applications"
 path  = "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md"
 title = "APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5 DRAFT"
 blurb = "CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always"
+group = "Applications"
+
+[[doc]]
+path  = "specs/applications/APP-CONVENTION-SHARE.md"
+title = "APP-CONVENTION-SHARE — the share record and its audience binding — v0.1 DRAFT"
+blurb = "The share record and how its audience binds. Third member of the applications domain; charter class FORMAT-only. v0.1 DRAFT — the audience question is still open, so read the version header before building on it."
 group = "Applications"
 
 [[doc]]
@@ -443,6 +455,12 @@ blurb = "The core protocol gives you per-peer authorization: each peer is a root
 group = "Guides"
 
 [[doc]]
+path  = "guides/GUIDE-REFERENCE-DEPLOYMENT.md"
+title = "GUIDE — reference deployment: standing up efficient, scalable managed infrastructure"
+blurb = "Operator runbook for the managed-infrastructure pattern. Per-role maturity flags mark what ships today versus what rides the connectivity track."
+group = "Guides"
+
+[[doc]]
 path  = "guides/GUIDE-SDK-PATTERNS.md"
 title = "Guide: SDK Patterns"
 blurb = "Patterns for building applications on the entity system SDK."
@@ -464,6 +482,12 @@ group = "Guides"
 path  = "guides/GUIDE-TRANSACTION.md"
 title = "Transaction Extension: Developer Guide (Exploratory)"
 blurb = "The entity system's tree provides per-path atomic writes."
+group = "Guides"
+
+[[doc]]
+path  = "guides/RUNBOOK-CDN-BROWSER-DEPLOYMENT.md"
+title = "RUNBOOK — CDN + browser deployment"
+blurb = "Deployment headers and caching discipline for the static-HTTP CDN path. A v1 deliverable because the browser is the headline consumer of that path and its headers cannot be a forward reference."
 group = "Guides"
 
 # ── Authoring standards ───────────────────────────────────────────────────────

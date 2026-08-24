@@ -76,9 +76,10 @@ The system has a layered structure with clear responsibilities per layer and cle
 ## 3. Primitives, Pair-Relationships, and Triangles
 
 The mathematical structure underlying L1. Developed in detail in:
-- `papers/00-the-entity-system/content/paper.md` — the primitives paper
-- `papers/shared/notes/core/framework-synthesis.md` — master analytical synthesis
-- `reviews/core/EXPLORATION-PRIMITIVES-AND-PAIR-RELATIONSHIPS.md` — architecture-side exploration (four amendments)
+- The primitives paper and the framework synthesis, in the paper repository (§7.2 —
+  not published; the analytical treatment of this structure lives there)
+- `EXPLORATION-PRIMITIVES-AND-PAIR-RELATIONSHIPS` — the architecture-side exploration,
+  four amendments, in this repo's authoring workspace (§7.1 — not published)
 
 ### 3.1 Six primitives
 
@@ -268,9 +269,9 @@ Current state (April 2026):
 | L2 SYSTEM-COMPOSITION | complete | complete | partial |
 | L2.5 extensions (7 standard) | complete | complete | partial |
 | L2.5 extensions (transaction, compute, network) | not yet | not yet | not yet |
-| L3 SDK facade | entitysdk package (Workbench) | EntitySDK/PeerContext (eGUI) | PeerBuilder (CLI) |
-| L4 SDK patterns | emerging (Workbench) | emerging (eGUI, Godot) | not yet |
-| L5 applications | Workbench (TUI + GUI) | eGUI web, Godot demos | CLI tools |
+| L3 SDK facade | entitysdk package (Workbench) | EntitySDK/PeerContext (entity-browser-rust) | PeerBuilder (CLI) |
+| L4 SDK patterns | emerging (Workbench) | emerging (entity-browser-rust, Godot) | not yet |
+| L5 applications | Workbench (TUI + GUI) | entity-browser-rust, Godot demos | CLI tools |
 
 The seven standard extensions (inbox, continuation, subscription, history, query, clock, revision) are implemented in Go and Rust with comprehensive test coverage. Go's `validate-peer` tool provides a 15-category conformance test suite. SDK specs (SDK-OPERATIONS.md, SDK-EXTENSION-OPERATIONS.md) formalize the converged L3 interface.
 
@@ -294,7 +295,7 @@ prototype → feedback → analyze → iterate → three impls → look for ambi
 
 1. **Core + extension implementation teams** (Go, Rust, Python) — implement L_native, L0, L1, L2, L2.5 against specs. Hit ambiguities; raise questions via reviews and proposals.
 
-2. **Platform / application-building implementation teams** — build standard-peer packages and front-ends (Workbench, eGUI, Godot) on top of core implementations. Take L2.5 and package into usable systems. Currently discovering the SDK by making design decisions they recognize should be standardized. *Not the SDK team* — they are implementation teams whose work is uncovering SDK needs.
+2. **Platform / application-building implementation teams** — build standard-peer packages and front-ends (Workbench, entity-browser-rust, Godot) on top of core implementations. Take L2.5 and package into usable systems. Currently discovering the SDK by making design decisions they recognize should be standardized. *Not the SDK team* — they are implementation teams whose work is uncovering SDK needs.
 
 **Coordination layer:**
 
