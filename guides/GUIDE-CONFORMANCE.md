@@ -389,6 +389,96 @@ T1.2 rides `--validate` (reuses the §7a `dispatch-outbound` handler — honest-
 
 ---
 
+## §7c Compute conformance: the differential corpus (guidance to converge — UNBUILT)
+
+The **third conformance modality**. Wire ECF (§§1–6) is enumerable golden fixtures; concurrency (§7b) is
+behavioral probes; **compute is *differential* over a combinatorial input space.** This is the conformance
+artifact for **AE-1** (`PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` — an alternate execution strategy is conformant
+iff materialized-boundary-equivalent). **Status: no portable cross-impl compute corpus exists.** Today the
+entire cross-impl compute-evidence base is the single `compute/scope` hash-equality point
+(`EXTENSION-COMPUTE §447`) plus Go-internal differential tests — so "Rust eval == Go eval" is *assumed, not
+verified*. This section is arch's guidance to the core peers to build and **converge** it; it is high-level by
+intent — the vector shape is pinned, the construction is left to the cohort.
+
+### §7c.1 Why a different modality (the §3.4 reconciliation)
+
+Compute's inputs are arbitrary well-formed IR graphs — **not** enumerable, so hand-authored golden fixtures
+(§2) cannot cover them. The corpus is therefore **generator-seeded, then frozen**: a deterministic seeded
+generator produces the coverage; its output is captured as frozen `(IR, inputs, budget) → boundary-hash |
+error` vectors that every impl runs. This does **not** contradict §3.4 ("generator-driven is for bootstrap;
+the gate is cross-impl agreement") — the generator bootstraps the corpus **once**, and the **frozen vectors
+are the cross-impl gate**, arbitrated by the spec exactly as §4 prescribes. Generator for coverage; freeze +
+cross-bless for the gate.
+
+### §7c.2 What already exists — build ON it, don't reinvent (surveyed 2026-07-21)
+
+- **The Axis-1 differential harness** — `entity-workbench-go/entitysdk/axis1_equivalence_test.go`
+  (`TestAxis1Equivalence_Differential`). A working **seeded generator** (`exprGen`: `seed=20260716`,
+  `cases=300`, a *typed* recursive grammar over `ComputeBuilder` — signed+unsigned literals, arithmetic,
+  `if`/`let`, `index`/`length`, cast, compare/logic, arrays with `map`/`filter` lambdas capturing an enclosing
+  binding, error paths *on purpose*; every case wrapped in `Construct(...)` to force the boundary), a
+  **boundary comparison** (both engines reduced through Stage-1's own `CaptureScope` → entity-kind = content
+  hash, value-kind = canonical-CBOR hex, error = `code+message`), and **five anti-vacuity guards**. It is
+  Go-internal and Axis-1-vs-Stage-1 (*intra*-impl). **This is the thing to port cross-impl.**
+- **The wire-conformance pipeline** — `entity-core-go/cmd/internal/wire-conformance`
+  (`.diag → .cbor → per-impl emit → cross-bless`, + the MANIFEST hash-pin + the S5 authoring split). The
+  scaffolding and discipline are directly reusable; it needs **one new stage — evaluate + materialize + hash**
+  (today it only does static encode/decode; a compute vector's "expected" requires *running an evaluator*).
+- **The boundary in code** — `entity-core-go/ext/compute/{eval_construct.go::materialize, scope.go::CaptureScope}`.
+  Already exactly the AE-1 boundary set; the corpus pins the **same hashes the harness already compares**.
+
+### §7c.3 The vector shape (high-level — the only thing pinned here)
+
+A compute conformance vector is `(IR entity, root bindings, budget) → { boundary-hash | error{code, message} }`,
+where the **boundary** is the AE-1 set: the **materialized bare-entity content hash** (a `construct`, byte-
+identical to the hand-built entity — V7 §1.4), **value-kind canonical-CBOR bytes**, and the **error `code`
+(+`message`)**. Portable by construction — IR + inputs + hash, no Go. Leave the exact serialization
+(`.diag`-analog vs. a compute-native form) to the cohort; the schema above is the contract.
+
+### §7c.4 Guidance to the core peers — converge the set
+
+1. **Port the generator, not a static dump.** A frozen vector dump alone freezes *Go's* coverage. Each impl
+   SHOULD be able to run the seeded generator (identical seed → identical shapes) so coverage grows cross-impl
+   — but the **published artifact is the seeded frozen output**, so every impl runs identical bytes.
+2. **The anti-vacuity guards travel WITH the corpus — as gates, not decoration.** Port the five verbatim:
+   **≥25% value outcomes** (else agreement is mostly errors — vacuous); **≥1 error-as-value** (the code path is
+   part of the contract); **≥1 closure built** (else `map`/`filter` / the live-frame path never ran); **0
+   fallbacks** (a fallback compares an engine to itself — circular); **≥3 distinct error codes**. A corpus that
+   cannot meet them is vacuous — the ECF-F30 / F-D3 "green-can-be-empty" lesson. **Add one guard the intra-Go
+   harness didn't need:** every cross-impl vector MUST exercise the *alternate* engine on each side, never a
+   fallback to the reference — else the cross-impl agreement is circular too.
+3. **Cross-impl agreement is the gate; the spec arbitrates (§3.4 / §4 unchanged).** *Within* Go, Stage-1 is
+   reference-by-construction for Axis-1. For the **cross-impl corpus, no impl is privileged**: the frozen
+   vector's boundary-hash is fixed by the spec (AE-1 + the canonical encoding + the v3.19 value model), not by
+   Go. Disagreement routes through §4 — one impl differs = its bug; all differ = spec ambiguity (the round's
+   work product); **no voting**.
+4. **Do not mistake the intra-Go green for cross-impl evidence (the honesty gate).** The differential harness
+   proves Axis-1 == Stage-1 *within Go*; the corpus must prove **Go == Rust == Py** at the boundary. Report
+   them as different claims (the AE-1 §7 ledger) — cohort-consistent ≠ independent convergence.
+5. **The convergence sequence** (the F29/F30 cross-bless loop, extended for evaluation):
+   (a) port `exprGen` → a seeded frozen `(IR, inputs, budget)` set — **start with the nine lowering-toolkit
+   worked lowerings** (`PROPOSAL-COMPUTE-LOWERING-TOOLKIT §5`), then the random sweep;
+   (b) run through core-go's evaluate+materialize+hash → candidate boundary-hashes (the new emit stage; Go is
+   the fixture-builder, **not** the oracle — Appendix E.4 "spec arbitrates the bytes");
+   (c) each impl (rust/py) evaluates the frozen `(IR, inputs)` → emits its own boundary-hash + error codes;
+   (d) cross-bless — **lock only when byte-identical**; divergence → §4;
+   (e) hash-pin the frozen corpus in a MANIFEST (like the ECF corpus SHA); vendor into keystone; the
+   **compute-bearing peers re-run** at fold (the CDN-corridor meta-rule — not validated until the cross-impl
+   cohort exercises it).
+6. **Reproducibility discipline (§3.1 applies).** The corpus carries `(seed, case-count, generator-version)`;
+   a failure reproduces from `(seed, case-index)`. Decode the artifact, not just its SHA (§3.1(6)); skips count
+   (§3.1(2)); no "pre-existing" without a bisect (§3.1(1)).
+
+### §7c.5 Scope, ownership & what it gates
+
+**Gates:** AE-1 admission (fast interpreter *and* compiled handler), the lowering-toolkit vectors (first
+tranche), W-BUDGET preemption determinism (BP-1), W-HOSTING transferable compute. Highest-leverage cohort
+build (`ROUTING-2026-07-21` Wave 0→1). **Ownership:** **arch authors this guidance + the vector shape + the
+discipline (here);** the **cohort** builds the generator port + the evaluate-emit stage + cross-blesses; the
+frozen corpus + MANIFEST live in `entity-core-protocol/specs/test-vectors/compute-conformance/` (new dir),
+vendored into keystone — the same split as the ECF corpus. Per the working pattern, arch **guides**; the impl
+work lands in the cohort repos, not isolated into `entity-core-protocol`.
+
 ## §8 `validate-peer` remediation roadmap (the Go handoff)
 
 `validate-peer` is a valuable, mostly spec-grounded oracle, but the comprehensive validate-peer audit found **five systemic defects, all tracing to one root: it encodes the Go reference peer's shape as the conformance contract.** That was invisible while only Go-cohort impls ran against it; the C# first-peer exposed it. This is the work to make the oracle spec-ordained and language-neutral — so a new peer validates against the *spec*, not against "what Go does." Owner: Go (oracle owner); arch supplies the spec-side inputs noted. These are **oracle fixes, not spec defects.**
@@ -424,7 +514,11 @@ The single place "what's not finalized" is tracked, so nothing is lost while it 
 | **Protocol version string** | informational for now | V7 §8.4 = `entity-core/1.0` (Go/Rust correct). Python sends `entity-core/7.0` — a divergence that's latent only because nobody intersects; **left un-pinned normatively** until we have stable versioning. Fix Python when negotiation lands. |
 | **Leg-3 reverse-authenticate mechanism** (M-1 hello flag vs M-2 initiator-requested) | deferred | No impl sends leg 3; the reachability-gated clarification landed (V7 §4.1). Mechanism pinned when a serving-initiator use case surfaces. |
 | **Storage-contract / transport technical review** | pending | The core is transport-agnostic (NETWORK extension owns transport specifics). Some deferred connect/auth items may migrate to the extension once we verify the flow under different storage contracts and movement. Why these are parked in the guide rather than hard-pinned in core now. |
-| **Connect-surface conformance vectors** | recommended, not yet authored | short/empty nonce, wrong-length pubkey, unknown key_type, double-hello, authenticate-before-hello, hello/authenticate peer_id mismatch, cross-connection replay, impersonation-by-different-key, peer_id↔pubkey mismatch (the probe that would have caught the Python gap). Until authored, the PoP MUSTs (v7.61 §4.6) are prose-only — see the meta-rule (§7). |
+| **Connect-surface conformance vectors** | recommended, not yet authored | short/empty nonce, wrong-length pubkey, unknown key_type, double-hello, authenticate-before-hello, hello/authenticate peer_id mismatch, cross-connection replay, impersonation-by-different-key, peer_id↔pubkey mismatch (the probe that would have caught the Python gap). Until authored, the PoP MUSTs (v7.61 §4.6) are prose-only — see the meta-rule (§7). The **`unknown key_type → 400 unsupported_key_type`** vector here is the UN-b/F48 gate (`PROPOSAL-KEYSTONE-CROSS-SUBSTRATE-HARDENING` B2). |
+| **F38 — `created_at` mint-timestamp precision** (keystone) | NEW pending; **arguably normative, not just a guide note** | `created_at` second-truncation makes same-scope same-second re-mints byte-identical → hash-alias → 403-cascade (isolated category runs stay green; Pure Data A-PD-016). Disposition: **`created_at` MUST be ms-precision from a real-time clock at every mint site** — belongs in normative token-shape text (§3.6/§5.5), carried as a conformance note because the failure is timing-dependent (no deterministic vector). Fixed keystone-side. Route the normative half into a core token-shape amendment. |
+| **F39 — bare `["*"]` resource is granter-local** (keystone) | NEW pending (low; mostly resolved keystone-side) | An open/debug seed with `resources:["*"]` can't cover foreign namespaces — §5.5a makes bare `*` granter-local; `universal_address_space` writes silently SKIP; a debug seed needs `["*","/*/*"]`. Disposition: **one sentence on the dual resource form** (SDK-OPERATIONS §2.1 / this guide); optionally name the missing absolute form in the oracle skip message. |
+| **F41 — authority-as-derivation appendix** (keystone) | NEW pending; **high-leverage, no wire/verdict change** | Specifying the §5/§6.6 authority verdict **as a monotone derivation** makes fail-closed + the §5.5a within-grant conjunction **structural invariants**, not silently-violable MUST-prose (Datalog A-DL-013). Disposition: **add an authority-as-derivation informative appendix** (this guide or a core informative appendix); §5.10 already formalizes much of the monotone-core/non-monotone-guard split, so this consolidates it. The single most-leveraged guide write of the keystone pull-in. |
+| **Keystone corpus gaps F34/F35/F44/scalar-`data`** | NEW pending → routed | Vacuous-green closures (tampered granter-sig; §7a reentry-echo verifies nothing; caveat accept-path untested; scalar-`data` accept). Specified in `entity-core-protocol/docs/proposals/PROPOSAL-KEYSTONE-CORPUS-GAPS.md`; ride the F29/F30 add-vector/cross-bless loop + the `security`/`authz`/`concurrency` categories (F35 is a `conformance_handlers.go` probe fix). |
 
 ## §10 Cross-references
 
@@ -440,3 +534,4 @@ The single place "what's not finalized" is tracked, so nothing is lost while it 
 - **`proposals/implemented/PROPOSAL-MULTISIG-CORE-PRIMITIVE.md`** — multisig, landed V7 v7.60; `validate-peer multisig` category is its conformance pin.
 - **`proposals/implemented/PROPOSAL-V7-CAPABILITY-HANDLER-AMENDMENT.md`** — the capability-handler amendment, **landed V7 v7.62**. The §9 register's D-DEL + D-VOC items resolve here; the validate-peer test vector update + Rust/Python `is_revoked` + `capability_path_for` impls are the follow-on work.
 - The advisory on Python peer-id binding — the independent Python identity-binding security fix (the §4.6 step-3 gap; fixed impl-side).
+- **`docs/proposals/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md`** (AE-1) — the admission contract §7c is the conformance artifact for; **`PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md §5`** — the worked-lowering vectors that seed the compute corpus; **`ROUTING-2026-07-21-cross-team-sequencing.md`** — where the corpus sits on the cross-team clock (the critical path). Grounding survey: `entity-workbench-go/entitysdk/axis1_equivalence_test.go` + `entity-workbench-go/docs/architecture/reviews/COMPUTE-AXIS1-ORACLE-GAPS-2026-07-16.md`.

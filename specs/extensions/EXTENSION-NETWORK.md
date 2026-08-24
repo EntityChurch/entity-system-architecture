@@ -49,7 +49,7 @@ This extension covers:
 
 This extension does **not** cover:
 
-- Peer discovery (mDNS, DNS-SD, seed peers — `EXTENSION-DISCOVERY`, shipped)
+- Peer discovery (mDNS / DNS-SD — `EXTENSION-DISCOVERY`, shipped); seed / bootstrap peers — `EXTENSION-REGISTRY` §7 + `system/config/bootstrap` (not a DISCOVERY backend)
 - Relay / store-and-forward (`EXTENSION-RELAY`, shipped)
 - NAT traversal / WAN reachability — the *reachability facts* (observed-address, dial-back,
   candidate gathering) land as an **amendment to this extension**; the punch-coordination dance is a
