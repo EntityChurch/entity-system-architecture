@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.7
+**Version**: 1.10
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -524,7 +524,21 @@ When `meta_resolve(name)` is called:
 1. **Pinned bindings** override everything. If `name` matches a pinned entry, return the synthesized result (§4.1.2) immediately.
 1a. **Authority-part peer-id decode precedes glob dispatch (MUST).** For a name of the form `name@X`, attempt to decode `X` as a V7 §1.5 Base58 peer-id **before** applying step 2. If it decodes, `X` is a **verification pin**, not a targeting instruction: resolve `name` through the ordinary chain and require the result's `peer_id` to equal `X`, refusing fail-closed and advancing the chain on mismatch (§6a.4's disposition — a pin that resolves elsewhere is the §6a.1a substitution case caught one layer up). This ordering is normative because a broad `*@*` dispatch entry would otherwise capture `alice@z6Mk…` and send a private name to a remote registry to answer a question the consumer can answer locally.
 
-2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose dispatch pattern matches the queried `name` (POSIX shell-glob). Backends without a `name_format_dispatch` entry default to "match all" (no filtering); backends with one are consulted ONLY when the pattern matches. **This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority. **Consequently the catch-all MUST route to local-only backends (`local-name`, `pinned`, self-certifying decode) and MUST NOT name a remote backend** (`peer-issued`, `dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`) in a shipped default. The catch-all is the path every unscoped name takes, so a remote binding there discloses **every bare name a user types** — silently, on the happy path, in a configuration the user did not choose, and irreversibly. A remote registry stays fully reachable through an explicit scoped form (`alice@entity-church`), which is the user stating which authority they are willing to tell. An operator MAY override this on their own peer; a distribution MUST NOT ship it as the default.
+2. **`name_format_dispatch` filter** — narrow the resolver-chain to backends whose dispatch pattern matches the queried `name` (the registry-local name matcher defined above — **not** `ENTITY-CORE-PROTOCOL` §5.4). Backends without a `name_format_dispatch` entry default to "match all" (no filtering); backends with one are consulted ONLY when the pattern matches. **This is the primary privacy mechanism** — without it, the queried name leaks to broad-matching backends earlier in priority. **Consequently the catch-all MUST NOT name a backend whose consultation transmits the queried name.** The catch-all is the path every unscoped name takes, so a name-transmitting binding there discloses **every bare name a user types** — including a private handle or a typo — silently, on the happy path, in a configuration the user did not choose, and irreversibly.
+
+**The banned property is name transmission, not remoteness**, and the two are not the same thing:
+
+| Backend kind | Catch-all | Why |
+|---|---|---|
+| `local-name`, `pinned`, self-certifying decode | **MAY** | No network consultation at all. |
+| `peer-issued` **resolved per §6a.4 through the signed root** | **MAY** | Every request is content-addressed. The queried name is matched inside a node already fetched and never appears in a request. |
+| `dns-txt`, `well-known-url`, `did-web`, `consensus-anchored` | **MUST NOT** | Consultation *is* disclosure — the name goes to a third party as a query, a path segment, or a document name. |
+
+**§6a.4 is what makes the `peer-issued` row safe, and it is already mandatory.** A resolver MUST verify signature, name-association and revocation *inside the signed tree*; §6a.3a states that the host-served listing **MUST NOT** be presented as authoritative. A conformant `peer-issued` resolution therefore has no host-trusted-pointer path to fall back to — the mechanism is fixed by the kind, in the direction that makes it safe. **A non-conformant resolver that trusts a host-served `by-name` pointer does put the name in a URL, and is excluded here for the same reason it is excluded there.**
+
+**What this does not claim is zero disclosure, and the difference is worth stating precisely.** The walk descends by the name's own hash, so an origin observes which interior nodes were fetched — a **hash-prefix oracle** over the queried name, shared by every name in that bucket. On a hit it additionally observes a fetch of the binding blob, whose hash identifies a name the registry has **published**, and therefore already public. Neither discloses the queried string, and neither reaches a name the registry does not carry. That is categorically weaker than handing a private name to a third-party resolver, which is the harm this rule exists to prevent.
+
+A name-transmitting backend stays fully reachable through an explicit scoped form (`alice@example.org`), which is the user stating which authority they are willing to tell. An operator MAY override this on their own peer; a distribution MUST NOT ship it as the default.
 3. **Filtered resolver-chain backends in priority order** — try each, returning the first validated result.
 4. If all backends miss / fail validation: return `chain_exhausted` (fail-closed; no silent fallback).
 
@@ -543,7 +557,7 @@ The `#` column numbers the rows for reference; it is **not** an evaluation order
 | 3 | `*.eth` | `["consensus-anchored"]` | scheme-typed by suffix |
 | 4 | `*@*.*` | `["dns-txt", "well-known-url"]` | domain-scoped — **dotted** authority |
 | 5 | `*@*` | `["peer-issued"]` | registry-scoped — **undotted** handle |
-| 6 | `*` | `["local-name", "pinned"]` | catch-all — **local only (MUST)** |
+| 6 | `*` | `["local-name", "pinned", "peer-issued"]` | catch-all — **no name-transmitting backend (MUST)** |
 
 **Rules 4 and 5 overlap, and `priority` resolves it — not the row order.** A POSIX glob cannot
 express "undotted", so `*@*` necessarily also matches a dotted authority: `alice@example.org` is
@@ -1097,6 +1111,31 @@ Two separable proof layers:
 It **MUST NOT substitute an implementation-chosen default.** That is the same move §6a.9.2 already rejects one bullet up, where `get-issuer-policy` MUST NOT synthesize a default `open`: it converts an operator's omission into a silently-invented policy. On a security-relevant field it is worse — two registries would answer identically-stored policies with different binding lifetimes, a §5.10 cross-peer determinism split the operator never sees. A protocol-wide TTL floor is rejected for that reason plus one more: there is no defensible number, and choosing one makes every unconfigured registry look configured.
 
 *(Structure mirrors `REG-ISSUER-DOMAINCTRL-STORED-1` beside `REG-REGISTER-DOMAINCTRL-1` — the write-time refusal cannot be the only thing standing between a bad stored policy and a bad outcome.)*
+
+**`renew-request` resolves its `ttl` by a three-step cascade and never refuses for a missing one `[MUST, v1.9]`.** `renew-request` is a **second producer of peer-issued bindings**, and the null-`ttl` rules above swept only `register-request`. A renew omitting `ttl` against a policy with no `default_ttl` minted a null-`ttl` successor — a binding §6a.3 forbids and §6a.4 will not honor. The resolution order is:
+
+| Step | Source | Note |
+|---|---|---|
+| 1 | the request's own `ttl` | as for `register-request` |
+| 2 | the issuer policy's `default_ttl` | current operator intent outranks history — an operator who lowers `default_ttl` sees renewals pick it up |
+| 3 | **the superseded binding's `ttl`** | non-null by §6a.3 on every conformant mint path |
+| — | **all three yielded nothing** | **refuse `403 policy_rejected`, publish nothing** — see the fail-closed clause below |
+
+**The cascade fails closed when the predecessor itself is invalid `[MUST, v1.10]`.** Step 3 is non-null *on every conformant mint path*, which is not the same as non-null. A predecessor carrying `ttl: null` can be **already there** — seeded out-of-band, written directly to the tree, or predating these rules — the identical "stored state is already bad" case that the `set-issuer-policy` refusal above does not answer and that D12's backstop exists for. **A renew whose three steps all yield null MUST refuse with `403 policy_rejected` and MUST publish nothing.** It MUST NOT mint the successor with a null `ttl`, and it MUST NOT substitute a default.
+
+> **This clause corrects v1.9, which asserted the cascade was total *because* §6a.3 guarantees step 3.** That inference reads an invariant as a fact about stored bytes. It is the same mistake §6a.9.2 already documents one paragraph up — *"the write-time refusal cannot be the only thing standing between a bad stored policy and a bad outcome"* — and the cascade was written without carrying that lesson across. **An unreachable branch that is asserted rather than enforced is how the shape it forbids gets minted**: an implementation that guards the dereference to avoid a panic, and falls through, produces exactly the null-`ttl` binding the whole rule set exists to prevent. The refusal above is unreachable on any conformant path and is required precisely for that reason.
+
+**This is not the implementation-chosen default the paragraph above forbids, and the distinction is the whole ruling.** A synthesized default is a number the implementation invents, so two registries answer identically-stored policies differently. The superseded binding's `ttl` is **the registry's own prior signed act on this exact name** — one value, already published, byte-identical at every conformant peer. It is recovered, not chosen, so it creates no §5.10 determinism split.
+
+**Refusing instead is the wrong side, by this subsection's own reasoning.** §6a.9.2 puts the register-time gate at `set-issuer-policy` *"because this is where the missing input lives,"* and refuses to bill the requester for the registry's misconfiguration. At renew **the input is not missing** — the registry holds a valid `ttl` it issued itself — so the argument that forces a refusal at register does not reach here. Refusing would revoke a name by inaction, for a policy defect the registrant cannot see or fix, on the one operation whose purpose is to keep the name alive.
+
+**Vector `REG-RENEW-TTL-NULLPRED-1` `[v1.10]`** — write a peer-issued binding with `ttl: null` **directly to the tree** (the same two-stage shape as `REG-ISSUER-DOMAINCTRL-STORED-1`), then renew it with no `ttl` against a policy with no `default_ttl`: **`403 policy_rejected`, nothing published.** The control is `REG-RENEW-TTL-CASCADE-1` row (b), which must still return `200`. Without this row a peer that drops the final refusal passes every other renew vector.
+
+**What the cascade does not do:** it does not extend a binding beyond what the registry already granted (step 3 re-grants the same duration to the same layer-1-authenticated `target_peer_id`), it does not weaken §6a.3 (the resolved `ttl` is non-null on every path), and it does not touch revocation (a revoked binding is not renewable regardless of `ttl`).
+
+> **Open and deliberately not ruled here — there is no ceiling on `ttl` anywhere on this surface.** Step 1 accepts the requester's own number, and `issuer-policy` carries `default_ttl` with **no `max_ttl`**. §6a.9.2 states the concern in as many words — *"handing TTL selection to the party §6a.1a treats as untrusted"* — and then the schema hands it to them unbounded. Since `ttl` is the **only** bound on a withheld revocation (§6a.3), an unbounded requester-chosen `ttl` is the same defect §6a.3 exists to prevent, reached through the front door. This is a separable design question with more than one defensible answer — a policy `max_ttl` that clamps, one that refuses `400`, or an explicit decision that layer-1 proof is sufficient — and it bears on `register-request` identically, so it is **not a renew question and is not decided here.** Until it is, a registry that wants a bound sets one operationally; no conformant peer may invent one (the implementation-chosen-default ban above applies unchanged).
+
+**Conformance:** **`REG-RENEW-TTL-CASCADE-1`** — three rows against a curated registry whose stored policy has no `default_ttl`: (a) renew **with** explicit `ttl` → accepted, successor carries it; (b) renew **omitting** `ttl` → accepted, successor carries **the superseded binding's** `ttl`, and the successor resolves under §6a.4; (c) the same renew against a policy that **does** carry `default_ttl` → successor carries the **policy's** value, not the predecessor's. Row (b) is the one that fails against both a null-minting peer and a refusing peer; row (c) is the one that fails against a peer that implemented inherit-first.
 
 **Replay defense (normative discriminator).** A signed request carries `nonce` + `issued_at` (the registry tracks seen `nonce`s per requester within an `issued_at` window; a replayed request is rejected) **iff replay has a non-idempotent state effect.** This holds for `register-request` (replay can roll a name back to a superseded binding) and `renew-request` (replay can extend a binding's life past intended lapse). It does **not** hold for `revoke-request`, which is monotonic on a content-addressed target (replay cannot un-revoke and cannot reach a later re-issued binding) — so revoke omits `nonce` / `issued_at`. The discriminator, not the op name, decides: future ops are replay-defended exactly when their replay mutates state.
 

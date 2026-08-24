@@ -1,6 +1,6 @@
 # System Revision Extension
 
-**Version**: 3.11
+**Version**: 3.12
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
@@ -324,18 +324,32 @@ paths, and it is not re-decided here.
    arbitrary depth** (`*.cache`) — a narrow, revision-local need arising from `exclude` being an
    ignore-list over a versioned prefix. An extension MAY define a matcher for its own domain-specific
    need; this is that case.
-3. **That matcher is scoped to `exclude` and `exclude_types` in this document and nowhere else.** It
-   confers no reading on `*` anywhere in the protocol, and a `*` appearing outside these two fields —
-   including elsewhere in this spec — is §5.4's `*`.
+3. **That matcher is scoped to three fields in this document and nowhere else:** `exclude`,
+   `exclude_types`, and §2.3's **merge-config `pattern`** (§5.1 step 2). It confers no reading on `*`
+   anywhere in the protocol, and a `*` appearing outside these three fields — including elsewhere in
+   this spec — is §5.4's `*`.
+
+> **Why `pattern` is in the list, corrected `[v3.12]`.** This clause previously named two fields and
+> said *"nowhere else."* §5.1's own resolution pseudocode has always called `glob_match(config.data.
+> pattern, path)`, so the document contradicted itself the moment the clause was written — and the
+> contradiction is not cosmetic, because the two candidate matchers disagree on exactly the case §5.1
+> exists to serve. §5.1 motivates per-path config with *"all `.lock` files use source-wins"*: a
+> **suffix** match, which is form 3 — the one form §5.4 cannot express. Reading `pattern` as §5.4's
+> `matches_pattern` would therefore have made this document's own worked example unexpressible.
+> **The scoping clause was derived from a census of `*`-bearing patterns, and a pattern census cannot
+> see a call site.** That is the whole mechanism of the error; it is recorded because the same method
+> will be used again.
 
 **`glob_match` semantics (normative, and hash-determining — the pattern grammar is CLOSED).** The matcher
-used by `exclude`, `exclude_types` and auto-version dispatch has **exactly four forms and no others.** It is
+used by `exclude`, `exclude_types`, §2.3's merge-config `pattern` and auto-version dispatch has **exactly
+four forms and no others.** It is
 pinned here because it decides trie membership, membership decides the version `root`, and `root` is the
 version entry's identity — two peers reading a pattern differently would produce **different version hashes
 for identical content, with nothing failing anywhere.** That is the reason to pin it, not a reason to defer.
 
-`subject` is the **prefix-relative path** (§6.1) for `exclude`, and the **entity type name** for
-`exclude_types`. Forms are tested in this order:
+`subject` is the **prefix-relative path** (§6.1) for `exclude`, the **entity type name** for
+`exclude_types`, and the **trie-relative path** (§5.1) for merge-config `pattern`. Forms are tested in this
+order:
 
 ```
 glob_match(pattern, subject):
@@ -368,10 +382,11 @@ glob_match(pattern, subject):
 already reaches any depth — so §6.1's Reentrancy exclusion is satisfied by `system/revision/*`, and no
 second wildcard token is needed for it or for anything else in this document. Form 3 is the **only**
 addition to §5.4's vocabulary, it exists because an ignore-list over a versioned prefix genuinely wants
-match-by-extension, and it is scoped to this document's two exclude fields.
+match-by-extension, and it is scoped to this document's three matcher fields.
 
-**Any pattern outside the four forms is INVALID and MUST be rejected at config write** (§4.4.17 V6) — this
-is what makes the matcher deterministic rather than merely specified. A valid pattern contains **at most one
+**Any pattern outside the four forms is INVALID and MUST be rejected at config write** — at **§4.4.17 V6**
+for `exclude` / `exclude_types`, and at **§4.4.18 V7** for merge-config `pattern` `[v3.12]`. This is what
+makes the matcher deterministic rather than merely specified. A valid pattern contains **at most one
 `*`**, and that `*` is either the whole pattern, the final character preceded by `/`, or the first
 character. **`**`, `a/**/b`, `a*b` and `*a*` are all rejected `400 config/invalid-exclude-pattern`.**
 Implementations MUST NOT fall back to a standard-library glob for any form, and MUST NOT accept a pattern
@@ -2528,7 +2543,20 @@ handle_merge_config(ctx, params):
                  reason = "strategy \"handler\" is a sentinel; the handler path "
                           + "belongs in the companion `handler` field (see §2.3)")
 
-  ; Other field-shape validation (pattern shape, etc.) per §2.3.
+  ; V7 [MUST, v3.12] — `pattern` is one of §2.4's four forms.
+  ; Same grammar, same reason, and the same write-time enforcement as
+  ; §4.4.17 V6: `pattern` selects the merge strategy, the strategy decides
+  ; the merged bytes, and the merged bytes are the version `root`. A pattern
+  ; the peer cannot evaluate under the four rules MUST NOT reach the tree —
+  ; read-time defensive handling can only collapse it silently.
+  if params.data.scope == "path"
+     and config.data.pattern is not one of §2.4's four forms:
+    return error(400, "config/invalid-merge-pattern",
+                 reason = "merge-config `pattern` carries at most one `*`, "
+                          + "positioned as the whole pattern, the final character "
+                          + "after `/`, or the first character (see §2.4)")
+
+  ; Other field-shape validation per §2.3.
 
   ; Idempotent: re-writing the same content_hash is a no-op
   config_hash = content_store.put(config)
@@ -2560,6 +2588,23 @@ Prior to v3.3 the spec mandated the strategy-rejection outcome but did not pin t
 > entity — which is also what a handler that legitimately declines produces. The operator would receive a
 > conflict and no diagnosis. This is the same structure as §2.3's `lww` / `keep-both` contract, and the
 > sentinel is the row that was missing from it.
+
+**Merge-matcher vectors (REQUIRED, `[v3.12]`) — this surface is merge-outcome-determining, so it is not
+validated by prose.**
+
+| Vector | Setup | Assert |
+|---|---|---|
+| `MERGE-PATTERN-REJECT-1` | `scope=path`, `pattern: "**"` (and `"a/**/b"`, `"a*b"`, `"*a*"`) | each `400 config/invalid-merge-pattern`; **no binding lands.** **Control (required):** `pattern: "docs/*"` is accepted |
+| `MERGE-PATTERN-SUFFIX-1` | `pattern: "*.lock"` → `source-wins`; conflict at `deep/nested/a.lock` | resolved by `source-wins` — form 3 is a whole-subject byte suffix and reaches any depth. This is §5.1's own worked example and it is **unexpressible** under §5.4 |
+| `MERGE-PATTERN-SUBTREE-1` | `pattern: "docs/*"` → `target-wins`; conflicts at `docs/deep/nested/x` and `docsy/x` | first resolved, second **not matched** — form 2 crosses `/` at depth, and the retained `/` blocks the sibling-prefix false positive |
+| `MERGE-SPEC-ORDER-1` | `pattern: "docs/*"` → `target-wins` **and** `pattern: "*.lock"` → `source-wins`; conflict at `docs/a.lock` | `target-wins` — rank 2 (anchored subtree) outranks rank 1 (floating suffix). **The row that fails on a first-match-wins implementation** |
+| `MERGE-SPEC-ORDER-2` | `pattern: "*"` → `source-wins` **and** `pattern: "a"` → `target-wins`; conflict at `a` | `target-wins` — exact (rank 3) outranks match-all (rank 0) regardless of enumeration order. **The pattern strings are deliberately one character each:** any scorer that ranks by total pattern length rather than by form ties here, and a tie is resolved by store enumeration order |
+| `MERGE-SPEC-TIE-1` | two configs, **same** `pattern: "docs/*"`, different `{name}` (`z-cfg` → `source-wins`, `a-cfg` → `target-wins`), written in both orders | `target-wins` **both times** — lexicographic `{name}` breaks the tie, so the result does not depend on `list_entities` order. **The row that catches a peer that kept rank-only comparison** |
+
+**`MERGE-SPEC-ORDER-1` and `MERGE-SPEC-TIE-1` are the load-bearing pair.** Every implementation surveyed
+resolves the first matching config it enumerates; both rows pass trivially under a single-config setup and
+fail the moment two configs match, which is the configuration an operator reaches as soon as they have both
+a location rule and a file-kind rule.
 
 #### 4.4.19 fetch-diff
 
@@ -2992,6 +3037,37 @@ dispatch_merge_handler(handler_path, base_hash, local_hash, remote_hash):
   return null
 ```
 
+**`pattern_specificity` — the total order, pinned `[v3.12]`.** Step 2's pseudocode has called
+`pattern_specificity` since this section was written and **the corpus defined it nowhere.** That is the
+`EXTENSION-REGISTRY` §6a.9 D10 class — *a normative algorithm may not name a referent the corpus does not
+define* — and it is the more consequential of the two merge-config gaps closed in this revision, because it
+decides **which config wins** when several match, and the winning config decides the merged bytes.
+
+Ranks, most specific first. `literal` is the pattern with its single `*` removed:
+
+| Rank | Form | Rationale |
+|---|---|---|
+| 3 | `<literal>` — **exact** | constrains the whole subject; matches exactly one path |
+| 2 | `<literal>/*` — **subtree prefix** | anchored at the trie root; longer `literal` ranks above shorter |
+| 1 | `*<literal>` — **trailing literal** | unanchored — matches at any depth; longer `literal` ranks above shorter |
+| 0 | `*` — **match-all** | constrains nothing |
+
+**Ties are impossible, and that is the requirement `[MUST]`.** Two configs may legitimately carry the same
+`pattern` under different `{name}`s, so rank plus literal length is not yet a total order. The remaining
+tie is broken by **lexicographic byte order on `pattern`, then on the config's `{name}`** — both are
+peer-independent, so every conformant peer selects the same config. The existing `specificity >
+best_specificity` comparison keeps whichever config `list_entities` happened to yield first, and
+**`list_entities` ordering is unspecified**: two peers with identical configs and identical content could
+resolve the same conflict differently, with nothing failing anywhere. That is the same defect class as an
+unpinned exclude matcher, one section over.
+
+> **Anchored-above-unanchored is the one genuinely chosen rung, and it is recorded as a choice.** Ranks 3
+> and 0 are forced. Rank 2 above rank 1 is not: for `docs/a.lock`, `docs/*` and `*.lock` both match and
+> neither is contained in the other. Prefix wins because it is anchored at a known position while a suffix
+> floats at any depth, so the prefix names a **location the operator has laid out** and the suffix names a
+> **file kind that may appear anywhere** — the narrower claim is the located one. An operator who wants the
+> kind rule to win inside a subtree writes the exact path or a narrower prefix, which outranks both.
+
 **Strategy result shape.** `apply_strategy` returns a structured result `{resolved, hash, additional_bindings}` or null. Most strategies return a single binding (`additional_bindings` absent). The `keep-both` strategy returns additional bindings. The `additional_bindings` field propagates to every site that calls `apply_strategy` — implementations typically have multiple dispatch sites (binding-at-node, delete-vs-modify, flat snapshot merge). All sites MUST handle `additional_bindings` when present.
 
 **Per-type merge config.** Stored at `system/revision/config/merge/type/{type_name}`:
@@ -3383,7 +3459,8 @@ Auto-version's contract is CRDT-style collaborative editing. When `auto_version`
 
 *Efficient diff path.* Implementations SHOULD compute the deletion set via the trie-diff primitive (EXTENSION-TREE.md §5) returning (`added`, `removed`, `changed`) between the parent version's trie root and the current live-tree trie root. The `removed` set is exactly the deletion-marker emission candidate set. Cost is O(changes × depth), not O(total paths in scope).
 
-*Marker-augmentation precedes dedup (v3.3, D3).* Implementations MUST perform the marker-augmentation step (this paragraph and "Efficient diff path" above) BEFORE the dedup-against-prior-head check (the algorithm's `if current_head.data.root == new_trie_root: return current_head without creating a new entry` step). Dedup MUST observe the **post-augmentation** root — otherwise a commit whose only change is a deletion (and therefore whose pre-augmentation diff might appear empty) would be incorrectly suppressed, dropping the explicit deletion-marker entry the new version's trie requires. Go and Rust already perform augment-then-dedup; pinning prevents drift in new impls or refactors.
+*Marker-augmentation precedes dedup (v3.3, D3).* Implementations MUST perform the marker-augmentation step (this paragraph and "Efficient diff path" above) BEFORE the dedup-against-prior-head check (the algorithm's `if current_head.data.root == new_trie_root: return current_head without creating a new entry` step). Dedup MUST observe the **post-augmentation** root — otherwise a commit whose only change is a deletion (and therefore whose pre-augmentation diff might appear empty) would be incorrectly suppressed, dropping the explicit deletion-marker entry the new version's trie requires. The ordering is pinned because it is not recoverable downstream: once dedup has suppressed the entry, no
+later step can tell a deletion-only commit from a no-op.
 
 *Deletion-marker carry-forward.* Because deletion markers are canonical (same hash every time), a path marked deleted in the parent version remains marked deleted in the new version automatically — the trie entry stays the same; the content store dedups any re-put; no new deletion-marker entity is emitted. Storage is bounded by delete *events*, not delete-times-commits.
 

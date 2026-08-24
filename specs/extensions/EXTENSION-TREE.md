@@ -1,6 +1,6 @@
 # System Tree Extension
 
-**Version**: 4.0.2
+**Version**: 4.2
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
@@ -333,7 +333,19 @@ system/peer/published-root := {
 
 **It lives on the root, not on the manifest.** The root is the *signed artifact*, and `prefix` is what makes its contents interpretable. Putting the key convention in a separately-signed entity would mean a consumer that has verified the root's signature still cannot read it without verifying a second chain — and the two could disagree, with no rule for which wins. **Keep the interpretation of a signed artifact inside the signed artifact.**
 
-**Two conformant publishers may legitimately publish different extents.** `prefix` is what distinguishes them: a publisher at `prefix: "system/"` commits to a strictly smaller set than one at `prefix: "/"`. A consumer MUST read the extent from `prefix` and MUST NOT infer it from the publisher's identity or from what it happens to find.
+**Two conformant publishers may legitimately publish different extents.** `prefix` is what distinguishes them: a publisher at `prefix: "system/"` bounds its publication to a strictly smaller region than one at `prefix: "/"`. A consumer MUST read that **bound** from `prefix` and MUST NOT infer it from the publisher's identity or from what it happens to find. **The bound is an upper limit on what the trie may contain, never a promise about what it does contain** — see the clarification below.
+
+**`prefix` bounds the publication's scope; it is NOT a completeness claim `[clarified v4.2]`.** It says *nothing under this trie lies outside `prefix`*. It does **not** say every binding the publisher holds under `prefix` is in the trie, and a consumer MUST NOT read it that way — the negative-scoping MUST below is the operative rule, and it holds regardless of how broad `prefix` is. A publisher MAY declare `/{peer_id}/` and publish a small subset; that is a narrow claim honestly made, not a false one.
+
+> **A completeness MUST landed here in v4.1 and is WITHDRAWN in full `[v4.2]`.** It read *"a publisher MUST publish completely under `prefix`; disjoint areas get separate roots."* It was refuted on four independent grounds, each verified against source before withdrawal.
+>
+> **It was unsatisfiable by construction, and this is the part worth keeping as an invariant.** Publishing binds two entities *under the peer prefix*: the head pointer at `/{peer_id}/system/peer/published-root` and the signature at `/{peer_id}/system/signature/{hex(H)}`. **H is the hash of the entity committing to `root_hash`, so putting either in the trie requires a hash fixed point** — committing to a trie that binds H changes `root_hash`, which changes H. **An anchor cannot sit inside the tree it anchors.** With `prefix: "/{peer_id}/"` — the default in every engine — the rule failed on every publisher's first publish, including the reference implementation cited when it was written.
+>
+> **Its justification was revoked by the paragraph directly below it, in the same commit.** The stated harm was *"a consumer receives a clean negative and is entitled to read it as authoritative."* The negative-scoping MUST forbids exactly that, normatively, to every consumer. **The harm it existed to prevent was already closed, four lines away, by the better mechanism** — so it imposed a restructure on every publisher and delivered no consumer anything. It also **contradicted** that paragraph's explicit *"a publisher MAY serve different subsets to different audiences from the same prefix"*, since a per-audience subset is incomplete under its prefix by definition. And *"disjoint areas"* was never defined: `sites/a/` and `sites/b/` are disjoint in the same sense as `sites/` and `system/registry/`, so any literal reading degenerates to one root per key.
+>
+> **The general form: a completeness property cannot be asserted by the artifact whose own anchor lives inside the region.** Signing what you published cannot prove you published everything you hold — which the paragraph below already said, and which is why nothing replaces this rule.
+
+**A negative answer is scoped to the root that produced it `[MUST]`.** `not_found` against a published root means *"this root does not bind K"* — never *"the publisher does not bind K."* The distinction is not pedantic: a publisher MAY serve different subsets to different audiences from the same prefix, and **no field on this entity can tell a consumer which subset it received.** A consumer MUST NOT present a negative from a published root as authoritative non-existence, and a surface that reports "not bound" MUST scope it to the root it asked. This is a limit of static publication, not a defect to be closed by a mechanism — signing what you published cannot prove you published everything you hold.
 
 ### 3.4 Trie Root Tracking
 
