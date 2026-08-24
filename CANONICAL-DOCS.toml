@@ -93,7 +93,7 @@ group = "Community health"
 
 # ── Product trees ─────────────────────────────────────────────────────────────
 # `[[keep_tree]]` declares a DIRECTORY as product rather than dev history
-# (entity-core-devops `6df7994`, built on this repo's ask). Everything prose under
+# (built in the release tooling on this repo's ask). Everything prose under
 # it survives `canon-filter` without a per-file entry.
 #
 # Why arch needs it and most repos do not: for a code repo, `docs/` really is dev

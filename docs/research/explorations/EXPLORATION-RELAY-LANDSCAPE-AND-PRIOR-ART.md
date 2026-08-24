@@ -5,7 +5,7 @@
 opaque envelopes, that's totally valid relay functionality… you're supposed to do the research/landscape
 analysis audit to determine how smtp/nostr/activitypub/etc do this in modern forms and figure out where our
 relay system fits into that… we need to understand the scope before we start making rulings."*
-**Read at:** arch `c7cddcb` · legacy corpus (read-only, `entity-lab-legacy-meta`) ·
+**Read at:** arch `c7cddcb` · legacy corpus (the internal legacy corpus, read-only) ·
 `EXTENSION-RELAY.md` v1.0 in this tree
 
 ---

@@ -1,7 +1,7 @@
 # docs/research/ + docs/proposals/ — the authoring workspace
 
 Post-split, **this repo is self-authoring**: pre-spec design work happens here, not in the
-frozen `entity-core-architecture` monorepo (archived at the v0.8.0 cut). This mirrors the old
+frozen the pre-split monorepo monorepo (archived at the v0.8.0 cut). This mirrors the old
 `v7.0-core-revision/{explorations,reviews,proposals}/` workspace, lightly re-homed.
 
 ## The lifecycle (how work moves)
@@ -37,5 +37,5 @@ exploration / analysis  →  proposal (DRAFT)  →  review / absorption  →  ra
   (The old repo stamped an internal `cgid-NN-NNN` clock; we date-stamp in-doc instead for now.)
 - The archived pre-split workspace (60 explorations / 189 reviews / 225 proposals, incl. DRAFT
   `PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` and `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY`) lives
-  in `entity-core-architecture/docs/architecture/v7.0-core-revision/` — read-only reference;
+  in the internal legacy corpus — read-only reference;
   bring items forward selectively, don't edit there.

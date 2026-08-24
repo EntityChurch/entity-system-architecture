@@ -25,7 +25,7 @@ written, per L11 (*read the study that produced a design space before ruling ins
 | `proposals/implemented/PROPOSAL-EXTENSION-REGISTRY-{SUBSTRATE,PETNAME}.md` | The landed sources of §§2–6 of the spec |
 
 All under
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/`, which is
+the internal legacy corpus (read-only), which is
 **read-only** — another team's tree. This document carries the substance forward, per the precedent
 `EXPLORATION-THE-NETWORK-FAMILY-CONSOLIDATED-DESIGN-RECORD` set.
 

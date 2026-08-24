@@ -379,7 +379,7 @@ Tracked as future work:
 
 **Status: tool, not normative.** Per the cross-impl alignment cycle (workbench-go feedback §2.E): use this for surfacing demand-driven roadmap candidates; not a SHOULD-level expectation. Useful for first-pass coverage audit by any workbench impl.
 
-Workbench applications cover varying portions of the 14 application-architecture primitives enumerated in `entity-core-papers/09-application-architectures.md`:
+Workbench applications cover varying portions of the 14 application-architecture primitives enumerated in the paper corpus's application-architectures note (internal, not published):
 
 | # | Primitive | Short description |
 |---|---|---|

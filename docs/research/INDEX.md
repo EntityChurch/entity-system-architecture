@@ -126,7 +126,7 @@ retrospective + red-team · **gaps in keystone's analysis (red-teaming the red-t
 ## §8 What is NOT here — and this is the part that has bitten us
 
 **The legacy workspace holds 727 documents** (60 explorations · 279 reviews · 199 proposals) at
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/`.
+the internal legacy corpus (read-only).
 **We carried 51.** It is **read-only** — another team's tree; bring items forward selectively, never
 edit there.
 

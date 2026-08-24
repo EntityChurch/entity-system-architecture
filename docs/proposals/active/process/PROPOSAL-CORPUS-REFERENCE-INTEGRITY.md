@@ -99,7 +99,7 @@ correction itself; this is not a style dictionary.
 ## 4. Class C — the proposal corpus is not in this repo `[the real decision]`
 
 **104 proposal citations in landed specs. 12 resolve here; 76 resolve only in
-`entity-lab-legacy-meta`; 16 only under filename-prefix match. Zero resolve nowhere.**
+the internal legacy corpus; 16 only under filename-prefix match. Zero resolve nowhere.**
 
 For a reader of this repo alone, **88 of 104 are unfollowable** — including every
 `proposals/implemented/…` path a landed spec offers as its rationale. Three options, and this

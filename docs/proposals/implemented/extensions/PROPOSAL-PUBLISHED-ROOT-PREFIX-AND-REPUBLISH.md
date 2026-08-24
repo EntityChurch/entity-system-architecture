@@ -96,7 +96,7 @@ landed normative text three times — `EXTENSION-NETWORK` §6.5.3 (`signed_point
 mention it either.
 
 It is not planned. It exists, it is **`NORMATIVE-LOCKED cgid-10-219`**, and it lives at
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/proposals/` — a
+the internal legacy corpus (read-only) — a
 **pre-split legacy archive**. Its §4 defines exactly the shape all three impls built:
 
 ```
@@ -326,7 +326,7 @@ which is why now is the moment to land it.
   verifying a second chain — and **the two can disagree, with no rule for which wins.** Keep the interpretation
   of a signed artifact inside the signed artifact.
 - **Q4 — ENDORSED, with their scoping correction.** The sweep is not only for *absent* documents but for
-  **present-in-a-stale-repo** ones: `entity-core-architecture` is the pre-split tree and returns
+  **present-in-a-stale-repo** ones: the pre-split monorepo is the pre-split tree and returns
   plausible-looking outdated hits (core-go's own `AGENTS.md` carries a standing warning about it). **A
   resolvability check that passes because the document exists *somewhere on disk* would have reported §2 as
   fine** — the check must resolve within the current corpus, and flag legacy-tree hits as failures.

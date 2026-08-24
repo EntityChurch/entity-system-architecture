@@ -120,7 +120,7 @@ standards-gate cleanup (`1937e37`). The spec arrived whole.
 
 **Its rationale document is not in this repo either.** `EXTENSION-REGISTRY` §8.2 and this spec both
 cite `PROPOSAL-EXTENSION-RELAY.md §11.1a`. That file exists at exactly one path in this checkout —
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/proposals/implemented/PROPOSAL-EXTENSION-RELAY.md`
+`PROPOSAL-EXTENSION-RELAY.md` (the internal legacy corpus, read-only)
 — **a legacy tree, not this corpus.** Every reader who tried to follow the citation to check the
 reasoning hit a dead reference. This is `PROPOSAL-CORPUS-REFERENCE-INTEGRITY`'s thesis exactly (*a
 reference nothing can follow is not a citation*) and the **C12** shape: a landed spec citing a

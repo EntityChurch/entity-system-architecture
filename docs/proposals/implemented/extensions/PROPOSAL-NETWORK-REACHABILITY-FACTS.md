@@ -13,7 +13,7 @@ across a real NAT) **has not run.** Folded ≠ proven — see §7.
 candidates into the §10 dispatch loop. No V7/wire renumber; no new required dispatch behavior.
 **Provenance:** brought forward — *reconciled, not verbatim* — from the archived DRAFT
 `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` §2/§3.1–§3.3/§5/§8/§9 (read-only, in
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/proposals/`), landed under
+the internal legacy corpus (read-only)), landed under
 the architecture of `EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md` (Part F step 1 + Part H unit #1:
 "the reachability-facts wedge — landable now, independently useful").
 **Scope:** **additive; the landable-now wedge.** The *facts* a peer needs to know how it is reachable — how it
@@ -343,7 +343,7 @@ Unit #2 carries the two open calls (G1/G2), so it is authored *after* those are 
 ## 10. References
 
 - **Brought forward from (read-only):**
-  `entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/proposals/PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md`
+  `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` (the internal legacy corpus, read-only)
   §2 / §3.1–§3.3 / §5 / §8 / §9 (the "🎯 close-out #1: land the reachability facts first").
 - **Reconciled under:** `docs/research/explorations/EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md`
   Part F step 1, Part H unit #1.

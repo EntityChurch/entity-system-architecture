@@ -62,7 +62,7 @@ code, last commit **2026-07-10** — six weeks stale as of today.
 
 | Date | Event | How observed |
 |---|---|---|
-| **2025-12-22** | `entity-core-architecture` first commit — our "entity core" naming in use | `git log --reverse` |
+| **2025-12-22** | the pre-split monorepo first commit — our "entity core" naming in use | `git log --reverse` |
 | 2026-01-10 → 06-05 | `entity-core-{rs,py,go,rust}`, `-papers`, `-keystone` first commits | `git log --reverse` |
 | 2026-04-17 | **`github.com/peecos`** created — PIOS, *Personal* Information Operating System | `/orgs/peecos` |
 | 2026-06-10 | `entitycoreprotocol.org` registered | RDAP |

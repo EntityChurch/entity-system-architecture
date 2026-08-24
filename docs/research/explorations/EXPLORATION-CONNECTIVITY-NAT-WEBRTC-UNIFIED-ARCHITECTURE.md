@@ -16,8 +16,8 @@ ordinary transport**.
 
 **Provenance (read-only; three exhaustive surveys + two archived DRAFTs).** Current spec: `EXTENSION-NETWORK.md`,
 `EXTENSION-RELAY.md`, `EXTENSION-INBOX/CONTINUATION/SUBSCRIPTION.md`, `EXTENSION-DISCOVERY.md`,
-`guides/GUIDE-NETWORKING-MODEL.md`. Archived DRAFTs (`entity-lab-legacy-meta/entity-core-architecture/docs/
-architecture/v7.0-core-revision/`, read-only): `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` (31 KB, the
+`guides/GUIDE-NETWORKING-MODEL.md`. Archived DRAFTs (the internal legacy corpus,
+read-only): `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` (31 KB, the
 mature design-space map) + `PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md` (the transport-profile sketch) + the Iroh /
 browser-case-study explorations. Every claim is pinned `(§/line, file)`; line numbers are current-state.
 
@@ -226,7 +226,7 @@ conformance run exercises an actual punch between two conformant peers.
   1426–1434), `EXTENSION-RELAY.md` §3.2/§3.4/§6.2.1/§6.2.2/§11.1 (L196–203, 441, 460–467, 575–577),
   `EXTENSION-INBOX/CONTINUATION/SUBSCRIPTION.md` (transport-independent reply correlation), `EXTENSION-DISCOVERY.md`
   L184/325, `guides/GUIDE-NETWORKING-MODEL.md` L117–124/137/154.
-- Archived DRAFTs (read-only, `entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/`):
+- Archived DRAFTs (read-only, the internal legacy corpus (read-only)):
   `proposals/PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` (§1/§3.1–3.4/§4.1–4.3/§5/§6/§9),
   `proposals/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md` (profile §3, signaling gap G1/G4),
   `explorations/EXPLORATION-EXTENSION-TRANSPORT-IROH-BRIDGE-…`, `…-WEBRTC-BROWSER-ENTITY-TRANSFER-CASE-STUDY-…`.

@@ -9,28 +9,17 @@ spec's own header is authoritative for that document — so the repo-level numbe
 protocol it layers on, not py/rust/go's 0.9.0. Arch has never carried a release number before; the
 `v0.8.0` tag on this repo was a fleet-wide Genesis tag, not an arch release line._
 
-_**OPEN — the proposal and exploration corpora, and it is a mechanism problem, not a content one.**
-Operator ruled that **proposals publish**: 82 files, cited **41 times** by published specs and
-guides, and the repo's own rule (*spec text is not our log — rationale lives in the proposal*) means
-that dropping them leaves normative text whose derivation exists **nowhere** a reader can follow.
-Explorations (35) and the two doctrine documents were ruled in with them; `ABSORPTION-*` reviews
-(22, cited **zero** times) and the 251 dated status snapshots stay internal._
+_**The proposal and exploration corpora publish.** 82 proposals, 35 explorations and the research
+index ship at 0.8.2. The mechanism is `[[keep_tree]]` in `CANONICAL-DOCS.toml` — a repo can declare
+a **directory** as product rather than dev history — built by devops on arch's ask after the
+per-file route (117 hand-written entries) was rejected as not being a mechanism. `ABSORPTION-*`
+reviews and the 251 dated status snapshots stay internal. **Filter-verified: 492 tracked → 217
+published / 277 dropped, all `.md`, zero code or data.**_
 
-_**What blocks it: `proposals/`, `research/` and `explorations/` are all themselves recognized
-doc-roots in the publication filter** (`canon.go:63`), so moving the corpus to a top-level
-`proposals/` does **not** protect it — the natural name is the one name that cannot work. The
-keep-list takes exact paths with no globs, so the declared route costs 117 hand-written entries,
-which the operator rejected as not being a mechanism. **The protected route is a top-level directory
-whose name is not on that list**, and it is defensible on the filter's own stated principle —
-*"the filter read 'under a doc root' as 'is documentation.' **Location is not function**."* If
-proposals are product, they do not belong on the dev-doc surface. **Not executed: it is a
-224-reference rewrite plus arch-tools config, and the operator is still triaging which documents
-belong in the published set.** Sequence the move after that triage, not before._
-
-_**Two lines to decide if explorations publish**, both quotations and therefore not silently
-edited: `EXPLORATION-BRIDGE-HOST-AND-ANY-NATIVE-COMPUTE.md:45` and
-`EXPLORATION-NAMING-LANDSCAPE-AND-THE-DNS-MAPPING.md:314` (a §4.9 section heading). They are the
-record of how a question was actually posed; sanitising them is a call to make deliberately._
+_**Why they publish, and it is structural rather than a preference:** this repo's central authoring
+rule forbids rationale in spec text and sends it to the proposal. Shipping the specs without the
+proposals would mean stripping derivation out of normative text and then not shipping where it
+went — MUSTs with no reachable reason._
 
 _**The published surface needed two different fixes and I graded them backwards the first time.**
 `CANONICAL-DOCS.toml` is a **keep-list**, but it governs only `docs/` and loose root documents —
@@ -40,7 +29,7 @@ files, measured — while the five undeclared **root** documents were the ones a
 I had both in front of me in one sweep and called the harmless set the emergency. The keep-list
 had genuinely gained no document since **2026-06-30**, and the CHANGELOG had been contradicting it
 in print (26 extensions claimed, 25 declared; applications 4 and 3) — so all four are declared now
-and disk reconciles **76 = 76**. Surfaced by `entity-core-papers`' render report, severity
+and disk reconciles **76 = 76**. Surfaced by the paper team's render report, severity
 corrected by meta. See `COHORT-OPEN-ITEMS.md` §0c and `ROUTING-2026-08-24-a`._
 
 _**Also cleared: `egui` is gone from the specs and guides** — 48 lines, 15 files. It named a real,
@@ -49,7 +38,7 @@ false claim about what the system depends on. Now `entity-browser-rust`; the fou
 genuinely means the library are untouched. And two published specs stopped citing repositories that
 do not publish._
 
-_**Their one ask was already built.** `entity-core-papers` reported that `tools/spec/` did not
+_**Their one ask was already built.** The paper team reported that `tools/spec/` did not
 survive the repo split and their topology pin could not be regenerated. It is
 `entity-system-arch-tools/spec-tool/`, live and extended — **this team owns three repos, and the
 tooling is the third.** `spec topology` is the command._

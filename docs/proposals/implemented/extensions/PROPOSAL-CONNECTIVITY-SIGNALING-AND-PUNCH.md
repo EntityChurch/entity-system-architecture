@@ -565,7 +565,7 @@ handshake (RFC 8445 §7 + RFC 7675) and symmetric-NAT port prediction. Mine the 
 ## 11. References
 
 - **Brought forward from (read-only):**
-  `entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/proposals/PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md`
+  `PROPOSAL-NAT-TRAVERSAL-AND-WAN-REACHABILITY.md` (the internal legacy corpus, read-only)
   §4/§5/§6/§7 (coordination, separable services, fallback, dispatch); `…/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md`
   (signaling gap — unit #3).
 - **Reconciled under:** `EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md` Parts B/D, Part F steps 2–3,

@@ -12,7 +12,7 @@ on RELAY's mode set written without opening the study that produced it, a bounda
 after a second one was started, and a deferral list four-for-four void on landed text.
 
 **Legacy root**, for every path below (read-only; do not edit, do not back-sync):
-`entity-lab-legacy-meta/entity-core-architecture/docs/architecture/v7.0-core-revision/`
+the internal legacy corpus (read-only)
 
 **Companion:** `EXPLORATION-THE-THREE-CONSTRAINT-REGIMES.md` — the regime column below is its.
 **Canonical map:** `guides/GUIDE-NETWORKING-MODEL.md` owns the six-concern boundary map and the

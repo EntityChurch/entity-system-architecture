@@ -18,7 +18,7 @@ composition subsection; no wire change, no new entity type.
 **Answers:** `entity-browser-rust` Q8 (`ROUTING-2026-08-16-g` §Q8, restated as their **#1 blocker** in
 `ROUTING-2026-08-17-comprehensive` §4). Also disposes their Q3 residual and Q5.
 **Read at:** browser-rust `ca3c760` · arch `6aab719` · legacy `PLAN-REGISTRY-AND-DISCOVERY-LANDSCAPE`
-(read-only, `entity-lab-legacy-meta`)
+(the internal legacy corpus, read-only)
 
 ---
 
@@ -68,7 +68,7 @@ admission appear nowhere in it** — and §1.2's design principle is the mirror 
 criteria"*), and §9 deliberately **did not pin discovery mechanisms** — deferring them to "a separate
 landscape," which is what `EXTENSION-DISCOVERY` became. The study predates SIGNALING and says nothing
 about carriers, so **the landed extensions are the authority on this seam, and they are consistent with
-it.** *(Read in `entity-lab-legacy-meta`, read-only.)*
+it.** *(Read in the internal legacy corpus, read-only.)*
 
 ### §1.1 Ruling
 

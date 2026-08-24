@@ -465,4 +465,4 @@ Active stabilization is complete on the Go side. Remaining items are cleanups (o
 - V7 spec: `ENTITY-CORE-PROTOCOL.md` §6.10, §2870, §2688
 - `SYSTEM-COMPOSITION.md` §1.3, §2.7, §3.2
 - `EXTENSION-SUBSCRIPTION.md` §5.5–§5.6
-- Prior cross-cutting analysis: `entity-core-papers/papers/shared/notes/core/concurrency-and-isolation-update.md`, `.../entity-computation-analysis.md`
+- Prior cross-cutting analysis: the concurrency-and-isolation and entity-computation notes in the paper corpus (internal, not published)
