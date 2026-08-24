@@ -293,7 +293,7 @@ An application author or end user reasoning natively in the entity-system frame.
 Surfaces: GUI panels, IDE / editor integrations, application UX, Godot-style visualizations.
 
 **Two distinct rendering paradigms with different policy-spectrum fits (v1.2.1):**
-- **DOM-based-WASM apps** (e.g., `egui-entity-core-rust` — repo name is historical, the app is DOM-WASM per its CLAUDE.md banner since the eframe removal): subscription-driven dirty-flag pipeline; DOM rebuild loop saturates at high event rates. Natural fit: §3.3 on-demand default, §3.2 sampling for high-rate streams, §3.1 always-on NEVER as UX-facing option (debug-build opt-in only). Window-spawn = tap install, window-close = teardown maps cleanly.
+- **DOM-based-WASM apps** (e.g., `entity-browser-rust` — repo name is historical, the app is DOM-WASM per its CLAUDE.md banner since the eframe removal): subscription-driven dirty-flag pipeline; DOM rebuild loop saturates at high event rates. Natural fit: §3.3 on-demand default, §3.2 sampling for high-rate streams, §3.1 always-on NEVER as UX-facing option (debug-build opt-in only). Window-spawn = tap install, window-close = teardown maps cleanly.
 - **Immediate-mode apps** (e.g., Godot when they engage): per-frame query is the rendering pattern anyway, so §3.1 always-on at low cost is viable. Live animation of entity flows fits naturally.
 
 Both valid; different impls pick the regime that matches their rendering model.
@@ -302,7 +302,7 @@ This audience is debugging *less* than they are *exploring* or *operating*. The 
 
 Implementers building application UX should expect both modes to coexist: an app that visualizes its own entity flows for end users *and* surfaces lower-level inspect primitives for developers tracing what went wrong.
 
-**egui-entity-core-rust + godot-entity-core-rust invited to review this section + §10 forward direction; v1.2 will absorb their L3-application perspective.**
+**entity-browser-rust and the Godot binding invited to review this section + §10 forward direction; v1.2 will absorb their L3-application perspective.**
 
 ---
 

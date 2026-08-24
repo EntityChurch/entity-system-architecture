@@ -200,7 +200,8 @@ specs/                                   ← the published normative surface
 └── domains/                             ← domain specs
 guides/                                  ← user-facing GUIDE-*.md
 ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md ← the living roadmaps
-docs/                                    ← workspace + archive; NOT published
+docs/                                    ← workspace + archive; NOT published, one exception
+├── STATUS.md                                ← the rolling log; the ONE published doc here
 ├── research/                                ← the design record
 │   ├── explorations/                            ← research and analysis
 │   ├── reviews/                                 ← cross-impl absorption
@@ -229,27 +230,29 @@ normalized to the canonical `DOC.md` form (`SPECIFICATION-FORMAT.md` §11.2) on 
 
 ### 7.2 Paper repository (sibling)
 
-At `entity-core-papers/`. Contains:
-- `papers/00-the-entity-system/` — the primitives paper + notes
-- `papers/shared/notes/core/` — framework synthesis, pair-relationships exploration, core-protocol-boundary
-- `papers/shared/notes/architecture-implementation/` — SDK exploration
-- `papers/shared/notes/summary/` — cross-team session synthesis documents
-
-Key documents:
-- `papers/00-the-entity-system/content/paper.md` — primitives + irreducibility argument
-- `papers/shared/notes/core/framework-synthesis.md` — master analytical synthesis
-- `papers/shared/notes/core/core-protocol-boundary.md` — core-boundary analysis
-- `papers/shared/notes/architecture-implementation/exploration-sdk-and-ergonomics.md` — SDK two-layer model
-- The full cross-team convergence synthesis (paper-team summary note)
+The paper corpus — the primitives paper, the framework synthesis, the core-boundary
+analysis and the SDK ergonomics exploration — lives in a sibling repository that is
+**not part of this publication**. Its documents are analysis of the system's structural
+properties, not specification, and nothing here is sourced from them. They are named
+where an argument depends on one; there is no path a reader of this repo can resolve.
 
 ### 7.3 Implementation repositories
 
-- `entity-core-rust/` — Rust core protocol + extensions (primary/active)
-- `entity-core-go/` — Go core protocol + extensions (primary/validator)
-- Python implementation — location TBD
-- Workbench (Go platform implementation, front-end) — location TBD
-- eGUI web (Rust platform + web front-end) — location TBD
-- Godot (Rust platform + game-engine integration) — location TBD
+The reference implementations and the application tier, each with an independent
+lifecycle ([ADR-0010]):
+
+- `entity-core-protocol` — the upstream core specification (§7.1 above)
+- `entity-core-rust` — Rust core protocol + extensions
+- `entity-core-go` — Go core protocol + extensions; also hosts the `validate-peer`
+  conformance instrument
+- `entity-core-py` — Python core protocol + extensions
+- `entity-core-keystone` — the canonical conformance anchor
+- `entity-core-formalization` — the formal models
+- `entity-browser-rust` — the browser peer (Rust → WASM), the L5 web front-end
+- `entity-workbench-go` — the Go workbench (TUI + GUI) and the Go SDK, `entitysdk`
+- `entity-system-arch-tools` — the `spec` toolkit that gates this corpus
+
+A Godot binding was an earlier third-implementation experiment and is archived.
 
 ---
 

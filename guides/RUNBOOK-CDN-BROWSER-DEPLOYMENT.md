@@ -1,9 +1,9 @@
 # RUNBOOK — CDN Browser Deployment (CORS / CSP / HTTPS / cache)
 
-**Status:** v1 deliverable (promoted from "deferred to guide" per egui-rust review cgid-10-218, absorption §2.1). The browser is the headline consumer of the static-HTTP CDN path; its deployment headers cannot be a forward-reference.
+**Status:** v1 deliverable (promoted from "deferred to guide" per entity-browser-rust review cgid-10-218, absorption §2.1). The browser is the headline consumer of the static-HTTP CDN path; its deployment headers cannot be a forward-reference.
 **Date:** cgid-10-218
-**Author:** entity-core-architecture
-**Owner:** W3 (deployment); arch authors the contract, egui-rust validates in real browsers.
+**Author:** entity-system-architecture
+**Owner:** W3 (deployment); arch authors the contract, entity-browser-rust validates in real browsers.
 **Scope:** what a CDN origin serving an entity peer's tree+content MUST send so a browser/WASM consumer can fetch+verify. Covers both deployment shapes. Native (Go/CLI) consumers can ignore everything here — CORS/CSP/cache are browser-only concerns.
 
 ---
@@ -45,7 +45,7 @@ Access-Control-Allow-Headers: Range                     ; if range requests used
 
 ### §2.2 App-side CSP (if the app ships one)
 
-The entity-WASM app today ships **no** CSP (confirmed by egui-rust against `index.html`), so it is permissive by default. ANY future hardening pass MUST include the CDN origin in `connect-src`:
+The entity-WASM app today ships **no** CSP (confirmed by entity-browser-rust against `index.html`), so it is permissive by default. ANY future hardening pass MUST include the CDN origin in `connect-src`:
 
 ```
 Content-Security-Policy: connect-src 'self' https://cdn.example.com;
@@ -84,13 +84,13 @@ Cache-Control: no-store                                 ; on manifest/current + 
 
 ### §3.3 Consumer-side obligation (the part hash-verify doesn't cover)
 
-Consumers with their own caching layer (service workers especially) **MUST NOT serve mutable CDN endpoints cache-first.** A browser service worker that intercepts same-origin GET cache-first MUST exclude `*/manifest/*` and signed-pointer paths from cache-first (route them network-first or pass-through). This is the consumer's discipline, not the origin's — the origin's `no-store` only works if the consumer's cache honors it. (egui-rust review flag #1: their `sw.js` does its own `caches.match` and ignores response cache directives — so it must explicitly exclude mutable paths.)
+Consumers with their own caching layer (service workers especially) **MUST NOT serve mutable CDN endpoints cache-first.** A browser service worker that intercepts same-origin GET cache-first MUST exclude `*/manifest/*` and signed-pointer paths from cache-first (route them network-first or pass-through). This is the consumer's discipline, not the origin's — the origin's `no-store` only works if the consumer's cache honors it. (entity-browser-rust review flag #1: their `sw.js` does its own `caches.match` and ignores response cache directives — so it must explicitly exclude mutable paths.)
 
 ---
 
 ## §4 Conformance — the browser-success path (closes the "tests the wrong direction" gap)
 
-The existing CORS test vector (BRIDGE-HTTP §8 TV-BH-CORE-7) asserts only `CORS-blocked → network_error` — graceful *failure*. There is no vector proving a browser can *successfully* fetch+verify. This section specifies the missing vectors. **egui-rust authors + runs them** (only browser impl); arch specs the contract here.
+The existing CORS test vector (BRIDGE-HTTP §8 TV-BH-CORE-7) asserts only `CORS-blocked → network_error` — graceful *failure*. There is no vector proving a browser can *successfully* fetch+verify. This section specifies the missing vectors. **entity-browser-rust authors + runs them** (only browser impl); arch specs the contract here.
 
 ### §4.1 TV-CDN-BROWSER-SUCCESS
 
@@ -119,7 +119,7 @@ This catches the "green for Go, silently wrong in browser" class — the service
 
 ### §4.3 Test-method warning (elevate to all impls)
 
-`make e2e-worker` serves same-origin with no CORS and may show **green while masking both** the staleness flag (§3) and the CORS flag (§2). **Real-browser + real-CORS verification is required** — Firefox green ≠ WebKitGTK/Tauri green; same-origin-e2e green ≠ cross-origin-CORS green. Validation per egui-rust's `verify_user_facing_surfaces` + `test_each_webview_runtime` discipline.
+`make e2e-worker` serves same-origin with no CORS and may show **green while masking both** the staleness flag (§3) and the CORS flag (§2). **Real-browser + real-CORS verification is required** — Firefox green ≠ WebKitGTK/Tauri green; same-origin-e2e green ≠ cross-origin-CORS green. Validation per entity-browser-rust's `verify_user_facing_surfaces` + `test_each_webview_runtime` discipline.
 
 ---
 
@@ -151,8 +151,9 @@ This catches the "green for Go, silently wrong in browser" class — the service
 - `core-protocol-domain/specs/extensions/network-peer-extensions/EXTENSION-NETWORK.md` §6.5.5 (consumer modes A1/A2), §13 (browser peer considerations)
 - `reviews/ABSORPTION-PEER-REVIEW-CDN-ROUND6-W2-cgid-10-218.md` §2.1 (the finding this runbook resolves)
 - `reviews/VALIDATION-PLAN-BRIDGE-HTTP-cgid-10-215.md` (the validation plan §4 vectors extend)
-- egui-rust review: `egui-entity-core-rust/docs/architecture/reviews/CDN-ROUND6-AND-W2-BROWSER-REVIEW-cgid-10-218.md` §3 (SW staleness), §4 (CORS)
+- entity-browser-rust review of round 6 / W2 browser deployment, §3 (SW staleness),
+  §4 (CORS) — internal review document, not published.
 
 ---
 
-*v1 browser-deployment runbook. Promoted to a v1 deliverable because the browser is the motivating consumer of the static-HTTP path and its headers cannot be a forward-reference. Covers cross-origin (CORS) + same-origin (cache) shapes; specifies the browser-success + freshness conformance vectors that close the "conformance tests the wrong direction" gap. egui-rust validates in real browsers.*
+*v1 browser-deployment runbook. Promoted to a v1 deliverable because the browser is the motivating consumer of the static-HTTP path and its headers cannot be a forward-reference. Covers cross-origin (CORS) + same-origin (cache) shapes; specifies the browser-success + freshness conformance vectors that close the "conformance tests the wrong direction" gap. entity-browser-rust validates in real browsers.*

@@ -421,7 +421,8 @@ External:
 - Workbench-go four-pass cross-impl UI-conventions reconciliation review.
 - Workbench-go three-impl response with §13 synthesis.
 - Egui-side parallel UI-alignment review.
-- `godot-entity-core-rust/docs/ARCHITECTURE.md` — Godot third-impl architecture.
+- The Godot binding's architecture notes (that binding is archived and its
+  documents are not published).
 
 Internal (this repo):
 

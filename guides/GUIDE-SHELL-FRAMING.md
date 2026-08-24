@@ -534,7 +534,7 @@ For substantial classes of user (server admins, scripted automation, power users
 
 ### 11.1. Recommended adoption path
 
-1. **Rust:** `entity-core-rust` extracts a shared shell crate, consumed by both `egui-entity-core-rust` and `godot-entity-core-rust`. This is the testbed for this guide's pins.
+1. **Rust:** `entity-core-rust` extracts a shared shell crate, consumed by both `entity-browser-rust` and the Godot binding. This is the testbed for this guide's pins.
 2. **Go:** `entity-workbench-go` reviews its `shellcmd/` against the extracted crate's surface; differences beyond Go/Rust idiom surface as feedback into this guide.
 3. **Python:** `entity-core-py` implements the shell against the same pins. Per §3.9, this brings Python to feature parity at the verb-vocabulary level without requiring GUI parity.
 4. **This guide is amended** via proposal (per `[Spec changes via proposal + layering]`) if a pin proves wrong under build.

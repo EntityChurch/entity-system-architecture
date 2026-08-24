@@ -507,6 +507,6 @@ fn explicitly_enumerates(resource_pattern, target):
 - **GUIDE-CAPABILITIES §10** (above) — capability surface refusal contract uses this definition.
 - **GUIDE-INSPECTABILITY v1.2 §3.4.1** — `system/runtime/*`, `system/continuation/*` subscription refusal uses this definition.
 - **EXTENSION-CONTINUATION §6.5, EXTENSION-SUBSCRIPTION §7.4, EXTENSION-INBOX §11, EXTENSION-REVISION §12** — each invokes "operator-class authority" for prefix-refusal exceptions; this definition is what those subsections check against.
-- **Impl-side enforcement** — both extension-level (subscription engine; e.g., entity-core-rust `extensions/subscription/src/lib.rs:196`) and SDK-tier (e.g., `entity-sdk` subscription wrappers per egui-entity-core-rust §4.4) check this. Defense-in-depth: SDK refuses at app-tier; extension refuses at substrate-tier. Either alone is sufficient; both is the audit-recommended posture.
+- **Impl-side enforcement** — both extension-level (subscription engine; e.g., entity-core-rust `extensions/subscription/src/lib.rs:196`) and SDK-tier (e.g., `entity-sdk` subscription wrappers per entity-browser-rust §4.4) check this. Defense-in-depth: SDK refuses at app-tier; extension refuses at substrate-tier. Either alone is sufficient; both is the audit-recommended posture.
 
 Per the privacy and cross-peer observability audit (§2.1) and the synthesis of core-rust and egui feedback (§4.1).

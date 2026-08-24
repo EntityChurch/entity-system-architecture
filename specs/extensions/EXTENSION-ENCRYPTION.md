@@ -1159,7 +1159,7 @@ Go's v2.3 prototype derived a 6-key reference AAD hex (below). **v2.4 supersedes
 ; v2.3 6-key shape — SUPERSEDED by the 8-key set above; retained only to show the ECF encoding style:
 a6 646d6f6465 6473656c66  656e6f6e6365 5818 <24 bytes 0x42>  666b64665f6964 01  6761656164 5f6964 01  6c656e635f6b65795f74797065 00  6d726563697069656e745f6b6579 40
 ```
-Arch + Go to jointly author + byte-pin the 8-key hex in the v2.4 → v1.0 ratification cycle (same `v767/SEEDS.md` pattern). Once expected_AAD_hex + expected_ciphertext_hex are byte-equal across Go + Rust + Python, the KAT locks.
+Arch + Go to jointly author + byte-pin the 8-key hex in the v2.4 → v1.0 ratification cycle (same `crypto-agility/SEEDS.md` pattern). Once expected_AAD_hex + expected_ciphertext_hex are byte-equal across Go + Rust + Python, the KAT locks.
 
 ### §16.3 ENC-PEER-KAT-1 — pinned inputs
 

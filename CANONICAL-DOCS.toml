@@ -18,8 +18,24 @@ title = "Entity System Architecture"
 blurb = "What entity-system-architecture is — the optional extension / SDK / application layer on top of the core protocol."
 group = "Overview"
 
+# The rolling canonical log. MOVED `docs/status/STATUS.md` → `docs/STATUS.md` on 2026-08-23
+# and re-declared here, per [ADR-0031] as corrected the day it landed.
+#
+# ** WHAT `docs/status/` PUBLISHES: NOTHING. ** The dated `STATUS-*` / `ROUTING-*` /
+# `HANDOFF-*` / `CHECKPOINT-*` snapshots there are internal working memory — no scrub
+# obligation, no pin hygiene, no audience. Write them for the next session.
+#
+# Why a MOVE and not a re-declaration, which is the durable half: with the rolling log at
+# `docs/STATUS.md` the two kinds separate by PATH instead of by remembering a filename, so
+# `docs/status/` can be dropped wholesale and the canonical log is never in the blast
+# radius. [ADR-0031] as first written banned the directory and took the rolling log with
+# it; that property's absence is what made the mistake available.
+#
+# Against the published tree this reads as a deletion of the old path plus an addition of
+# the new one. `.release-removals` carries the deletion half and says outright that it is a
+# move, so the record is not mistaken for a withdrawal.
 [[doc]]
-path  = "docs/status/STATUS.md"
+path  = "docs/STATUS.md"
 title = "Status"
 blurb = "Current project status — where the project is, recent work, backlog, and what's next."
 group = "Overview"
@@ -481,3 +497,41 @@ path  = "ROADMAP-SDK.md"
 title = "SDK — Domain Roadmap (canonical, living)"
 blurb = "The SDK specs sit at M2 by design: they are conventions, not protocol — their gate is"
 group = "Roadmap"
+
+# ── Agent + methodology overlay ───────────────────────────────────────────────
+# Shared, byte-identical, injected fleet-wide (ADR-0010 / ADR-0028). Declared here
+# 2026-08-23 on the operator's ruling — "the agent standard is canonical, it should
+# be included in all of them." Arch was one of seven repos that had never declared
+# it; keystone, entity-core-protocol and entity-system-arch-tools already did.
+# Both are verified free of commit SHAs, so declaring them adds nothing to the
+# `spec pins` backlog.
+#
+# `AGENTS.md` is declared too — operator ruling 2026-08-23, overriding arch's
+# initial call to leave it out. Arch had reasoned that the charter is working
+# memory (31 commit SHAs, seat-by-seat cohort argument, live rulings) and that
+# ADR-0031 keeps working memory off the published surface. The ruling is that the
+# agent guidance is canonical, full stop — and `entity-system-arch-tools` already
+# declared its own, so arch was the outlier.
+#
+# CONSEQUENCE, stated so it is not a surprise: `AGENTS.md`'s commit SHAs are now
+# ON the published surface and inside `spec pins`' scope. That is the P-3 sweep
+# growing, not a new defect — and it is the honest accounting, since those pins
+# were always going to be read by someone.
+
+[[doc]]
+path  = "AGENTS.md"
+title = "Agent guide (this repo)"
+blurb = "How this repo works — the spec-authoring lifecycle, the discipline charter, and the boundaries."
+group = "Working here"
+
+[[doc]]
+path  = "AGENTS-STANDARD.md"
+title = "Agent standard"
+blurb = "The shared cross-repo standard every repo's AGENTS.md builds on."
+group = "Working here"
+
+[[doc]]
+path  = "METHODOLOGY.md"
+title = "Methodology"
+blurb = "Disciplines, doctrines, the ratchet, and the promotion ladder (ADR-0028)."
+group = "Working here"

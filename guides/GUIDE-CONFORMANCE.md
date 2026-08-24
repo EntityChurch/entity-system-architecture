@@ -230,7 +230,7 @@ A 23-day false-baseline drift (a harness keypair bug whose 20-test cascade was r
 3. **Same-format baseline is a hard gate before any cross-format claim.** A document making a cross-format claim MUST first show the same-format baseline is clean for the *same* setup. Cross-format numbers measured against an unclean baseline are unanalyzable (they mix the cross-format effect with the baseline bug).
 4. **Closeout and memory entries carry the numbers.** Any artifact labelling work "clean/locked" carries the actual `(PASS, FAIL, SKIP)` triple, not just verbal characterizations — so a future session inherits "185/185 same-format, 13 cross-format root failures by class," not "cohort-locked."
 5. **Cross-format hash-equality tests are explicit SKIPs.** Tests that compare two peers' content hashes directly (trie roots, version-determinism, xpeer-determinism) are single-address-space by design (V7 §1.2 / §1.2a). Under a **cross-home-format** pairing they MUST be explicitly SKIPped with the tracked reason "single-address-space test; cross-format pairing is experimental per V7 §1.5" — never silently failed and never silently passed. They run normally under same-format pairings.
-6. **Decode the `.cbor` artifact, not its sha256.** A cohort closeout that asserts "byte-equal" by comparing the **sha256 of an emitted `.cbor`** across impls only proves the impls produced identical bytes; it does not prove the bytes are correct. The byte gate MUST also decode the artifact and assert structural invariants against the `.diag` (the source of truth): every typed-bytes field has the spec-mandated length (e.g. Ed448 `secret_seed` = 57 B per RFC 8032; the corpus's `0xAA×64` fixture pubkey = 64 B), and no normative-output field carries a placeholder string (`"TBD-…"`, `"PENDING"`, etc.). `grep TBD` on the `.diag` is not a substitute — the producer may have failed to substitute placeholders back into the `.cbor` even when the `.diag` is clean. This rule is the structural sibling of (4) above: where (4) requires the closeout *narrative* to carry the numbers, (6) requires the closeout *byte gate* to carry the decode. Reason: F16 — the v767 cohort's `.cbor` sha-locked on a file whose Ed448 seeds were 58 B (off-by-one), whose experimental pubkey was 63 B (off-by-one), and whose 12 Phase-2 `expected_*` fields were still literal `"TBD-COHORT-ROUND-TRIP"` text. Documented in the F16 agility-corpus `.cbor`-regen closeout.
+6. **Decode the `.cbor` artifact, not its sha256.** A cohort closeout that asserts "byte-equal" by comparing the **sha256 of an emitted `.cbor`** across impls only proves the impls produced identical bytes; it does not prove the bytes are correct. The byte gate MUST also decode the artifact and assert structural invariants against the `.diag` (the source of truth): every typed-bytes field has the spec-mandated length (e.g. Ed448 `secret_seed` = 57 B per RFC 8032; the corpus's `0xAA×64` fixture pubkey = 64 B), and no normative-output field carries a placeholder string (`"TBD-…"`, `"PENDING"`, etc.). `grep TBD` on the `.diag` is not a substitute — the producer may have failed to substitute placeholders back into the `.cbor` even when the `.diag` is clean. This rule is the structural sibling of (4) above: where (4) requires the closeout *narrative* to carry the numbers, (6) requires the closeout *byte gate* to carry the decode. Reason: F16 — the crypto-agility corpus's `.cbor` sha-locked on a file whose Ed448 seeds were 58 B (off-by-one), whose experimental pubkey was 63 B (off-by-one), and whose 12 Phase-2 `expected_*` fields were still literal `"TBD-COHORT-ROUND-TRIP"` text. Documented in the F16 agility-corpus `.cbor`-regen closeout.
 7. **A verdict is the check-set actually asserted — never a proxy for it.** No run may carry a prior verdict forward, or declare an oracle "current," on the strength of a value that tracks *which checks ran* rather than *what they assert*. A published number MUST be **dual-anchored**: the oracle commit **and** a `check_set_digest` over the exact assertions in the run (count + content), both required; a match on only one is not a match. This bans the whole family in one rule — a `core_gate_fingerprint` that tracks categories not assertions, a `grep` over source, a harness's default-category `Result:` line, a green Part-A probe standing in for a Part-B certification: each is a proxy, and a proxy is never a verdict. Corollary (the census rule): a peer's status is `UNMEASURED` until the *core gate itself* ran against it — a harness that silently defaulted to another category did **not** measure the gate, and "no result" is `UNMEASURED`/`FAIL`, never inherited PASS. Reason: the 0.8.1 bucket-B census — `cc1970f` and `af8a582` shared a byte-identical `core_gate_fingerprint` while one build contained none of the four bucket-B vectors and the other contained all four; `oracle-bootstrap.sh`'s fingerprint-only short-circuit would have run the stale check-set over all 43 peers and published it as current. The same census found `sql`/`ruby`/`dart`/`pd` mis-classified from source greps and harness-default lines. Fixed at `c04d04c` (dual anchor required; carry-forward-at-same-fingerprint withdrawn). This is the run-discipline sibling of the CDN-corridor meta-rule: not validated until the *asserting* check exercises it.
 
 ---
@@ -254,27 +254,67 @@ When the validate-peer diff reports disagreement on a vector, the response is st
 
 ## §5 Versioning and growth
 
-### §5.1 Corpus versioning
+### §5.1 Corpus identity `[MUST]` `[revised 2026-08-22]`
 
-The corpus carries an integer version `v{N}` in the fixture filename. The `(spec-version, corpus-version)` pair is the conformance citation. Spec v1.5 + corpus v1 is the first pair; subsequent corpus versions are additive only.
+**A corpus is identified by its name, never by a version stamp.** The directory is named for what the corpus tests (`crypto-agility`, `ecf-conformance`); the artifacts are `<subject>-vectors.{diag,cbor}`. A corpus directory or artifact name **MUST NOT** carry a spec-revision stamp (`v767`, `v7.67`) or an artifact version (`-v1`, `_v2`). A corpus artifact's stem MUST name the same subject as its directory.
 
-| Change | Bumps corpus version? |
-|---|---|
-| Adding a new vector to an existing category | Yes (v{N} → v{N+1}; additive) |
-| Adding a new category | Yes (additive normative scope) |
-| Fixing a vector's `description` field | No (informative; can be a corpus-version errata or rolled into the next bump) |
-| Removing a vector | No — vectors do not get removed; they stay in the corpus and continue to be conformance criteria |
-| Changing a vector's `input` or `canonical` | Yes — but this is a spec-changing event (the previous canonical bytes were *the* correct bytes for that input under the prior spec; if they're now wrong, the spec changed) and goes through the normal proposal cycle |
+*Rationale, and why the previous rule is retired rather than enforced: the prior §5.1 made an integer corpus version part of the conformance citation and required a bump on every vector addition. Between the first public release and this revision the ECF corpus went 69 → 71 vectors and the crypto-agility corpus gained three matrix vectors; neither filename moved, in any of the repos carrying them, and no `-v2` was ever created. **A rule broken by every change it governs is not a weak rule, it is the wrong rule** — a corpus is a growing set of canonical vectors, vectors are never removed, so the "version" was only ever an opaque restatement of "something changed." The stamp was also the sole reason a corpus needed two committed copies, and that structure produced four distinct drift defects in one week.*
+
+**The conformance citation is `(spec-version, corpus-name, artifact sha256)`.** The sha256 of the `.cbor` is the exact identifier: it cannot be forgotten, it is already what the corpus gates check, and it is already how vendors pin. `ADR-0012` requires oracle-pinned numbers; this makes the corpus pin the same shape.
+
+**Change history lives in `CHANGELOG.md` beside the artifacts** — dated entries naming vectors added, any vector whose `input` or `canonical` changed together with the spec revision that changed it, and the cross-impl round that re-blessed the result. This holds strictly more information than an integer: `-v1 → -v2` says something changed; a changelog entry says what, when, why, and who confirmed it.
+
+**Vectors are never removed.** A landed vector stays a conformance criterion. A vector that is wrong is corrected in place through §5.1d and recorded in the changelog, never deleted.
+
+**Changing a vector's `input` or `canonical` remains a spec-changing event** and goes through the normal proposal cycle — the previous canonical bytes were *the* correct bytes for that input under the prior spec.
+
+**One corpus, one copy.** A corpus has exactly one authoring location. A vendored copy is **byte-identical in every member**; no de-versioning, date-stripping, or citation-shortening transform is applied on the way in. Vendor-local framing belongs in the vendor's own manifest, never in the artifacts.
+
+*Gated by `spec corpus` (`entity-system-arch-tools`): `corpus-version-stamp`, `corpus-name-mismatch`, `corpus-pair-incomplete`, `corpus-placeholder`, `corpus-fixture-width`, `corpus-pair-disagree`, and `vendor-drift` under `--vendor`.*
+
+### §5.1a Division of labour — architecture sets fields, the encoder settles bytes `[MUST]`
+
+**Architecture edits the `.diag` source: vector `id`s, `description`s, `kind`s, inputs, and which assertion a vector makes. Architecture does NOT hand-derive, hand-edit, or hand-inspect encoded bytes.** No byte-run measuring, no hex-literal eyeballing, no `.cbor` edits, and no byte pin transcribed from a report into a corpus by hand. **A claim about what bytes an artifact contains is made by running a tool and quoting its output, never by reading the file.** The `.cbor` is a build artifact and architecture is not its build owner.
+
+*Rationale: hand-carrying values into a corpus is how matrix rows go stale and how a width correction reaches the artifact but never the source. Both classes were eventually found by hand-inspection, which feels like diligence and is not a process — it does not run, it does not gate, and it does not survive the reviewer's attention span.*
+
+### §5.1b Two gates, and they assert different things `[MUST]`
+
+Both are required. Either alone leaves the class the other catches invisible.
+
+| Gate | Asserts | Catches |
+|---|---|---|
+| artifact-is-expected | decode the `.cbor`, re-derive the crypto, check structural invariants against the source | a corrupted or wrongly-valued artifact |
+| source-produces-artifact | re-encode the `.diag`, compare to the committed `.cbor`, write nothing | **source and artifact having drifted apart** |
+
+**The second gate exists because its absence cost two months.** A width correction was once applied to a `.cbor` and never swept back to its `.diag`. The first gate reported clean throughout — *correctly*, because the artifact **was** what it was expected to be. Nothing asserted that the source still produced it, so a corpus verifying green against itself carried a source that could no longer rebuild it.
+
+**A source-produces-artifact check MUST NOT recommend rebuilding on failure.** When source and artifact disagree, **which side is right is a judgement, not a default.** In the incident above the `.cbor` was the correct side, so a blind rebuild would have destroyed the good copy and silently re-introduced the bad widths. Deciding which side is right is exactly the step a mechanical regen skips. The check writes nothing and is safe to run against a tree its runner does not own.
+
+### §5.1c The legacy encoder proof MUST be pinned to a frozen source `[MUST]`
+
+An encoder proof demonstrates that the encoder still reproduces a known-good historical artifact. Its input pair — a frozen `.diag` and the artifact sha it produces — **MUST NOT be re-pinned to a moving source.** Once the live `.diag` legitimately moves, re-encoding it cannot reproduce the historical artifact, and re-pointing the proof at HEAD would make it assert only that today's source produces today's output — **a tautology wearing the costume of an encoder proof.**
+
+### §5.1d Sequence for any corpus change `[MUST]`
+
+1. **Architecture** edits the `.diag` **fields**.
+2. **The build owner** rebuilds the `.cbor`.
+3. **source-produces-artifact green** (§5.1b).
+4. **artifact-is-expected green** (§5.1b).
+5. **Architecture commits the artifacts.** The build owner writes the files; it does not run git in a tree it does not own.
+6. **The change is recorded in the corpus `CHANGELOG.md`** (§5.1). A corpus change that moves the artifact and leaves no changelog entry has deleted its own history — that is what the version stamp used to stand in for.
+
+**Never hand-edit a `.cbor`. Never transcribe a byte pin by hand. Never re-pin the encoder proof.**
 
 ### §5.2 Impl reporting
 
-Impls cite the corpus version they pass:
+Impls cite the artifact they ran against, per §5.1's `(spec-version, corpus-name, artifact sha256)` form:
 
-> *core-go passes ecf-conformance-vectors-v3 under spec v1.5; full report at `<path>`.*
+> *passes `ecf-conformance` @ `9695b1f1d939cfdf…` under spec v1.5; full report at `<path>`.*
 
-A report of "passes v3" means every vector in `conformance-vectors-v3.cbor` returns pass under Appendix E §E.3 semantics, run through the impl's encoder/decoder. Reports MUST cite a specific version; reports without a version are not conformance reports.
+That means every vector in the `.cbor` at **that sha** returns pass under Appendix E §E.3 semantics, run through the impl's encoder/decoder. **Reports MUST cite the artifact sha; a report without one is not a conformance report** — the corpus grows, so "passes the corpus" is not a claim until it says *which* corpus bytes.
 
-An impl passing v{N} does not automatically pass v{N+1} — new vectors may have surfaced new corners. The impl team runs the new vectors, fixes anything that surfaces, updates the report.
+Passing at one sha does not carry forward to the next — an artifact moves because vectors were added or corrected, and either may have surfaced a new corner. The impl team runs the new artifact, fixes anything that surfaces, updates the report. **The corpus `CHANGELOG.md` (§5.1) is what tells them what moved and why**, which an incrementing integer never did.
 
 **A check that never contacts the peer is a `[self]` check, and a per-peer figure that hides one overclaims `[MUST; ruled 2026-08-09]`.** Some conformance checks take no client at all — they exercise the running implementation against the spec locally (a resolver, an ordering rule, a local-store invariant). They are legitimate and they stay in the suite; what is not legitimate is a **peer's** row scoring a PASS for behavior that peer was never asked about. A sibling could ship none of the rule and the row would not move.
 

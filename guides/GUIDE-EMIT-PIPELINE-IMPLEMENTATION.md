@@ -252,14 +252,14 @@ Tracking what each implementation has landed and where decisions diverge. Keep t
 | Storage concurrency | 🔍 Cross-impl review pending | If using SQLite, same pool-split recommendation applies |
 | Operational observability | 🔍 Cross-impl review pending | |
 
-### 4.3 egui-entity-core-rust (workbench-side Rust)
+### 4.3 entity-browser-rust (browser-side Rust)
 
 | Area | Status | Notes |
 |---|---|---|
 | Phase 1 / Phase 2 separation | 🔍 Not yet at this load; review pending | |
 | Saturation handling | 🔍 Pending | |
 
-### 4.4 godot-entity-core-rust
+### 4.4 Godot binding (archived)
 
 | Area | Status | Notes |
 |---|---|---|

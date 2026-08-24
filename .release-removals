@@ -1,0 +1,42 @@
+# .release-removals — deliberate deletions against the PUBLISHED tree.
+#
+# One path or path-prefix per line; `#` comments allowed. The `[6/6] public-regress` gate
+# blocks any release that removes a file already on public `master` unless it is declared
+# here. A deletion is not forbidden — it must be intended, and this file is the reviewed
+# record that it was. Read by dev-pipeline/promote/promote.sh.
+#
+# A comment-only or blank file is NOT an allow-all; it declares nothing.
+
+# ── [ADR-0031], 2026-08-23 — the DATED status snapshots are not a publication surface ──
+#
+# READ THIS BEFORE READING THE PATH BELOW: `docs/status/STATUS.md` is not being withdrawn
+# from the public surface. It MOVED to `docs/STATUS.md` and is declared in
+# CANONICAL-DOCS.toml at its new path, in the same commit as this line. Against the
+# published tree a move is a deletion plus an addition, and `public-regress` only sees the
+# deletion half — so it has to be declared here, and the declaration would otherwise read
+# as "arch took its status doc down," which is the opposite of what happened.
+#
+# What IS withdrawn: everything else under `docs/status/` — 163 dated
+# STATUS-*/ROUTING-*/HANDOFF-*/CHECKPOINT-*/AUDIT-* snapshots, plus `WORKSTREAMS.md`. Those
+# are working memory: dated measurements, seat names, blockers, half-verified numbers,
+# cohort routing packets that name other teams. None of it was ever on the keep-list, so in
+# practice none of it has been reaching public `master` — measured 2026-08-23, public
+# `master` carries 88 files of which `docs/` holds exactly one. This declaration makes that
+# boundary explicit rather than incidental.
+#
+# Why a PREFIX and not the one file: the separation now runs by path rather than by
+# filename, so `docs/status/` can be dropped wholesale and the canonical log is never in the
+# blast radius. That is the durable half of the fix.
+#
+# Arch's own numbers, since this repo was the worst instance in the fleet's measurement:
+# the rolling log carried 75 unique commit citations and 61 of them sat in twelve
+# accumulated `_Prior:` entries and a 145-line July narrative — all `dev` SHAs that by
+# [ADR-0027] have never resolved for a public reader. The history moved verbatim to
+# `docs/status/STATUS-2026-08-23-f-…`, which does not publish. Sweeping the citations
+# instead would have regenerated the problem the following week, which is [ADR-0031]'s
+# whole argument.
+#
+# What a reader loses: nothing they came for. README.md answers "what is this",
+# CHANGELOG.md "what changed", the specs and guides are the product, and docs/STATUS.md
+# "where does it stand" — all declared canonical and written for that reader.
+docs/status
