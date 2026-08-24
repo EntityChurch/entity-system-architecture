@@ -261,7 +261,7 @@ A resolution chain is also a capability chain — each peer-crossing rung is gat
 
 ## 11. Open questions
 
-1. ~~**Name grammar (§6):** ratify the default globs + the §6.3 dispatch-on-X rule.~~ **Closed** — `EXTENSION-REGISTRY` §4.1a (the default list), §4.1 step 2 (the catch-all MUST) and §4.1 step 1a (one separator, peer-id decode first). What remains open is narrower: whether a backend kind should declare itself *name-blind* (consultation does not transmit the name) so a catch-all may admit one.
+1. **Name grammar (§6): closed.** `EXTENSION-REGISTRY` §4.1a (the default list), §4.1 step 2 (the catch-all MUST), §4.1 step 1a (one separator, peer-id decode first).
 2. **Peer-issued registration (§8):** the unblock. Admission policy (registry's own cap surface) + ownership-proof challenge. Its own proposal.
 3. **`resolve()` SDK contract:** route the Draft to cohort; is the typed `Outcome` set (`NotFound`/`PolicyRejected`/`Unreachable`/`Denied`/`Pending`) complete + minimal across impls?
 4. **`Denied` vs `NotFound` confidentiality:** the SDK MUST surface the *peer's* status faithfully, never synthesize a more-informative `Denied` where the peer chose `NotFound` (V7 §5.5a). Confirm cross-impl.
