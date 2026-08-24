@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.14
+**Version**: 1.16
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -491,6 +491,7 @@ data: {
       priority:               u32,                            ; ascending; lower = consulted first
       accepted_trust_anchors: [<variant filter>],             ; receiver policy
       hints:                  <opaque object | null>          ; backend-specific config
+                                                              ; PINNED KEYS: max_ttl (§6a.9.1 resolver ceiling, ms), neg_ttl
     }
   ],
   pinned_bindings: [
@@ -517,7 +518,9 @@ Stored at `system/registry/resolver-config` (peer-local; not synced).
 
 > **Earlier text here read *"a name matching no entry is treated as matching the catch-all"*, and that sentence could never execute.** The catch-all is `*`, which matches **every** name — so if a catch-all row is configured, no name fails to match one, and if none is configured, the sentence names a row with no referent. Two implementations read it as *"no filtering"*, which is the one meaning it cannot carry: the catch-all is the most **restrictive** row in the recommended list.
 
-**`pattern` grammar.** The `name_format_dispatch[].pattern` field matches against the **user-facing name string** — not against a tree path — and it is therefore a **registry-local matcher**, scoped to this field. `*` matches any run of characters within the name, including none. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
+**`pattern` grammar.** The `name_format_dispatch[].pattern` field matches against the **user-facing name string** — not against a tree path — and it is therefore a **registry-local matcher**.
+
+**This is the registry's name matcher, and it is the ONLY one `[MUST, v1.15]`.** Every field in this specification that globs a user-facing name uses the grammar below: `name_format_dispatch[].pattern` (§4) and the issuer policy's `name_constraints` (§6a.9.1). **There is one matcher per registry.** Two matchers over one domain diverge silently — the fields sit two subsections apart, both match the same flat name string in the same handler, and the one example the spec gives for each (`*.eth`, `*.lab`) is grammar-identical under every candidate reading, so nothing in the document discriminates them. *(Earlier text scoped this grammar "to this field." That sentence was written to fence the matcher off from `ENTITY-CORE-PROTOCOL` §5.4 — which it still does, below — and it fenced off `name_constraints` as collateral, leaving an admission gate with an undefined grammar.)* `*` matches any run of characters within the name, including none. Examples: `*@*.*` → DNS-style handles; `did:web:*` → did:web; `*.eth` → ENS; `*` → catch-all (typically local-name). Deployments needing richer matching layer it in the backend, not the dispatch config.
 
 **The grammar is CLOSED, and every character that is not `*` is a LITERAL `[MUST, v1.13]`.** The matcher is a pure wildcard match over the whole name string, anchored at both ends:
 
@@ -1033,11 +1036,13 @@ The request **MUST carry a `system/signature` by `target_peer_id`** (target-matc
 system/registry/peer-issued:register-request(request)
     → system/registry/register-result  (200 approve | 202 queue)
     | system/protocol/error            (4xx reject)
+  0. check name-path safety (§6a: no '/', no C0/DEL, NFC)  ; else 400 bind_invalid_name
   1. verify request signature by target_peer_id          ; layer-1 (always)
+     on failure: 401 signature_invalid                   ; layer-1 domain — see the status table below
   2. apply issuer-policy admission (§6a.9.1)              ; layer-2 → approve | reject | queue
   3. on approve: registry-issue-binding(...) (§6a.8)      ; signs with K_registry, publishes, sets by-name pointer
      return 200 register-result { status: "bound", binding_hash }
-  4. on reject:  error (name_taken | not_entitled | policy_rejected)   ; REGISTRY code domain
+  4. on reject:  error (name_taken | not_entitled | policy_rejected)   ; layer-2 reject domain ONLY
   5. on queue:   store the pending request (§6a.9.3)      ; manual mode
      return 202 register-result { status: "pending_review", pending_hash }
 ```
@@ -1136,7 +1141,7 @@ type: "system/registry/issuer-policy"          ; registry-local config
 data: {
   mode:             "open" | "allowlist" | "manual" | "domain-control",
   allowlist:        [<peer-id>] | null,
-  name_constraints: <glob | null>,              ; e.g. only issue "*.lab"
+  name_constraints: <name pattern per §4 | null>,  ; §4's grammar — `*` only; e.g. only issue "*.lab"
   default_ttl:      <ms | null>,                ; MUST NOT exceed max_ttl
   max_ttl:          <ms duration>               ; REQUIRED for any mode reaching *approve* (§6a.9);
                                                 ;   requests above it are CLAMPED, not refused
@@ -1150,6 +1155,15 @@ Two separable proof layers:
   - **`allowlist`** — only `target_peer_id`s in `allowlist` may register (optionally bounded by `name_constraints`).
   - **`manual`** — requests queue as `pending_review`; the operator approves out-of-band.
   - **`domain-control`** — for domain-shaped names, the registry requires proof of DNS-domain control before signing. **The challenge format is DEFERRED** — it MUST share one mechanism with the web-native `dns-txt` / `well_known_url` backends rather than inventing a second domain-proof scheme, so it is settled jointly with those proposals, not here. A v1 registry uses `open` / `allowlist` / `manual`; `domain-control` lands with the web-native co-design.
+
+**`name_constraints` uses §4's name matcher `[MUST, v1.15]`, and therefore no `name_constraints` value is invalid.** It globs the same user-facing name string §4 globs, in the same handler — so it is the same matcher, and `*` is its only metacharacter. Two consequences bind:
+
+- **A registry MUST NOT reject a policy for a malformed `name_constraints`**, and `set-issuer-policy` MUST NOT return an error on its pattern's syntax. Every string is a well-formed pattern because every non-`*` byte is a literal (§4).
+- **A registry MUST NOT fail a registration on pattern syntax.** Delegating this field to a path-glob or shell-glob library reintroduces a parse error the grammar cannot produce: `name_constraints: "a[b"` under such a library makes **every** register-request against that policy fail with an internal error — a policy the operator installed, silently un-registerable, with no diagnostic naming the pattern. Under §4's grammar that arm is unreachable, not handled.
+
+**One matcher, two input domains `[MUST, v1.16]`.** The grammar is one (above); the two sites that apply it do **not** receive the same inputs, and a vector written for one site does not transfer to the other. `name_format_dispatch` (§4) matches the **raw argument to `meta_resolve(name)`** — an arbitrary string, since dispatch runs before any backend is consulted and nothing has rejected or normalized it yet. `name_constraints` matches a name that has **already passed §6a's name-path safety** (*"identical to §6.3 — no `/`, no C0/DEL control chars, NFC at issue time"*), which a `register-request` fails with `400 bind_invalid_name` before the policy is read at all. **Consequently no name reaching `name_constraints` contains `/`**, and whether `*` crosses `/` is unobservable at this gate — it is a real property of the matcher, asserted once, by `REG-DISPATCH-GRAMMAR-1` at the site whose input domain admits it. A conformance row requiring this gate to admit a `/`-bearing name is unsatisfiable by construction: the only way to pass it is to remove the path-injection check that §6a makes normative.
+
+**This is an admission gate, so the divergence it hid is the expensive kind.** `name_constraints` decides whether a binding is *issued at all* — `403 not_entitled` versus a signed, published binding — so two registries running the **same operator policy** would admit different names. The field carried `<glob>` with the single example `*.lab`, which is grammar-identical under every candidate reading and therefore discriminates nothing; two implementations read it two ways and neither could have found the other by reading the spec.
 
 `registry-issue-binding` (the internal sign+publish act) is gated by `system/capability/registry-issue-binding`, held by the policy logic / operator only. `register-request` is the *external* surface, gated by `system/capability/registry-request-binding` (open → granted broadly; allowlist → narrow). `system/capability/registry-manage-issuer-policy` gates editing the policy — **via the two operations defined in §6a.9.2.**
 
@@ -1205,11 +1219,21 @@ It **MUST NOT substitute an implementation-chosen default.** That is the same mo
 
 **Resolver side — a resolver MAY impose its own ceiling, and this is the half that protects the consumer `[MUST when present]`.** A resolver that declares a local maximum MUST treat a binding's effective lifetime as **`min(binding.ttl, local_max)`**, computed at resolution and never written back into the binding (the binding's content hash is unchanged; this is a *use* bound, not a re-issue).
 
+**The ceiling is declared at `resolver_chain[].hints.max_ttl` (ms) `[MUST, v1.16]`.** Until v1.16 this rule named a value and no place to put it, and every implementation invented one — a `[MUST when present]` with no declared config site is a rule two conformant peers cannot both implement, and this one had four seats across three keys. `hints` is the slot §4 already declares for backend-scoped configuration (it carries `neg_ttl` likewise), so pinning the key here costs no change to `system/registry/resolver-config`'s type hash. **Per chain entry, not per peer**, and that granularity is the point: the ceiling bounds how long *this* resolver will honor *this* backend's answers, and a registry you operate does not deserve the same number as one you barely trust.
+
+**It MUST be durable configuration read at resolution `[MUST, v1.16]`** — not a process-lifetime setting fixed at construction. A ceiling read at start-up applies on a cold boot and silently does not on a warm one, and **a security control present on one boot path and absent on the other is worse than absent: it tests green on whichever path the test happens to take.** An operator editing `resolver-config` MUST be able to set it; out-of-band arming is a **seed for that entity**, never a parallel source consulted at resolution (the store-first rule of §6a.9.2, same reasoning).
+
+**`max_ttl: 0` MUST be treated as undeclared `[MUST, v1.16]`.** Honored literally it expires every binding instantly and the operator sees *"no binding for this name"* — indistinguishable from a bad signature, a revocation, or an offline registry, which is the worst available diagnostic for what is almost certainly a typo or an unset field serialized as zero. *(All four implementing seats reached this independently before it was written down.)*
+
+**A binding carrying no `ttl` takes the ceiling as its lifetime `[MUST, v1.16]`.** `min(binding.ttl, local_max)` has no arm for a null `ttl`, and the sticky kinds (`local-name`, `pinned`) carry none. The resolver's ceiling is a bound on **how long a value may be honored**, so an absent lifetime becomes `local_max` rather than staying unbounded — applying the control only where a bound already exists would leave exactly the unbounded case uncovered, which inverts it. *(`peer-issued` never reaches this arm: §6a.4 requires a non-null `ttl` before a result is surfaced at all.)*
+
 > **Why the resolver's ceiling is the load-bearing one.** §6a.3's argument is entirely about the **consumer**: a hostile byte-server withholds a revocation, and `ttl` bounds the exposure. **A ceiling enforced by the registry does not protect a consumer from that registry** — a hostile or compromised issuer simply sets `max_ttl` high. Only the party bearing the risk can bound it. This is the split DNS settled decades ago: the authority sets the record's TTL, and the **resolver** caps what it will honor (`max-cache-ttl`), because the resolver is the one holding stale data. The issuer-side `max_ttl` is operator hygiene — it stops a careless registrant asking for a decade — while the resolver-side clamp is the actual security property.
 >
 > **The shape is §4.10's, applied to freshness: mandate that the bound exists and is declared and enforced; leave the value to the deployment.** No number is written here for the same reason §4.10 writes none — there is no defensible constant, and choosing one makes every unconfigured deployment look configured. This is also the mainstream answer across the surveyed field: DNS caps at the resolver, TUF sets expiry per role, and the X.509 and ACME ecosystems put the ceiling in policy rather than in the protocol. **None of them put an unbounded lifetime in the hands of the requesting party, and none of them writes the maximum into the wire format.**
 
 **Conformance:** **`REG-TTL-CEILING-1`** — `set-issuer-policy` with a live mode and absent `max_ttl` → `400`; with `default_ttl > max_ttl` → `400`; **control:** a policy with both, `default_ttl <= max_ttl`, is accepted. **`REG-TTL-CLAMP-1`** — a `register-request` and a `renew-request` each carrying `ttl` above `max_ttl` → both accepted `200`, and both issued bindings carry **exactly `max_ttl`**. The clamp is asserted on the *binding's* value, not on the response code, because a peer that refuses instead of clamping also returns a non-`200` and would otherwise be indistinguishable.
+
+**`REG-TTL-RESOLVER-CEILING-1` `[v1.16]` — the resolver-side vector this spec has never had for the half it calls load-bearing.** Both existing rows above test the **issuer** side; nothing tested the clamp that actually protects a consumer, which is how four seats put it in three places without any instrument noticing. Against a chain entry carrying `hints.max_ttl`, four rows: **(a)** a binding whose `ttl` exceeds `max_ttl` resolves with effective lifetime **exactly `max_ttl`**, and `result.binding`'s **content hash is unchanged** — assert the hash, not only the number, because a resolver that rewrites the binding to carry the clamped value moves its address and invalidates every signature over it; **(b)** a binding whose `ttl` is below `max_ttl` is returned untouched; **(c)** `hints.max_ttl: 0` behaves **identically to an absent `hints`** — the binding's own `ttl` survives (the undeclared rule above); **(d)** a sticky binding (`local-name` or `pinned`, no `ttl`) resolves with effective lifetime `max_ttl`. **Row (d) is the one an implementation passes by accident and fails on inspection**, since `min` over a null has no natural answer.
 
 **Conformance:** **`REG-RENEW-TTL-CASCADE-1`** — three rows against a curated registry whose stored policy has no `default_ttl`: (a) renew **with** explicit `ttl` → accepted, successor carries it; (b) renew **omitting** `ttl` → accepted, successor carries **the superseded binding's** `ttl`, and the successor resolves under §6a.4; (c) the same renew against a policy that **does** carry `default_ttl` → successor carries the **policy's** value, not the predecessor's. Row (b) is the one that fails against both a null-minting peer and a refusing peer; row (c) is the one that fails against a peer that implemented inherit-first.
 
@@ -1548,6 +1572,13 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 
 - **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** **The discriminator is name transmission, not remoteness `[v1.14]`.** A resolver-config that makes a **name-transmitting** backend (`dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`) eligible for an unscoped name MUST be refused or normalized at load — whether by naming it in a rule that matches unscoped names or by carrying no `name_format_dispatch` at all; and resolving a bare (unscoped) name MUST produce no request carrying that name to any third party. **The observable is the absence of a request**, so the check asserts on the third-party endpoint receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
   - **`peer-issued` resolved per §6a.4 through the signed root is explicitly admitted** and MUST NOT be asserted against: it is a read of a **remote** registry, and it is name-blind (§4.1 step 2's table). **Asserting on remoteness here contradicts §4.1a row 6**, which recommends `peer-issued` in the catch-all — the vector was written at v1.7 when the catch-all was `["local-name", "pinned"]` and the two properties coincided, and the re-key to name transmission did not reach it. A fixture asserting *"no read against any remote registry"* fails the default list this spec ships.
+- **`REG-NAME-CONSTRAINTS-GRAMMAR-1` (§6a.9.1, §4).** `name_constraints` uses §4's matcher, and the spec's own `*.lab` example cannot discriminate that from a shell-glob. Against a live-mode issuer policy, four rows plus a control:
+  1. `name_constraints: "a?c"` → a register-request for the literal name **`a?c`** is admitted; **`abc`** is refused `403 not_entitled`. *(Inverted under `path.Match` / `fnmatch`.)*
+  2. `name_constraints: "a[bc]d"` → **`a[bc]d`** admitted, **`abd`** refused.
+  3. `name_constraints: "a[b"` → `set-issuer-policy` **accepts** the policy, and a register for the literal name `a[b` is **admitted**. **No `5xx` on any path.** Asserted separately from row 2 because a shell-glob implementation fails this one by *erroring* rather than by answering wrongly, and an error is not a wrong answer a result-asserting check would catch.
+  - **No `/`-crossing row appears here, and its absence is normative `[v1.16]`.** `*`-crosses-`/` is a real property of §4's matcher and is asserted by `REG-DISPATCH-GRAMMAR-1`, whose input is the raw `meta_resolve` argument. **This gate's input has already passed §6a name-path safety**, so a `/`-bearing name is refused `400 bind_invalid_name` before the policy is consulted (§6a.9.1, "one matcher, two input domains"). A row requiring this gate to admit `x/y/z` was carried at v1.15 and was **unsatisfiable by every conformant implementation**; it is withdrawn rather than re-scoped.
+  - **Control:** `name_constraints: "*.lab"` → `alice.lab` admitted, `alice.dev` refused. This is the example the spec already carried; it passes under **both** readings and proves nothing alone, and it is included only so a failure of rows 1–4 cannot be misread as the constraint being ignored entirely.
+
 - **Hostile-origin vectors (§6a.1a).** The four pre-existing peer-issued vectors all pass on an implementation open to both defects below, because each tests a forgery the origin never attempts. **A suite where every implementation passes every vector while all of them share one hole is not evidence of convergence; it is evidence the suite does not reach the surface.**
   - **`REG-PEERISSUED-NAME-SUBSTITUTION-1`** — a **validly signed, current, unrevoked** binding for name *X*, served at `by-name/{Y}`. The resolver MUST refuse and advance the chain (§6a.4 `binding.name == norm`). Contrast with `REG-PEERISSUED-VERIFY-FAIL-1`, which covers a binding signed by a **non-pinned key** — the origin forging its own binding, which every implementation already refuses. Substitution requires no forgery at all.
   - **`REG-PEERISSUED-NULL-TTL-1`** — a peer-issued binding with `ttl: null`; the resolver MUST refuse and advance (§6a.3, §6a.4).
