@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.16
+**Version**: 1.19
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -573,7 +573,7 @@ eligible_kinds(config, name):
 
 **Consequently: a distribution's shipped `system/registry/resolver-config` MUST NOT make a name-transmitting backend eligible for an unscoped name `[MUST, v1.14]`.** The name-transmitting kinds are `dns-txt`, `well-known-url`, `did-web` and `consensus-anchored` (the table below). **The rule binds the configuration as a whole, not one row**, and it has two doors:
 
-- naming such a kind in **any** rule whose pattern matches unscoped names — the catch-all `*` is the usual one, and an unscoped name is the path every bare name takes; and
+- naming such a kind in **any** rule whose pattern matches unscoped names (**"broad"**, defined in §4.1b) — the catch-all `*` is the usual one, and an unscoped name is the path every bare name takes; and
 - shipping an **absent or empty** `name_format_dispatch` while such a kind sits in the `resolver_chain` — the filter is disabled, every kind is eligible, and there is no catch-all row to inspect.
 
 A third door — leaving a name-transmitting kind out of every rule so it "defaults to match all" — is closed **by construction** by the union rule above, and needs no clause.
@@ -581,6 +581,25 @@ A third door — leaving a name-transmitting kind out of every rule so it "defau
 An unscoped name discloses **every bare name a user types** — including a private handle or a typo — silently, on the happy path, in a configuration the user did not choose, and irreversibly. An operator MAY override this on their own peer; a distribution MUST NOT ship it.
 
 > **Stated at the width of the invariant, not of the instance.** An earlier form bound only *the catch-all row*, which made it evadable by not writing that row.
+
+**Eligibility here is kind-scoped, not chain-scoped `[MUST, v1.17]`.** The rule is violated by **naming** a name-transmitting kind in a rule that matches unscoped names — independent of whether `resolver_chain` currently carries an entry of that kind.
+
+**The reason is that this MUST binds a *distribution*, and a distribution's artifact is extended by parties it will never see `[v1.18]`.** Under a chain-scoped reading, *"this shipped `resolver-config` is safe"* is **not a property of the shipped artifact** — it is a property of the artifact *paired with whatever the downstream operator later adds to `resolver_chain`*. The distribution cannot evaluate that pairing, cannot re-review after it changes, and by §1's bootstrap model the user has already inherited the config by accepting the build. **A safety property that does not survive extension is not one a shipper can be held to**, and holding shippers to it is the entire purpose of this sentence. Kind-scoped makes validity a function of `name_format_dispatch` alone, so a reviewed artifact stays reviewed.
+
+**The failure costs are asymmetric, and that settles the residual doubt.** A kind-scoped false positive refuses a configuration that is presently harmless: the operator deletes a kind from one row, sees the diagnostic immediately, and loses nothing. A chain-scoped false negative admits a configuration that discloses **every bare name a user types** the moment an unrelated chain entry appears — silently, on the happy path, and by this section's own words *irreversibly*. Where one direction is a visible edit and the other is silent irreversible disclosure, the conservative reading is the correct one even at some cost in refused-but-harmless configurations.
+
+> **What this rule is *not* justified by, recorded because it was published as the reason and it is weaker than it looked `[v1.18]`.** The first statement of this ruling argued that a chain-scoped config **arms silently** when an operator later adds the backend. **It does not arm silently** — the paragraph above binds *the configuration as a whole*, so adding that chain entry is itself a write the §4.3 check evaluates against the whole config, and a chain-scoped implementation would refuse it at that moment. The hole the "silent arming" argument describes is closed by whole-config validation under **either** reading. What survives is the monotonicity argument, which is about *who can evaluate the property and when*, not about detectability.
+
+**The MUST binds the write, not the load, and those are different acts with different actors `[MUST, v1.17]`.** A resolver reading a stored config sees only bytes: §6a.9.2's store-first rule puts an operator's edit and a distribution's seed in the same entity at the same path, so **at load the two acts are indistinguishable by construction.** Enforcement therefore lives at the two points where an actor is present:
+
+- **Publication / packaging** — a distribution MUST NOT ship a violating `resolver-config`. The enforcement point is a **packaging lint**, and it reports **every** violation rather than the first, because an operator repairing a chain wants the whole list.
+- **Config write `[MUST, v1.18]`** — a peer MUST refuse to store a violating `resolver-config` **unless the write carries an explicit override acknowledgement** (§4.3). The writer is present and identifiable, and the refusal is actionable and destroys nothing.
+
+**Provenance is a property of the write, not of the bytes — which is why it is expressible here and nowhere else `[v1.18]`.** *"Did a distribution ship this, or did the operator choose it?"* cannot be answered by inspecting a stored entity, and **it must not be answered by a field inside one**: a field is written by whoever writes the bytes, so a distribution could simply set it, and it would move a content-addressed type's hash to carry a claim it cannot secure. The distinction is an **act**, so it is carried by the **operation** that performs the act — an acknowledgement parameter on `set-resolver-config`, gated by the operator's own capability. This is what lets §4.1's operator `MAY` be honored without either a forgeable field or a load-time guess.
+
+**At load: surface it, never normalize it, never refuse to start `[MUST, v1.17]`.** A resolver that loads a violating config MUST surface the condition as a diagnostic; it MUST NOT silently alter its own behaviour, and it MUST NOT decline to run. Silent normalization makes the operator's stored bytes lie — the config says one thing and the peer does another with no diagnostic — and refusing to start would **delete the `MAY` above**, since a peer that will not boot on a config the operator deliberately wrote has revoked the override it was granted.
+
+**A resolver MUST NOT rewrite stored configuration as a side effect of reading it `[MUST, v1.17]`.** Whatever a peer decides about a config it disagrees with is an in-memory decision. Rewriting the stored entity moves its content hash and republishes the operator's intent as the peer's — the same distinction §6a.9.1 draws for the resolver ceiling (*a use bound, not a re-issue*), and it is general: **reading is not writing, at any configuration surface.**
 
 **The banned property is name transmission, not remoteness**, and the two are not the same thing:
 
@@ -638,6 +657,37 @@ catch-all, which is the disclosure §4.1 step 2 forbids, reached by a different 
 shipping it interoperate; one that does not simply routes its own way. The catch-all MUST is the
 exception, and it binds what a distribution ships rather than what an operator may configure.
 
+### §4.1b Which patterns are "broad" — the classifier `[MUST, v1.19]`
+
+§4.1 step 2's MUST turns on *"a pattern that matches unscoped names,"* and **until v1.19 that predicate had no grammar** — so two conformant implementations split on `*.*`, `a.b`, `alice.eth` and `*.e*`, and a third classified an exact literal name as broad. A privacy MUST whose central predicate is undefined is not enforceable; this closes it.
+
+**Scoped and unscoped are already defined upstream**, in `guides/GUIDE-RESOLUTION.md` §6.2 — *"Presence of `@` ⇒ scoped; absence ⇒ default chain; leading `scheme:` ⇒ typed system"* — over §6.1's name shapes, which §4.1a's default list realizes row for row. A **scoped** name carries one of three markers: an **`@authority`**, a **`scheme:`** prefix, or an enumerated **typed suffix**. A name carrying none is **bare**, and a bare name is what the user typed with no authority named.
+
+**A pattern is NARROW if and only if at least one of these holds:**
+
+| # | Condition | Why it is safe |
+|---|---|---|
+| a | the pattern contains **no `*`** | it matches exactly one name — an explicit routing decision the operator wrote out |
+| b | the pattern contains a literal **`@`** | every matching name carries an `@authority`; the user named who they are willing to tell |
+| c | the pattern's literal head, before its first `*`, ends in **`:`** | every matching name carries a `scheme:` prefix |
+| d | the pattern **ends in an enumerated typed suffix** (§4.1b.1) with no `*` after it | every matching name is in a naming system the user opted into by typing it |
+
+**Otherwise the pattern is BROAD.** Equivalently: broad means the pattern can match at least one **bare** name.
+
+Worked against §4.1a's own rows, which is the check any implementation should run first: `did:web:*` (c) · `did:key:*` (c) · `*.eth` (d) · `*@*.*` (b) · `*@*` (b) · `*` **broad**.
+
+And against the four that independent readings diverged on: **`*.*` is BROAD** — `.` is not a typed suffix, so it matches bare dotted names like `billslab.com`, which §6a explicitly admits as legal local names. **`*.e*` is BROAD** — the trailing `*` means it does not end in a fixed suffix. **`a.b` is NARROW** by (a). **`alice.eth` is NARROW** by (a), and also by (d).
+
+> **Why "any literal at all" is not the line, though it is the tempting one.** A pattern requiring *some* literal is qualitatively different from `*` — only names the user deliberately typed that way go out, and a typo of a private handle is not a typo *into* a suffix. But `.` alone narrows almost nothing: dotted bare names are ordinary here. **The line is not "does a literal exist" but "does the literal identify an authority or a naming system,"** which is exactly the distinction §6.2 draws and the reason the marker set is enumerated rather than inferred.
+
+#### §4.1b.1 Enumerated typed suffixes `[v1.19]`
+
+| Suffix | Naming system | Backend kind |
+|---|---|---|
+| `.eth` | ENS | `consensus-anchored` |
+
+**This list is deliberately short and grows only by spec revision `[MUST]`.** Admitting a suffix is a **privacy decision** — it declares that every name a user types ending in it may be disclosed to a third party — so it is not implementation-defined, not operator-extensible, and not inferable from the pattern's shape. **An unrecognized suffix makes the pattern broad**, which is the fail-safe direction: the cost is a refused rule the operator rewrites, against the cost of silently disclosing a namespace nobody reviewed.
+
 ### §4.1.2 Synthesized result for pinned bindings
 
 When a `pinned_bindings` entry matches, `meta_resolve` returns a `system/registry/resolution-result` entity (§2.1 wire encoding) with flat data fields:
@@ -668,7 +718,32 @@ New backend kinds will be added over time. Resolver-config is forward-compatible
 
 **An unknown kind is not a name-transmitting kind, and MUST NOT be treated as one `[MUST, v1.14]`.** The §4.1 step-2 refusal is scoped to the four kinds this spec **declares** name-transmitting (`dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`); an undeclared kind falls to the rule above and is skipped, so it consults nothing and discloses nothing. Refusing a whole configuration because a broad pattern names a kind this build does not recognize rejects a deployment authored against a **newer** vocabulary, which is the case this section exists to permit.
 
-**The forward risk this raises is real and is discharged by *when* the check runs, not by refusing early.** A kind that is unknown today may be declared name-transmitting tomorrow, and a config validated once would then carry a violation nobody re-examined. §11.1 requires the check **at load** — so the peer that upgrades its vocabulary re-runs it against the same stored config on its next load, and the entry that was inert becomes a refusal at the moment it stops being inert. A write-time-only check is the variant that fails here; a load-time check does not need to be conservative about kinds it cannot classify.
+**The forward risk this raises is real and is discharged by *when* the check runs, not by refusing early.** A kind that is unknown today may be declared name-transmitting tomorrow, and a config validated once at write time would then carry a violation nobody re-examined. §4.1 step 2 therefore requires the classification to run **at load as well as at write** — so the peer that upgrades its vocabulary re-evaluates the same stored config on its next load, and the entry that was inert **surfaces as a diagnostic** at the moment it stops being inert. **A write-time-only check is the variant that fails here**, which is why the enforcement points are two and not one; and the load-side check does not need to be conservative about kinds it cannot classify, because it reports rather than refuses `[v1.18]`.
+
+---
+
+### §4.3 Managing the resolver-config — `set-resolver-config` / `get-resolver-config` `[v1.18]`
+
+**`system/capability/registry-configure` named an act the corpus never defined**, exactly as `registry-manage-issuer-policy` did before §6a.9.2: the capability was declared as a bare **tree-write** against `system/registry/resolver-config`, so there was no operation for a peer to validate at, no place to carry an operator's override, and no defined shape for a client to call. A raw tree write cannot refuse selectively and cannot carry an acknowledgement — so the §4.1 step 2 write-time MUST had **no surface to bind to**. Defined here on §6a.9.2's pattern, for its reasons.
+
+| Operation | Input | Output | Gate |
+|---|---|---|---|
+| `set-resolver-config` | `{config: system/registry/resolver-config, acknowledge_name_disclosure?: bool}` | the stored `system/registry/resolver-config`, as written | `system/capability/registry-configure` |
+| `get-resolver-config` | none — the §3.2 empty-params shape | `system/registry/resolver-config`, or `404 not_found` when unset | `system/capability/registry-configure` |
+
+**`set-resolver-config` MUST validate the whole config before storing `[MUST]`** — §4.1 step 2's eligibility rule against every rule and every chain entry, not the delta. Partial application is forbidden: on refusal **nothing is written**, and a subsequent `get-resolver-config` MUST return the previous bytes unchanged.
+
+**`acknowledge_name_disclosure` is the operator `MAY`, made expressible `[MUST]`.** Absent or `false`, a config violating §4.1 step 2 is refused **`403 policy_rejected`** with the full violation list — every violation, not the first, because an operator repairing a chain wants the whole list. Set `true`, the config is stored and the peer surfaces the disclosure at every load.
+
+**It is a parameter of the operation and MUST NOT become a field of the entity `[MUST]`.** A field would be written by whoever writes the bytes — so a distribution could set it and defeat the rule it is meant to bound — and it would move a content-addressed type's hash to carry an unsecurable claim. The acknowledgement is meaningful only because it is bound to a **capability-gated call by an identified actor**, which is precisely the thing a stored byte cannot be.
+
+**A write that changes `pinned_bindings` additionally requires `system/capability/registry-pin` `[MUST, v1.19]`.** §5 declares `registry-pin` as a capability of its own — *"who may add or remove pins"* — but **pins live inside `resolver-config`**, so any surface that writes the whole entity writes the pins too, and `registry-pin` had no place to be checked. A capability whose operations column is a bare tree-write is a name with no enforcement point: a raw write cannot refuse selectively, cannot carry a qualifier, and cannot be distinguished from any other write to the same entity. This clause is that enforcement point.
+
+**This matters because a pin is the most privileged row in the file.** §4.1 **step 1** returns a pinned match immediately — *before* the step-2 disclosure filter and *before* the §6a.9.1 resolver ceiling — so a pin is the one entry that answers a name while bypassing both of this extension's privacy and freshness controls. A capability split that lets the *less* specific grant write the *more* privileged row inverts the model.
+
+`set-resolver-config` MUST therefore **diff `pinned_bindings` against the stored config** and, when they differ, require **both** `registry-configure` **and** `registry-pin`; absent the latter, refuse **`403 not_entitled`** and write nothing. A write that leaves the pin list byte-identical needs only `registry-configure`. *(This is what makes the §5 split real: an operator may now be granted pin authority without whole-config authority, or the reverse, and each grant means what §5 says it means.)*
+
+**Out-of-band seeding still works and is still not an override `[MUST]`.** §6a.9.2's store-first rule applies unchanged: a config written directly to the tree is the stored config. Such a write bypasses this operation and therefore carries **no** acknowledgement, so a violating seeded config is surfaced at every load and never silently honored. **This is the seam that keeps the operation from being security theatre** — it is a control on the *documented* path, and the undocumented path is loud rather than blocked.
 
 ---
 
@@ -691,12 +766,14 @@ The substrate's cap surface:
 | Cap | Purpose | Operation(s) |
 |---|---|---|
 | `system/capability/registry-resolve` | who may invoke `:resolve` against the registry handler | `:resolve` |
-| `system/capability/registry-configure` | who may edit the resolver-config | tree-write `system/registry/resolver-config` |
-| `system/capability/registry-pin` | who may add or remove pins | tree-edit `resolver-config.pinned_bindings` |
+| `system/capability/registry-configure` | who may edit the resolver-config | **the two operations defined in §4.3** (`set-resolver-config` / `get-resolver-config`); tree-write `system/registry/resolver-config` remains the out-of-band seed path |
+| `system/capability/registry-pin` | who may add or remove pins | **the §4.3 `set-resolver-config` write whose submitted `pinned_bindings` differ from the stored ones** (`[MUST, v1.19]`, checked there); the out-of-band tree-write of `resolver-config` remains the seed path and carries no check, per §6a.9.2 |
 | `system/capability/registry-cache-control` | who may invalidate cached resolutions | `:invalidate-cache(name | null)` (null = flush all) |
 | `system/capability/registry-local-name-bind` | who may create or update local-names (§6) | `:bind`, `:update-transports` |
 | `system/capability/registry-local-name-unbind` | who may remove local-names (§6) | `:unbind` |
 | `system/capability/registry-local-name-list` | who may enumerate local-names (§6) | `:list` |
+
+**Every row's operations column names an operation, and that is the property this table is maintained for.** A capability whose operations column is a bare tree-write is a declared authority with nowhere to be checked — three rows here were that shape and each was closed by defining the operation it needed (`registry-manage-issuer-policy` → §6a.9.2; `registry-configure` → §4.3; `registry-pin` → §4.3's pin-delta clause). A new row is not landable without naming the operation the check runs at.
 
 Per-backend caps for backends shipped in their own proposals (e.g., "may publish a binding to the peer-issued registry") live in those backend extension specs.
 
@@ -985,6 +1062,8 @@ The v1 trust anchor is an **Ed25519 identity-multihash** registry peer-id: the p
 
 `revoked(registry, binding_hash)` is an O(1) index lookup, **not** a scan: `system/registry/revocation/by-target/{hex(binding_hash)}` → the revocation entity (presence = revoked, if it verifies against `registry` per §3.1). This is the revocation analog of the §6a.3 by-name index. A live registry MAY layer subscription-driven invalidation on top (§3.1).
 
+**Scope — this binds the remote-registry path only, and §3.1 is a different sentence `[v1.17]`.** `revoked()` takes a **`registry`** as its parameter and its caller is §6a.4, the peer-issued algorithm; the whole argument below is about *"the party §6a.1a names as the fourth actor"* — a byte-server answering for a registry that is not this peer. **§3.1's rule — *"`:resolve` MUST check for a `system/registry/revocation` targeting a candidate binding"* — names no index and constrains no storage path**, and it governs the local peer's own revocations at the generic §3 layer, where a scan is a conformant implementation. *(Recorded because the two were conflated once and the keyed form was routed to §3.1 as a divergence: an index-only reader at that layer makes `REG-*`-driven local-revocation checks unpassable, since a revocation written directly to the tree at its own-hash path is invisible to a by-target index. The distinction is the caller, not the word "revocation.")*
+
 **The index is a performance structure and carries no integrity (MUST NOT be read as evidence).** A resolver **MUST NOT** treat a missing `by-target/{hex(binding_hash)}` key as proof that the binding is not revoked. The key is served by the party §6a.1a names as the fourth actor, and an absent key and a withheld key are byte-identical at the consumer — so **presence proves revocation, absence proves nothing.** The bound on a withheld revocation remains the binding's `ttl` (§6a.3), exactly as §6a.1a states, and moving from a scan to a keyed lookup does not change that bound.
 
 **What the keyed form does change is the cost of a *targeted* withholding, and that is worth stating plainly.** Under a prefix scan, suppressing one revocation means manipulating a listing; under a keyed lookup it means answering `404` to one URL. A resolver that wants better than the TTL bound does **not** get it from this index — it walks the published trie from the signed root over the revocation prefix (§6a.3a), where withholding a node makes the walk **fail visibly** instead of returning a short answer. *(Both shapes ask the host the same question. The index makes the question cheap, not trustworthy.)*
@@ -1233,7 +1312,15 @@ It **MUST NOT substitute an implementation-chosen default.** That is the same mo
 
 **Conformance:** **`REG-TTL-CEILING-1`** — `set-issuer-policy` with a live mode and absent `max_ttl` → `400`; with `default_ttl > max_ttl` → `400`; **control:** a policy with both, `default_ttl <= max_ttl`, is accepted. **`REG-TTL-CLAMP-1`** — a `register-request` and a `renew-request` each carrying `ttl` above `max_ttl` → both accepted `200`, and both issued bindings carry **exactly `max_ttl`**. The clamp is asserted on the *binding's* value, not on the response code, because a peer that refuses instead of clamping also returns a non-`200` and would otherwise be indistinguishable.
 
-**`REG-TTL-RESOLVER-CEILING-1` `[v1.16]` — the resolver-side vector this spec has never had for the half it calls load-bearing.** Both existing rows above test the **issuer** side; nothing tested the clamp that actually protects a consumer, which is how four seats put it in three places without any instrument noticing. Against a chain entry carrying `hints.max_ttl`, four rows: **(a)** a binding whose `ttl` exceeds `max_ttl` resolves with effective lifetime **exactly `max_ttl`**, and `result.binding`'s **content hash is unchanged** — assert the hash, not only the number, because a resolver that rewrites the binding to carry the clamped value moves its address and invalidates every signature over it; **(b)** a binding whose `ttl` is below `max_ttl` is returned untouched; **(c)** `hints.max_ttl: 0` behaves **identically to an absent `hints`** — the binding's own `ttl` survives (the undeclared rule above); **(d)** a sticky binding (`local-name` or `pinned`, no `ttl`) resolves with effective lifetime `max_ttl`. **Row (d) is the one an implementation passes by accident and fails on inspection**, since `min` over a null has no natural answer.
+**`REG-TTL-RESOLVER-CEILING-1` `[v1.16]` — the resolver-side vector this spec has never had for the half it calls load-bearing.** Both existing rows above test the **issuer** side; nothing tested the clamp that actually protects a consumer, which is how four seats put it in three places without any instrument noticing. Against a chain entry carrying `hints.max_ttl`, four rows: **(a)** a binding whose `ttl` exceeds `max_ttl` resolves with effective lifetime **exactly `max_ttl`**, and `result.binding`'s **content hash is unchanged** — assert the hash, not only the number, because a resolver that rewrites the binding to carry the clamped value moves its address and invalidates every signature over it; **(b)** a binding whose `ttl` is below `max_ttl` is returned untouched; **(c)** `hints.max_ttl: 0` behaves **identically to an absent `hints`** — the binding's own `ttl` survives (the undeclared rule above); **(d)** a sticky `local-name` binding (no `ttl`) resolves with effective lifetime `max_ttl`. **Row (d) is the one an implementation passes by accident and fails on inspection**, since `min` over a null has no natural answer.
+
+> ***"or pinned"* is withdrawn from row (d) `[v1.17]` — it was unconstructible.** A pin can never carry a `hints.max_ttl`: §4.1 **step 1** returns the synthesized pin result *before* the step-2 filter and the chain are consulted, so no chain entry — and therefore no `hints` — is ever in scope. This is the identical category error §4.1a already names for `pinned` in `backend_kinds` (*"not a backend kind and cannot be reached from dispatch"*), repeated in a different field. **And the substantive answer, so it is not re-added: a pin is the user's own assertion, not a backend's answer.** The resolver ceiling bounds how long *a backend's answer* is honored; §4.1.2's pin carve-out already runs on that principle (*reach is the user's problem*). **A pin is correctly outside the ceiling.**
+
+**`REG-TTL-CEILING-REREAD-1` `[v1.17]` — the check for the half of the MUST that had no instrument.**
+**Class: `validate-peer` check** (behavioral, over the wire, one long-lived peer), category `registry`, authored per `GUIDE-CONFORMANCE` §7.0. Not a fixture-corpus vector.
+Neither ceiling check can discriminate **latched-at-start** from **read-at-resolution**, because a fresh peer per check reads its config exactly once either way — and read-at-resolution is precisely what the `[MUST]` above requires and what its whole security argument rests on. **One peer process, three resolutions, the `resolver-config` rewritten between them** via `set-resolver-config` (§4.3): `hints.max_ttl` absent → present → a lower value. The effective lifetime MUST track the **currently stored** config at every resolution. A peer that latches at start passes the first row and fails the second and third.
+
+> **Constructibility, per `GUIDE-CONFORMANCE` §5.2b.1 `[v1.18]`.** When this check was first pinned at v1.17 the state it requires was **not constructible by a conformance client** — no operation existed to rewrite a running peer's `resolver-config`, so the only satisfaction mode would have been in-process with a declared exclusion. **§4.3 is the enabling surface and it makes this wire-driven**, which is the mode this check now declares. *That the same missing operation blocked both this check and §4.1 step 2's write-time MUST is not a coincidence: a configuration surface with no defined write operation cannot be validated, cannot be rebound, and cannot be conformance-driven at all.*
 
 **Conformance:** **`REG-RENEW-TTL-CASCADE-1`** — three rows against a curated registry whose stored policy has no `default_ttl`: (a) renew **with** explicit `ttl` → accepted, successor carries it; (b) renew **omitting** `ttl` → accepted, successor carries **the superseded binding's** `ttl`, and the successor resolves under §6a.4; (c) the same renew against a policy that **does** carry `default_ttl` → successor carries the **policy's** value, not the predecessor's. Row (b) is the one that fails against both a null-minting peer and a refusing peer; row (c) is the one that fails against a peer that implemented inherit-first.
 
@@ -1560,6 +1647,7 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 - `system/registry:resolve` handler with the contract per §2.
 - `system/registry/binding` entity type — creation, signature verification, supersedes-chain validation, bare-hash field encoding per §3.
 - `system/registry/resolver-config` entity type — load + meta-resolver dispatch per §2.2 + precedence per §4.1.
+- **`set-resolver-config` / `get-resolver-config` (§4.3) `[v1.18]`** — whole-config validation before store, no partial application, and the `acknowledge_name_disclosure` override arm. **New surface: unimplemented in every seat at v1.18.**
 - Pinned-bindings precedence per §4.1.
 - Cryptographic signature verification on non-self-certifying, non-local-name bindings.
 - Honor observed revocations.
@@ -1570,8 +1658,20 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
 - Service advertisement (§3b) — `system/registry/service-advertisement` entity: signature-verify against the pinned deployment identity, fail-closed on tamper/expiry (§3b), the OPTIONAL `services` field on `ResolutionResult` with **absent as a valid floor** (§3b.1), and the §3b.2 per-service-type selection rules including the §3b.3 byte-pinned rendezvous-hash for `signaling`.
   - **Vectors.** Publish a signed advertisement → `resolve` returns it in `services`; a tampered and an expired advertisement each fail closed with no silent downgrade; a Tier-0 zone carrying no advertisement resolves normally with `services` absent. **The selection vector MUST use a two-member pool** — a one-member pool makes every construction agree and proves nothing (§3b.3).
 
-- **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** **The discriminator is name transmission, not remoteness `[v1.14]`.** A resolver-config that makes a **name-transmitting** backend (`dns-txt`, `well-known-url`, `did-web`, `consensus-anchored`) eligible for an unscoped name MUST be refused or normalized at load — whether by naming it in a rule that matches unscoped names or by carrying no `name_format_dispatch` at all; and resolving a bare (unscoped) name MUST produce no request carrying that name to any third party. **The observable is the absence of a request**, so the check asserts on the third-party endpoint receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
+- **`REG-DISPATCH-CATCHALL-LOCAL-1` (§4.1 step 2, §4.1a).** **The discriminator is name transmission, not remoteness `[v1.14]`.** Given a **conformant** resolver-config, resolving a bare (unscoped) name MUST produce no request carrying that name to any third party. **The observable is the absence of a request**, so the check asserts on the third-party endpoint receiving nothing — a resolver that leaks still returns a correct answer, which is why no result-asserting vector reaches this.
+  - **The *"refused or normalized at load"* clause is withdrawn `[v1.17]`.** It made the loading resolver enforce a rule whose subject — *did a distribution ship this, or did the operator write it?* — **it cannot observe**, since §6a.9.2's store-first rule puts both in one entity at one path. So it necessarily over-enforced and deleted §4.1 step 2's operator `MAY` in the same breath the spec granted it. The configuration half moves to the write surface (`REG-DISPATCH-CONFIG-REFUSED-1`); the runtime half is scoped to a conformant config above. **The contradiction was manufactured by the enforcement point, not by §4.1.**
   - **`peer-issued` resolved per §6a.4 through the signed root is explicitly admitted** and MUST NOT be asserted against: it is a read of a **remote** registry, and it is name-blind (§4.1 step 2's table). **Asserting on remoteness here contradicts §4.1a row 6**, which recommends `peer-issued` in the catch-all — the vector was written at v1.7 when the catch-all was `["local-name", "pinned"]` and the two properties coincided, and the re-key to name transmission did not reach it. A fixture asserting *"no read against any remote registry"* fails the default list this spec ships.
+- **`REG-DISPATCH-CONFIG-REFUSED-1` (§4.1 step 2, §4.3) `[v1.17]` — the config-write check, and the only one that can settle kind-scoped.**
+  **Class: `validate-peer` check** (behavioral, driven over the wire against a running peer), category `registry`. Authored per `GUIDE-CONFORMANCE` §7.0's routing rule for behavioral checks. Not a fixture-corpus vector; no byte-pinned data. **Constructible as of v1.18** — `set-resolver-config`/`get-resolver-config` (§4.3) are the enabling surface, and before they existed this check had no operation to drive.
+  `REG-DISPATCH-CATCHALL-LOCAL-1`'s observable is the **absence of a request**, and a kind absent from the `resolver_chain` transmits nothing under *either* reading — so the question of what the MUST binds was **unmeasurable by the check written for it.** Offer each config to `set-resolver-config` with `acknowledge_name_disclosure` absent:
+  1. broad rule (`*`) naming `did-web`, **and** a `did-web` chain entry present → **refused**.
+  2. broad rule (`*`) naming `did-web`, **no `did-web` chain entry at all** → **refused**. *This row is the kind-scoped discriminator; a chain-scoped implementation accepts it.*
+  3. **no `name_format_dispatch` at all** with `did-web` in the chain → **refused** (the second door above).
+  4. **Control:** a scoped rule (`did:web:*`) naming `did-web` → **accepted**.
+  5. **After every refusal, `get-resolver-config` MUST return bytes identical to before the offer.** Asserted separately because a peer that accepts-then-rewrites and a peer that refuses both return a non-success on some path, and **only the stored bytes distinguish them**. This is the row that pins "reading is not writing."
+  6. **The override arm:** row (a)'s config re-offered with `acknowledge_name_disclosure: true` → **accepted and stored**. Without this row the operator `MAY` is unexercised, and a peer that refuses unconditionally — deleting the `MAY` — scores identically to a conformant one on rows 1–5.
+  7. **Classifier rows (§4.1b), each naming `did-web` as its `backend_kinds`:** `*.*` → **refused** · `*.e*` → **refused** · `*.eth` → **accepted** · `a.b` → **accepted** · `*.lab` → **refused**. These five are where independent readings of the old undefined predicate diverged; a peer classifying by "does any literal exist" passes rows 1–6 and fails `*.*` and `*.lab`.
+  8. **Pin-delta rows (§4.3):** a config differing from the stored one **only** in `pinned_bindings`, offered with `registry-configure` alone → **`403 not_entitled`, nothing written**; the same offer carrying `registry-pin` as well → **accepted**; and a config with `pinned_bindings` byte-identical, `registry-configure` alone → **accepted**. The third row is the control — without it a peer that demands `registry-pin` on every write passes both others.
 - **`REG-NAME-CONSTRAINTS-GRAMMAR-1` (§6a.9.1, §4).** `name_constraints` uses §4's matcher, and the spec's own `*.lab` example cannot discriminate that from a shell-glob. Against a live-mode issuer policy, four rows plus a control:
   1. `name_constraints: "a?c"` → a register-request for the literal name **`a?c`** is admitted; **`abc`** is refused `403 not_entitled`. *(Inverted under `path.Match` / `fnmatch`.)*
   2. `name_constraints: "a[bc]d"` → **`a[bc]d`** admitted, **`abd`** refused.
@@ -1584,7 +1684,7 @@ These are deployment configurations, not a hierarchy. Each is a valid choice for
   - **`REG-PEERISSUED-NULL-TTL-1`** — a peer-issued binding with `ttl: null`; the resolver MUST refuse and advance (§6a.3, §6a.4).
   - **`REG-ISSUER-NULLTTL-POLICY-1`** — two-stage, matching `REG-ISSUER-DOMAINCTRL-STORED-1`: `set-issuer-policy` with a live mode and `default_ttl: null` MUST be refused `400`; then write that policy entity **directly** and attempt live registration with a request omitting `requested_ttl` — MUST refuse `403 policy_rejected` and publish nothing.
 
-(Resolution-log is SHOULD per §11.2 — moved out of MUST to avoid the write-amplification hot-path issue surfaced by the cohort review.)
+(Resolution-log is SHOULD per §11.2, not MUST: one log write per top-level `meta_resolve` puts a write on the resolution hot path, and resolution is the highest-frequency operation this extension defines.)
 
 ### §11.2 SHOULD implement
 

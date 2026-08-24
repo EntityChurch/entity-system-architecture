@@ -494,6 +494,12 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 
 Extension specs have their own conformance section. An implementation MAY be conformant to the core protocol without implementing any extensions. Extension conformance is independent.
 
+**A conformance item MUST declare its class, and "vector" alone does not `[MUST]`.** `GUIDE-CONFORMANCE` §7.0 names three different artifacts the word is used for — a **`validate-peer` check** (behavioral, driven over the wire against a running peer, authored by the oracle author), a **fixture-corpus vector** (static byte-level `.diag` + canonical `.cbor`, authored upstream), and an **impl-internal unit / property / fuzz test** (not cross-impl, not conformance). A spec that pins a conformance item **names which**, because the three have different authors, different homes, and wildly different costs to satisfy — and an undeclared item routes work to a seat that does not author it.
+
+**The classes are not interchangeable as evidence, which is the substantive reason and not a filing convention.** A pure-function check any seat can satisfy in-tree with no harness proves almost nothing about interop; a behavioral check against a live peer may require harness capability nobody has built. **Reporting both as "3-way green" reads as one level of assurance and delivers two.** Where a spec's own text distinguishes them — *"landed 3-way GREEN, injected-reader"*, *"byte-pinned"* — it is making exactly this distinction, and it should be made everywhere rather than where an author happened to remember.
+
+**And per `GUIDE-CONFORMANCE` §5.2b.1, a pinned item states its satisfaction mode when the state it needs is not constructible** — wire-driven where the enabling surface exists, in-process with a declared exclusion and an executed-and-dated mutation otherwise. **An item pinned without that check is a rule that cannot be discharged, which the next implementer discovers instead of the author.** *(Both rules recorded here 2026-08-19 after an extension pinned two behavioral checks as bare "vectors," one of them against a configuration surface that had no write operation to drive it — so the check was unconstructible and the MUST it served had no surface to bind to.)*
+
 **Availability-descriptor vectors (§8.2a).** A surface using the descriptor pins **both** conditional-field
 rules, not only the four states — the conditional rules are where implementations diverge:
 
