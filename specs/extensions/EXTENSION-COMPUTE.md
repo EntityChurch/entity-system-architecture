@@ -2128,7 +2128,7 @@ re_evaluate(expression_uri, subgraph_path, emission_context):
 
 This is the same model as NaN propagation in IEEE 754 arithmetic — errors are values that flow through computation and are detectable at any point.
 
-**Error short-circuit normative.** Once a `compute/error` enters a value position, all expression types that consume values MUST short-circuit and propagate the error rather than attempting to read its fields. This includes `compute/arithmetic`, `compute/compare`, `compute/logic`, `compute/field`, `compute/construct`, `compute/apply` (both handler and closure modes), and `compute/if` (condition position — a `compute/error` condition short-circuits the `if` to the error, neither branch is evaluated). The §4.1 pseudocode enforces this via `if is_error(x): return x` after every sub-evaluation, where **`is_error` is the kind-based predicate §4.1 defines** — a `compute/error` that evaluated *successfully* under SA-1 is still an error here. Implementations MUST produce the same short-circuit behavior regardless of how they structure their evaluator.
+**Error short-circuit normative.** Once a `compute/error` enters a value position, all expression types that consume values MUST short-circuit and propagate the error rather than attempting to read its fields. This includes `compute/arithmetic`, `compute/compare`, `compute/logic`, `compute/field`, `compute/construct`, `compute/apply` (both handler and closure modes — **over the operands the apply consumes**: `resource`, `capability`, and closure arguments bound to parameters; **a builtin's write payload is not a consumed operand — see the SA-9 `store` worked example below**), and `compute/if` (condition position — a `compute/error` condition short-circuits the `if` to the error, neither branch is evaluated). The §4.1 pseudocode enforces this via `if is_error(x): return x` after every sub-evaluation, where **`is_error` is the kind-based predicate §4.1 defines** — a `compute/error` that evaluated *successfully* under SA-1 is still an error here. Implementations MUST produce the same short-circuit behavior regardless of how they structure their evaluator.
 
 > **Worked example — an error in a `compute/construct` field `[the case that diverged three ways]`.**
 > A `compute/error` literal is the `value` field of a `compute/construct`, construct as root.
@@ -2147,6 +2147,32 @@ This is the same model as NaN propagation in IEEE 754 arithmetic — errors are 
 >
 > **Where an error does materialize:** only where it is written — the §7.2 `result_path` and SA-9
 > `store`. That is the sole surface §2.4's code-only content-hash rule governs.
+
+> **Worked example — an error as SA-9 `store`'s `value` `[the case the two readings answer oppositely; MUST]`.**
+> The store builtin is dispatched as a `compute/apply` in **handler mode**, so the rule above appears
+> to reach its `value`. **It does not, and the boundary is what this example pins.**
+>
+> **An apply short-circuits on the operands it *consumes* — `resource`, `capability`, and closure
+> arguments bound to parameters. A builtin's *write payload* is not consumed.** SA-9 `store`'s
+> `value` is handed opaquely to the handler and materialized at the write site, so:
+>
+> - **`store(path, <a compute/error>)` writes a code-only `compute/error` to `path`** and the store
+>   succeeds. It does **not** propagate and write nothing.
+> - **Both in-language forms behave identically** — a minted error and one that evaluated successfully
+>   as a value under SA-1 — because `is_error` is kind-based (§4.1). One value, one behaviour.
+> - An error in the apply's `resource` or `capability` **does** short-circuit, unchanged.
+>
+> **The principle, which is this paragraph's own rationale applied honestly.** Short-circuit exists so
+> that no expression *reads an error's fields*. A write payload's fields are never read — they are
+> materialized under §2.4's code-only rule, which exists precisely to define what those bytes are.
+> **The hazard the short-circuit rule guards against does not arise at a write site**, and extending
+> the rule there would forbid the one thing §2.4 is written to describe.
+>
+> **The tell, if the principle is ever doubted.** Under the propagate reading an error could never
+> reach the store write, so "stored via SA-9 `store`" in §2.4 — and every statement naming that site —
+> becomes text that can never execute. **Unreachable normative text reads as licensing and is how one
+> implementation's wrong branch was chosen before.** The write reading is the only one under which the
+> whole taxonomy is reachable.
 
 **Installation grant failure** is a special case. When the installation grant is revoked or expired, the error entity written to the result path has code `installation_grant_invalid`. The subgraph freezes — no further re-evaluations occur until a new installation grant is provided (via re-installation).
 

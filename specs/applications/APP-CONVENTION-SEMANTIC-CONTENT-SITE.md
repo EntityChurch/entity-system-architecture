@@ -139,7 +139,9 @@ peer-id      = bstr                          ; a peer identity reference (V7 §1
   legacy-web surface, not a tree-storage rule.
 
 A cross-impl vector ships a fixture pin signed by a known identity with expected signature bytes, so
-workbench↔egui↔godot verify **byte-identically** before circulation closes.
+that **at least two independent L5 implementations** verify **byte-identically** before circulation
+closes. **Independent means built over different cores** — two front ends linking the same core cannot
+disagree about it and do not constitute two.
 
 ## 3. The base format & the inline-embed grammar `[LOCKED — EMBED pushed this down to here]`
 
@@ -400,7 +402,7 @@ A FORMAT convention is not validated until vectors exercise it (PRIMER meta-rule
 - A **`SiteManifest`** CBOR + expected hash; a **`SitePage`** round-trip (markdown body with a `::embed`
   directive → lowered `child` `Embed` → re-serialized, byte-identical).
 - A **signed `site-root` pin** that verifies **cross-impl** (`G-PIN-3`) — fixture signed by a known identity, with
-  expected signature bytes (workbench↔egui↔godot byte-identical).
+  expected signature bytes (byte-identical across at least two independent L5 implementations).
 - A **reproducible-publish** test (`G-PIN-4`) — one fixture, two publishers, identical site root.
 - An **`::embed` directive ⇔ child-`Embed` lowering** vector (round-trip lossless, §3.2) — including a `ref` of
   **each form** (leading-`/` path and bare content-hash) to pin the `F-1` discrimination rule.

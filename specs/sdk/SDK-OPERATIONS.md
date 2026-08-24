@@ -708,6 +708,14 @@ connected_peers() → [PeerInfo]
   }
 ```
 
+> **This is a pool snapshot, not liveness — read `system/peer/status` for that.** `connected_peers`
+> reports what the connection pool currently holds, which reads like liveness and is not: a
+> mid-session drop leaves a stale entry that still says connected until something reaps it. **Two
+> implementations have now built the snapshot-as-status shape**, one of them finding it reported
+> `Connected` straight through a drop and replacing it with a read-model over `system/peer/status`
+> (`EXTENSION-NETWORK` §5.4.1, which is transition-written). Non-normative, and recorded here
+> because this is the surface a reader reaches for first.
+
 ### 7.4 Reentry Authority Carriage
 
 The concurrency floor above lets a handler originate an outbound EXECUTE **back to the caller over the same inbound connection** while still servicing the caller's frame — the §6.11 reentry seam (GUIDE-CONFORMANCE.md §7a.2a; V7 §6.13(b)). That reentry direction (this peer → caller) can only be authorized by a capability valid *at the caller*, so the caller must hand the reentry authority over as part of the request. The SDK is the surface for carrying it.

@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "Accepted narrative debt in NORMATIVE specs only. Informative arch-docs/charters are class-exempt (arch-tools 2d52deb), not listed here. --update-baseline may only lower a count.",
-    "total": 489,
+    "total": 478,
     "files": 30,
     "rules": [
       "amendment-provenance",
@@ -53,7 +53,7 @@
     },
     "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md": {
       "amendment-provenance": 2,
-      "impl-team-ref": 16,
+      "impl-team-ref": 14,
       "proposal-citation": 1
     },
     "specs/domains/DOMAIN-LOCAL-FILES.md": {
@@ -113,7 +113,7 @@
     },
     "specs/extensions/EXTENSION-NETWORK.md": {
       "amendment-provenance": 52,
-      "date-in-body": 19,
+      "date-in-body": 18,
       "impl-team-ref": 20,
       "proposal-citation": 5
     },
@@ -123,9 +123,9 @@
       "proposal-citation": 5
     },
     "specs/extensions/EXTENSION-REGISTRY.md": {
-      "date-in-body": 26,
+      "date-in-body": 23,
       "impl-team-ref": 19,
-      "proposal-citation": 12
+      "proposal-citation": 11
     },
     "specs/extensions/EXTENSION-RELAY.md": {
       "amendment-provenance": 3,
@@ -148,7 +148,7 @@
       "proposal-citation": 4
     },
     "specs/extensions/EXTENSION-SIGNALING.md": {
-      "date-in-body": 25,
+      "date-in-body": 21,
       "impl-team-ref": 16,
       "proposal-citation": 4
     },

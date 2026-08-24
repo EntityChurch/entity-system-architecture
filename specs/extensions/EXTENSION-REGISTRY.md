@@ -1,6 +1,6 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.5
+**Version**: 1.6
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -15,6 +15,7 @@
 > **🟡 Design folded, build in flight / deferred:** **service advertisement (§3b — ratified + folded 2026-08-14 (v1.5), from `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT`, DRAFT since 2026-07-22). The `system/registry/service-advertisement` entity and the §3b.1 `services` field are built in NO tree — source-read in all three 2026-08-14 (`entity-core-go` `8765e1f`, `entity-core-rust` `cc6cb56`, `entity-core-py` `808d9e6`); a dated observation, not a standing fact. What IS built three-way is §3b.2/§3b.3's rendezvous-hash *selection function over a caller-supplied pool* (`ext/signaling/pool.go`, `extensions/signaling/src/pool.rs`, `signaling/pool.py`) — so all three select correctly from a pool nothing can yet deliver. The build ask is the entity + the resolve field; the selection half is already green.** Peer-issued live registration `open`/`allowlist`/`manual` (§6a.9 — buildable now, cohort dispatch in flight); the manual-approval path (**§6a.9.3 — ruled 2026-08-13 (v1.3), corrected 2026-08-14 (v1.4). Built in all three within a day of the ruling and measured green: `entity-core-go` `7e0fb7c`, `entity-core-rust` `4107c32`, `entity-core-py` `808d9e6`; go's `registry_issuer` oracle 27/27 against each sibling, 0F. Source-read in each tree 2026-08-14, not carried from a report — a dated observation, not a standing fact: re-read the peers' trees before citing it (`docs/DOCTRINE-COHORT-STATE-TRACKING.md` D8).** The four gaps the builds exposed — the `denied` status enumeration, the un-typed decision input, the superseded-head code, and supersession observability — are **ruled in v1.4** and are the remaining fold for all three); signed binding-manifest impl (§6a.7 — format locked, impl deferred).
 >
 > **🔴 NOT yet designed — outstanding work before this extension is "done":**
+> - **A credential channel for `data_relay`** (§3b.0a, **new in v1.6**) — §3b advertises where a relay is and whether a peer may use it, and specifies nothing that authenticates a peer to it. **`policy: open` is therefore the only interoperable data-relay deployment; `members` and `metered` are reserved shape, not usable capability.** Needs an issuer, a rotation model, and a delivery route for a secret — none of which the endpoint-shaped machinery of §3b extends to.
 > - **`domain-control` DNS-challenge format** (§6a.9.1) — must be ONE mechanism shared with the web-native `dns-txt`/`well_known_url` backends; settles with *that* proposal, not here.
 > - **Other backends** — did-web, dns-txt, dht, consensus-anchored (§12) — each its own proposal.
 > - **Aggregator Mode-A federation** (§8.2, v1-deferred); **outbound DID/DNS bridge** (§12, v1-deferred).
@@ -232,8 +233,8 @@ infrastructure a deployment offers** — the STUN reflector and signaling/rendez
 needs to *establish* a direct connection, and the optional relay fallbacks. Before this section
 that infrastructure was out-of-band configuration, and the consequence was concrete: all three
 implementations built §3b.2's pool-selection rule and had no protocol way to learn a pool to select
-from (`entity-browser-rust` `ROUTING-2026-08-14` reports the browser-leg face of it — a browser peer
-negotiating with host candidates only, because nothing fills its ICE server list).
+from. The browser-leg face of it is a peer negotiating with host candidates only, because nothing
+fills its ICE server list.
 
 A deployment publishes **one signed, static-served `system/registry/service-advertisement`** in its
 registry zone, alongside its bindings. It is the entity-native SRV-analog to §3's A-record and
@@ -266,7 +267,7 @@ system/registry/service-advertisement := {
 
 **Why not §6.5, stated as a category rather than a type mismatch.** A §6.5 transport profile describes how to reach an **entity peer**: it carries `supported_ops`, `freshness`, `nonce_required`, and `cap_flow`, none of which mean anything for a STUN reflector. **A reflector is not a peer.** It speaks RFC 5389 over UDP (`EXTENSION-SIGNALING.md` §9.3), holds no identity, completes no handshake, and answers no entity operation — `EXTENSION-NETWORK.md` §6.7.1 already refuses to conflate the two in the other direction. A TURN relay is the same. Pointing this field at §6.5 was a **category error**, and the type mismatch below was its symptom.
 
-**The mismatch it caused `[the reason this is a MUST]`.** §6.5.1a D4 pins the live form to the object `{url: "<scheme>://…"}`, while §3b.3 hashes "the advertised endpoint **string's** bytes exactly as published." **An object has no string's bytes**, so two implementers could each be textbook-correct and diverge — one hashing the CBOR encoding of the `{url: …}` map, the other the UTF-8 of the inner `url` value. Different bytes → different SHA-256 → different `argmax` → **the two peers select different `signaling` members and never meet**, which is the exact silent failure §3b.2 makes MUST and §3b.3 pins to the byte to foreclose, reintroduced one level down in *what identifies a member* — a free variable §3b.3's own preamble names. *(Reported by `entity-browser-rust` 2026-08-14, before any implementation existed. The ambiguity was **inherited**: `PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT` already wrote `"endpoint": {url}` alongside "the advertised endpoint string's bytes", so re-reading the proposal reaches the same fork — and the fold did not catch it.)*
+**The mismatch it caused `[the reason this is a MUST]`.** §6.5.1a D4 pins the live form to the object `{url: "<scheme>://…"}`, while §3b.3 hashes "the advertised endpoint **string's** bytes exactly as published." **An object has no string's bytes**, so two implementers could each be textbook-correct and diverge — one hashing the CBOR encoding of the `{url: …}` map, the other the UTF-8 of the inner `url` value. Different bytes → different SHA-256 → different `argmax` → **the two peers select different `signaling` members and never meet**, which is the exact silent failure §3b.2 makes MUST and §3b.3 pins to the byte to foreclose, reintroduced one level down in *what identifies a member* — a free variable §3b.3's own preamble names.
 
 **A second consequence, and the reason the form is pinned and not merely the type.** `"<scheme>://…"` **cannot express a valid ICE URL at all.** A browser hands these to `RTCIceServer.urls`, which requires the RFC 7064/7065 non-hierarchical form, and a malformed entry does not degrade — it **throws at `RTCPeerConnection` construction**, taking out the establisher rather than falling back to host-only. Publishing the URI in its final form means a consumer hands the **published bytes to the ICE agent verbatim, with no transform** — which is also the ENTITY-CORE-PROTOCOL.md §1.8 byte-preservation posture, since a re-encode on a boundary is *the* interop hazard.
 
@@ -298,6 +299,36 @@ attributes of any one peer; advertising them once per deployment rather than onc
 both reality and cost. A peer MAY still override per-peer where it genuinely differs — and the
 connector-entered-by-URL path, which never performs a resolve at all, is served by
 `EXTENSION-SIGNALING.md` §4.5 rather than by this entity.
+
+### §3b.0a `data_relay` carries no credential, and that is a named gap — not a floor
+
+**This section specifies where a data relay *is*, and whether a peer *may* use it. It does not
+specify how a peer *authenticates* to it, and nothing else in this corpus does either.** The
+`data_relay` member carries `endpoint`, `priority`, and `policy` — there is no username, no
+credential, and no mechanism that mints one.
+
+**What that costs, per policy:**
+
+| `policy` | Usable today | Why |
+|---|---|---|
+| `open` | **Yes** | an unauthenticated relay needs nothing this field does not carry |
+| `members` | **No** | admission is asserted but not provable — there is no credential to present |
+| `metered` | **No** | the same, and this is the policy whose whole purpose is attributing billed bytes to a payer |
+
+**So two of the three policies are declared and unreachable.** A consumer handed a `turn:` endpoint
+under `members` or `metered` gathers **no relay candidates**, and — because ICE reports that as an
+ordinary failure to find a path — the result is indistinguishable from a NAT that could not be
+punched. **An implementation SHOULD refuse a `data_relay` endpoint it has no credential for, rather
+than install it and fail silently**; a refusal at configuration time is diagnosable and a silent
+empty candidate set is not.
+
+**This is a deferral, stated so the absence is explicit rather than discovered.** Specifying a
+credential channel means choosing an issuer, a rotation model, and a delivery route for a **secret**
+rather than an endpoint — none of which the endpoint-shaped machinery of this section extends to.
+Until it exists, **`policy: open` is the only interoperable data-relay deployment**, and the
+`members`/`metered` values are reserved shape, not usable capability. **The credential channel is
+upstream of any question about how relay provisioning reaches a peer or how often it is re-read** —
+there is no rotating secret to route or refresh until something issues one.
 
 ### §3b.1 The `services` field on `ResolutionResult`
 
@@ -375,8 +406,8 @@ the weight *wrongly*. It **cannot** catch several implementations that each comp
 over different operands* — each is internally self-consistent, and a fixture authored by one of them
 ratifies whichever operand its author chose. That is the cohort-consistency trap ([ADR-0012]: a
 cohort all passing one author's vectors is cohort-consistent, **not** independent convergence),
-sitting one level inside the very rule §3b.3 exists to pin. *(Raised by `entity-browser-rust`
-2026-08-14 against the first draft of this section, which asked only for two members.)*
+sitting one level inside the very rule §3b.3 exists to pin. **Two members are not enough to
+discriminate**, which is why the properties below are stated rather than a member count.
 
 This section states the **properties the vector must have**. The vector's own bytes are **not
 authored here** — they are generated and pinned by the conformance oracle, and cited
