@@ -55,10 +55,26 @@ path to TTL-bound. *That third one is a reason gossip is a separate primitive, n
 | **V1.0** | Forwarding + a `system/routes` entity: `{peer_pattern, via, address}` with a default route. **The routing table as an entity already existed.** Three transit patterns named — Relay / Tunnel / Circuit — the ancestors of Mode F / ENCRYPTION / Mode C |
 | **V2.0** | A clean four-way Layer-5 split: **`system/routes` · `system/relay` · `system/gossip` · `system/replicate`**. `system/relay/v1/forward` carried `{destination, payload, ttl, path}` — **`path` is source routing; we had it.** `system/gossip` was a real design: digest-based anti-entropy, explicitly "epidemic broadcast" |
 | **V2.0** | `bounds {ttl, budget, chain_id, await_stack}` — constant-size cycle detection, the generic substrate under all propagation |
-| **V7** | Relay survived and matured, but **lost `path`** (collapsed to single `next_hop`) — the multi-hop gap. `bounds` survived. **`system/routes` and `system/gossip` did not.** |
+| **V7** | Relay survived and matured, but **lost `path`** (collapsed to single `next_hop`) — the multi-hop gap. `bounds` survived. **`system/routes` and `system/gossip` were not carried forward** |
 
 **`EXTENSION-ROUTE` v1.0 is now Active — `routes` is recovered. `GOSSIP` is the one still
 outstanding**, and its absence is called *"a real gap for the federation/mesh vision."*
+
+> **Correction, 2026-08-28 — operator, and the wording matters more than it looks.** This table read
+> *"`system/routes` and `system/gossip` **did not survive**,"* and elsewhere the record was read as
+> though the two had been **dropped**. **They were not.** The operator's account, which is the
+> authoritative one: *"we didn't have time to work on it, we didn't have time to validate it, and we
+> weren't sure it was a top-tier extension or something else — we haven't dropped it, we just
+> haven't finished it."*
+> **Why this is a substantive correction and not a style note.** *Dropped* asserts a **decision**
+> was taken, and a decision is a thing a reader reasons forward from — it implies the design space
+> was closed, the question settled, and re-opening it needs a new argument. *Unfinished and
+> unranked* is the opposite: the work is live, the tier question is genuinely open, and nobody owes
+> a justification to pick it back up. Arch published the first reading to the operator on
+> 2026-08-27 as a finding (*"V7 dropped it"*), which is the **L8 shape on a history rather than an
+> artifact** — a survivorship table is a record of what got carried, never evidence about why.
+> **The status is: unfinished, deliberately unranked, and available.** Item 6 below already states
+> the shape correctly; it is the *narrative* around it that had drifted.
 
 ## §2 Relay — the four modes, and what they actually are
 

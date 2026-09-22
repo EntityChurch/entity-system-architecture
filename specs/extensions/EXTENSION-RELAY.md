@@ -346,6 +346,10 @@ tests MUST assert resumability (cursor round-trips and drains), NOT a FIFO order
 
 **Empty namespace is not an error.** A poll against a namespace the caller is authorized to read that currently holds no entries MUST return `{entries: [], has_more: false}` at status 200 — *not* `namespace_not_found`. This is the normal steady state for a freshly-created inbox (e.g. a reconnecting destination polling its own peer-id namespace before anything is queued, §6.2.1). `namespace_not_found` (§4.3) is reserved for deployments that require explicitly-provisioned namespaces, polled against one that was never provisioned.
 
+**An expired entry MUST NOT surface on `:poll`.** A store-entry whose `expires_at` is at or before the relay's current time is not returned in `entries`, is not counted toward `limit`, and does not stop the cursor making forward progress — expiry is honored **on read**, whether or not the entry has been physically reclaimed (§8). A relay MAY reclaim lazily; a poller MUST NOT be able to observe the difference.
+
+This is what makes `expires_at` mean anything to the receiver rather than only to the relay's GC: without it, whether a dead entry is visible depends on when a sweep happened to run, which is a cross-peer-observable difference between two conformant relays with identical stored state. The same reasoning as the empty-namespace rule above — **the poll result is a statement about live entries, not about storage.** `expires_at` remains a creation-side rejection at `:put` (`expired_on_arrival`/400, §4.3); this is the read-side half of the same field.
+
 ### §4.3 Error taxonomy
 
 All relay ops fail via the standard V7 ERROR shape (status centralized per V7 §3.3; codes domain-scoped). Errors are **fail-closed**: on any error the op performs no partial effect (no forward, no store, no dequeue) — consistent with the v7.75 substrate-resilience posture (bounded resources, deliver-or-signal, never silently drop).
@@ -527,7 +531,7 @@ For Mode S to serve "current state of publisher's tree" use cases, a signed muta
 ## §8 GC posture (per `GUIDE-GC.md`)
 
 - **Mode F entries:** transient; GCed once forwarded (or after a small bounded retry window). No persistent state.
-- **Mode S entries:** persistent; honor `expires_at`; operator-configured `relay_store_retention` knob (default unlimited); per-namespace eviction policy optional.
+- **Mode S entries:** persistent; honor `expires_at` — **which is a read-side obligation before it is a reclamation one: an expired entry MUST NOT surface on `:poll` (§4.2), whether or not it has been reclaimed.** Reclamation timing is the relay's; visibility is not. Operator-configured `relay_store_retention` knob (default unlimited); per-namespace eviction policy optional.
 - **Mode-S fallback entries** (queued-fallback, §6.2.1): persistent until polled or `expires_at`; same retention knob.
 - **Advertise entities:** persistent; renewed on relay restart; respect `expires_at`.
 - **Mode A subscriptions / aggregated backlog** (deferred): operator-configured retention; default unlimited.
@@ -552,7 +556,7 @@ There are two envelopes; only one is decoded.
 A conformant RELAY v1 **implementation** MUST implement **both** Mode F (forward) and Mode S (put/poll) — both are part of the v1 floor and both MUST be testable. A **deployment** MAY advertise and enable any subset of modes (a static-CDN relay enables only Mode S; a forwarding relay enables only Mode F). Conformance is gated on the implementation's mode support; mode enablement is deployment policy.
 
 - `system/relay:forward` (Mode F): forwarding to a designated next hop, with `ttl_hops` decrement and reject-at-zero, the intermediate-vs-terminal-hop dispatch shape (§3.1.1 — terminal hop forwards the inner envelope's raw bytes verbatim, no decode/re-encode), and Mode-S fallback for unreachable destinations (§6.2.1). **Source-routed multi-hop (v1.1, §3.1.1):** when `route` is present, pop the head per hop (`route' = route[1:]`, `next_hop' = route'[0]`, `ttl_hops−1`), enforce `relay-forward` at every hop, reject `next_hop ≠ route[0]` pre-dispatch (`invalid_request`/400). A single-element `route` MUST behave identically to the equivalent `next_hop` single-hop request, and a v1.0 single-hop request (no `route`) MUST encode byte-identically (omitempty).
-- `system/relay:put` + `system/relay:poll` (Mode S): namespace addressing, relay-owned cursor (resumable; order impl-defined, §4.2), empty-namespace-returns-empty (§4.2), `put_by == authenticated session/connection peer` verification (§3.2).
+- `system/relay:put` + `system/relay:poll` (Mode S): namespace addressing, relay-owned cursor (resumable; order impl-defined, §4.2), empty-namespace-returns-empty (§4.2), **expired-entry-not-surfaced (§4.2)**, `put_by == authenticated session/connection peer` verification (§3.2).
 - `system/relay:advertise`: entity creation + publication, signed per V7 §5.2 (no `refs:` block).
 - Per-op cap enforcement (§5.2); self-poll default grant + fallback-under-forward-authority (§5.5); fail-closed error surfacing (§4.3).
 - Envelope opacity (§9).

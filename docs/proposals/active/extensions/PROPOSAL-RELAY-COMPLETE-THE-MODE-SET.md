@@ -84,9 +84,29 @@
 > **push/epidemic** answer. Likely siblings"* — and its §6 map places Mode A **inside RELAY's box**.
 > **The boundary separates Mode A from gossip, not from relay.**
 
-**Status:** DRAFT (2026-08-17)
-**Target:** `specs/extensions/EXTENSION-RELAY.md` §1, §2, §3.3, §3.4, §4, §11.1, §11.1a, §11.3 ·
-`specs/extensions/EXTENSION-REGISTRY.md` §8.2 (the inherited deferral) · `EXTENSION-SUBSCRIPTION` §8
+> ## ➕ SECOND THREAD ADDED — 2026-08-30. **The operational half: store-and-forward under churn.** §9–§11
+>
+> **This proposal was about which modes exist. The second thread is about whether the two that ship
+> actually work when peers come and go** — and it arrived from the other direction: an operator
+> question about volunteer relays, capacity, retry and *"where do I publish 'if you're looking for
+> it, find it here'."*
+>
+> **It belongs here rather than in a new file, and the reason is this proposal's own §7.** That
+> section is *"the checklist this proposal closes against"* and its **item 3 already reads
+> "Mode A retention bounded — unlimited is not a default, it is an unbounded accumulation."*
+> The finding is that **the identical defect sits on Mode S, which is the mode that ships**, and that
+> §4's *"stop deferring spec text"* names the disease for all seven new deltas. One proposal, two
+> threads, one checklist. The mode-set thread is unchanged and nothing below disturbs it.
+>
+> **Three of the seven deltas are transplants of rules this corpus has already ruled elsewhere**, not
+> new design — see §9. **Two of the seven were changed by their own stress tests** (§10), and the
+> first draft of both would have shipped a worse rule than the one it replaced.
+
+**Status:** DRAFT (2026-08-17; second thread 2026-08-30)
+**Target:** `specs/extensions/EXTENSION-RELAY.md` §1, §2, §3.1, §3.3, §3.4, §4.1, §4.3, §6.2.1, §8,
+§11.1, §11.1a, §11.3 · `specs/extensions/EXTENSION-REGISTRY.md` §8.2 (the inherited deferral) ·
+`guides/GUIDE-CROSS-PEER-MESSAGING.md` §3A (D2, executed — see §9) · `EXTENSION-NETWORK` §8
+(§9's N-finding; no delta proposed here) · `EXTENSION-SUBSCRIPTION` §8
 (cross-reference only, no normative change)
 **Tier:** `extensions/` — validated by go · rust · py. **Not keystone** (§6 — corrected 2026-08-17)
 **Provenance:** the operator, 2026-08-17, disputing §11.1a out loud. Recorded in
@@ -583,6 +603,23 @@ seat implemented the spec as written.
     `CORPUS-REFERENCE-INTEGRITY`'s work, not RELAY's; RELAY's four are in scope here because the
     rulings they name are the ones this proposal must not disturb.
 
+**Added 2026-08-30 by the second thread (§9). The checklist was written for "which modes exist"; these
+seven are "do the two that ship survive churn."**
+
+11. **Expiry is visible in the spec, not only in three test suites** — the poll-visibility rule
+    (D1).
+12. **No claim of a delivery-status capability we do not have** — the guide's DSN row (D2).
+13. **No success code over a store the destination cannot reach** — §6.2.1's undecidable `MAY`
+    (D3).
+14. **Retention is declared, published and bounded**, on REGISTRY §6a.9.1's ruled ceiling/clamp
+    shape (D4).
+15. **A full store refuses; it never evicts an accepted entry**, on NETWORK §8.4's already-ruled
+    table (D5).
+16. **A stored envelope that dies is observable to the party that placed it** (D6) — the one item
+    here that is genuine new design, broken down in §11.
+17. **The originator's delivery deadline reaches the party that enforces it** (D7) — today it is
+    stated in a field the relay is forbidden to read.
+
 ---
 
 ## §8 Sequencing
@@ -594,3 +631,364 @@ gap is pre-Friday (**F1** in the triage) and it touches the same signed-mutable-
 
 Post-release order: §2 and §3 rulings (they are one conversation with Q18) → §4's disposition rule →
 §2.1's three real gaps → §5's wire half with the three core peers.
+
+**Second thread (§9), sequenced independently and cheaper.** D1 and D2 are landable now and do not
+touch the mode question. D4/D5/D7 are single-field deltas on a shape this corpus has already ruled
+elsewhere. **D3 is the only one that costs a peer anything** — it invalidates four conformance checks
+that currently pin the defect — and D6 is design work that should not be rushed to keep the others
+company. Order: **D1 · D2 → D4 · D5 · D7 → D3 → D6.**
+
+---
+
+## §9 The operational half — store-and-forward under churn
+
+**Scope.** Not *which* modes exist — whether **store-and-poll**, the mode that ships and that every
+static-hosted peer already is, behaves honestly when the destination is not there. **Nothing here
+touches Mode F/S wire behaviour on the success path**, the two load-bearing arch rulings, or V7.
+
+**Where the build-state evidence lives.** Every *"measured"* claim below was taken by reading the
+implementation trees, and the per-seat `(repo, commit, file:line)` pins are recorded once, in
+`docs/status/AUDIT-2026-08-30-b-store-and-forward-under-churn-the-give-up-path-is-missing.md` — an
+internal document, per this index's own note on unpublished working records. **They are deliberately
+not restated here**: a build-state claim in a durable document is a dated measurement that expires,
+and one canonical home per fact is the rule. What §9 carries is the *spec* defect, which does not
+expire.
+
+**The one-sentence finding: the corpus answered "where does the message go" and never answered "what
+happens when it doesn't get there."** Three of the operator's four questions are already answered and
+two of them are landed entity types — store-vs-forward is NETWORK §10 → §10.2 → RELAY §6.2.2; *"when
+do I retry"* is **you don't, by design**, because delivery is pull and the relay stores once while the
+destination polls; and *"where do I publish find-it-here"* is `system/peer/inbox-relay` (§3.5), the
+MX-equivalent, signed and self-certifying. **The fourth — how much, how long, and what happens when I
+drop — is answered nowhere**, and it decomposes into the seven deltas below.
+
+### §9.0 Why this is not a new proposal, and how it is tracked
+
+Per this proposal's §7, *"complete on relay"* is a checklist, and §4 already asks the corpus to stop
+deferring spec text. **Every delta below is an instance of §4's disease** — a knob named once with no
+schema, an `optional` policy on a cross-peer-observable surface, a rule that lives in three test
+suites and no document. Opening a second RELAY proposal would split one checklist across two files and
+produce exactly the drift `docs/proposals/INDEX.md` exists to stop. **§7 items 11–17 are the tracking
+row; there is no second ledger.**
+
+**D2 is executed rather than proposed**, and it is the only one. It removes a **false capability claim**
+from a published guide — not a normative rule, and leaving a known-false statement on the public
+surface while a DRAFT matures is the worse of the two options. Recorded here so the trail is
+followable; nothing else in §9 is folded.
+
+### §9.1 The seven deltas
+
+| # | Delta | Target | Kind |
+|---|---|---|---|
+| **D1** | Expired entries **MUST NOT** surface on `:poll` | RELAY §4.2 (+ §8, §10.1) | **LANDED 2026-08-30** — cohort finding, fixed in place, no rev bump |
+| **D2** | Strike the DSN/bounce row and the stale closing sentence | `GUIDE-CROSS-PEER-MESSAGING` §3A | **executed** — false claim removal |
+| **D3** | §6.2.1's default convention gets a **decidable** predicate and a distinct result status | RELAY §6.2.1, §4.2 | ruling asked — **changed by ST-2** |
+| **D4** | `max_retention_ms` in the §4.1 advertise `limits`; retention is a **declared, clamped ceiling** | RELAY §4.1, §8 | **transplant** — REGISTRY §6a.9.1 |
+| **D5** | A store at its bound **refuses** (`storage_full`/507); it **MUST NOT** evict an accepted entry | RELAY §4.3, §8 | **transplant** — NETWORK §8.4 |
+| **D6** | The **give-up notice** — a stored envelope that dies is observable to whoever placed it | RELAY, new subsection | **new design** — §11 |
+| **D7** | `expires_at` on `forward-request` | RELAY §3.1 | ruling asked — **found by ST-1** |
+
+### §9.2 D1 — the rule that lives in three test suites and no document
+
+**All three engines skip expired entries on `:poll`.** §8 says only *"honor `expires_at`"*; poll
+visibility appears nowhere in `specs/`. One engine's own test cites *"§8 GC posture: expired entries
+MUST NOT surface on poll"* — **a sentence §8 does not contain.**
+
+This is the good version of the failure — convergence, not divergence — but it converged **in the
+comments**, which is where it decays the first time a seat refactors. It is also the exact shape
+`AGENTS.md` records for the resolver ceiling: *convergence was happening in the comments, where no gate
+could reach it.*
+
+> **LANDED 2026-08-30, in place, no rev bump — and it should not have been in this table at all.**
+> A rule that **all three engines already implement** and that the spec merely fails to state is the
+> textbook **cohort finding**, which this repo's lifecycle fixes in place. Writing a proposal section
+> about it instead of landing it is the failure mode the proposal backlog exists to warn about:
+> **the pile got heavier and the corpus did not get more correct.** Recorded here rather than quietly
+> corrected, because the misjudgement is the transferable part.
+>
+> **What landed is slightly larger than the delta as drafted, and the stress test is why.** The rule
+> is written as a **read-side** obligation — *an expired entry MUST NOT surface on `:poll`, whether or
+> not it has been reclaimed* — rather than as a GC note. Drafted as *"§8: expired entries are not
+> polled,"* it would have left visibility depending on **when a sweep happened to run**, so two
+> conformant relays with byte-identical stored state could answer the same poll differently. That is
+> a cross-peer-observable divergence, which is the one thing this corpus pins. The home is therefore
+> **§4.2, which owns the poll surface**, with §8 carrying the pointer and §10.1 the conformance row —
+> not §8 alone, where the delta was first aimed.
+
+### §9.3 D2 — a published guide claims a capability the stack does not have
+
+`guides/GUIDE-CROSS-PEER-MESSAGING.md` §3A's email-mapping table, **canonical and declared**:
+
+| Email layer | Our analog | State |
+|---|---|---|
+| DSN / bounce (status back to sender) | CONTINUATION `deliver_to` reply path | **landed** |
+
+and §3A.1 step 6: *"Bob's reply lands at Alice's `deliver_to`; her continuation advances — **DSN /
+reply**."*
+
+**A reply and a DSN are opposite objects.** `deliver_to` carries the **recipient's answer**. A DSN is
+generated **because there is no recipient** — by an intermediary, on failure or give-up, addressed to
+the sender. **It is the one row of nine where the analogy inverts, and it is the row a reader consults
+for exactly the case this thread is about.** Eight rows are honest; that is what makes the ninth
+persuasive.
+
+**Second defect, same document, and it is L23's second shape on the same-document axis.** §3A.1 closes
+*"every step maps to a landed mechanism except step 2 (the inbox-relay declaration)"* while **lines 28
+and 107 of the same file** correctly record that §3.5 landed and closed Q2. Residue from the
+pre-§3.5 exploration the section was lifted from: one fact, two homes, one stale.
+
+**Executed.** The row now reads honestly and the closing sentence is corrected.
+
+### §9.4 D3 — a `MAY` whose condition the actor cannot evaluate
+
+§6.2.1, when the destination declared no inbox-relay:
+
+> the relay **MAY store at the default convention** — namespace = destination `peer_id` on the current
+> forwarder — **which works when the forwarder is itself a relay the destination will poll**; if
+> neither a declared relay nor a usable default yields a reachable store target, surface
+> `no_inbox_relay` (502, **never a silent drop**).
+
+**"A usable default" is not decidable by the relay**, and the same section says so two paragraphs
+later: *"which relay(s) hold a fallback inbox for a destination is **not** discoverable in v1."* So a
+`MAY` chooses between an honest 502 and **`queued-fallback` — a success — over a store the destination
+cannot learn about.**
+
+**The aggravating half, measured.** One engine's conformance suite pins the leaky branch as expected
+behaviour in **four** checks, one of which passes with the message *"§6.2.1 fallback at namespace=…;
+never a silent drop."* And **both forged-declaration defenses route into it deliberately** — a forged
+`inbox-relay` is correctly rejected under V7 §5.2 and then *"falls through to default convention,"* so
+**the adversarial case lands in the branch that loses the message and reports stored.** The security
+behaviour is right; the fallback target is wrong.
+
+**Disposition — and it is not the one this delta was first drafted with (ST-2).** Do **not** simply
+retire the `MAY`. Instead:
+
+1. **Make the predicate decidable from state the relay already holds.** A relay knows whether it has
+   ever served an authenticated `:poll` from peer *D* at namespace *D* — it authenticates every
+   session already (that is what makes `put_by` trustworthy, §3.2). *"Will this peer poll me"* is
+   undecidable; ***"has this peer polled me"* is a local lookup.** The `MAY` becomes available only on
+   that record, and is otherwise `no_inbox_relay`/502.
+2. **Give the speculative case its own result status**, so the sender is never told the same thing for
+   a declared store and an undeclared one. `forward-result.status` gains a third value beside
+   `forwarded` / `queued-fallback` / `rejected`.
+3. **A rejected (forge-failed) declaration terminates at `no_inbox_relay`**, never at the default
+   convention. A signature failure is evidence about the *declaration*, not licence to guess.
+
+**Cost, stated plainly: this invalidates the four checks that currently pin the old behaviour**, which
+is the point — they encode the defect. It is cohort coordination and it is why D3 sequences after
+D1/D2/D4/D5/D7.
+
+### §9.5 D4 — retention, transplanted from a shape this corpus already ruled
+
+§8, one line, and **the only place `relay_store_retention` appears in the entire corpus**:
+
+> **Mode S entries:** persistent; honor `expires_at`; operator-configured `relay_store_retention` knob
+> (**default unlimited**); per-namespace eviction policy **optional**.
+
+*"Unlimited" is not a default; it is unbounded accumulation* — §2.1.2 already says so of Mode A, and
+**it applies with more force to Mode S, which is the mode that ships.** And §4.1's advertise `limits`
+block carries `max_envelope_size` · `max_storage_bytes` · `forward_rate_limit` — **it says how big and
+never how long.** `max_retention_ms` appears nowhere in `specs/`, `guides/` or `docs/proposals/`.
+
+**Duration is the number that decides whether store-and-forward works.** A peer offline for a week is
+the P2P norm — `EXTENSION-NETWORK` §2.2 says so in as many words, defending retry-forever as the
+reconnection default. **A sender choosing a relay, and a peer choosing which relays to name in its own
+§3.5 declaration, both need it and neither can learn it.**
+
+**This is L17 inverted, and worth naming as its own shape.** L17 is *a value with no declared site*.
+Here the value **has** a local site — §8's operator knob — and **no published site a counterparty can
+read.** The knob configures behaviour nobody can observe before depending on it, which is the same
+end state by a different route.
+
+**Do not design it — transplant it.** `EXTENSION-REGISTRY` §6a.9.1 ruled this exact shape for `ttl`
+and states its own reasoning: *"mandate that the bound exists and is declared and enforced; leave the
+value to the deployment"*, with **a request above the ceiling CLAMPED, not refused `[MUST]`**, a
+pinned config site (added after L17 fired on precisely this surface), and vectors for both sides.
+**The delta is that shape with `retention` substituted for `ttl`:**
+
+- `max_retention_ms` joins the §4.1 `limits` block — **published, so a counterparty can read it.**
+- `relay_store_retention` gets a schema site rather than a mention.
+- **A `store-entry` whose `expires_at` exceeds the relay's ceiling is CLAMPED, not refused**, and a
+  `store-entry` with **null** `expires_at` takes the ceiling as its lifetime — REGISTRY's own
+  null-arm rule, which exists because `min(x, ceiling)` has no arm for null.
+
+### §9.6 D5 — refuse, don't evict: already ruled, one queue over
+
+Today `storage_full`/507 is **a constant with no call site** in two engines and **absent** from the
+third; `max_storage_bytes` is serialized by two and enforced by none. **So the answer to "we'll store
+some reasonable capacity and drop if we have to" is, today, unbounded accept — no bound, no refusal,
+no drop.**
+
+**And the corpus already ruled the policy question, at the other end of the same pipe.**
+`EXTENSION-NETWORK` **§8.4**, the sender-side pending-delivery queue:
+
+| Limit | Recommended | Behavior on exceed |
+|---|---|---|
+| Max messages per peer | 1000 | **Reject new queuing, return error to sender** |
+| Max total bytes per peer | 10MB | **Reject new queuing** |
+| Max age | 1 hour | Expire on drain |
+
+**Reject-new, not evict-old, with recommended values.** RELAY's inbound store asks the identical
+question and inherited none of it. **That is L23's shape** — one rule, more homes than the document
+stating it — and L7's: the answer existed and was not searched for.
+
+**Delta:** a store at its advertised bound **MUST** refuse with `storage_full`/507 and **MUST NOT**
+evict an already-accepted entry to make room. **The two are cross-peer observable and differently
+honest** — a 507 tells the sender to try elsewhere; a silent eviction loses a message the sender was
+told was stored. That is exactly the surface this corpus's own rule says to pin.
+
+> **ST-3 changed this delta too, and D4 is why it is safe.** *Refuse-don't-evict alone is a
+> denial-of-service*: one putter fills the store with **null-expiry** entries and it never drains,
+> because nothing may be evicted. **D4's clamp is the companion that makes D5 safe** — time bounds the
+> store, refusal bounds the burst, and no eviction policy is needed as a spec item. **Neither delta is
+> landable without the other**, and that dependency was not visible until D5 was attacked.
+
+### §9.7 D7 — the sender's deadline exists, in a field the relay may not read
+
+**Found by stress-testing D1** (§10, ST-1). `forward-request` (§3.1) carries `destination`, `route`,
+`next_hop`, `ttl_hops`, `envelope_inner` — **and no expiry.** On the §6.2.1 fallback the relay
+constructs the `store-entry` itself and therefore **picks the expiry for a message it is holding on
+someone else's behalf**, with one engine's source saying so outright: *"ExpiresAt: 0 — operator may
+set a default retention later."*
+
+**The originator can state a deadline. It states it where the relay is forbidden to look.**
+`EXTENSION-NETWORK` §8.2 reads `execute.bounds.ttl_absolute` for exactly this purpose — but
+`bounds` travels **inside the inner envelope**, and RELAY §3.1 already spells out the consequence:
+*"`bounds.ttl` … travels inside the inner envelope — **which the relay cannot read**."*
+
+**So this is L12's shape on RELAY's own surface:** the ruling hands the verb (*hold this until*) to an
+actor that cannot obtain the noun. **And the fix is a pattern §3.1 already established** — `ttl_hops`
+exists precisely because the inner `bounds.ttl` is unreachable, so the outer envelope carries its own
+copy of a bounding concept. **`expires_at` on `forward-request` is that same move for time**, mirroring
+`store-entry`'s existing field, and it is one optional field.
+
+**Open, and deliberately not ruled here:** whether the relay's ceiling clamps the originator's
+`expires_at` (D4's rule, applied to the forward path) or whether an originator asking for longer than
+the relay offers is a refusal. **The clamp is consistent with D4 and is the lean.**
+
+### §9.8 A finding this thread turned up in a neighbouring spec — filed, not proposed
+
+**`EXTENSION-NETWORK` §8's outbox has the same silent-loss defect, at the opposite end of the pipe.**
+§8.3's drain: *"Check expiry → if now() > expires_at → `entity_tree.put(path, null)` — Expired —
+discard"*, with **§8.2's default expiry of one hour**. A sender's own queued message is discarded on
+drain with no signal to the handler that emitted it, on a default two orders of magnitude tighter than
+RELAY's *unlimited*. **Two store-and-forward queues, opposite ends, incompatible defaults, both
+silently discarding.**
+
+**Not proposed here**, for two reasons: it is a NETWORK delta and belongs with whoever opens that
+surface, and **`system/outbound` is implemented in no tree** — the engines' `pendingDelivery` hits are
+an unrelated subscription-engine internal, and the app-tier hits are documentation. So it has never
+bitten anyone. **It is D6's problem restated, though, and D6's answer should be shaped to cover both
+queues rather than only the relay's** (§11.4).
+
+---
+
+## §10 Stress tests — what was attacked, and what broke
+
+**Two of the seven deltas are not what they were drafted as, and the first draft of each was worse
+than the rule it replaced.** Recorded because the corpus's rule is that a candidate is honoured on
+evidence, and an unattacked delta has none.
+
+| # | Attack | Outcome |
+|---|---|---|
+| **ST-1** | *D1 makes expiry load-bearing on `:poll`. Who sets `expires_at`, and can the party who cares reach it?* | **Broke — and produced D7.** On the fallback path the relay sets it, the originator's `bounds.ttl_absolute` is unreachable behind §9's opacity, and `forward-request` has no outer field. **A new delta, not a repair** |
+| **ST-2** | *D3 retires §6.2.1's `MAY`. What breaks for a peer that never published a declaration?* | **Broke.** It becomes **unreachable-when-offline, loudly**, where today it had a chance. **D3 rewritten**: make the predicate decidable from *has this peer polled me* rather than deleting the branch, and give the speculative store its own status. **Strictly better than both the original and the first fix** |
+| **ST-3** | *D5 forbids eviction. What does an abusive putter do?* | **Broke.** Null-expiry entries + no eviction = a store that never drains and permanently 507s everyone. **Resolved by coupling to D4's clamp**; the two are now a pair and neither lands alone |
+| **ST-4** | *D6 is modelled on CONTINUATION's `chain-error-lost`. Does the analogy hold?* | **Broke, and usefully.** `chain-error-lost` is **self-observation** — bound in the observing peer's own tree, self-collected. A give-up notice is a **cross-peer notification** to a different principal. **Same file shape, different authority question**, and §11 is written around that difference rather than the analogy |
+| **ST-5** | *D4 publishes `max_retention_ms`. Does advertising it leak anything, or let a relay lie?* | **Held.** A relay can already lie about `max_storage_bytes` and can drop anything at any time — §5.1's threat model is *"worst he can do is drop or delay."* **An advertised retention is a promise a consumer can plan against and a relay can break, which is what every limit in §4.1 already is.** No new class |
+| **ST-6** | *D3 exposes "has D polled me" as observable behaviour. Metadata leak?* | **Held.** The relay already sees `destination` in the clear on every forward — the landscape record states the honest limit as *"the relay sees **who** even when it cannot see **what**,"* at SMTP `RCPT TO` parity. **No new disclosure class**, and the alternative (guessing) discloses the same thing while losing the message |
+
+**The pattern across ST-1/2/3, worth keeping:** each delta was drafted as *remove the bad thing*, and
+each survived only as *make the thing decidable, bounded, or expressible*. **A `MAY` with an
+unevaluable condition, a knob with no published site, and a field the enforcing party cannot read are
+three faces of one defect** — the rule and the actor who must apply it were specified in different
+places — and deleting the rule is never the fix.
+
+---
+
+## §11 D6 — the give-up notice, broken down
+
+**The only genuine new design in §9, and it is deliberately not ruled here.** What follows is the
+decomposition, the three candidate shapes, and the questions that have to be answered before any of
+them is written as spec text.
+
+### §11.1 The defect, traced end to end
+
+For *"a sender delivers to an offline peer that never comes back"*:
+
+1. The sender receives `queued-fallback` / `stored`. **A success.**
+2. The relay honors `expires_at` (§8) and **emits nothing**. §4.3's taxonomy is entirely *op-time*;
+   there is no expiry-time code and no notification path.
+3. The sender's reply continuation **has no deadline**. `completion_deadline_ms` / `on_incomplete` /
+   `round_id` are fields on **`system/continuation/join` only** (CONTINUATION §2.3); §3.5a's sweep is
+   join-only and traffic-driven, and §3.5a itself records that *"whether a peer should eventually
+   abandon expired joins with no activity at all is a separate, deferred design question."* **A plain
+   reply-path continuation waits forever.**
+
+**Sender told delivered, recipient never saw it, nothing ever fires.** RELAY §4.3's own stated posture
+— *"deliver-or-signal, never silently drop"* — is honored at op time and violated at expiry time.
+
+**And the comparison is not flattering.** SMTP retries for days, warns the sender while it is still
+queued, and on give-up returns a non-delivery report naming the failure. *Telling you is the property
+that makes SMTP work.*
+
+### §11.2 The constraint that shapes every candidate — the relay cannot address the author
+
+**The relay knows `put_by`, and §3.2 is emphatic that `put_by` is *placement, not authorship*.** The
+actual author signed the **inner** envelope, which §9 forbids the relay from decoding. And **on the
+§6.2.1 fallback path `put_by` is the forwarding relay, not the sender** — §3.2 names this case
+explicitly.
+
+**So a give-up notice can reach the party that placed the entry, and reaching the originator requires
+reading a field the opacity model forbids.** That is a real constraint of the design, not an
+oversight, and **it is the first thing any D6 text must rule on.** It is L12 again: name the input and
+how the actor obtains it, or record that it cannot — and *that* is the finding.
+
+**The consequence, stated so it is not discovered late:** on the fallback path, **a give-up notice
+must chain** — relay notifies the forwarding relay, which notifies its own putter — or it stops one
+hop short of the person who cares. Whether chaining is in scope is open question **Q-D6-3**.
+
+### §11.3 Three candidate shapes
+
+| | Shape | Cost | Behaviour under churn |
+|---|---|---|---|
+| **(i) Push** | The relay dispatches a notice to `put_by` | A new outbound traffic class for the relay, a capability to author it, and **the relay becomes a dispatcher** — a role §1 says it does not have (*"the intermediary is transport"*) | **Fails exactly when needed.** The putter may be offline too; a push to an absent peer needs a store-and-forward, which is the mechanism that just failed |
+| **(ii) Pull — a receipt** | The relay binds a receipt entity at a path the putter polls | **Nothing new.** Same put/poll shape, no new capability, no new dispatch, no new authority. Tree-bound, so it survives the putter being away | **Correct by construction** — the putter collects it whenever it returns, which is the whole premise of Mode S |
+| **(iii) Sender-side deadline** | No relay mechanism; the sender arms its own deadline and concludes non-delivery | Cheapest; needs **nothing** from the relay | **Covers the case (ii) cannot** — a relay that died, was seized, or is withholding |
+
+**Lean: (ii) + (iii), and they are complements rather than alternatives.**
+
+- **(ii) is idiomatic and needs no new authority.** A receipt is the corpus's own established pattern —
+  `GUIDE-MULTISIG`'s *"idempotency key + receipt entity (the standard)"* — and a putter polling for its
+  own outcomes is the same verb it already used to place the entry. **The sender's outbox and the
+  recipient's inbox become one store read from two ends**, which `GUIDE-CROSS-PEER-MESSAGING` §2
+  already states as this stack's model.
+- **(iii) is the only thing that covers a dead relay**, and a dead relay is not a corner case in a
+  volunteer network. **But it cannot, alone, distinguish *not delivered* from *delivered, recipient
+  has not replied*** — the same indistinguishability the follow work records as T2, and the same one
+  the DHT axis records as its characteristic failure. **A receipt is what breaks the tie**, which is
+  the argument for both rather than either.
+- **(i) is rejected on the churn argument, not on cost** — a push notification whose delivery needs
+  store-and-forward is circular.
+
+### §11.4 The open questions, before any text is written
+
+| # | Question | Why it is open |
+|---|---|---|
+| **Q-D6-1** | **Where does the receipt live?** Under the destination's namespace (`…/{namespace}/receipts/{entry_hash}`) or under the **putter's**? | The destination's namespace is where the entry was; the **putter** is who reads it, and putting a putter-addressed object in a destination-scoped namespace crosses the §5.2 cap boundary — `relay-poll` is scoped to a namespace, and the putter may hold no poll cap there |
+| **Q-D6-2** | **Is a receipt written on expiry only, or on every terminal outcome** (polled, expired, refused, evicted-never)? | Expiry-only is smaller. Every-outcome makes the receipt a **delivery-status surface** and answers *"was it collected?"* — which is what a sender actually wants and is one step from read-receipts, with the privacy question that carries |
+| **Q-D6-3** | **Does a notice chain back through a forwarding relay** (§11.2)? | Without it the notice stops at the relay that placed the entry, one hop short of the sender. With it, a relay must retain putter provenance across a hop and the chain has its own bound |
+| **Q-D6-4** | **Does D6 need the CONTINUATION half**, i.e. a deadline on non-join continuations? | **(iii) is unbuildable without it** — there is no expiry on a plain reply-path continuation today. **This is an L23 enumeration: D6's rule has homes in RELAY and CONTINUATION**, and the second is a different extension with different consumers. Enumerate before writing |
+| **Q-D6-5** | **Does the same answer cover `EXTENSION-NETWORK` §8's outbox** (§9.8)? | Same defect, same shape, opposite end. **If one mechanism covers both queues it should be authored once**; if not, that is worth knowing before RELAY grows a bespoke one |
+| **Q-D6-6** | **What is the retention of the receipt itself?** | It is stored state on a relay whose storage is the thing being bounded. Recursion is real but shallow — CONTINUATION's markers answer it with a configured window and self-collection, which is the model |
+
+### §11.5 What would settle it fastest
+
+**Q-D6-1 and Q-D6-4 are the two that gate text**, and both are answerable from the corpus without a
+peer. **Q-D6-5 is answerable by one read** of NETWORK §8 against whatever D6 shape survives, and doing
+it *before* writing RELAY text is the cheap order — the reverse produces two mechanisms for one defect,
+which is the failure `spec coverage` exists to surface.
+
+**Not blocked on any implementation**, and it should not wait for one: the surface is unbuilt in every
+tree, so re-filing is free today and will not stay free — the same argument §2.0's process note makes
+about Mode A.

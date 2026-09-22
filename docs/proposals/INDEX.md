@@ -99,7 +99,7 @@ losing it in the split was silent.
 > words: *"we aligned on everything we just never followed up and got it all implemented; we all
 > got distracted."* **§4 is that matrix, and it is not rebuilt yet.**
 
-## 1. Active — 38 files (ext 25 · app 6 · process 7 · core 0)
+## 1. Active — 39 files (ext 25 · app 7 · process 7 · core 0)
 
 > **29, not 22, as of 2026-08-15** — seven **reference proposals** opened by the provenance
 > reconstruction (`docs/status/PLAN-2026-08-15-spec-provenance-reconstruction.md`). These are a
@@ -203,8 +203,55 @@ the strength of landed prose would be the exact mistake that rule exists to prev
 
 **Reference proposals (opened 2026-08-15, spec edits already landed):** `REVISION-MERGE-DELEGATION-AND-CASCADE` *(v3.9→v3.11)* · `REGISTRY-PEER-ISSUED-REGISTRATION` *(v1.2→v1.5)* · `ENCRYPTION-NAMESPACE-AND-RECIPIENT-RESOLUTION` · `SUBSTITUTE-CONFORMANCE-REACHABILITY` *(v1.1, v1.2)* · `CONTINUATION-DELIVER-TOKEN-AND-LEVEL-2` *(v1.22)*
 
+> **2026-08-30 — `RELAY-COMPLETE-THE-MODE-SET` gained a SECOND THREAD (§9–§11), and it is deliberately
+> not a second file.** From an operator question about store-and-forward under churn: volunteer
+> relays, capacity, retry, and *"where do I publish 'if you're looking for it, find it here'."*
+> **Three of those four are already answered and two are landed entity types** — store-vs-forward is
+> NETWORK §10 → §10.2 → RELAY §6.2.2; *"when do I retry"* is **you don't**, because delivery is pull;
+> and the publish question is `system/peer/inbox-relay` (§3.5), the MX-equivalent. **The fourth — how
+> much, how long, what happens when I drop — is answered nowhere**, and it is **seven deltas
+> (D1–D7)**, now `§7` checklist items **11–17**.
+>
+> **It lives in this proposal because §7 already is the relay-completeness checklist and its item 3 is
+> "retention bounded — unlimited is not a default"** — the finding is that the same defect sits on
+> **Mode S, the mode that ships**, and that §4's *stop deferring spec text* names the disease for all
+> seven. A second RELAY proposal would split one checklist across two files, which is the drift this
+> index exists to stop.
+>
+> **Three of the seven are transplants of rules this corpus already ruled elsewhere, not new design:**
+> retention as a **declared, clamped ceiling** is `EXTENSION-REGISTRY` §6a.9.1's shape with `retention`
+> for `ttl`; **refuse-don't-evict** is `EXTENSION-NETWORK` §8.4's own table, already ruled for the
+> *sender-side* queue and never inherited by the relay's inbound store (L23 — one rule, more homes
+> than the document stating it); and the poll-visibility rule is **already 3-way green and written
+> down nowhere**, cited by one engine's test as a §8 sentence §8 does not contain.
+>
+> **Two of the seven were changed by their own stress tests, and both first drafts were worse than
+> what they replaced** (§10). Retiring §6.2.1's default-convention `MAY` would have made every peer
+> that never published a declaration **unreachable-when-offline, loudly**; the surviving rule instead
+> makes the predicate **decidable** — *has this peer polled me* is local state, where *will this peer
+> poll me* is not. And refuse-don't-evict **alone is a denial-of-service** (null-expiry entries, a
+> store that never drains), so it is now paired with the retention clamp and neither lands alone.
+> A seventh delta exists only because D1 was attacked: **the originator's delivery deadline is
+> stated in `bounds.ttl_absolute`, inside the envelope the relay is forbidden to read** — L12 on
+> RELAY's own surface, fixed the way `ttl_hops` already fixes the same problem for hops.
+>
+> **`D2` is executed, and it is the only one.** `guides/GUIDE-CROSS-PEER-MESSAGING` §3A's email
+> mapping listed *"DSN / bounce"* as **landed**, against CONTINUATION `deliver_to`. **A reply is the
+> recipient's answer; a DSN exists because there is no recipient** — one row of nine where the analogy
+> inverts, on a canonical published surface, and it is the row a reader consults for exactly this
+> case. Removing a false capability claim from a published guide is not a normative change and should
+> not wait on a DRAFT. **`D6` — the give-up notice — is the only genuine new design and is broken down
+> with six open questions rather than ruled** (§11), including one that is an **L23 enumeration**: its
+> rule has homes in RELAY *and* CONTINUATION.
+>
+> **Sequencing: D1 · D2 → D4 · D5 · D7 → D3 → D6.** D3 is the only one that costs a peer anything —
+> it invalidates four conformance checks that currently pin the defect, one of which passes with the
+> message *"never a silent drop"* over a store the destination cannot reach.
+> **Analysis: `docs/status/AUDIT-2026-08-30-b-store-and-forward-under-churn-…`.**
+
 **Retraction / completion — `RELAY-COMPLETE-THE-MODE-SET`** *(opened 2026-08-17, operator-directed;
-**top of the post-release block**, see `TRIAGE-2026-08-17-…` A3)*. A class of its own: not new design
+**top of the post-release block**, see `TRIAGE-2026-08-17-…` A3; **second thread added 2026-08-30**,
+above)*. A class of its own: not new design
 and not a reference record, but **a landed spec's own scope cuts withdrawn.** RELAY enumerates four
 modes and normatively specifies two; the aggregate deferral rests on a substrate absence that
 `EXTENSION-SUBSCRIPTION` §8.1/§8.2 contradicts, and the circuit deferral's stated condition
@@ -248,7 +295,7 @@ the evidence is one rig** — the two-NAT harness browser-rust offered, which al
 >    audit had no consumer axis. It noted that gap for `active/applications/` and never
 >    generalized it.
 
-**`active/applications/` — 6** *(2026-08-21: `ACQUISITION-SURFACE-PROTOTYPE-TIER` opened — the **living ledger** for browser-rust's acquisition work, which is arriving faster than proposal→ratify→fold turns)* · *validated by **workbench-go / browser-rust**, **not core-go***
+**`active/applications/` — 7** *(**2026-08-30: `FOLLOW-THE-PATTERN-THE-SET-AND-THE-TWO-ROUTES` opened — DRAFT, first pass, and deliberately a stress test rather than a sign-off candidate.** Answers the dependency question a design audit was opened for: **following requires `EXTENSION-TREE` + `EXTENSION-NETWORK` + core, and NOT `EXTENSION-REVISION`** — `system/peer/published-root` (TREE §3.3a) already carries `root_hash`, **`seq`** (the change check *and* the rollback defense) and `predecessor` (a history chain) in one signed entity, so the cursor, the change check and the walk entry point are all there. REVISION is required exactly where it should be — `revision:fetch-diff` and DAG convergence — and neither is a requirement of the *pattern*, only of one route through it. Establishes **two routes**: **A** (live publisher, dispatch, work on the publisher, **needs a capability grant**) and **B** (static origin, walk the root, work on the reader, **publisher may be offline**), where B gets its delta free from content addressing because dedup skips held subtrees. **T5 is the result that constrains the design**: a stranger holds no `revision:fetch-diff` grant, so **public following is Route B only** — a stronger argument for B as the base case than liveness was. **Three stress tests are UNRESOLVED and say so**: **T2** — a publisher who has not republished and an origin withholding a newer root are *byte-identical* at the consumer, so "no new posts" is not a fact a follower may assert; **T3** — a followed publisher that re-keys is a *different peer* and every follower silently points at an abandoned identity, with a successor pointer signed by the old key being exactly what a compromised key must not be able to assert; **T6** — a publisher restored from backup at `seq: 0` is **permanently unfollowable**, because the rollback defense is working as designed. Six deltas, one of them (**D2**, the cursor site) the only substrate-shaped claim, left open on Q1/Q3's promotion test — *is there a second non-social consumer of the identical loop?* **Second pass same day: T3's prior art pulled in as §6a rather than re-derived** — the property we lack is `did:plc`'s *identifier-is-a-hash-of-genesis*, core has already ruled cross-form correlation belongs to identity/registry/policy and **never core**, so T3's answer is a **registry binding kind** and not a follow-list field; a genesis-hash name form **conflicts with the landed `self-certifying` pin** (`name == target_peer_id`, explicitly not a hash) but lands cheaply **beside** it under REGISTRY's ignore-unknown-kind forward-compat rule. Carries the uncomfortable one: **a genesis that is a bare keypair with no attestation has no rotation path under any design**, so for peers publishing that way T3 is structurally unavailable rather than merely open — and *publishing freezes what consumers pin*, which is the deadline. **Two new stress tests. T10 — a follower cannot scope its attention below the peer**: one root and one `seq` per peer (forking the stream is what destroys rollback detection), and the trie is HAMT-routed by `SHA-256(relative_key)` so *"structure is determined by hash bits, not by path-segment locality"* — there is no subtree to check, no per-prefix hash without already holding the bindings, and the path-keyed LocationIndex is **local and unpublished**. So *"did anything I care about change?"* costs the same as *"what changed at all?"*; three directions named, none picked, and it is flagged as **the question most likely to change the design**. **T11 — asymmetric extension adoption**: rotation continuity that lives in an extension the *consumer* may not have leaves that consumer seeing T3, the same shape the parked key-death work already met as a support-tier flag with no feature negotiation)* · *(2026-08-21: `ACQUISITION-SURFACE-PROTOTYPE-TIER` opened — the **living ledger** for browser-rust's acquisition work, which is arriving faster than proposal→ratify→fold turns)* · *validated by **workbench-go / browser-rust**, **not core-go***
 
 `APP-CONVENTION-CHAT` *(consumers: browser-rust, workbench-go — **both asked 2026-08-17**)* · `SHARE-AS-GRANT-AND-THE-AUDIENCE-CARRIER` *(RULED; fold = author `APP-CONVENTION-SHARE`)* · `APP-CONVENTION-COMPUTE-PROGRAM` *(consumer:
 workbench-go)* · `COMPUTE-LOWERING-CONTRACT` · `COMPUTE-LOWERING-TOOLKIT` *(§5 sweep built at

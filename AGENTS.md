@@ -181,7 +181,9 @@ the working detail; **the charter is the set.**
   sequencing that lives only on the board does not travel with it *(candidate)* · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
   party that moves it owns re-checking it *(candidate)* · **L23** a rule has every normative home it is
-  stated in, not the one the proposal names — enumerate them before rewriting it *(candidate)* ·
+  stated in, not the one the proposal names — enumerate them **by the rule's subject, not only by its
+  tokens**, before rewriting it *(**ratified** 2026-08-30 — second shape: same-document homes, and one
+  that shares none of the rule's vocabulary)* ·
   **L24** a reference is only a pin if it resolves in the history **and the layout** the receiving
   audience gets — a `dev` SHA never resolves on public `master`, and a sibling path never resolves in
   a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)*.
@@ -404,7 +406,39 @@ the working detail; **the charter is the set.**
   **`specs/` and `guides/` in both repos**, not just the file being edited. `spec address` already
   resolves which documents cite a changed section; **what it does not do is find documents that
   restate a rule without citing it**, and that is the gap this rule covers by hand until a gate does.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
+  ~~**Candidate: one incident.**~~ **Ratified 2026-08-30 on the second shape below.**
+
+  > **Second shape — the missed homes were in the SAME DOCUMENT, and the one that mattered shares
+  > none of the rule's vocabulary. That is what breaks the token grep the first shape prescribed.**
+  > `[2026-08-30 — found reviewing `entity-core-formalization`'s FM-1 proposal; ledger §1o]`
+  > Their proposal enumerated **five** normative sites for the pre-hello `authenticate` rule and
+  > rewrote `ENTITY-CORE-PROTOCOL` §4.7 row 10 on that basis. There are **eight**. The three missed:
+  > **§4.2** (*"The connection handler MUST enforce ordering: `hello` before `authenticate`"*),
+  > **§9.1**'s conformance MUST list, and **`ENTITY-CORE-MACHINE-SPEC` §6.4** — a second, stale,
+  > **declared-canonical** copy of the whole error table.
+  > **Why the first shape's enforcement point would not have caught it.** L23 as written says *grep
+  > the corpus for the rule's distinctive tokens*. §4.2 contains **neither** `invalid_nonce` **nor**
+  > `connection_sequence_error` — it states the same rule in the vocabulary of *ordering*. A token
+  > grep finds the rows that already agree and misses the site that created the disagreement. **The
+  > enumeration axis is the rule's SUBJECT — the input or behaviour it governs — and the tokens are
+  > only one of its spellings.**
+  > **And the missed site was the load-bearing one**, which is why this is a shape and not a tally.
+  > §4.2 is the likely *origin* of the contested reading: it states an ordering MUST with **no status
+  > and no code**, and §4.7's "out-of-order operation" row is a near-verbatim lexical match for it. Six
+  > cohort peers reached the wrong status by following two normative sentences correctly. Narrowing the
+  > row without touching §4.2 would have left a MUST with no emittable consequence — **L17** — so the
+  > missed home did not merely add work, it would have made the fix wrong.
+  > **The aggravating half, and it is the first shape's exact tell:** the proposal's own framing
+  > (*"the contradiction is internal to §4.7's table… the remedy is four words"*) was **true and
+  > complete about the table**, which is what made stopping there feel like rigour. A correctly
+  > localized defect is not evidence that the rule is localized.
+  > ***Enforcement point, now binding and broadened:*** a proposal that rewrites or retires a normative
+  > rule enumerates every home **by the rule's subject**, not only by its tokens — for each, ask *which
+  > sections state an obligation about this input or behaviour, in any vocabulary* — and the sweep
+  > covers **every `specs/` file in both repos plus every conformance/MUST list**, not just the
+  > document being edited. **A home that states the rule without naming its codes is the one most
+  > likely to be load-bearing and least likely to be found**, because it is where the obligation was
+  > created rather than where it was tabulated.
 
 - **L22 — a borrowed sentence is re-verified by the borrower, not the author.**
   `[candidate, 2026-08-20 — the C-7 assignment; the filing seat offered to take the blame and arch
@@ -1346,8 +1380,9 @@ reconstruction pass.
 
 - **`spec ledger` is a separate run and is NOT in `check`** — it gates the counts
   `docs/proposals/INDEX.md` **and `docs/research/INDEX.md`** declare against the directories they
-  name. **Run it after any proposal moves between `active/` and `implemented/`, or after adding an
-  exploration or review**, which is the only thing that makes it fire:
+  name, **and (since arch-tools `f526458`) each proposal's own `Status:` header against the directory
+  it sits in.** **Run it after any proposal moves between `active/` and `implemented/`, after adding
+  an exploration or review, and after folding anything** — the last is new and is the one that fires:
 
   ```bash
   python3 <arch-tools>/spec-tool/cli.py ledger      # 0 clean · 1 drifted · 2 no ledger doc
@@ -1359,6 +1394,21 @@ reconstruction pass.
   rule is the load-bearing one — a count naming a directory that **does not exist** is a
   finding, because a rename makes a pattern-matching gate stop matching while the run stays
   green.
+
+  **Its third rule — `proposal-state-mismatch` — is the one the counts are structurally blind to,
+  and `docs/proposals/INDEX.md` had already specified it and filed it as owed.** A folded proposal
+  left in `active/` is *arithmetically invisible*: the file is there and it is counted, so both
+  totals are correct and the backlog is still wrong. **`active/` means work is owed**, so the count
+  overstates the owed set by however many folded proposals nobody moved — **measured on first run:
+  9 of 39.** The hold is **declared, not inferred** (`partial` · `stays active` · `until the cohort`
+  · `reopened`), because L3 requires a partial fold to stay active and an exemption nobody can audit
+  is not an exemption. **It does not check that the fold is complete, deliberately** — a `Status:`
+  header is an artifact, so the gate reports a *disagreement to adjudicate*, and moving a file on its
+  say-so alone would be L3's own defect. **Its calibration is the lesson worth carrying:** first run
+  scored 6 where a hand count found 9, and all three misses were one sentence — *"reference proposal,
+  written after the fold"*, this corpus's house idiom — because the rule matched the participle and
+  not the noun. **A marker list is calibrated against the corpus's actual vocabulary, never against
+  the words the rule-writer expects**, and it has its own regression test.
 - **The narrative rules gate, and they are ratcheted — `.spec-baseline.json`.** Five
   `standards` rules (`impl-team-ref`, `date-in-body`, `proposal-citation`,
   `amendment-provenance`, `document-history-section`) are **errors**. They flag process
