@@ -1,6 +1,7 @@
 # System Tree Extension
 
-**Version**: 4.3
+**Version**: 4.4
+**v4.4:** Appendix A gains the `put` / `set` rows. The two core data operations the protocol runs on had no error-code row in the only table their extension has: a non-decoding entity is `400 invalid_request` (§3.3's generic case), a content-hash mismatch is `400 hash_mismatch` (`EXTENSION-CONTENT` §923's code for the same failure), and the CAS race that shares that token is tabulated beside it at 409 so the two are not collapsed.
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
@@ -1561,6 +1562,9 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 
 | Operation | Error Code | Status | Description |
 |-----------|-----------|--------|-------------|
+| `put` / `set` | `invalid_request` | 400 | The submitted entity does not decode. The generic structurally-invalid case — `ENTITY-CORE-PROTOCOL` §3.3's 400 default, not a tree-specific code *(v4.4)* |
+| `put` / `set` | `hash_mismatch` | 400 | The submitted entity's content hash does not match the entity it addresses. **Distinct from the 409 below**, and the same code `EXTENSION-CONTENT` §923 uses for this failure *(v4.4)* |
+| `put` / `set` | `hash_mismatch` | 409 | A CAS `expected_hash` precondition lost a race — another writer committed first. **A different failure from the 400 row**: 400 says *this entity is not what it claims to be* and is a defect in the submission; 409 says *someone else wrote first*, is nobody's defect, and is retryable *(v4.4 — tabulated; the behaviour is `ENTITY-CORE-PROTOCOL` §3.6 and `EXTENSION-SUBSCRIPTION` §2.2)* |
 | `snapshot` | `invalid_prefix` | 400 | Non-empty prefix doesn't end with `/` |
 | `snapshot` | `tree_not_found` | 404 | Referenced tree_id doesn't exist |
 | `diff` | `snapshot_not_found` | 404 | Referenced snapshot hash not in content store |

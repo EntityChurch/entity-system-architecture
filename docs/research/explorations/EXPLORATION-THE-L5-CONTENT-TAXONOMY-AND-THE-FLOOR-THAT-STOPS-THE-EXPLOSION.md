@@ -161,6 +161,31 @@ from everything the site convention ruled about.
 three answers and not thirty. Two of the three are already in the feed proposal (the index page and
 the mirror). **The gallery adds exactly one.**
 
+> **CORRECTED 2026-09-05 — the termination argument is wrong, and the correction makes the structure
+> smaller rather than larger.** `[EXPLORATION-THE-SECOND-FALSIFICATION-…` §4]
+> *"Who assembled this and what does it claim"* is **two** binary questions — *one party or several*,
+> and *claims completeness or claims nothing* — so it has **four** answers, not three. The three above
+> are all **one party**, and the fourth cell is **many parties claiming completeness: the agreement**,
+> whose completeness is *verifiable* (the record names its parties; each party's signature sits at the
+> core protocol's invariant pointer path in their own namespace) where a gathered view's is not.
+>
+> |  | **claims completeness** | **claims nothing** |
+> |---|---|---|
+> | **one party** | the authored set (§4.3) | the stream (§4.1) |
+> | **many parties** | **the agreement** — *not specified anywhere* | the gathered view (§4.2) |
+>
+> **Why this document could not see it, and it is the same limit §8.5 already flags about itself:**
+> every category in §3 and every object in the first falsification test is **singly authored**, so the
+> one-party axis never varied. `PROPOSAL-APP-CONVENTION-FEED` §1.1 states it normatively for the entry
+> — *"an entry's `author` MUST equal the peer namespace it is authored under"* — which means a
+> two-party record is not merely absent from the floor, **a conformant reader is required to reject
+> it.** Instances are not confined to commerce: a co-authored post, a mutual follow read as a
+> relationship, a confirmed RSVP, a receipt.
+>
+> **What is not corrected:** §1's test, the six collapses in §3, and the three shapes above are all
+> unaffected — the marketplace order does not merge into any of them, which is why it is a fourth cell
+> and not an argument against the first three.
+
 ---
 
 ## §5 The forum, and the chat — the two cases where the answer is surprising

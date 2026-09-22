@@ -1915,6 +1915,36 @@ the working detail; **the charter is the set.**
   enforcement point is still unbuilt, so honor it by hand — and **re-open a deferral's dependency
   before citing it**, not after.
 
+  > **The cost, measured 2026-09-05, and it is the half the rule was missing: A FALSE SENTENCE LEFT IN
+  > A SPEC IS NOT A FILED FINDING, IT IS AN ARTIFACT THAT KEEPS TEACHING.**
+  > `[operator: "you should have made it so if we have bad data that you fixed it immediately. What
+  > does bad data do? It propagates and propagates, and the more it exists the more you regurgitate it
+  > back to me."]`
+  > The instance above was found on **2026-08-17**, written up as `PROPOSAL-RELAY-COMPLETE-THE-MODE-SET`
+  > §2 with a sharper diagnosis than the ledger's — *an engine firing on local mutations is true and
+  > universal; a subscription being initiable only locally does not follow, because who may initiate is
+  > a capability question* — and **landed in `AGENTS.md` as this very entry.** The spec text was never
+  > touched. **Nineteen days later the false sentence was still in `EXTENSION-RELAY` §11.1a, still
+  > inherited by `EXTENSION-REGISTRY` §8.2, and had spread to a THIRD home in `GUIDE-RESOLUTION` §7.**
+  > An operator-directed registry pass then **rediscovered the whole thing from scratch and reported
+  > registry federation blocked** — to the operator, as fact.
+  > **Why this is worse than an ordinary stale row and why filing does not discharge it.** A backlog row
+  > is inert: it costs the session that reads the board. **A false sentence in a normative document is
+  > *generative*** — every later reader derives from it, in good faith, and republishes the derivation.
+  > The cost is not linear in time; it is the number of sessions that opened the file, and each one may
+  > publish it onward. **Here it reached four documents and one operator briefing from a single
+  > uncorrected paragraph.**
+  > **This is not a new letter.** It is **L9** (a deferral expires) firing with **L13's fourth axis** (an
+  > arch-owned item whose remaining work is an *execution* is an unfinished task, not a backlog row);
+  > minting a third for the pair is the *"adding a rule is not doing the work"* move L0 rule 4 forbids.
+  > ***Enforcement point, and it is the one clause the earlier version lacked:*** **a sentence in a
+  > canonical document that is found to be FALSE is deleted in the session that finds it — writing it
+  > up is not an alternative to deleting it.** A proposal may carry the *design* that follows; **the
+  > false sentence itself does not wait for it.** Mechanically checkable at close-out: *did this session
+  > establish that a landed document states something untrue, and is that document still stating it?*
+  > **And when the false statement is corrected, grep the corpus for its other homes in the same
+  > session** — this one had three, in two specs and a guide, and only the first was known.
+
 - **L8 — an artifact is not a conclusion about the thing it names.** `[RATIFIED 2026-08-17 — five
   instances in one session across two trees]` `entity-core-keystone` was put
   in RELAY's coordination scope because `system_type_system_relay_advertise.bin` exists in its tree.

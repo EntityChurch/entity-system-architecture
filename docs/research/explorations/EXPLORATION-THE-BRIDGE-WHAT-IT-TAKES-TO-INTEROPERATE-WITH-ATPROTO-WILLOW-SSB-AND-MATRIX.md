@@ -65,7 +65,7 @@ today.**
 | **hold anything, byte-exact, forever** | a foreign object is *entirely* fields we did not model | open types + preserve-unknown-fields + hash-over-everything (`ENTITY-CORE-PROTOCOL` §2.10, `ENTITY-CBOR-ENCODING` §5.4) |
 | **name things stably** | a bridge must be able to say *"this entity is that foreign object"* and have it survive | `path → hash` under a signed root |
 | **say who asserted what** | a translation is somebody's claim, not the original author's | detached `system/signature` + `EXTENSION-ATTESTATION` |
-| **let a component speak a foreign language at the edge** | their crypto, their canonicalization, their update rules | handler registration — a bridge is a handler, and the foreign competence is inside it |
+| **let a component speak a foreign language at the edge** | their crypto, their canonicalization, their update rules | **wherever the bridge author puts it — §1a.** A handler is one packaging and a good default; a pure translator function, a fronted process and a proxy peer are others. **What matters is that the foreign competence is localized at the edge, not which shape holds it** |
 
 **That last row is the operator's correction in structural form.** *"Does the bridge extension need to
 speak a different bit of code to interpret their cryptography?"* — **yes, and that is where it goes.**
@@ -113,11 +113,11 @@ transcoding buffer.
 
 ---
 
-## §1a What a bridge IS, structurally — answered by reading a tree, not by designing
+## §1a What a bridge IS — one seat's decomposition, and the space it does not cover
 
-**This document's §0 assumed *"a handler"* without checking, and named that as the open question
-(`[X-4]`). It is answered, and the answer came from an application seat opening their own source
-rather than from arch designing anything.**
+**This document's §0 assumed *"a handler"* without checking and named that as the open question
+(`[X-4]`). It is now PARTLY answered — an application seat opened their own source and produced a real
+decomposition — and §1a.2 is the half that decomposition does not settle.**
 
 > **`entity-browser-rust` already ships two ingress bridges and never called them that.**
 > `content_site::ingest::ingest_path` reads a genuinely foreign data model — the content team's
@@ -138,32 +138,45 @@ work and it needs nothing from us, so a bridge can be written and fully tested b
 runs.** That inverts the natural build order — the instinct is to settle the hosting question first,
 and the hosting question is the small end.
 
-**And *"a bridge is a handler"* is true for exactly one of the four cells.** A handler is async dispatch
-at a tree path behind a capability grant. A **foreign-server** cell receives an HTTP POST or an SSB
-handshake **at a socket, before anything entity-shaped exists** — there is no path to dispatch at and no
-grant to check. **Only egress-server wants a handler, and only on the entity side of the boundary.**
+**And this is where the seat's answer stops and the design space starts.** Their packet says *"a bridge
+is a handler"* holds for one of four cells, because a foreign-server cell receives bytes **at a socket,
+before anything entity-shaped exists** — no path to dispatch at, no grant to check. **That is true of
+the socket-facing edge and it is not a claim about the whole bridge.**
 
-### §1a.1 Reachability is a second axis and it does not agree with structural fit
+> **The handler abstraction is opaque on its far side, and that is the point of it.** A handler is an
+> operation the system dispatches; **it does not say what happens behind it and does not need to.**
+> Installing a handler that **starts and manages a long-running parallel process** is a legitimate and
+> probably common bridge shape — the operator's example is a Bitcoin node: reading as a client is easy,
+> **being a full node is a lot harder and gets encapsulated**, and the natural packaging is *install a
+> handler that is a service*, with the process living beside it and connecting back in, or not.
+> **So "not a handler" is a true statement about three specific functions in one tree, and a false
+> generalization about bridges.**
 
-**§4 rates ATProto *"the closest fit in the field, by a distance."* That is a claim about the data
-model, and it answers a different question from *"which bridge can we get running end to end
-soonest."***
+### §1a.2 There is no single bridge design, and there should not be
 
-**A browser page has no listening socket, so it can never do the server column at all** — both server
-cells require live serving, which makes that surface a **prerequisite for half the bridge model**
-rather than an optional convenience. Within the client column, per system:
+**One seat, one implementation, one perspective — and the three artifacts they read are all
+ingress-client, in a browser.** That is the cheapest cell in the cheapest position, and its shape does
+not generalize to a cell that holds a socket, runs a daemon, or maintains consensus state.
 
-| System | Client-column reachable from a page? |
-|---|---|
-| **Nostr** | **yes, fully** — WebSocket |
-| **Matrix**, **ATProto** | yes — HTTPS, CORS permitting |
-| **ActivityPub** | **no** — delivery is inbound, i.e. the server column |
-| **SSB** | **no** — raw TCP plus a secret handshake; unreachable from a page entirely |
+**Two axes the design space runs along, neither of which has a right answer:**
 
-> **So the cheapest end-to-end bridge is Nostr and the closest structural relative is ATProto, and
-> those are different questions with different right answers.** This document only ever answered the
-> second, and said so nowhere. **A "closest fit" ranking that ignores whether the transport is
-> reachable from the substrate that would host it is half a recommendation.**
+1. **What the bridge IS** — a pure function called inline · a handler · a handler fronting a supervised
+   process · a separate peer acting as a proxy · a standalone service that speaks both sides. **All are
+   constructible and they suit different foreign protocols.**
+2. **How deep it integrates.** A bridge can be **fully encapsulated on the core protocol** — no
+   extensions, its own everything — or it can **pull in revision, identity and content** and be an
+   integrated citizen of the standard extension stack. *The first is portable and self-contained; the
+   second inherits versioning, merge, attribution and naming for free and is coupled to them.*
+
+**And nothing makes one implementation per foreign protocol correct.** There may well be five ATProto
+bridges with five designs, the same way there are many HTTP clients. **The core protocol is what binds;
+everything above it is an extension choice, and everything above the core extensions is whatever
+somebody builds.** This document should be read as *the axes and their costs*, never as a
+recommendation of one shape.
+
+> **The honest framing for the whole bridge track: there is no community to inherit an answer from, so
+> we make the calls ourselves and try to get close enough that an arriving community adopts rather than
+> rebuilds.** That is a different standard from *"correct"* and it is the one that applies.
 
 `[entity-browser-rust` `62c6d62`, from source; folded 2026-09-05.]`
 

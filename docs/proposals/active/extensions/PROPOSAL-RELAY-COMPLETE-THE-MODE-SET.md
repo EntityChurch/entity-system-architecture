@@ -345,6 +345,26 @@ it strengthens browser-rust's case rather than mine:** they caught that my own c
 
 ## §2 Ruling asked: the Mode A blocker is void — a category error
 
+> ## ✅ §2 IS FOLDED — 2026-09-05. The rest of this proposal stays open.
+>
+> **`EXTENSION-RELAY` §11.1a and `EXTENSION-REGISTRY` §8.2 are corrected in place**: the substrate
+> claim is withdrawn, the category error below is stated in §11.1a, and both deferrals now rest on
+> the only true reason — **Mode A's own normative text is unwritten** (the `:subscribe` wire shape,
+> aggregation semantics, retention). **Registry federation is unblocked, not done.**
+>
+> **Nineteen days, and the cost was paid twice.** This section established the finding on
+> **2026-08-17**; `AGENTS.md` recorded it the same day as **L9's fourth instance** — *"the
+> load-bearing deferral, void on cross-impl-verified text."* Neither reached the spec, so on
+> **2026-09-05** an operator-directed registry-composition pass **rediscovered it from scratch**, and
+> reported federation blocked in the meantime. **A ruling that stays in a proposal is rediscovered at
+> full price, and the second discovery is not free — it is a session.** L13's fourth axis, on the
+> arc's own findings: *an arch-owned item whose remaining work is an execution is an unfinished task,
+> not a backlog row.*
+>
+> **This proposal stays `active/` because §2 is one of its sections** — the mode naming, the other
+> void deferrals and the three open dispositions are unfolded (L3: a partial fold does not get a
+> completeness marker).
+
 **The claim, verbatim from §11.1a:**
 
 > *"Mode A's 'aggregator subscribes to N publisher peers' subtrees' requires **cross-peer

@@ -961,10 +961,10 @@ This is an optimization, not a requirement. Implementations MAY always perform f
 
 Sessions in this extension are keyed by `peer_id` (§6.1). The identity-rotation surfaces defined in EXTENSION-IDENTITY interact with this layer as follows:
 
-- **Op rotation** (EXTENSION-IDENTITY §5.6, `rotate_operator`): invisible to NETWORK. The deployment's runtime peers retain their `peer_id`s; sessions are unaffected.
-- **Public_X rotation** (handoff or compromise-recovery; identity-recognition territory): invisible to NETWORK. Sessions are unaffected.
-- **Runtime peer keypair rotation** (rare; rotation typically retires a peer rather than re-keying): produces a new `peer_id`. The rotated peer is structurally a new peer to NETWORK; the old session terminates and a new session is required, with its own `maintain-peer` continuation.
-- **Runtime peer retirement** (typical flow; EXTENSION-IDENTITY §5.9, `revoke_peer`): terminates that peer's sessions. Contacts opening new sessions to the deployment connect to a different runtime peer per the registry's resolved endpoints; NETWORK requires no special handling beyond normal session establishment to the new endpoint.
+- **Controller rotation** (EXTENSION-IDENTITY §4.3 handoff / §4.4 recovery of a `function=controller` cert): invisible to NETWORK. The deployment's agent peers retain their `peer_id`s; sessions are unaffected.
+- **Handle-bearing cert rotation** (the controller in the three-key default, the identifier in four-key advanced; handoff or compromise-recovery — identity-recognition territory per EXTENSION-IDENTITY §9.4): invisible to NETWORK. Sessions are keyed by the `peer_id` actually connected, and that is an agent.
+- **Agent keypair rotation** (rare; rotation typically retires a peer rather than re-keying): produces a new `peer_id`. The rotated peer is structurally a new peer to NETWORK; the old session terminates and a new session is required, with its own `maintain-peer` continuation.
+- **Agent retirement** (typical flow; an `identity-retirement` attestation per EXTENSION-IDENTITY §4.5, or a local `:revoke_attestation` per §6.4): terminates that peer's sessions. Contacts opening new sessions to the deployment connect to a different agent per the registry's resolved endpoints; NETWORK requires no special handling beyond normal session establishment to the new endpoint.
 
 NETWORK does not subscribe to identity rotation events; the layering is one-directional. Identity manages rotation and attestation; NETWORK observes the resulting peer_id population through normal session lifecycle.
 

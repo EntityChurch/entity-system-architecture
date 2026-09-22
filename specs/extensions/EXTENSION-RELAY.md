@@ -1,6 +1,7 @@
 # EXTENSION-RELAY
 
-**Version**: 1.4
+**Version**: 1.5
+**v1.5:** §11.1a — the Mode A deferral's stated blocker is withdrawn. Cross-peer subscription is specified and cross-impl verified (`EXTENSION-SUBSCRIPTION` §§1, 2.2, 5, 6, 8); what remains deferred is Mode A's own normative text.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
 **Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
@@ -21,7 +22,7 @@ A **relay** is an intermediary that carries opaque, signed, capability-bearing e
 
 - **Mode F — Forward.** Active forwarding peer carries the envelope toward destination. Push-shaped, transient, single-author per envelope, routed.
 - **Mode S — Store-and-poll.** Passive intermediary; sender PUTs, receiver polls. Pull-shaped, persistent, single-author per envelope, addressed-by-namespace. (Static-CDN-hosted peers fall here.)
-- **Mode A — Aggregate.** Persistent multi-publisher intermediary; subscribes to many publishers; serves a unified stream or queryable view. (Nostr / ATProto relay pattern.) **Deferred from v1** — cross-peer subscription dependency (§11.1a).
+- **Mode A — Aggregate.** Persistent multi-publisher intermediary; subscribes to many publishers; serves a unified stream or queryable view. (Nostr / ATProto relay pattern.) **Deferred from v1** — its own normative text is unwritten (§11.1a); **the cross-peer subscription it builds on is specified and cross-impl verified** (`EXTENSION-SUBSCRIPTION` §6).
 - **Mode C — Circuit.** Active relay maintaining a virtual circuit between two peers that can't dial each other directly. (libp2p circuit-relay-v2 / TURN.) **Deferred from v1** (§11.1); the static-host Mode S inbox covers most NAT cases.
 
 A relay peer is **just a peer running `system/relay`**. No special infrastructure role; same substrate as everything else. Operators install whichever modes their deployment supports and advertise them.
@@ -508,7 +509,7 @@ Active modes use NETWORK's transport primitives. **NETWORK §6.5 transport profi
 
 **Aggregator-as-meta-registry.** A peer running Mode A subscribed to N registry peers' binding subtrees serves the combined view. A consumer MAY add the aggregator peer as one backend entry in its own (peer-local) resolver chain — `resolver-config` is peer-local and not synced (REGISTRY §4), so the aggregator is *consumed*, it does not install itself into another peer's config.
 
-> **v1 deferral.** Depends on RELAY **Mode A**, deferred from v1 (§11.1a). REGISTRY §8.2 independently marks it v1-deferred behind Mode A. Cross-registry federation lands when Mode A lands. See `EXTENSION-REGISTRY.md §8.2`.
+> **v1 deferral.** Depends on RELAY **Mode A**, whose normative text is deferred from v1 (§11.1a) — **not on any missing substrate.** REGISTRY §8.2 records the same deferral. Cross-registry federation lands when Mode A's text lands. See `EXTENSION-REGISTRY.md §8.2`.
 
 ### §6.5 STORAGE-SUBSTITUTE-HTTP (`PROPOSAL-EXTENSION-STORAGE-SUBSTITUTE-HTTP.md`, in-flight)
 
@@ -642,7 +643,13 @@ Circuit relay for NAT traversal is structurally distinct (bidirectional virtual 
 
 ### §11.1a Mode A (aggregate) — deferred from v1
 
-**RELAY v1 ships Mode F + Mode S only.** Mode A's "aggregator subscribes to N publisher peers' subtrees" requires **cross-peer subscription initiation** that does not exist in current substrate — subscription engines (the landed EXTENSION-SUBSCRIPTION and the cohort impls) are local-tree-only; cross-peer subscription is new choreography layered above. Mode A is the federation answer (Nostr / ATProto) and the substrate for aggregator-as-meta-registry (§6.4); both depend on a cross-peer subscription mechanism that deserves its own proposal. **RELAY v1 explicitly does NOT deliver registry federation.** REGISTRY §8.2 inherits this deferral.
+**RELAY v1 ships Mode F + Mode S only.** What is deferred is **Mode A's own normative text** — the `:subscribe` / `:unsubscribe` wire shape, aggregation semantics, and the retention posture §8.1 names as a known gap in this mode. Mode A is the federation answer (Nostr / ATProto) and the substrate for aggregator-as-meta-registry (§6.4). **RELAY v1 does not deliver registry federation**; REGISTRY §8.2 records the same deferral.
+
+> **The substrate is not the blocker, and this paragraph previously said it was. The claim is withdrawn.** Earlier text read *"Mode A … requires cross-peer subscription initiation that does not exist in current substrate — subscription engines … are local-tree-only."*
+>
+> **It was a category error, and naming it is more useful than the citation list.** *An engine fires on **local** mutations* is true and universal — the subscribed-to peer's engine watches its own tree, which is how subscription must work rather than a limit on it. *Therefore a subscription may only be **initiated** locally* does not follow: **who may initiate is a capability question**, and `EXTENSION-SUBSCRIPTION` answers it cross-peer throughout — §1's three subscribe capabilities *"each rooted at a different peer in cross-peer scenarios"*, §2.2's cross-peer mirror recipe, §5's delivery tokens *"where subscriber and server are distinct principals"*, §6.1's third-party delivery, §6.3's mirror (*"a peer that reproduces another peer's subtree by subscribing to it"*, two MUSTs, bound *verified cross-impl (Go / Rust / Python)*), and §8's dissemination tree, whose intermediate peer is required to hold *"a subscription on its upstream peer."* `EXTENSION-REVISION` §6.3 composes on the same mechanism in a third spec.
+>
+> **The general form, since it applies to every deferral in this document:** a deferral is a claim about what does not exist yet, so it expires when the thing exists. **A deferral cites the section it blocks on, and is re-checked when that section moves.**
 
 **Transport-fallback dependency.** Mode F's "forward to `next_hop`" is itself a transport call; if it fails, RELAY needs the fallback loop the transport-composition exploration will specify (try alternate transports / re-resolve via registry / give up cleanly). Mode F's routing-on-failure is gated on `EXPLORATION-TRANSPORT-COMPOSITION-AND-FALLBACK.md` (Phase 2). v1 Mode F ships with explicit `next_hop` required plus the Mode-S fallback (§6.2.1) until that lands.
 

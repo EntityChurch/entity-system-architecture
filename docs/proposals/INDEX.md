@@ -328,7 +328,7 @@ prefix rename **is** the fold)* · `MATURITY-MODEL-AND-ROADMAP-COMMUNICATION`
 several are deliberately parked — but it is not visible anywhere else, which is why it is stated
 here.
 
-## 2. Implemented — 56 (moved this cycle)
+## 2. Implemented — 57 (moved this cycle)
 
 > **+1 on 2026-09-03: `PIN-THE-PATH-REQUIRED-STATUS`, written and folded in one session.** Filed from
 > `entity-system-generator`'s first read of CONTENT for code emission: `path_required` is a MUST in

@@ -1,6 +1,8 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.22
+**Version**: 1.24
+**v1.24:** §6.6 — retired `Public_X` vocabulary for EXTENSION-IDENTITY's landed function names, and corrected a false rotation claim: a binding survives **agent** rotation, while §4.3/§4.4 rotation of the handle-bearing cert replaces the key `target_peer_id` names and is not specified here. §12 Q3 split into the binding's validity (answered) and the receiver's ability to follow (open).
+**v1.23:** §8.2 — the inherited "cross-peer subscription does not exist" blocker is withdrawn (see `EXTENSION-RELAY` §11.1a). Registry federation is unblocked; Mode A's normative text is what remains unwritten.
 **v1.22:** Appendix A — the registry's defined error codes. `unsupported_mode` is pinned at both statuses (400 store-refusal, 501 fail-closed live registration) and is explicitly NOT a synonym of `unsupported_operation`: the handler is registered and `register` is implemented.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
@@ -966,10 +968,12 @@ update-transports(name, transports) → new_binding_hash
 ### §6.6 Local-name composition with EXTENSION-IDENTITY
 
 Local-name `target_peer_id` IS an EXTENSION-IDENTITY peer-id (V7 §1.5 multikey). A local-name can point at:
-- A `Public_alice`-style identity peer-id (the stable cross-rotation identifier).
-- A specific runtime-peer-id (rare; typically point at the identity, not the runtime peer).
+- The identity's **handle-bearing peer** — the controller in the three-key default, the identifier in the four-key advanced shape (EXTENSION-IDENTITY §4.2's derivation table). **This is what a binding should point at.**
+- A specific **agent** peer-id (rare; typically point at the identity, not the device daemon).
 
-When the target identity rotates per EXTENSION-IDENTITY §4.3/4.4, the local-name remains valid (it points at the stable Public_X identifier; runtime-peer-set walks find current runtime peers).
+**Agent rotation and agent retirement do not disturb a binding**: the target is the handle-bearing peer, and cert-chain walks find the identity's current agents (EXTENSION-IDENTITY §4.2/§4.2a).
+
+**Rotation of the handle-bearing cert itself is a different case and this extension does not specify it.** `identity-rotation-handoff` (EXTENSION-IDENTITY §4.3) and `identity-rotation-recovery` (§4.4) replace the key a binding's `target_peer_id` names, and identity's own recovery-following mechanism is receiver-side and quorum-anchored (§9.4, fail-closed on an uncached `quorum-publish`) — it consumes nothing this extension emits. A resolver's behaviour when a binding names a rotated-away-from handle is therefore **undefined here**, and §12 records it as open.
 
 ### §6.7 What the local-name backend does NOT do
 
@@ -1628,7 +1632,9 @@ A registry peer publishes its bindings as entities at `system/registry/binding/.
 
 A peer running RELAY Mode A subscribed to N registry peers' binding subtrees serves the union as its own `system/registry/binding/...` tree. Consumer installs this aggregator as ONE resolver backend; aggregator handles the multi-source mechanics.
 
-> **v1 deferral.** This composition depends on RELAY **Mode A**, which is deferred from v1 per `PROPOSAL-EXTENSION-RELAY.md §11.1a` (cross-peer subscription dependency — current substrate's subscription engine is local-tree-only). The aggregator-as-meta-registry pattern is named here for forward-compatibility; it is **not shippable in v1.** Cross-registry federation lands when Mode A lands.
+> **v1 deferral.** This composition depends on RELAY **Mode A**, whose normative text is deferred from v1 per `EXTENSION-RELAY.md` §11.1a — **the `:subscribe` wire shape, aggregation semantics and retention posture are unwritten.** The aggregator-as-meta-registry pattern is named here for forward-compatibility; it is **not shippable in v1.** Cross-registry federation lands when Mode A's text lands.
+>
+> **What is NOT the blocker, corrected.** This paragraph previously read *"cross-peer subscription dependency — current substrate's subscription engine is local-tree-only."* **That was false and is withdrawn.** `EXTENSION-SUBSCRIPTION` §6 specifies cross-peer delivery — §6.1 subscribing **on another peer** with third-party delivery, and **§6.3's mirror: *"a peer that reproduces another peer's subtree by subscribing to it"***, with MUST properties and a bound *verified cross-impl (Go / Rust / Python)*. `EXTENSION-REVISION` §6.3 composes on the same mechanism. **Registry federation is unblocked; it is undesigned, which is a different and smaller statement.**
 
 The aggregator does NOT re-sign aggregated bindings; receivers verify against the original issuer's signature. Aggregator is transport.
 
@@ -1819,7 +1825,7 @@ data: {
 
 - **Q1: Aggregator conflict surfacing UX.** §8.3 names fail-closed-by-default + explicit-pin-override; aggregator conflict annotation is MAY. Worth per-impl review for actual deployment ergonomics when Mode A lands.
 - **Q2: Cross-peer cache propagation.** When a binding is revoked at the source registry, how fast does the revocation propagate through aggregators + consumers? Bound by TTL; subscription-based for live registries; explicit refresh-on-use for cached. Per-backend.
-- **Q3: Identity-rotation interaction.** When the publisher of a peer-issued binding rotates their identity, do existing bindings remain valid? Per EXTENSION-IDENTITY §9.5 cap-survival semantics: yes, cap chains rebind; the published binding is signed by the cert at issuance; that cert remains live or is properly superseded via supersedes-chain. Worth cross-checking against EXTENSION-IDENTITY in cross-impl review.
+- **Q3: Identity-rotation interaction — two questions, and only the first is answered.** *(a) Does an existing binding remain **valid** when its publisher rotates?* Per EXTENSION-IDENTITY §9.5 cap-survival semantics: yes; cap chains rebind, the binding is signed by the cert live at issuance, and that cert remains live or is properly superseded via the supersedes chain. *(b) Can a **receiver** follow the rotation?* **Open.** The two come apart: a binding can stay perfectly valid while every holder of it names a key the identity has rotated away from. Following a rotation is receiver-side and quorum-anchored (EXTENSION-IDENTITY §9.4 requires a cached `quorum-publish` and is **fail-closed** without one), and nothing in this extension carries, returns, or verifies such an anchor — `trust_anchor` (§2.4) names the **issuer** of a binding, never its **subject**. A relationship formed purely through name resolution therefore acquires no rotation-following ability, and the gap is invisible until a recovery happens. Design record: `EXPLORATION-THE-SHAREABLE-REFERENCE-WHY-A-NAME-AND-A-KEY-ARE-NOT-REDUNDANT`.
 - **Q4: Local-name-store size limits.** Operator concern; exposed as `max_local-names` knob (default unlimited).
 - **Q5: Local-name namespace partitioning.** §11.3 MAY but undefined; defer to revision when a driver emerges.
 

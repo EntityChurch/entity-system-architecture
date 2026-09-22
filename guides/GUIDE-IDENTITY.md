@@ -68,6 +68,42 @@ This gives you: recovery (the quorum can certify a fresh controller if the exist
 
 Most users don't need this. It's an opt-in for users who specifically want operational-key rotation independent from contact recognition.
 
+### 2.1a Moving up the progression later — what it costs, and the one step that is not free
+
+**The progression is a continuum you can move along, and the upgrade is specified**:
+`BootstrapFromExistingKeypair` (`SDK-IDENTITY-INFRASTRUCTURE` §8.1) takes a V7-only peer to
+identity-aware, and **your peer-id does not change** — the daemon keeps its keypair, so its tree, its
+store, its held caps and its sessions all continue.
+
+**What moves is not the peer-id; it is what the peer-id MEANS.** The helper *"reuses the existing peer
+keypair as the **agent** … generates fresh quorum + controller"*, and in the three-key default **the
+controller's key is the contact-side handle** (§2.1 above; `EXTENSION-IDENTITY` §2.3). So before the
+upgrade your key *was* your identity — V7-only is *"peer's keypair = peer's identity"* — and after it,
+your key is **one of your devices**, and your identity is a controller nobody has heard of.
+
+**The migration text says the consequence in four words and does not elaborate: *"No retroactive
+migration of contacts."*** Nothing breaks the day you upgrade — the old key is live as an agent and
+still answers. **The bill comes due on the first agent retirement**, which is not an incident but the
+*typical* flow (`EXTENSION-IDENTITY` §4.5, §9.5): everyone who learned you before the upgrade holds a
+reference to a device key, never learned your controller or your quorum, and has no path to the
+replacement.
+
+**If you expect anyone to reference you, the cheap insurance is to start one rung up.** A **1-of-1
+quorum** (§11.2) is *"structurally complete but provides no recovery"* and costs one extra keypair —
+and it buys the thing that cannot be added retroactively:
+
+> **A `quorum_id` is stable for the life of the identity.** It is the content hash of the quorum entity,
+> the entity **is never rewritten**, and membership changes are `quorum-update` attestations stored
+> *under* that id — `EXTENSION-QUORUM` §4's `current_signer_set` reads the entity and then walks the
+> update chain. **So you can add constituents and raise K later, gaining recovery, without your
+> `quorum_id` or your published handle ever moving.**
+
+**Rung 2 → rung 3 and beyond is genuinely additive. Rung 1 → rung 2 is the only lossy step in the
+whole progression**, and it is lossy for the people who already know you rather than for you, which is
+why it is easy to miss when deciding where to start. *(What a durable reference should pin, and why
+this is the same question as multi-device, is the design record
+`EXPLORATION-THE-SHAREABLE-REFERENCE-WHY-A-NAME-AND-A-KEY-ARE-NOT-REDUNDANT`.)*
+
 ### 2.2 Three-key default vs four-key advanced — quick guide
 
 | Property | Three-key default | Four-key advanced |

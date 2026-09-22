@@ -91,6 +91,50 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 
 **The mechanism is fixed; the syntax is a convention.** Every lookup is one call: `system/registry:resolve(name)`. Which backend answers is decided in two stages: `name_format_dispatch` (REGISTRY §4.1 step 2) — a list of **wildcard-pattern → backend-kinds** rules matched against the name string (`*` is the only metacharacter — REGISTRY §4's closed grammar, **not** a POSIX/shell glob) — decides which backends are **eligible**, and then `resolver_chain` **priority** decides the order they are tried in, first validated hit winning (REGISTRY §4.1 step 3, §4.1.1). The dispatch list is a **filter**; it carries no precedence of its own. So *the name's shape selects the naming authority*, and the substrate does not care what the shape is. This guide standardizes **four shapes** so apps, links, and registries all speak the same grammar. **No substrate change** — the grammar is realized by the default `name_format_dispatch` globs a distribution ships.
 
+### 6.0 Where this design comes from — Zooko's triangle and petname systems
+
+**This is not a set of preferences. It is the standard resolution of a known impossibility, and naming
+it lets a reader from any other system map their own vocabulary onto ours in one table.**
+
+**Zooko's triangle:** a name cannot be simultaneously **global**, **securely unique**, and
+**human-memorable**. Every naming system picks two — and the ones that appear to have all three have an
+authority hidden inside them (DNS has a root; a blockchain-anchored name has a chain).
+
+**Marc Stiegler's *An Introduction to Petname Systems* is the standard answer: stop asking one name to
+carry all three, and use three kinds of name that compose.**
+
+| Stiegler | Properties | His definition | Ours |
+|---|---|---|---|
+| **key** | global + secure, **not** memorable | the cryptographic identifier | **the peer-id** — self-certifying; `did:key:`/Base58 resolve to themselves with no backend at all |
+| **nickname** | global + memorable, **not** unique | *"a nickname has a one-to-many mapping to keys"* | **a registry name** — issuer-scoped, and deliberately not globally unique |
+| **petname** | secure + memorable, **not** global | *"a private bidirectional reference to keys"*, unique inside one user's context | **the local-name backend** (REGISTRY §6), and the reader-chosen `label` on a follow |
+
+> ***"The security of a petname system depends on the keys to prevent forgery, and on the petnames to
+> prevent mimicry."*** — Stiegler. **Both halves are load-bearing here:** §6a.4's signature and
+> association checks are the anti-forgery half; a user's own petnames and pins are the anti-mimicry
+> half, and no registry can supply the second one for you.
+
+**How the neighbours map onto the same three.** This is the table to hand someone arriving from another
+ecosystem:
+
+| | key | nickname | petname |
+|---|---|---|---|
+| **Entity** | peer-id | `alice@entity-church` (registry-scoped) | local-name / follow `label` |
+| **Nostr** | the hex pubkey | **NIP-05** `alice@example.com` | client-side contact petnames |
+| **ATProto** | the DID | the handle (a domain) | — |
+| **This design's difference** | — | — | **our nickname layer needs no operator**: a registry is just a peer, and a `did:plc`-style directory is optional rather than load-bearing |
+
+**Nostr's NIP-05 states all three of our rules in its own text**, which is the clearest external
+confirmation this design has: it is issuer-scoped (only a domain owner issues for their domain), it
+says *"the NIP-05 is not intended to verify a user, but only to identify them"*, and it requires
+***"clients must always follow public keys, not NIP-05 addresses."*** **That last sentence is §2's
+receiver-relative principle, reached independently by a deployed system** — and it is the rule the
+drafted feed convention carries as *"whose feed this follows — a NAMESPACE, not a record"*
+(`PROPOSAL-APP-CONVENTION-FEED` §2.4; **DRAFT — the target spec is not authored yet**).
+
+**Sources.** Marc Stiegler, *An Introduction to Petname Systems*
+(`http://www.skyhunter.com/marcs/petnames/IntroPetNames.html`) · Nostr NIP-05.
+
 ### 6.1 The four shapes (recommended grammar)
 
 *Normative home for the default globs that realize these: `EXTENSION-REGISTRY` §4.1a.*
@@ -104,6 +148,69 @@ They are **one family at three points.** The delegation handler is *resolve-as-a
 | **self-certifying** | `z6Mk…` (a Base58 peer_id) | the name **is** the key | decodes as V7 §1.5 peer-id | none — self-verifying |
 
 This is exactly the user's framing: **`alice@entity-church`** reads "Alice *at* the Entity Church Registry" — the `@authority` names *which* registry, the local part is the name *within* it. Bare `alice` resolves against **your own local handles and pins** — the catch-all admits no backend that would transmit the name (REGISTRY §4.1 step 2), so telling a *third party* about a name is what the `@authority` form is *for*. `@authority` is not decoration: it is the user naming the authority they are willing to tell.
+
+### 6.1a *"How do I know `@entity-church` is the Entity Church registry? Anyone can claim that."*
+
+**The objection is correct as stated, and the answer is that nobody is being asked to believe the
+string. This subsection exists because the question is the right one and §6.1 above invites it.**
+
+**`@entity-church` is a label in YOUR config. It is not a claim anybody makes on the wire.** A
+stranger can call themselves the Entity Church registry all day; nothing in the resolution path ever
+consults that assertion.
+
+**What actually decides, from `EXTENSION-REGISTRY` §6a.4 — the resolve algorithm, not a summary:**
+
+```
+registry = config.backend_id        ; the registry peer-id = PINNED trust root
+…
+require verify_crypto(sig, pinned_key_of(registry))
+require ("peer_issued:" + registry) in config.accepted_trust_anchors   ; empty set ⇒ fail-closed
+require binding.name == norm                                          ; the association check
+```
+
+**Read that as four separate refusals:**
+
+1. **The registry is named by key, not by handle.** `backend_id` is the registry's **peer-id**, and in
+   v1 the peer-id *is* the pubkey digest (Ed25519 identity-multihash), so `pinned_key_of(registry)` is
+   derived from it — **there is no step where a name is trusted into becoming a key.**
+2. **You must have accepted that key.** `accepted_trust_anchors` is your list, per chain entry, and an
+   **empty set fails closed.** An impostor's binding fails here and the chain advances.
+3. **The bytes are hash-verified and the signature sits at the invariant pointer path.** Same content
+   addressing as everywhere else — *this is the CAS discipline applied to naming*, not a parallel
+   trust model.
+4. **The signature is checked against the question asked.** §6a.4's own framing: *"a signature proves
+   **who issued** a binding, never **what it was issued for**"* — so `binding.name == norm` closes the
+   substitution where an origin repoints a by-name file and a **validly signed, unexpired,
+   unrevoked** binding answers the **wrong name**.
+
+> **So the handle carries no authority and is not supposed to.** It is a **petname for a registry**
+> (§6.0) — memorable and secure *for you*, because your config binds it to a key you chose.
+> **Consequence a reader should take seriously: `alice@entity-church` does not necessarily mean the
+> same thing on someone else's machine**, exactly as §2 says of every name. **For a link you intend to
+> share, use the pinning form** `alice@<peer-id>` (§6.3): resolve however the receiver's chain does,
+> and require the answer to equal that key. **Name for reach, key for trust.**
+
+**One caveat on that pin, because it is the question a careful reader asks next.** A peer-id is a
+**handle key**, and a handle key is designed to change — `EXTENSION-IDENTITY` §4.3 (routine handoff)
+and §4.4 (compromise recovery) are the mechanisms, and §9.6 is the case that forces one. **So a pinned
+handle is exact at the moment you share it and has no successor**: a holder who has only the old key
+cannot learn what replaced it, because the thing that would tell them is signed by a set they never
+pinned. The identifier that does *not* change is the **`quorum_id`** — the content hash of the identity's
+quorum entity (`EXTENSION-QUORUM` §3.1) — bound to the current handle by the K-of-N-signed,
+supersede-chained `quorum-publish` (§3.3). **Pinning that instead would survive every rotation and
+remove the registry from the trust path entirely.** Nothing in the resolution layer carries it today
+and no seat has needed it yet; the analysis, its costs, and what would have to be built are
+`EXPLORATION-THE-SHAREABLE-REFERENCE-WHY-A-NAME-AND-A-KEY-ARE-NOT-REDUNDANT`. **Until that is ruled,
+the pin above is what is landed, and its limit is stated here rather than discovered later.**
+
+**Where the key comes from in the first place** is §7's bootstrap-with-precedes: a distribution ships
+a pinned registry key the way an OS ships root CAs, and you may evict or override it. **That is the one
+place trust is seeded, it is visible, and it is yours to change** — which is the honest version of
+"who decides," and the reason it is stated rather than buried.
+
+**What pinning the key does *not* buy you** is §7a: it does not pin the origin that serves the bytes,
+so a hostile host can **withhold** a revocation even though it can never forge one — and against that,
+your bound is the binding's TTL.
 
 ### 6.2 Why `@` (email-shaped) for the primary registry-scoped form
 
@@ -172,7 +279,7 @@ resolver_chain (priority asc):
 
 1. **Chained config (BUILT today)** — the chain above *is* "consult several registries." Priority order + `name_format_dispatch` route the query. Most of the felt need is already here.
 2. **Static aggregation via precedes (BUILT)** — a distribution preloads signed bindings from many registries, each verifiable against its own issuer (REGISTRY §7). A union baked at build time; works offline; only lacks live freshness.
-3. **Live federation / aggregator (DEFERRED)** — a Mode-A relay subscribes to N registries and serves the live union as one backend (REGISTRY §8.2); deferred on cross-peer subscription. Does **not** re-sign — receivers verify originals.
+3. **Live federation / aggregator (DEFERRED)** — a Mode-A relay subscribes to N registries and serves the live union as one backend (REGISTRY §8.2). **Deferred because Mode A's own normative text is unwritten — NOT on any missing substrate.** *(Earlier text here said "deferred on cross-peer subscription"; that claim is withdrawn — `EXTENSION-SUBSCRIPTION` specifies cross-peer subscription throughout, and §6.3's mirror is cross-impl verified. See `EXTENSION-RELAY` §11.1a.)* Does **not** re-sign — receivers verify originals.
 
 ### 7a. Pinning a registry's key does not pin its host
 

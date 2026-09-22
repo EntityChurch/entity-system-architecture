@@ -110,6 +110,24 @@ already chose to publish.*
 > **The machinery is proven** — the registry already mints and verifies detached signatures at the same
 > invariant-pointer path — so this is an obligation to schedule, not a mechanism to design.
 
+> **The scope of this MUST, stated so it is not generalized into a law about the system.**
+> `[added 2026-09-05 — `EXPLORATION-THE-SECOND-FALSIFICATION-…` §4]`
+> **This rule scopes the entry.** It is the anti-forgery rule for a singly-authored object and it is
+> correct for every shape this convention defines. **It is not a statement that application data has
+> one signer**, and it must not be read as one — the substrate says the opposite: V7 binds each
+> signature as a **separate entity in the signer's own namespace** at
+> `/{signer}/system/signature/{hex(target_hash)}`, so one entity can carry N signatures from N
+> namespaces, and `EXTENSION-QUORUM`'s `verify_k_of_n_signatures` already validates K-of-N over an
+> arbitrary entity.
+>
+> **Why this sentence is here rather than in a later revision.** A record that two or more parties
+> co-sign — a co-authored post, a mutual follow read as a *relationship* rather than as two
+> independent follows, an RSVP the host confirmed, a receipt, an order — **is a different shape, and
+> it is not specified anywhere yet.** If §1.1 is read as a system-wide property, that shape arrives as
+> a contradiction to be migrated around instead of an addition. **It is reserved here, deliberately
+> not designed here**, and designing it wants the seats building commerce or private audiences in the
+> room. **`[OPEN-FEED-12]`**
+
 ### §1.2 One entry is one addressed unit — entries reference, they never embed
 
 **An entry MUST NOT contain another entry's bytes.** What it replies to, what it quotes, what it
@@ -1049,6 +1067,7 @@ exactly when it stops being true.
 | **`[OPEN-FEED-9]`** | **A self-applied content warning has no home**, and it is the clearest thing in the residue to pass the taxonomy's own test — a conformant consumer holding one must **behave** differently (render behind an interstitial) rather than merely lay it out differently. One of the four surveyed systems carries it as a first-class record field. **Its *shape* is already decided by `[OPEN-FEED-6]`'s rule, which was written for a different question and answers this one:** a content warning is exactly *a property governing what a consumer may do with an entity*, so **it lives on the entry — never on a collection, a mirror or an index that contains it.** What remains open is whether it is a field at all versus a reader-side list | unowned — **raise with both application seats**, since it is a field in a document under their review | a seat needs it, or the ActivityPub read confirms a second carrier |
 | **`[OPEN-FEED-11]`** | **`collection`'s authored order is weak evidence for the shape.** §3a distinguishes the collection partly on **authored order**, and FEED-8 asserts `members` order is preserved — but `entity-browser-rust` reports that **their one real bounded-complete set renders in *derived* order**, so the property the type leans on is not the one the only implementation exercises. Their suggestion: **an optional order field on one type rather than two types.** *Bounded* and *complete* are unaffected and still hold | `entity-browser-rust`, raised `62c6d62` | a second bounded-complete consumer exists, or the seat proposes the optional-order shape |
 | **`[OPEN-FEED-10]`** | **A quote — *render that entry inside this one* — is expressible two ways and assigned neither.** It is neither a reply (it asserts no answer) nor an ordinary attachment (it is an entry, not a file). `attachments` is a reference list; the body's handler layer is open, so an entity-ref embed type is legal. **Two candidate homes, no rule, and picking one is cheap** | unowned | a seat renders a quote |
+| **`[OPEN-FEED-12]`** | **The multi-party record — reserved at §1.1, not designed.** Every shape this convention defines has exactly one signing party, and §1.1's MUST makes that normative for the entry. **A co-signed record is a fourth provenance cell** (`EXPLORATION-THE-SECOND-FALSIFICATION-…` §4): bounded, multi-party, and claiming completeness — **verifiably**, since the record names its parties and each signature sits at the core's invariant pointer path in that party's namespace. **The substrate is complete and no L5 shape exists**; `EXTENSION-TRANSACTION` §1.2 is the checked negative (*"this extension is local — one peer"*). Instances: a co-authored post, a mutual follow read as a relationship, a confirmed RSVP, a receipt, an order | unowned — **wants the seats building commerce or a private audience** | a seat needs a co-signed object. **The release-window obligation is only the §1.1 scoping note, which is landed** |
 | **`[OPEN-FEED-8]`** | Is `context` doing too much? It carries *part of a topic*, *part of an album* and *part of an event* in one field. **If consumers must branch on which, it fails the taxonomy's own test and should be split** | unowned | a second consumer of `context` exists |
 
 ---

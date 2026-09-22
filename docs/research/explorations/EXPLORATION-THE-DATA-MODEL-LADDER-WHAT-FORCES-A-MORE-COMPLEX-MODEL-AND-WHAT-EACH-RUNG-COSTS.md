@@ -23,19 +23,20 @@ directions, and both errors have the same cause: reasoning about two large exten
 output instead of reading them.** Corrected 2026-09-05 on the operator's challenge. The first version
 is not preserved; what it claimed is stated below so the correction is checkable.
 
-> **Error 1 — the CRDT claim (was "C-5"). WITHDRAWN ENTIRELY; there is no defect.**
+> **Error 1 — the CRDT claim (was "C-5"). The filed defect is WITHDRAWN; the analysis that replaces it
+> is §8.1 and it finds two narrower things.**
 > The first version read `EXTENSION-REVISION`'s *"no persistent CRDT metadata"* out of the overview and
-> concluded that *"the framework can host merge strategies and cannot host a CRDT, despite naming
-> one."* **§5.4 is titled *CRDT as Merge Strategy* and states the principle it follows by name — the
-> Eg-walker principle: *CRDT is a computational artifact during merge, not a storage format.*** The
-> causal information a CRDT needs **is** persisted — as the **version DAG's parent pointers** — and
-> replayed at merge time, which is precisely Eg-walker's result. **The 2018 survey the objection was
-> derived from predates it.** §7.2 then proves convergence outright: *"concurrent merges of the same
-> inputs produce the exact same version entry hash"*, *"the number of distinct heads across the cluster
-> is monotonically non-increasing"*, **convergence guaranteed** — with a `deterministic` merge-ordering
-> setting specified for exactly the p2p case where asymmetric strategies would otherwise diverge.
-> **The operator's summary is the accurate one: revision already is a convergent replicated structure,
-> the settings are specific and have to be right, and anything further can be built on top.**
+> concluded the framework *"cannot host a CRDT despite naming one."* **§5.4 cites the Eg-walker result
+> (Gentle & Kleppmann, EuroSys '25) and cites it correctly** — that paper's CRDT structure is explicitly
+> *"not persisted or replicated and is discarded when the algorithm finishes."* The 2018 survey the
+> objection came from is not a law; it is a design point that result supersedes.
+> **The second version then withdrew the claim on the operator's say-so plus a skim, and that was also
+> not analysis.** §8.1 now does it from the spec and the paper, and lands in three parts: **(a) yes**,
+> the version DAG plus deterministic merge is genuinely convergent and §7.2's argument holds; **(b)
+> under three preconditions, of which §7.2 names two** — the third, *both peers hold the same merge
+> config*, is peer-local tree state that neither party can observe in the other; **(c) it is a state
+> DAG, not an event graph**, so a fine-grained text CRDT built on it must bring its own operation log,
+> because a diff recovers *a* plausible edit script rather than the one that happened.
 
 > **Error 2 — the multi-device reframing. RETRACTED; the ORIGINAL C-2 was correct.**
 > The first version claimed that under the identity model *"the same Alice"* is N peer-IDs, so there is
@@ -160,43 +161,67 @@ handle"* was never read, so the agent-key model was reconstructed from a deploym
 
 ---
 
-## §6 What actually survives: the published root has no stated contention rule
+## §6 C-2 is a KEY CUSTODY question, and the `seq` race is downstream of it
 
-**Alice publishes under one peer-id.** `EXTENSION-IDENTITY` §6: *"the controller's pubkey **IS** the
-user's published handle. Contacts cache it."* Agents are per-device daemon keys with **authority to act
-on behalf of** that identity — Alice's laptop and her phone both operate *her* namespace. That is the
-point of the three-key default, and it is why *"stable cross-peer recognition"* is listed as one of the
-three properties it buys.
+**Corrected a second time, and this is the operator's framing, verified in `EXTENSION-IDENTITY` §7.1.**
+The previous version of this section said *"two writers, one published namespace, one root sequence"* and
+went straight to the contention rule. **That skipped the question that decides whether the race exists at
+all: which key signs a published root, and how is it held on two devices?**
 
-**So C-2 is exactly what it always said: two writers, one published namespace, one root sequence.** And
-`entity-browser-rust` reports the same shape from a configuration they already ship — *"Tori plus a
-browser profile on one peer is a configuration we already support and the on-ramp makes normal, and two
-writers advancing one seq is exactly the undesigned race."*
+**Alice would use one public key.** She *may* publish under as many peer-ids as she likes and nothing
+prevents it — **it just fractures the identity, which is the thing nobody wants.** So the target shape is
+one stable public face, and in the three-key default that face **is the controller** (*"the controller's
+pubkey IS the user's published handle"*).
 
-**The precise, checkable form — and it exists because the corpus already solved the analogous problem
-one pointer over.**
+**§7.1 assigns every key a job, and publishing is not one of them:**
 
-| Pointer | Contention rule | Where |
+| Key | Custody | What it signs |
 |---|---|---|
-| **the revision head** (`system/revision/{H}/head`) | **specified** — implementations **MUST** use CAS+retry, single-writer serialization per prefix, or equivalent, to satisfy a **no-orphan invariant**; *"implementations that allow concurrent head advances to overwrite each other… are non-conformant"* | `EXTENSION-REVISION` §8.1 |
-| **the published root** (`system/peer/published-root`) | **`seq` MUST increase monotonically**, `predecessor` MUST carry the prior root's hash, and a consumer **MUST reject `seq < N`** — a **rollback** defense | `EXTENSION-NETWORK` §6.5.6 |
+| **Quorum constituents** | **cold** — paper, secondary device, hardware token, trusted holder | recovery, quorum updates, new controller certs |
+| **Controller** | **hot, encrypted at rest** | *"internal-management entities — peer-config writes, role-assignment records, agent certs"* |
+| **Agents** | **hot, one per device daemon** | *"cross-peer caps (V7 standard)"* |
 
-> **The gap is the diagonal cell.** Monotonicity and the predecessor chain defend against a root going
-> *backwards*. **Neither defends against two roots at the same `seq`.** Two devices under one identity
-> both republish at `seq = N+1`, both citing the `seq = N` root as `predecessor`, both **correctly
-> signed by an authorized agent** — and a consumer holding one and then the other sees **equal** `seq`,
-> so the rollback check does not fire, and nothing tells it which is current or that it forked.
+> **Nothing in the identity stack says who signs a `published-root`, and no key's stated job covers it.**
+> The controller signs *internal management*; agents sign *capability tokens*. **Publishing authority is
+> unassigned**, and §7.1 describes the controller key in the singular — hot, encrypted at rest — with no
+> statement about replicating it to a second device, which is exactly the operator's *"we haven't fully
+> figured out how that would work in terms of private key, secure key management across devices."*
 
-**That is the whole of C-2, and stated this way it is small.** It is not a consensus problem and not a
-data-model problem — **it is one pointer missing the discipline its sibling already has.** The candidate
-answers are the ones REVISION §8.1 already enumerates (CAS+retry, single-writer serialization) plus one
-this substrate makes available and REVISION does not need: **detect and surface the fork**, since two
-signed roots at one `seq` are self-evidently a fork and both are verifiable.
+**So there are three branches and the corpus commits to none:**
 
-**The right next step is a measurement, not a design**, and browser-rust has already volunteered the
-better version of it: *"I'd rather reproduce it deliberately with a gate than find it in someone's
-profile."* **Reproducing it decides whether it needs a MUST or only a stated invariant** — and it is a
-cheaper way to be right than another arch document about it.
+1. **Copy the publishing key to every device.** Gives one stable face and **makes the `seq` race real**
+   (§6.1). Custody is undesigned — this is where a keystore-with-unlock or a distributed-key scheme
+   would go.
+2. **Publish through one device or an intermediary service.** Serializes by construction, so no race —
+   and it introduces a component nobody has specified, plus a single point of failure the rest of the
+   design avoids.
+3. **Each device publishes under its own id.** No shared key, no race, **fractured identity.** The
+   identity stack's *"concurrent multi-controller… where each device has its own controller"* variant
+   (§7.3) is this branch — and in the **three-key** default, where the controller *is* the handle, that
+   means a different public handle per device. **The four-key shape is the closest existing answer**,
+   since a stable `identifier` peer survives controllers rotating underneath it — **but publishing is
+   not mapped onto that structure anywhere.**
+
+**What the identity stack does give is operational, and the distinction is the operator's:** devices can
+act and form peer-to-peer relationships as one identity, because they identify against the same cert
+chain. **That is not the same as being able to sign as the public face**, which still needs that key.
+
+### §6.1 The `seq` race — real, but only in branch 1
+
+**If the key is shared, the corpus has the analogous problem solved one pointer over and not here:**
+
+| Pointer | Contention rule |
+|---|---|
+| **revision head** | **specified** — `EXTENSION-REVISION` §8.1: CAS+retry or single-writer serialization, a **no-orphan invariant**, and *"implementations that allow concurrent head advances to overwrite each other… are non-conformant"* |
+| **published root** | **`seq` monotonic + `predecessor` chained** — `EXTENSION-NETWORK` §6.5.6. **A rollback defense** |
+
+**Neither rule covers two correctly-signed roots at the same `seq`.** Both cite the `seq = N` root as
+`predecessor`, both verify, and a consumer sees **equal** `seq` — so the rollback check does not fire and
+nothing says which is current or that it forked.
+
+> **The ordering is what changed: custody first, contention second.** `entity-browser-rust` reports the
+> race from a config they already ship and has offered to reproduce it with a gate — **that measurement
+> is still the right next step**, and it also answers which branch their deployment is actually in.
 
 ## §7 The ordering primitive — what we have, what we do not, and why we cannot copy the neighbours
 
@@ -269,49 +294,110 @@ which is the same partial-view assembly a mirror already does. **And the "full s
 step is the published snapshot — the entry.** *The seam really is publication*, and it turns out to be
 the literature's own bootstrap step rather than a convenience.
 
-### §8.1 ~~The hook as written cannot host a CRDT~~ — WITHDRAWN, and the corpus was ahead of the analysis
+### §8.1 Do we have CRDTs? — the analysis, done properly, landing in three parts
 
-**The first version of this section claimed a defect: that `EXTENSION-REVISION`'s *"no persistent CRDT
-metadata"* contradicts convergence, because an add-wins set cannot distinguish concurrent add+remove
-from remove-after-add without causal metadata. That claim is withdrawn in full.**
+**This section has now been wrong twice in opposite directions and neither error was the analysis.**
+First it claimed a defect from one overview sentence checked against a 2018 survey. Then it withdrew the
+claim on the operator's say-so plus a skim — *"don't take my word for it, do the analysis"* is the
+correct response to that, and this is the analysis. **Sources are `EXTENSION-REVISION` §5.1, §5.4, §7.2
+and §1.1, read; and Gentle & Kleppmann, *Collaborative Text Editing with Eg-walker* (EuroSys '25,
+arXiv:2409.14252), read.**
 
-**The reasoning was sound against the 2018 survey and the survey is not what REVISION implements.**
-§5.4 names its principle outright — **Eg-walker**: *"CRDT is a computational artifact during merge, not
-a storage format."* The causal record a CRDT needs is not absent; **it is the version DAG**, whose
-entries carry `root` and sorted `parents` and are therefore a content-addressed causal history. A merge
-handler receives base/local/remote, replays operations against a CRDT instance, and returns a plain
-entity — **the metadata is reconstructed from the graph rather than carried per element**, which is the
-entire point of the result and is newer than the framing this document brought to it.
+#### (a) Yes — the version DAG plus deterministic merge is a convergent replicated structure
 
-**And convergence is not asserted, it is argued, in §7.2:** structural version entries mean *"concurrent
-merges of the same inputs produce the exact same version entry hash"*; *"the number of distinct heads
-across the cluster is monotonically non-increasing"*; content addressing gives `O(1)` convergence
-detection. **The one case where it does not hold is named rather than hidden** — asymmetric strategies
-(`source-wins` / `target-wins`) under `caller-perspective` ordering — with the remedy specified
-(`deterministic` merge ordering) and oscillation detection as a backstop. *That is a spec that has
-thought about p2p convergence more carefully than the objection did.*
+**This is the operator's read and it holds.** §7.2's argument is real and checkable: version entries are
+**structural** — `{root, sorted parents}`, no author, no timestamp, no message — so *"concurrent merges
+of the same inputs produce the exact same version entry hash"*, each merge is a descendant of all its
+inputs, and *"the number of distinct heads across the cluster is monotonically non-increasing."*
+Idempotence is free (equal hash ⇒ converged, `O(1)` to detect). **That is a join-semilattice in the
+shape that matters, and calling it a CRDT is fair.**
 
-> **So the honest statement of §8's whole finding is a demotion: state-based/delta-state is the right
-> family for this substrate, the corpus already chose a form of it, and the derivation above is
-> corroboration for a decision that was made — not an answer to an open question.** The interaction
-> landscape's *"which family?"* is answered by `EXTENSION-REVISION` §5.4, and the value of §8 is that it
-> says **why** that choice is forced here rather than optional: op-based's reliable-causal-delivery
-> precondition is one this substrate has declined at every layer.
+**And the Eg-walker citation in §5.4 is accurate, not decorative.** The paper's replica state is exactly
+three parts — event graph (persisted), document state (plain, no metadata), and a **temporary CRDT
+structure that is not persisted or replicated and is discarded when the algorithm finishes.** So *"CRDT
+is a computational artifact during merge, not a storage format"* is the paper's actual result, correctly
+cited. **The 2018 survey's per-element-metadata requirement is not a law; it is one design point that
+this result supersedes.**
+
+#### (b) Conditionally — and the third condition is not stated in the guarantee
+
+**Convergence holds under three preconditions. §7.2 names two.**
+
+| # | Precondition | Named? |
+|---|---|---|
+| 1 | **`deterministic` merge ordering**, not `caller-perspective` | **yes** — §7.2's asymmetric-strategy caveat, with the remedy and an oscillation-detection backstop |
+| 2 | strategies that are **symmetric or deterministic** — `source-wins`/`target-wins` return `remote_hash`/`local_hash`, which are **per-peer roles** | **yes**, same caveat |
+| 3 | **both peers hold the same merge configuration** | **no** |
+
+**Condition 3 is the finding, and it follows from §5.1 alone.** Merge strategy is resolved from
+`system/revision/config/merge/type/{...}` and `system/revision/config/merge/path/{...}` — **entries in
+the peer's own tree.** They are local state: not exchanged during sync, not part of the version entry,
+not committed to by any hash a counterpart can check. **So two peers with different merge configs
+produce different trie roots from identical `(base, local, remote)`, hence different `V_m` hashes, hence
+divergence** — and §7.2's *"same merge inputs produce the same version hash"* is true only if *inputs*
+is read to include the config, which the sentence does not say and a reader would not assume.
+
+> **This is not the asymmetric-strategy caveat.** That one is about *ordering* within one peer's merge
+> and is fixed by a setting both peers can independently choose correctly. **Config divergence cannot be
+> fixed by either peer alone**, because neither can see the other's config. *A convergence guarantee
+> whose precondition is unobservable to both parties is a guarantee neither can verify it is meeting.*
+> **Whether that is a defect or the intended git-like "merge policy is local" stance is a real question
+> and it is the spec's to answer — but §7.2 currently claims convergence without the caveat.**
+
+#### (c) And it is a state DAG, not an event graph — which bounds what can be built on it
+
+**This is the precise limit, and it is the one that matters for the collaborative-editing case.**
+
+**Eg-walker persists an *event graph*** — the original operations, with their causal parents — and
+replays them, guaranteeing *"the same final document state regardless of which [topological sort] is
+chosen."* **`EXTENSION-REVISION` persists a *state DAG*:** each version entry is `{root, parents}`, a
+**trie root hash** — an endpoint, not an operation. §5.4's merge handler *derives* operations by
+diffing base→local and base→remote.
+
+> **A diff recovers *a* plausible edit script, not *the* one that happened.** For coarse-grained entity
+> merges that distinction is immaterial and the framework is right. **For fine-grained collaborative
+> text it is the whole ballgame** — delete-and-retype looks like a no-op, and concurrent interleaving is
+> reconstructed rather than replayed, so Eg-walker's guarantee does not transfer.
+>
+> **The correct statement, and it is a scoping note rather than a defect: a text CRDT hosted in this
+> framework must bring its own operation log, because the version DAG is not one.** **REVISION already
+> scopes real-time collaborative editing out** (§1.1: *"application-level, uses merge framework"*), so
+> nothing is broken — but *"CRDT as merge strategy"* invites the reading that the DAG supplies what a
+> CRDT needs, and it supplies the ancestor, not the operations.
+
+#### (d) One foot-gun the spec documents itself, and it is the serious one
+
+§5.1's v7.70 Amendment 1 is worth quoting because it is the strongest self-audit in the corpus: a
+wildcard config with a conflict-suppressing strategy *"silently rewires conflict resolution for every
+prefix and every future merge on the peer, including prefixes that do not exist yet"*, and **"there is
+no audit signal today"** — a config-resolved conflict produces a merge result **byte-identical** to a
+genuinely conflict-free merge, so *"a subscriber / sync chain / downstream verifier cannot tell a clean
+merge from a config-suppressed one."* Tracked (W2), unspecified.
+
+**Read beside (b), the two compound: config is invisible to a counterpart, AND its effects are invisible
+in the result.** That is not an argument against the design — it is the precise statement of what a
+downstream verifier can and cannot conclude from a merged root, and anyone building verification on top
+of revision needs it.
+
+> **So the answer to *"do we have CRDTs?"* is: yes, and the settings are specific, exactly as stated —
+> plus one unstated precondition (b) and one boundary (c).** No retraction is owed to the corpus here;
+> what is owed is that §7.2's guarantee name its third precondition.
 
 ## §9 What this changes on the board
 
-1. **C-2 stands as originally written, and gains a precise form.** Two writers, one published namespace,
-   one `seq`. **The gap is that `EXTENSION-REVISION` §8.1 specifies contention handling for the revision
-   head and nothing specifies it for the published root** — where `seq` monotonicity and `predecessor`
-   defend against rollback but not against **two roots at the same `seq`.** §6.
-2. **C-5 is withdrawn. There is no CRDT defect.** §8.1.
-3. **C-3's reason is confirmed** — no verifiable order across namespaces — and that property is worth
-   stating once, durably. §7. **This is the one item unaffected by either correction.**
-4. **The next step on C-2 is a measurement, and the seat that would hit it has offered to take it.**
-   Reproducing the fork with a gate decides whether it needs a MUST or a stated invariant, and it is
-   cheaper than another arch document.
-5. **Nothing here proposes a new content type**, which remains a mild corroboration of the taxonomy
-   floor.
+1. **C-2 is a key-custody question first.** Which key signs a `published-root`, and how is it held across
+   devices — **§7.1 assigns publishing to no key.** Three branches (§6), corpus commits to none, and the
+   `seq` race exists only in the shared-key branch. **The four-key `identifier` shape is the closest
+   existing structure and publishing is not mapped onto it.**
+2. **C-5 is withdrawn as filed and replaced by two narrower items** (§8.1): **(b)** §7.2's convergence
+   guarantee has an **unstated third precondition** — both peers holding the same merge config, which is
+   peer-local state neither can observe in the other; **(c)** the version DAG is a **state DAG, not an
+   event graph**, so a text CRDT built on the framework brings its own operation log. **Neither is a
+   defect in the design; both are sentences the spec does not currently say.**
+3. **C-3's reason is confirmed** — no verifiable order across namespaces — and unaffected by any of the
+   corrections. §7.
+4. **The next step on C-2 is browser-rust's gate**, which also settles which branch their deployment is
+   in.
 
 ---
 

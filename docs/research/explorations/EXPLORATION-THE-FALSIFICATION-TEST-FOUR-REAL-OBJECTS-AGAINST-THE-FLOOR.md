@@ -343,6 +343,14 @@ that can never be reclaimed.
 1. **Four microblog-lineage objects.** §3's limit, restated because it is the one that matters: a wiki
    page, a marketplace listing, a map annotation and a collaborative document are untested, and
    `[X-13]` is where a real falsification would come from.
+   > **DISCHARGED 2026-09-05, and this limit was right.**
+   > `EXPLORATION-THE-SECOND-FALSIFICATION-THE-WIKI-THE-FORUM-THE-MARKETPLACE-AND-THE-COLLABORATIVE-DOCUMENT`
+   > ran three of the four named classes from primary sources. **The wiki, the forum and the
+   > collaborative document absorb; the marketplace order falsifies** — and the falsifier is the axis
+   > this test structurally could not vary, because **all four objects here are singly authored.** The
+   > floor's shapes each have exactly one signing party; an order has two or more, and `FEED` §1.1
+   > requires a conformant reader to *reject* an entry whose author is not its namespace. Games remain
+   > untested.
 2. **The mapping is structural, not executed.** Nothing was actually round-tripped. **An executed
    mapping — take real bytes, produce an entity, produce the foreign object back, compare — is a
    different and stronger test**, and it is `[X-2]`'s neighbour rather than this document's claim.
