@@ -1,10 +1,10 @@
 # PROPOSAL — de-version the test-vector corpus
 
-**Status:** PARTIALLY EXECUTED (2026-08-22) — **stays in `active/`; read §8 first.**
-The `crypto-agility` half landed. `ecf-conformance` did not, and the §5.1 rule is
-therefore live against a corpus that violates it. **`active/` is correct and
-`implemented/` would be a lie** — L3: a partial fold does not get a completeness
-marker, and `implemented/` is one.
+**Status:** **FULLY EXECUTED / IMPLEMENTED 2026-08-31** — read §9 (the amendment) and §10
+(the execution record). The `crypto-agility` half landed 2026-08-22; the `ecf-conformance`
+half was blocked on a core-protocol normative edit §3 never scoped, and §9 is the amendment
+that covers it. `spec corpus` is **0 errors**, down from 4 → 1 → 0. Two of §8.3's four
+carried rows remain open and live on the cohort ledger, not here.
 **Target:** `GUIDE-CONFORMANCE.md` §5.1 (normative rewrite, this repo) ·
 `entity-core-protocol/specs/test-vectors/` (layout) · `entity-core-go/cmd/` (three
 command names) · `entity-core-keystone` (vendor relation) — **rename + rule change, no
@@ -385,3 +385,94 @@ Per L9 — a proposal's open items do not fold with the proposal — these are r
    by refusal. The replacement belongs on a non-`system/peer` type.
 4. **§4a's byte-neutrality re-check** — the encoder proof against the frozen pair, run in the
    build owner's tree after the rename.
+
+---
+
+## 9. Amendment — the `ENTITY-CBOR-ENCODING` Appendix E delta `[2026-08-31]`
+
+**This section is the L1 instrument §8.2 said was owed.** It scopes the core-protocol normative edit
+that §3 missed, so the ECF half can land. **EXECUTED the same session** — see §10.
+
+### 9.1 What §3 should have said
+
+§3 named `GUIDE-CONFORMANCE` §5.1 as the rule's home. **`ENTITY-CBOR-ENCODING` Appendix E is a
+second home**, normative, in the core spec, stating the corpus-version citation rule independently:
+
+| # | Site | Was |
+|---|---|---|
+| 1 | **§E.2** fixture format | *"The normative fixture is `conformance-vectors-v{N}.cbor`"* |
+| 2 | **§E.2** source | *"Human-editable source: `conformance-vectors-v{N}.diag`"* |
+| 3 | **§E.2** canonical location | `test-vectors/ecf-conformance/conformance-vectors-v1.cbor` |
+| 4 | **§E.3** harness step 1 | *"Load `conformance-vectors-v{N}.cbor`"* |
+| 5 | **§E.6** compliance reporting | **`[MUST]`** — *"Conformance reports MUST cite the version of `conformance-vectors-v{N}.cbor` … A report of 'passes v1' means …"* |
+
+**Site 5 is the load-bearing one.** It is a live core `[MUST]` requiring a citation form that the
+retired rule invented. Renaming the artifact without amending it would leave a MUST demanding a
+version stamp that no longer exists anywhere — **L17**: a normative MUST naming a value with no
+declared site a peer can carry.
+
+### 9.2 The delta
+
+Sites 1–4 drop the stamp. **Site 5 is rewritten to §5.1's landed form:**
+
+> Conformance reports MUST cite the **corpus name and the sha256 of the `conformance-vectors.cbor`
+> artifact** the implementation passes — the citation form is `(spec-version, corpus-name, artifact
+> sha256)`. A report means every vector in the artifact with that digest returns pass under §E.3
+> semantics.
+
+Plus the vendor-verification sentence — **verify a vendored copy by digest, never by filename** —
+because a filename mismatch makes an automated vendor check report *could-not-look* rather than a
+failure, which is the specific way the last rename went unnoticed for six weeks.
+
+**Scope:** citation-rule and filename only. **No vector value changes, no wire change, no encoding
+change, no new code or status.** The `.cbor` artifact is byte-identical across the rename.
+
+### 9.3 Why this was missed the first time, kept because it is the corpus's own lesson
+
+§3 asked *"where is this rule written?"* and answered from where the rule was **found**. §4b caught
+the same shape one layer out — two live conformance checks citing §5.1, correctly routed — **so the
+proposal did ask "who else depends on this rule?" and asked it of code. It never asked it of the
+specs.**
+
+This is the **first incident of L23** (*a rule has every normative home it is stated in, not the one
+the proposal names*), which this corpus ratified on 2026-08-30 and which fired a **third** time on
+2026-08-31 during the FM-1 fold. The rule now exists because of this proposal; landing the amendment
+closes the loop that opened it.
+
+---
+
+## 10. Execution record — 2026-08-31: the ECF half landed
+
+`entity-core-protocol`, amendment **0.8.2.1**.
+
+**Artifact byte-neutral where it counts:**
+
+| | sha256 |
+|---|---|
+| `conformance-vectors.cbor` | `9695b1f1d939cfdfdd4297f8ad32122d424b1ec180cfae74c92d509d88f7c6dc` — **identical before and after**, measured on both sides |
+| `conformance-vectors.diag` | `71015b72…` → `da521d67aa8193a3bf9acd232088d8515d50333f0294c65a5df3b45f46a1a87b` |
+
+The `.diag` moved by **exactly two lines**, both inside its opening `/ … /` comment span, both naming
+the old filename. Full diff verified against the pre-rename blob; no `id`, `kind`, `input`,
+`description` or `h'…'` value moved, and the unchanged `.cbor` digest is the proof the encoding did
+not change. **71 vectors, unchanged.**
+
+- `conformance-vectors-v1.{cbor,diag}` → `conformance-vectors.{cbor,diag}`.
+- `specs/test-vectors/ecf-conformance/CHANGELOG.md` written — the corpus's version now lives there,
+  mirroring the crypto-agility half.
+- Appendix E sites 1–5 amended per §9.2.
+- **`spec corpus` is now 0 errors** against `entity-core-protocol`, down from 4 → 1 → 0. The gate
+  that stayed red for nine days as §7 predicted is green.
+
+**§8.3's rows 1 and 2 are discharged; rows 3 and 4 remain open** and stay on
+`docs/COHORT-OPEN-ITEMS.md`: a positive SHA-384 content-hash vector is still owed, and §4a's
+byte-neutrality re-check is the build owner's step under §5.1d.
+
+**Routed, not assumed — this rename makes vendor gates blind, not merely stale.** Every tree
+carrying a copy is named in the same session with `(seat, path, expected sha256)`, per the ratified
+enforcement point from L8's sixteenth form: **`entity-core-keystone`, `entity-core-rust`
+(`conformance/vectors-v1.cbor`), `entity-core-py` (`test-vectors/v1/`), `entity-core-go`
+(`-corpus conformance-vectors-v1.cbor`)**. A vendored copy under the old filename reports
+`vendor-unmatched`, which is a could-not-look and **must not be read as a pass**.
+
+**This proposal is now fully executed and moves to `implemented/`.**

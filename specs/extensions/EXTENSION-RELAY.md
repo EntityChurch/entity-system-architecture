@@ -1,6 +1,6 @@
 # EXTENSION-RELAY
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
 **Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
@@ -71,6 +71,12 @@ data: {
                                          ;   is advisory and MUST equal route[0] if both set
                                          ;   (else invalid_request/400, pre-dispatch).
   ttl_hops:        u32,                  ; relay-transport hop budget; decremented per hop
+  expires_at:      <timestamp | null>,   ; v1.3 — ms since epoch. The ORIGINATOR's deadline for
+                                         ;   this envelope, in the outer request where a relay
+                                         ;   may read it. Optional; omitempty, so a request
+                                         ;   without one encodes byte-identically to v1.2.
+                                         ;   On the §6.2.1 store fallback it becomes the
+                                         ;   store-entry's `expires_at`, clamped by §8.1.
   envelope_inner:  <bstr>                ; the content hash (bare system/hash form: format
                                          ;   byte + digest, LENGTH FOLLOWS THE FORMAT BYTE --
                                          ;   33 B under SHA-256, 49 B under SHA-384; never
@@ -105,6 +111,10 @@ would arrive unverifiable). The relay treats it as opaque bytes regardless (§9)
 The inner envelope MAY be encrypted (per the ENCRYPTION proposal); the relay sees only an opaque content-addressed blob it never decodes (§9). The relay MUST decrement `ttl_hops` on each forward and MUST reject (fail-closed) if it is 0 on receipt.
 
 **`ttl_hops` vs V7 `bounds.ttl`.** `ttl_hops` bounds the *relay transport path* length and lives on the *relay* envelope. It is distinct from V7 `bounds.ttl`, which bounds the *computation/dispatch chain* (with `await_stack` cycle detection) and travels *inside* the inner envelope — which the relay cannot read. A single logical dispatch may cross N relay hops. **The relay decrements only `ttl_hops` and never touches the inner envelope's bounds.**
+
+**`expires_at` is the same move for time, and for the same reason `ttl_hops` exists `[v1.3]`.** The originator's deadline for a message is `bounds.ttl_absolute`, which travels inside the inner envelope where the relay is forbidden to look (§9). So without an outer field the relay picks the expiry for a message it is holding on someone else's behalf — on the §6.2.1 store fallback it constructs the `store-entry` itself, and the only party who knows how long the message is worth holding cannot say so. **A bound whose enforcing party cannot read it is not a bound.** `expires_at` on the outer request carries the deadline where the relay may read it, mirroring `store-entry.expires_at` (§3.2), and it is the same outer-copy pattern `ttl_hops` already establishes for hop count.
+
+**Precedence, stated so two conformant relays agree.** On the §6.2.1 fallback the constructed `store-entry.expires_at` is the request's `expires_at`, **clamped by §8.1's ceiling**; where the request carries none, the ceiling applies as if it were null. A relay MUST NOT extend a deadline the originator set. `expires_at` bounds the envelope's *storage lifetime* and has no effect on a live forward, which either succeeds or falls back within one operation.
 
 Async response correlation is **not** a relay field — it is carried inside the opaque inner envelope (INBOX `deliver_to` / `deliver_token`); see §6.2.
 
@@ -277,6 +287,7 @@ data: {
   limits: {
     max_envelope_size:    u64 (optional),
     max_storage_bytes:    u64 (optional, Mode S),
+    max_retention_ms:     u64 (optional, Mode S; the retention CEILING, §8),
     forward_rate_limit:   u32 (optional, Mode F; envelopes/sec)
   },
   caps_required:   [<cap_path>],                     ; what cap is needed to use this relay
@@ -285,6 +296,10 @@ data: {
 ```
 
 The advertise entity MUST be signed by `relay_peer_id` per V7 §5.2; its signature is reachable at `system/signature/{hex(advertise.content_hash)}` (no `refs:` block — §3.0). Consumers query this entity (standard tree fetch) to see what's available and what cap they need. *Finding* the relay's `peer_id` is DISCOVERY's / REGISTRY's job — §6.7.
+
+**`max_retention_ms` is how long, where the rest of `limits` is how big [MUST when present, v1.3].** A Mode S relay that enforces a retention ceiling (§8) MUST publish it here. Duration is the number that decides whether store-and-forward is usable: a sender choosing a relay, and a peer choosing which relays to name in its own `system/peer/inbox-relay` declaration (§3.5), both depend on how long an entry will be held, and neither can otherwise learn it. A ceiling that is enforced but unpublished configures behaviour no counterparty can observe before depending on it. Absent means the relay declares no ceiling; it does **not** mean unbounded — see §8.
+
+**An advertised limit is a promise a relay can break, exactly like every other limit in this block.** §5.1's threat model already bounds what an intermediary can do — *drop or delay* — so publishing a retention ceiling discloses nothing new and creates no new failure class. It gives a counterparty something to plan against.
 
 ### §4.2 Operation wire schemas (Mode F + Mode S)
 
@@ -371,7 +386,7 @@ All relay ops fail via the standard V7 ERROR shape (status centralized per V7 §
 | 429 | `rate_limited` | exceeds advertised `forward_rate_limit` | forward |
 | 400 | `namespace_invalid` | malformed namespace path | put, poll |
 | 404 | `namespace_not_found` | namespace not provisioned (deployments requiring explicit provisioning only; empty ≠ not-found, §4.2) | poll |
-| 507 | `storage_full` | exceeds advertised `max_storage_bytes` | put |
+| 507 | `storage_full` | accepting would exceed advertised `max_storage_bytes`. **The relay MUST refuse and MUST NOT evict an accepted entry to make room (§8.2)** | put |
 | 400 | `expired_on_arrival` | `expires_at` already past at put time | put |
 | 400 | `put_by_mismatch` | `store-entry.put_by` ≠ authenticated session/connection peer (§3.2) | put |
 | 502 | `no_inbox_relay` | destination unreachable *and* declared no inbox-relay; nothing to store-and-forward to (§3.5/§6.2.1) | forward |
@@ -531,12 +546,33 @@ For Mode S to serve "current state of publisher's tree" use cases, a signed muta
 ## §8 GC posture (per `GUIDE-GC.md`)
 
 - **Mode F entries:** transient; GCed once forwarded (or after a small bounded retry window). No persistent state.
-- **Mode S entries:** persistent; honor `expires_at` — **which is a read-side obligation before it is a reclamation one: an expired entry MUST NOT surface on `:poll` (§4.2), whether or not it has been reclaimed.** Reclamation timing is the relay's; visibility is not. Operator-configured `relay_store_retention` knob (default unlimited); per-namespace eviction policy optional.
-- **Mode-S fallback entries** (queued-fallback, §6.2.1): persistent until polled or `expires_at`; same retention knob.
+- **Mode S entries:** persistent; honor `expires_at` — **which is a read-side obligation before it is a reclamation one: an expired entry MUST NOT surface on `:poll` (§4.2), whether or not it has been reclaimed.** Reclamation timing is the relay's; visibility is not. Lifetime is bounded by the retention ceiling below.
+- **Mode-S fallback entries** (queued-fallback, §6.2.1): persistent until polled or `expires_at`; same ceiling.
 - **Advertise entities:** persistent; renewed on relay restart; respect `expires_at`.
-- **Mode A subscriptions / aggregated backlog** (deferred): operator-configured retention; default unlimited.
+- **Mode A subscriptions / aggregated backlog** (deferred): operator-configured retention; **unbounded by default is a known gap in the deferred mode, not a pattern to copy** — when Mode A lands it inherits §8.1.
 
-Knobs exposed; default values conservative (unlimited / off / largest); operators pick policy.
+### §8.1 The retention ceiling — declared, published, and clamping `[MUST when present, v1.3]`
+
+A Mode S relay MAY enforce a maximum lifetime for stored entries. Where it does:
+
+- The ceiling is configured at **`relay_store_retention`** (milliseconds) and MUST be published as **`limits.max_retention_ms`** in the relay's `system/relay/advertise` entity (§4.1).
+- A `:put` whose `store-entry.expires_at` exceeds `now + relay_store_retention` MUST be **CLAMPED to the ceiling, not refused** — the entry is accepted and its stored `expires_at` is the ceiling. Refusing a long-lived put converts an operator's capacity policy into a delivery failure the sender cannot distinguish from an outage.
+- A `:put` whose `store-entry.expires_at` is **null** MUST take the ceiling as its lifetime. `min(x, ceiling)` has no arm for null, so the null case is stated rather than derived.
+- A relay that enforces **no** ceiling omits `max_retention_ms` and holds entries until `expires_at`. **"Unlimited" is not a policy; it is unbounded accumulation** — an operator who wants a bound now has one place to set it and one place it is read.
+
+*This is the shape `EXTENSION-REGISTRY` §6a.9.1 already ruled for `ttl`, with retention substituted: mandate that the bound exists, is declared, and is enforced; leave the value to the deployment. It is transplanted rather than redesigned.*
+
+### §8.2 A full store refuses; it does not evict `[MUST, v1.3]`
+
+When accepting a `:put` would exceed the relay's advertised `limits.max_storage_bytes`, the relay **MUST** refuse the new entry with `storage_full` (507, §4.3) and **MUST NOT** evict an already-accepted entry to make room.
+
+**The two behaviours are cross-peer observable and differently honest.** A 507 tells the sender its message was not taken, and the sender can try another relay from the destination's §3.5 declaration. A silent eviction discards a message the sender was already told was `stored` — the same class of failure §4.3's *deliver-or-signal, never silently drop* posture exists to prevent, arriving after the operation returned.
+
+**§8.1's ceiling is what makes this safe, and neither rule is landable alone.** Refuse-without-evict on its own is a denial of service: one putter fills the store with null-expiry entries, nothing may ever be evicted, and the relay refuses everyone forever. **Time bounds the store (§8.1), refusal bounds the burst (§8.2), and no eviction policy is needed as a spec item.** Per-namespace eviction remains an operator affordance and is not a conformance surface.
+
+*The same question was ruled at the other end of the pipe: `EXTENSION-NETWORK` §8.4's sender-side pending-delivery queue is reject-new, not evict-old. The relay's inbound store asks the identical question and inherits the same answer.*
+
+Knobs exposed; operators pick policy. **Where a knob bounds behaviour a counterparty depends on, it is published in §4.1 — a bound nobody can read is a bound nobody can plan against.**
 
 ---
 
@@ -557,14 +593,19 @@ A conformant RELAY v1 **implementation** MUST implement **both** Mode F (forward
 
 - `system/relay:forward` (Mode F): forwarding to a designated next hop, with `ttl_hops` decrement and reject-at-zero, the intermediate-vs-terminal-hop dispatch shape (§3.1.1 — terminal hop forwards the inner envelope's raw bytes verbatim, no decode/re-encode), and Mode-S fallback for unreachable destinations (§6.2.1). **Source-routed multi-hop (v1.1, §3.1.1):** when `route` is present, pop the head per hop (`route' = route[1:]`, `next_hop' = route'[0]`, `ttl_hops−1`), enforce `relay-forward` at every hop, reject `next_hop ≠ route[0]` pre-dispatch (`invalid_request`/400). A single-element `route` MUST behave identically to the equivalent `next_hop` single-hop request, and a v1.0 single-hop request (no `route`) MUST encode byte-identically (omitempty).
 - `system/relay:put` + `system/relay:poll` (Mode S): namespace addressing, relay-owned cursor (resumable; order impl-defined, §4.2), empty-namespace-returns-empty (§4.2), **expired-entry-not-surfaced (§4.2)**, `put_by == authenticated session/connection peer` verification (§3.2).
-- `system/relay:advertise`: entity creation + publication, signed per V7 §5.2 (no `refs:` block).
+- `system/relay:advertise`: entity creation + publication, signed per V7 §5.2 (no `refs:` block); **`limits.max_retention_ms` published whenever a retention ceiling is enforced (§4.1, §8.1)**.
+- **Store bounds (Mode S, v1.3):** the retention ceiling **clamps** rather than refuses, and applies to a null `expires_at` (§8.1); a store at its advertised `max_storage_bytes` **refuses** with `storage_full`/507 and **MUST NOT** evict an accepted entry (§8.2).
+- **`forward-request.expires_at` (v1.3):** honored as the constructed `store-entry`'s expiry on the §6.2.1 fallback, clamped by §8.1, never extended (§3.1).
 - Per-op cap enforcement (§5.2); self-poll default grant + fallback-under-forward-authority (§5.5); fail-closed error surfacing (§4.3).
 - Envelope opacity (§9).
+
+**Conformance class for the v1.3 store-bound rows, per `GUIDE-CONFORMANCE` §7.0 and §5.2b.1.** All four are **`validate-peer` behavioral checks** in the relay category — oracle-authored, driven over the wire against a running peer — not fixture-corpus vectors: none of them produces a canonical-byte artifact, and what is under test is a peer's behaviour at an operation boundary.
+
+**Satisfaction mode, stated at the point of the MUST because two of these are not reachable against a default peer.** The clamp rows (§8.1) are constructible by any conformance client: put a `store-entry` whose `expires_at` exceeds the advertised ceiling, poll it back, compare. The refusal row (§8.2) is **not** — it requires a peer configured with a `max_storage_bytes` small enough to reach, which is an operator knob and not a wire input. **The harness therefore needs a peer under test started with a declared storage bound, and that requirement is part of the check rather than an assumption about the deployment.** A run that cannot reach the bound reports could-not-look, never a pass.
 
 ### §10.2 SHOULD implement
 
 - Rate limiting per advertised limits (`rate_limited`/429).
-- Retention policy per operator config.
 
 ### §10.3 MAY implement
 

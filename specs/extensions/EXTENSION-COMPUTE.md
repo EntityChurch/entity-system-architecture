@@ -56,8 +56,8 @@ agrees). Also validated three-way by the same lock: F-1 (Rust cast-to-uint mater
 `PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM` (§2.4 — materialized `compute/error` is `code`-only, Q1) —
 validated intra-Go (Axis-1 == Stage-1, code-only). **Cross-impl gate:** Python (+Rust) materialize `compute/error`
 code-only per this §2.4, and a corpus vector that materializes an error *into a construct/tree* runs three-way.
-(This §2.4 is the canonical home for `compute/error`; `ENTITY-CORE-MACHINE-SPEC.md` is a *derived* condensed
-summary and is downstream — regenerate-or-retire is the protocol maintainer's hygiene, not a gate here.)
+(This §2.4 is the canonical home for `compute/error`. `ENTITY-CORE-MACHINE-SPEC.md`, which carried a derived
+condensed restatement, is **retired** and is not a citable source.)
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
 **Source**: PROPOSAL-COMPUTE-AMENDMENTS.md (implemented — C1-C10), PROPOSAL-COMPUTE-AMENDMENTS-V2.md (implemented — V1-V32 + V6/V7/V7'), PROPOSAL-COMPUTE-AMENDMENTS-V3.md (implemented — C1-C4 core helpers + E1-E3 compute fixes), PROPOSAL-COMPUTE-SPEC-AMBIGUITIES.md (implemented — A1-A4, B1, C1, D1, D2), PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md (implemented — D3-D6), PROPOSAL-COMPUTE-TAIL-CALL-OPTIMIZATION.md (implemented — T1-T3, R1-R2), PROPOSAL-ENTITY-NATIVE-HANDLER-DISPATCH.md (implemented — E1-E4), PROPOSAL-COMPUTE-APPLY-RESOURCE-CEILING.md (implemented — F1-F5, H2-H3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (implemented — CP1, CP2), PROPOSAL-COMPUTE-LOOKUP-TREE-LOCAL-QUALIFICATION.md (implemented — S8), PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE.md (implemented — D1-D8)
 

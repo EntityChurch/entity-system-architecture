@@ -40,8 +40,8 @@ This is an application-layer convention, not an SDK contract. Wire-format invari
 
 | Tier | Items |
 |---|---|
-| **MUST** | `app/{app-id}/workspace/...` namespace prefix; bundled per-window state as CBOR maps; action wire shape with `(window_id, event, value)` semantics. |
-| **SHOULD** | Schema field names per content-type; canonical action vocabulary; per-presentation-context selection propagation. |
+| **MUST** | `app/{app-id}/workspace/...` namespace prefix; bundled per-window state as CBOR maps. |
+| **SHOULD** | Schema field names per content-type; canonical action vocabulary; action wire shape with `(window_id, event, value)` semantics (**§6 owns this surface and scopes it to wire persistence/replay — read §6 before treating it as a runtime requirement**); per-presentation-context selection propagation. |
 | **Idiomatic per impl** | Window abstraction; renderer; layout primitives; in-memory action shape; change-detection style; renderer-specific decoration. |
 
 App state vs app runtime: "everything under `app/{app-id}/...`" means **state**, not the app's binary or runtime image. Future "transferable apps" addresses runtime as a separate concern; this guide is about state.
@@ -83,6 +83,7 @@ Within an app's namespace, the binding decisions on path shape:
 app/{app-id}/
     workspace/
         windows/{window_id}/state              bundled per-window state (CBOR map)
+        window-index                           the live window set (§4.2a; OPTIONAL, see §8)
         screens/{screen_id}/...                per-presentation-context state (optional; flat apps omit)
         selection                              propagated selection (§5)
     settings/{key}                             global app settings
@@ -90,6 +91,12 @@ app/{app-id}/
 ```
 
 App-side path helpers SHOULD parameterize `{app-id}` per `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.3. App-id is permissive — claimed labels, renameable, no registration.
+
+**The `app/{app-id}/workspace/...` prefix is the MUST (§1); the segments beneath it are not closed.** §3.1 blesses two different sub-shapes, and applications add their own (per-panel selection slots, connection aliases) without ceremony. What is fixed is the prefix, the bundled-CBOR-map shape of per-window state, and the meaning of the slots §4.2 names.
+
+**`{window_id}` is a session-scoped slot address.** It identifies which pane is on screen *now*; it is **not required to be stable across sessions** and MUST NOT be relied on as a durable key for finding state again. Contrast `{app-id}` above, which an app *claims* by writing to it: the guide says so there and deliberately does not say it here. Implementations typically allocate window ids as a per-session counter from 1, which is a correct reading of this sentence.
+
+The consequence is the one every implementer needs before taking §8's persist arm: **on a later session, the state entity at `windows/3/state` was written by whatever window held ordinal 3 last time.** A discriminator on `entity_type` turns wrong-adoption into no-adoption but never makes the right state findable — with ordinals alone, whether a window recovers its state depends on the order the user re-opens windows in. §4.2a is where the durable half lives; §8 makes the choice explicit.
 
 ### 3.1 Path hierarchies — flat or nested
 
@@ -145,7 +152,8 @@ Three-impl consensus across Go + entity-browser-rust + Godot.
 | Slot | Type name (full type entity at `system/type/{name}`) | Status |
 |---|---|---|
 | Per-content-type window state | `app/state/{content_type}` (e.g. `app/state/tree-browser`) | **Long-term shape.** Schemas defined per content-type at T2. Describes **portable** content-type state only — what the content-type *is*, not how a particular renderer decorates it. |
-| Generic per-window fallback | `app/state/window` | **Transitional.** For windows whose content-type isn't yet schema'd; lets new windows land before T2 ratifies their schema. Track usage rather than pin a sunset — landing a per-content-type schema graduates that content-type out of the fallback. |
+| Generic per-window fallback | `app/state/window` | **Transitional.** For windows whose content-type isn't yet schema'd; lets new windows land before T2 ratifies their schema. Track usage rather than pin a sunset — landing a per-content-type schema graduates that content-type out of the fallback. **MUST carry a `content_type` field** naming what the window is showing — see the note below, this is the one slot where the type name cannot supply it. |
+| The live window set | `app/state/window-index` | **Membership, not arrangement.** One entity at `app/{app-id}/workspace/window-index` recording which windows exist. Schema in §4.2a. OPTIONAL — but §8 requires an application persisting per-window state to maintain one *or* sweep at startup. |
 | Per-screen state | `app/state/screen` | **Optional.** Multi-screen / multi-workspace apps use it; flat-window apps omit. Schema TBD. |
 | Selection | `app/state/selection` | **Two-layer model** per §5; schema in §5. |
 | Settings (key/value) | `app/state/setting` | Existing convention. Generic `{key, value}` pair under `app/{app-id}/settings/{key}`. |
@@ -153,6 +161,34 @@ Three-impl consensus across Go + entity-browser-rust + Godot.
 | Top-level entity outside the namespace | **none** | Nothing top-level outside `app/{app-id}/...`. The "AppState" working name was dropped during consensus. |
 | T3 outputs | `app/ui/output/{content_type}` | **Reserved namespace.** Deferred until SDK affordances (S1 local-only namespace, S2 watch-with-diffs) land. Runtime path is `app/{app-id}/ui/output/...`. |
 | Renderer-specific decoration | **per-impl, not portable** | Theme overrides, mouse filters, layer z-index, slot/split ratios, etc. Lives in per-impl runtime/view state. NOT in the cross-impl `app/state/{content_type}` schema. |
+
+> **Why the fallback needs `content_type` when the per-content-type slots do not.** Under `app/state/{content_type}` a window's state entity carries a distinct `entity_type`, so a reader can check it before adopting a payload and refuse a stranger's. **Under `app/state/window` every window's state entity carries the identical type name**, so that check does not exist to be made — the fallback is the one slot where a reader has no way to tell what it is holding. An application on the fallback that persists state and cannot name what each slot *was* has nothing to reconstruct from. The field is cheap and impls reach for it unprompted; requiring it keeps the transitional on-ramp from being more dangerous than the shape it is a stepping stone to.
+
+### 4.2a The window index — which windows exist
+
+`app/state/window-index`, one entity at `app/{app-id}/workspace/window-index`:
+
+```
+windows        [ { id, content_type, peer_id } ]     the live window set
+
+id             uint          the window's session-scoped slot address (§3)
+content_type   text          what the window is showing (see "opaque" below)
+peer_id        text          which peer's tree the window is bound to; empty = the host peer
+```
+
+**What it is for.** `windows/{id}/state` answers *"what was window 3's state"* and cannot answer *"which windows were there, and which of these saved slots is whose."* Those are the facts an application needs to restore a session, and without them the only available cleanup is deleting `workspace/windows/` wholesale — which is correct, and destroys everything a user would want back. With an index, three things become possible: a window can **claim** the id it held last session so its own state path resolves to its own state whatever order windows are opened in; fresh ids can be allocated **above** every id the index knows, so an unclaimed window never lands on an occupied slot; and an **exact sweep** can delete only state that is unreachable from the index.
+
+**Membership is portable; arrangement is not.** *Which windows exist, of what content type, on whose peer* is application state and belongs in the tree. *How they are split, sized, stacked, or themed* is renderer decoration and stays per-impl per the slot table's last row. This slot carries the first and MUST NOT grow the second.
+
+**`content_type` is opaque.** It is a string the writing application uses to find its own factory. Two applications need not agree on its values, because reconstructing another implementation's windows is not a goal — so this slot does **not** wait on the content-type catalog (§11 item 1) and asks nobody to agree on window names. (This is unrelated to the `content_type` field §5.4 retires from `app/state/selection`: that one was *source attribution*; this one names the window's own content type, which is the fact the index exists to record. A reader gating on retired selection fields scopes that gate to `app/state/selection`.)
+
+**A known bound, stated rather than hidden.** `(content_type, peer_id)` does not distinguish two windows of the same content type on the same peer. Implementations claiming by that pair should let the first window claim and the next allocate fresh. This is a deliberate limit; a richer key is available if a real configuration demands one.
+
+**Three implementation warnings, earned in a built implementation:**
+
+- **A session that re-opens nothing must not persist an empty index.** An index derived only from the live window set, in a session where the user opened nothing, writes an empty index — and the next startup's sweep then deletes every slot. Retain unclaimed prior entries. *A window nobody re-opened is not a window that was closed.*
+- **Only a read you can vouch for may authorize deleting.** Distinguish *"there is no index"* from *"there is one and it could not be read."* Merging them is what makes a sweep unsafe: the first means nothing was ever recorded, the second means everything was and you are blind to it.
+- **A malformed row fails the whole index**, never yielding a short one. A partial index still authorizes a sweep, and a sweep driven by a half-read list deletes live state.
 
 ### 4.3 Guidance the slot table commits to
 
@@ -278,12 +314,19 @@ Forward to `GUIDE-PERSISTENCE.md`, which reads `SDK-OPERATIONS.md` §15 (Configu
 Persistent vs ephemeral line, per state kind:
 
 - **Settings** (`app/{app-id}/settings/{key}`) — persist across restart by default.
-- **Per-window state** (`app/{app-id}/workspace/windows/{id}/state`) — persist if the application offers session resumption; MAY be ephemeral otherwise.
+- **Per-window state** (`app/{app-id}/workspace/windows/{id}/state`) — persist if the application offers session resumption; MAY be ephemeral otherwise. **Taking the persist arm carries an obligation** — see below.
 - **Per-screen / workspace state** (`app/{app-id}/workspace/screens/{id}/...`) — persist if multi-screen layout is meaningful across sessions.
 - **Selection** (`app/{app-id}/workspace/selection` or per-screen) — ephemeral by default; recompute on restart from active panel state. Apps that persist "where I left off" do so explicitly.
 - **T3 output entities** (`app/{app-id}/ui/output/...`) — ephemeral / non-syncing. They are the rendering peer's view, not data.
 
 The line between persistent and ephemeral is per-namespace, not per-extension. This guide names the line; `GUIDE-PERSISTENCE.md` owns the configuration-directory layout.
+
+**The persist arm's obligation.** Because `{window_id}` is a session-scoped slot address (§3), persisting per-window state without a way to tell which window a persisted entity belongs to does not preserve a session — it hands the next session's window at that ordinal a stranger's state. An application persisting per-window state **MUST** be able to determine, at startup, which window each persisted state entity belongs to. It satisfies this by **either**:
+
+- **maintaining an `app/state/window-index`** (§4.2a), **or**
+- **sweeping `app/{app-id}/workspace/windows/` at startup**, before allocating any window id.
+
+An application willing to do neither **MUST NOT** persist per-window state. **The ephemeral arm is a correct and conformant choice, not a lesser one** — an application that does not offer session resumption was never promising the state back, and losing it is bounded and legible. The failure this rule exists to prevent is the third case: persisting, restoring, and silently restoring the wrong thing.
 
 **Dispatch-index re-registration** (`SDK-OPERATIONS.md` §11.6.6, callout in `GUIDE-PERSISTENCE.md` §3.6) — applications **MUST** re-register their handlers in startup code. The handler manifest in the tree survives restart; the in-memory callable does not.
 

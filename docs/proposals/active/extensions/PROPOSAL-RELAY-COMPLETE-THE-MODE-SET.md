@@ -683,10 +683,10 @@ followable; nothing else in §9 is folded.
 | **D1** | Expired entries **MUST NOT** surface on `:poll` | RELAY §4.2 (+ §8, §10.1) | **LANDED 2026-08-30** — cohort finding, fixed in place, no rev bump |
 | **D2** | Strike the DSN/bounce row and the stale closing sentence | `GUIDE-CROSS-PEER-MESSAGING` §3A | **executed** — false claim removal |
 | **D3** | §6.2.1's default convention gets a **decidable** predicate and a distinct result status | RELAY §6.2.1, §4.2 | ruling asked — **changed by ST-2** |
-| **D4** | `max_retention_ms` in the §4.1 advertise `limits`; retention is a **declared, clamped ceiling** | RELAY §4.1, §8 | **transplant** — REGISTRY §6a.9.1 |
-| **D5** | A store at its bound **refuses** (`storage_full`/507); it **MUST NOT** evict an accepted entry | RELAY §4.3, §8 | **transplant** — NETWORK §8.4 |
+| **D4** | `max_retention_ms` in the §4.1 advertise `limits`; retention is a **declared, clamped ceiling** | RELAY §4.1, §8.1 | **FOLDED 2026-08-31** — v1.2 → v1.3. Transplanted from REGISTRY §6a.9.1, null-arm included |
+| **D5** | A store at its bound **refuses** (`storage_full`/507); it **MUST NOT** evict an accepted entry | RELAY §4.3, §8.2 | **FOLDED 2026-08-31** — v1.2 → v1.3, paired with D4 per ST-3; neither landed alone |
 | **D6** | The **give-up notice** — a stored envelope that dies is observable to whoever placed it | RELAY, new subsection | **new design** — §11 |
-| **D7** | `expires_at` on `forward-request` | RELAY §3.1 | ruling asked — **found by ST-1** |
+| **D7** | `expires_at` on `forward-request` | RELAY §3.1 | **FOLDED 2026-08-31** — v1.2 → v1.3. The open clamp-vs-refuse question is ruled CLAMP, consistent with D4 |
 
 ### §9.2 D1 — the rule that lives in three test suites and no document
 

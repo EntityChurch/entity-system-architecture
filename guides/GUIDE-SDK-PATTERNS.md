@@ -64,9 +64,11 @@ The `{app-id}` scoping lets multiple applications coexist on one peer without co
 | Generic setting | `app/state/setting` |
 | Selection state | `app/state/selection` |
 | Window configuration | `app/state/window` |
-| Layout | `app/state/layout` |
+| The live window set | `app/state/window-index` |
 
 The `app/state/` prefix is language-neutral. Not `rust_workspace/settings`, not `go_workspace/state`.
+
+**`GUIDE-ENTITY-WORKBENCH-APP.md` §4.2 is the authority for this set**; the rows above are the common ones, not the whole table. An earlier `app/state/layout` row is **retired**: window *arrangement* — splits, ratios, sizing, stacking — is renderer decoration and stays per-implementation. What is portable is window *membership*, which `app/state/window-index` carries (§4.2a there).
 
 ### Usage
 

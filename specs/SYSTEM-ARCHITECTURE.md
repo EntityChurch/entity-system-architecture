@@ -219,10 +219,11 @@ docs/                                    ← workspace + archive; NOT published,
 ```
 
 **The upstream core spec is a sibling repo.** `ENTITY-CORE-PROTOCOL.md`,
-`ENTITY-CBOR-ENCODING.md`, `ENTITY-NATIVE-TYPE-SYSTEM.md` and
-`ENTITY-CORE-MACHINE-SPEC.md` live in `entity-core-protocol`, not here. Citations to them
+`ENTITY-CBOR-ENCODING.md` and `ENTITY-NATIVE-TYPE-SYSTEM.md` live in
+`entity-core-protocol`, not here. Citations to them
 resolve only when an analyzer is given that root — see `AGENTS.md` on `spec address
---namespace-root`.
+--namespace-root`. *(`ENTITY-CORE-MACHINE-SPEC.md` was a fourth; it is **retired** and is not a
+citable source — see `SPECIFICATION-FORMAT.md` §8.4.3.)*
 
 **Pre-split note.** This repo previously nested everything under
 `docs/architecture/v7.0-core-revision/` with `core-protocol-domain/` and `sdk-domain/`

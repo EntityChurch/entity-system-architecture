@@ -46,7 +46,7 @@ The loop runs once per corpus version:
 
 ### §2.1 The `.diag` source
 
-The fixture is `conformance-vectors-v{N}.cbor` (normative; loaded by impls) generated from `conformance-vectors-v{N}.diag` (human-editable; CBOR diagnostic notation per RFC 8949 §8). The `.diag` is the source of truth for authors; the `.cbor` is the build artifact.
+The fixture is `conformance-vectors.cbor` (normative; loaded by impls) generated from `conformance-vectors.diag` (human-editable; CBOR diagnostic notation per RFC 8949 §8). The `.diag` is the source of truth for authors; the `.cbor` is the build artifact.
 
 A vector during authoring (canonical field empty):
 
@@ -94,7 +94,7 @@ Class B vectors compose Class A — a Class A failure for an impl typically casc
 
 ### §2.3 Adding a vector
 
-1. Edit `conformance-vectors-v{N}.diag` — add the vector under the appropriate category, give it a fresh `<category>.<n>` id, write the description, set `kind`, populate `input` (for `encode_equal`) or `canonical` (for `decode_reject`).
+1. Edit `conformance-vectors.diag` — add the vector under the appropriate category, give it a fresh `<category>.<n>` id, write the description, set `kind`, populate `input` (for `encode_equal`) or `canonical` (for `decode_reject`).
 2. Run the build script (see §3.1) to regenerate `.cbor` from `.diag`.
 3. Run the cross-impl loop (§§1, 4) — for `encode_equal`, the canonical field gets filled by the converged bytes; for `decode_reject`, every impl's decoder must reject.
 4. Commit the updated `.diag` and `.cbor` together.
@@ -170,8 +170,8 @@ The `.cbor` build artifact is generated from `.diag` by a small script in `entit
 
 ```
 $ go run ./cmd/internal/wire-conformance build-fixture \
-    --diag  core-protocol-domain/specs/test-vectors/ecf-conformance/conformance-vectors-v1.diag \
-    --out   core-protocol-domain/specs/test-vectors/ecf-conformance/conformance-vectors-v1.cbor
+    --diag  core-protocol-domain/specs/test-vectors/ecf-conformance/conformance-vectors.diag \
+    --out   core-protocol-domain/specs/test-vectors/ecf-conformance/conformance-vectors.cbor
 ```
 
 This is mechanical translation of `.diag` to canonical-ECF-encoded `.cbor`. It is not the cross-impl gate — the gate is the cross-impl `emit-canonical` agreement under §3.1. The build script exists because impls load `.cbor`, not `.diag`.
@@ -183,7 +183,7 @@ A new `validate-peer` category (`-category conformance`) consumes the per-impl e
 ```
 $ validate-peer -peers go:emit-go.cbor,rust:emit-rust.cbor,python:emit-python.cbor \
                 -category conformance \
-                -corpus conformance-vectors-v1.cbor \
+                -corpus conformance-vectors.cbor \
                 -json-out reports/conformance-v1.json
 ```
 
@@ -423,8 +423,8 @@ Two corollaries follow, and both cut against ordinary triage:
 
 The keystone repo (`entity-core-keystone/`) vendors a byte-identical copy of the canonical fixture for its language-binding generator. The discipline:
 
-1. Arch commits `conformance-vectors-v{N}.cbor` (+ `.diag`) at the canonical path: `core-protocol-domain/specs/test-vectors/ecf-conformance/`.
-2. Keystone copies the `.cbor` to `protocol-generator/shared/test-vectors/v{N}.{spec-version}/conformance-vectors-v{N}.cbor`.
+1. Arch commits `conformance-vectors.cbor` (+ `.diag`) at the canonical path: `core-protocol-domain/specs/test-vectors/ecf-conformance/`.
+2. Keystone copies the `.cbor` to `protocol-generator/shared/test-vectors/{spec-version}/conformance-vectors.cbor`, and verifies it by **sha256**, never by filename.
 3. Keystone records the SHA-256 of the vendored fixture in its `MANIFEST.md` alongside the spec-data snapshot manifest.
 4. Keystone's CI verifies on every run that the vendored `.cbor` SHA-256 matches the canonical-path file's SHA-256. Drift fails the build.
 5. When arch bumps the corpus, keystone re-vendors in a single commit; the manifest update is the audit trail.

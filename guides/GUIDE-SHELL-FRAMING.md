@@ -387,12 +387,14 @@ In a multi-panel application, the workspace has a state-aggregate slot (typicall
 ```
 Selection {
   path: "/peer-a/notes/note-001",
-  kind: "entity",
-  origin: { surface: "shell", window_id: "..." },
+  type: "entity",
+  updated_at: 1756600000000,
 }
 ```
 
 Sibling panels configured to follow the aggregate slot pick up the selection and co-orient their views.
+
+**Source attribution is deliberately absent** — `GUIDE-ENTITY-WORKBENCH-APP.md` §5.4 makes it a MUST NOT. Per-panel slots are single-publisher by construction (the slot path identifies the publisher), and aggregate consumers care about the current value rather than the most-recent writer, for which `updated_at` is the tie-break. This applies to any spelling of the same idea, including an `origin` sub-object: a window id in particular is a **session-scoped slot address** (§3 of that guide) and means nothing to a reader in a later session.
 
 ### 7.2. Why state-slot, not callback
 

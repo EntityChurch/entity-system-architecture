@@ -52,7 +52,30 @@ real outcome rather than a gap.
 | **L13** | Filing is not routing — a record that a seat owes something is not a delivery to that seat | — | **RATIFIED** 2026-08-18 — second shape, same day |
 | **L14** | `ENTITY-CORE-PROTOCOL` is not ours to version; extension versions are ordinary work | — | **RATIFIED** 2026-08-18 — operator ruling |
 | **L15** | A ruling goes back to the seat that filed it before it goes to anyone else | — | **CANDIDATE** — one incident, operator directive |
-| **L16** | Before ruling a cross-impl semantic, search **every** tier for a seat that already implements it | — | **CANDIDATE** — one incident |
+| **L16** | Before ruling a cross-impl semantic, search **every** tier for a seat that already implements it | — | **RATIFIED** 2026-08-19 — second instance, opposite direction |
+| **L17** | A normative MUST naming a value **or a capability** does not land without a declared site a peer can carry and a conformance check | — | **RATIFIED** 2026-08-20 — second shape, the capability-encoding axis |
+| **L18** | A cohort implementation is not evidence that a cohort ruling is right | — | **CANDIDATE** — one incident, operator correction; one save recorded |
+| **L19** | Say which kind of "vector," and state its satisfaction mode — open the section that owns the surface, not §7.0's index | — | **RATIFIED** 2026-08-20 — second shape |
+| **L20** | An example set cannot falsify a rule it does not span | — | **CANDIDATE** — one incident, third shape |
+| **L21** | A fold is a delivery to every seat that reads the corpus — sequencing that lives only on the board does not travel | — | **CANDIDATE** — one incident |
+| **L22** | A borrowed sentence is re-verified by the borrower, not the author — whoever moves it, however short the move | — | **RATIFIED** 2026-08-31 — second shape, the filing seat as mover |
+| **L23** | A rule has every normative home it is stated in — enumerate by the rule's **subject**, not its tokens; and a restatement names its authority | — | **RATIFIED** 2026-08-30 — second shape; third and fourth shapes 2026-08-31 |
+| **L24** | A reference is only a pin if it resolves in the history **and the layout** the receiving audience gets | — | **RATIFIED** 2026-08-23 — second shape, the build surface |
+| **L25** | Read the section for its **examples**, not only the clause you came for — a tightening that closes no hole is not conservative | — | **CANDIDATE** — one incident, refuted by a peer who built it |
+
+> **L17–L25 were added to this table on 2026-08-31 — the third recurrence of the drift the two notes
+> below describe, and the largest.** Nine rules, **six of them RATIFIED**, were earned and written up
+> in `AGENTS.md` across 2026-08-19…31 and never reached the document that calls itself the canonical
+> home. The charter has read *"the set is L1–L16"* for twelve days.
+> **This one was found from the outside**, which is the part worth keeping: it surfaced while ruling
+> `entity-browser-rust`'s window-index proposal, whose finding is **L23's fourth shape — an unmarked
+> restatement of a canonical table, invisible from the authority.** `AGENTS.md` restates this set and
+> does not say it is a restatement; this table claims to be the set and is short. **We shipped the
+> diagnosis of our own defect in the same session we were still committing it**, and only noticed
+> because the rule being written was about exactly this. *The rule that catches an unlanded rule is
+> still the one we do not apply to ourselves* — now three times running, which is no longer a lapse
+> but a property of how this file is maintained. **The row is cheap and the body section is not; the
+> rows land the same session the rule is earned, and the body sections stay owed below.**
 
 > **L13 and L14 were added to this table on 2026-08-18, having been earned and written up on
 > 2026-08-17/18 in `AGENTS.md` only** — the identical drift the note below describes, recurring inside
@@ -60,7 +83,7 @@ real outcome rather than a gap.
 > canonical home" is not closed by knowing about the gap.** L13's own second shape is a variant of the
 > same thing one level out: a true statement filed in a place that keeps its audience from acting on it.
 
-> **L7–L12 have no body section below, and that is itself a finding recorded here rather than fixed
+> **L7–L25 have no body section below, and that is itself a finding recorded here rather than fixed
 > quietly.** `[2026-08-17]` This document declares itself *"the canonical home"* of the discipline set
 > and the ratchet's own law is **"if it didn't land in the charter, it didn't land."** Six rules —
 > two of them **ratified** — were earned, written up in full, and landed in **`AGENTS.md` only**. The
@@ -69,8 +92,12 @@ real outcome rather than a gap.
 >
 > **Their full text — incident, evidence, enforcement point, competing pressure — is in `AGENTS.md`
 > and is authoritative there until folded.** Do not paraphrase these rows into a working summary:
-> read the entries (D12). **The fold of L7–L12 into §1 body sections is owed work**, and is the kind
+> read the entries (D12). **The fold of L7–L25 into §1 body sections is owed work**, and is the kind
 > of debt that is invisible precisely because both documents are individually coherent.
+>
+> **`AGENTS.md` is the authority for the rule bodies; this table is the authority for the SET.**
+> Stated because L23's fourth shape is exactly the failure of an unmarked copy: a reader of either
+> document must be able to tell which half they are holding. Neither said so until now.
 
 ---
 

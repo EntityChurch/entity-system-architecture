@@ -180,10 +180,14 @@ the working detail; **the charter is the set.**
   rule it does not span *(candidate)* · **L21** a fold is a delivery to every seat that reads the corpus —
   sequencing that lives only on the board does not travel with it *(candidate)* · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
-  party that moves it owns re-checking it *(candidate)* · **L23** a rule has every normative home it is
+  party that moves it owns re-checking it, whoever they are and however short the move
+  *(**ratified** 2026-08-31 — second shape: the filing seat as mover, one slot away in one file)* ·
+  **L23** a rule has every normative home it is
   stated in, not the one the proposal names — enumerate them **by the rule's subject, not only by its
-  tokens**, before rewriting it *(**ratified** 2026-08-30 — second shape: same-document homes, and one
-  that shares none of the rule's vocabulary)* ·
+  tokens**, before rewriting it, **and a restatement names its authority so the next sweep is a grep**
+  *(**ratified** 2026-08-30 — second shape: same-document homes, and one
+  that shares none of the rule's vocabulary; fourth shape 2026-08-31 — unmarked restatements of a
+  canonical table, invisible from the authority)* ·
   **L24** a reference is only a pin if it resolves in the history **and the layout** the receiving
   audience gets — a `dev` SHA never resolves on public `master`, and a sibling path never resolves in
   a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)*.
@@ -373,6 +377,116 @@ the working detail; **the charter is the set.**
   version-stamped"* and *"this corpus grew by two vectors"* compose into *"two impls are two vectors
   short," and neither document could have said it alone.*
 
+- **L8's seventeenth form — a build tool's own statement of what it enforces, read as a conclusion
+  about what it enforces. And it was carried in ARCH'S OWN RECOMMENDATION to another seat.**
+  `[2026-08-31 — corrected by `entity-core-formalization`, who built the gate arch asked for and
+  discovered arch had asked for a false green]`
+  Arch found that `lake build EntityCoreProofs` is called *"the proof check"* in five keystone sites
+  and **invoked by no Makefile, script or workflow** (true, verified exhaustively twice), and filed
+  the recommendation: *give that gate to formalization.* The keystone lakefile states its own
+  contract — *"a `sorry` or failed proof fails the build."* **Arch read that sentence as a
+  description of the build's behaviour. It is a claim about the build, and it is false.**
+  formalization tested it by **building each failure case** rather than reading the file
+  (`entity-core-formalization` `tools/lean-proof.py` + `make leanproof`/`leanproof-neg`, with the
+  runs recorded in `docs/LEAN-SEAM.md` §7): a **`sorry` in a cited theorem prints `Build completed
+  successfully` and exits 0** — a warning, not an error — and a **custom `axiom` standing in for a
+  proof also exits 0**, distinguishable only by `#print axioms`. Only a genuinely broken proof exits
+  1. **Exit status catches one failure mode in three, and the two it misses are the two by which a
+  proof silently stops being a proof.**
+  **Why it is the worst-placed form since the thirteenth.** Had the recommendation been routed as
+  written — *"run `lake build EntityCoreProofs` in CI"* — it would have produced a **green board
+  asserting ten ledger rows' proofs hold, satisfied by a file full of `sorry`.** A gate that reports
+  clean because it cannot see is the exact failure this toolkit was built against, and arch would
+  have installed one on the strength of a comment in someone else's build file.
+  **The aggravating detail:** the absence-claim half was proven properly — exhaustive search, five
+  sites named, negative established per `AGENTS-STANDARD`. **Rigour on "does this run?" and none at
+  all on "what does it check?"** The two are different questions and only the first was asked.
+  ***Enforcement point:*** **before recommending, adopting, or gating on a tool, run it against a
+  deliberately failing input and confirm it fails.** A tool's own README, lakefile comment, help text
+  or contract block is an artifact (L8) and never evidence of what it catches. Mechanically: a
+  proposal or packet that assigns a gate MUST cite the negative control — *"we broke X and it went
+  red"* — not the tool's description of itself. **This is the discipline `entity-core-keystone`
+  already runs on probes** (their §4.7 probe was wrong three times, each time failing *toward* the
+  expected answer, all three caught by controls) and that `entity-core-go` runs as mutation-verified
+  tests. **Arch had it for probes and not for gates.**
+
+  > **Second shape, 2026-08-31 — the polarity is reversed, and it is the half the first shape does not
+  > cover: a gate whose PASS CONDITION encodes the wrong answer. It was green in three trees for two
+  > weeks and the green WAS the bug.** `[self-found, taking the PD-1c measurement]`
+  > `entity-core-go`'s `authz_peers_target_from_uri` (`cmd/internal/validate/authz.go:724`) scores
+  > `allow1 && !allow2 && !allow3` → **PASS**. P-1 is an inbound EXECUTE naming a **foreign**
+  > namespace, and the probe **requires it be ALLOWED**. Under `ENTITY-CORE-PROTOCOL` §1.4 that input
+  > MUST be refused `400 invalid_request` before resolution. **So every peer that does the specified
+  > thing scores WARN** — *"the foreign-scoped control also denied … investigate P-1 before scoring"* —
+  > **and every peer that does the wrong thing scores PASS.** keystone's 40 conformant generated peers
+  > sat in WARN for two weeks labelled *"inconclusive by design"*; `entity-core-{go,rust,py}` sat in
+  > PASS with a live foreign-namespace privilege escalation.
+  > **Why the first shape's enforcement point would not have caught it.** It says *run the gate against
+  > a deliberately failing input and confirm it fails.* Do that here and the gate **works** — feed it a
+  > peer that allows P-2/P-3 and it correctly FAILs. The gate is not broken at detecting what it thinks
+  > it is detecting. **What is wrong is the reference answer**, and a negative control cannot find that,
+  > because a negative control tests the gate against the gate's own notion of failure. **The complement
+  > is the missing half: run it against an input you believe is CORRECT and confirm it passes.** Forty
+  > peers were the correct input and the signal was there the whole time, wearing a WARN.
+  > **The subject was right and the path was wrong, which is what made it invisible.** Dimension 4 is
+  > real and worth driving — but it lives on §1.4's *internal-dispatch* class, and the probe drives it
+  > over the *inbound wire*, the one path where the ruling makes it unreachable. **A probe can be
+  > correct about what it tests and wrong about where it tests it**, and the second error reads as the
+  > first being satisfied.
+  > **The aggravating detail:** arch had already filed exactly this against *keystone's* copy of the
+  > probe (PD-1e, *"it probes the inbound path for a dimension that lives on the sub-dispatch path"*)
+  > **one packet earlier — and never asked whether go's harness had the same probe.** It does, with the
+  > same defect. Filing a probe defect against one seat without grepping the other harnesses for the
+  > same probe is **L16 on the instrument axis**.
+  > ***Enforcement point, broadening the first shape:*** **a gate is validated in BOTH directions — a
+  > known-bad input must go red AND a known-good input must go green** — and a gate's *reference
+  > answer* is a normative claim that gets derived from the spec section owning the surface, never from
+  > what the peers under test happen to do. Mechanically: **a check whose PASS condition asserts a
+  > behaviour, where no `(spec, §)` is cited for that behaviour, is unvalidated** — and a population
+  > where the *majority* scores WARN/inconclusive is the tell, not a peer-quality finding. **When a
+  > probe defect is found in one harness, grep every other harness for that probe by name in the same
+  > session.**
+
+- **L25 — read the section for its EXAMPLES, not only for the clause you came for. And a tightening
+  that closes no hole is not conservative.**
+  `[candidate, 2026-08-31 — `entity-core-go` refuted a ruling by building it, same day it was folded]`
+  Edit E pinned the default per-handler self-grant's `resources` to `["/{local_peer_id}/*"]`. go
+  implemented the rest of PD-1, **declined that clause**, and filed a measured receipt: mutated to that
+  shape, a default-scope handler's sub-dispatch to a foreign-namespace path **in its own store** returns
+  `403`, want `200` — breaking follow-mirrors. Their **control** proved the store holds the namespace,
+  so the `403` was the authorization encoding and not a store refusal. rust and go had each already hit
+  and fixed this; **the ruling re-introduced a regression two seats had paid for.** Withdrawn at
+  `0.8.2.3`.
+  **The text arch needed was in the section arch derived the ruling from.** §6.3 *Peers vs resources* —
+  quoted in the Q2 derivation for its orthogonality clause — continues: *"a grant with `peers` absent …
+  **may include resource paths like `/{remote_peer_id}/data/*` for cached copies**."* **Arch satisfied
+  the sentence it came for and forbade the example three lines later, in the same fold.** A worked
+  example is normative context showing the clause's intended reach; **a ruling that satisfies a
+  section's sentence while forbidding its example has misread the section.** This is **L11** on a
+  smaller object — L11 is *read the study that produced the design space*; L25 is *read the rest of the
+  paragraph you are already quoting.*
+  **The second half generalizes further and is the one to carry.** The network bound here was carried
+  **entirely** by `peers` — omitted → `{include: [local_peer_id]}`, still checked, measured on the wire
+  in all three trees — so a default-scope handler already could not dispatch at a foreign peer.
+  **Narrowing `resources` closed no hole that `peers` did not already close, and cost a legitimate
+  capability.** *A tightening that removes a capability without closing a hole is not a conservative
+  choice; it is a wrong one that looks careful* — and it is the hardest kind to argue against in
+  review, because caution reads as rigour.
+  **It also mis-applied an operator ruling by widening it.** The operator said a default *"doesn't
+  tighten anything because we don't force anyone to implement the default."* **True for handlers that
+  declare a scope.** But the handler grant is the §5.2 Dimension 3 **ceiling** on the in-process path,
+  so for a handler declaring nothing the default **is** its ceiling. **The silent case is not the
+  harmless case when the silent value is a ceiling** — go's sentence, sharper than arch's, and now in
+  §6.2. *An operator ruling is scoped to the case they were shown; widening it is arch's inference, not
+  their instruction.*
+  ***Enforcement point:*** **when a ruling narrows a field, (i) grep the owning section for a concrete
+  instance of that field and confirm the ruling still permits it, and (ii) name the hole the narrowing
+  closes and the dimension that would otherwise leave it open.** If another dimension already closes it,
+  the narrowing is pure cost and does not land. Mechanically checkable in review: a narrowing whose
+  rationale cites no hole, or whose hole is closed by a different dimension in the same grant, is the
+  violation.
+  **Candidate: one incident.** Honor it; do not claim it generalizes.
+
 - **L23 — a rule has every normative home it is stated in, not the one the proposal names.**
   `[candidate, 2026-08-22 — self-found, executing our own nine-day-old proposal]`
   `PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS` retired the corpus-version rule. Its §3 scoped the
@@ -440,6 +554,71 @@ the working detail; **the charter is the set.**
   > likely to be load-bearing and least likely to be found**, because it is where the obligation was
   > created rather than where it was tabulated.
 
+  > **Third shape, 2026-08-31 — and it fired on the proposal that CITES L23, one day after
+  > ratification. The rule was correct and simply was not executed; what let that happen is
+  > SECTION-SCOPING.** `[self-found, folding FM-1]`
+  > `PROPOSAL-CONNECT-ERROR-CODE-RECONCILIATION` §1.2 reasons explicitly that a rule has homes
+  > beyond the one it was found in, invokes L23 by name, enumerates **eight** sites across two
+  > documents, and adds three that the filing seat missed. **There are nine.** The ninth is
+  > `ENTITY-CORE-MACHINE-SPEC` **§6.2** — *"`hello` before `authenticate` (enforced)"* — §4.2's
+  > defect reproduced verbatim, no status and no code, **four lines above the §6.4 table the
+  > proposal's own item E rebuilds.** Found only by opening the file to execute E.
+  > **The ratified enforcement point would have caught it.** It says enumerate *by the rule's
+  > subject, not only by its tokens*, across *every `specs/` file in both repos*. MACHINE-SPEC is a
+  > `specs/` file and was in scope. **So this is not a gap in L23; it is L23 not being run** — which
+  > is the more useful finding, because it has a cause.
+  > **The cause is that item E scoped MACHINE-SPEC to a section.** Once the proposal wrote *"§6.4 is
+  > an eighth site"*, MACHINE-SPEC was **on the list**, and being on the list is what a
+  > home-enumeration sweep is looking for. The document never came up again as *unsearched* — it came
+  > up as *handled*. **A document entered into the enumeration at section granularity silently exempts
+  > the rest of itself**, and it does so while making the sweep look complete, because the tally says
+  > the document was considered.
+  > **The same blind spot produced a second, older find in the same four lines:** *"All other paths
+  > without auth → reject 403"* — **F32's blanket 403**, corrected in `ENTITY-CORE-PROTOCOL` §4.2 at
+  > **0.8.1** and still live in MACHINE-SPEC two releases later. Nobody had looked. **Two for two in
+  > the only region of that document anyone has ever examined**, which is now the evidence for the
+  > full re-sync audit (FM-1j).
+  > ***Enforcement point, sharpening the ratified one:*** **a document enters a home-enumeration
+  > whole, never by section.** The moment any section of a document is named as a home for the rule
+  > being rewritten, that document is searched **end to end for the rule's subject** — a
+  > second statement of the rule is *more* likely in a document already known to restate it, not
+  > less. And **a document whose stated purpose is to mechanize another document** — a machine spec, a
+  > generator input, an SDK restatement — **is a home for every rule in its source**, by construction,
+  > whatever its section headings suggest.
+
+  > **Fourth shape, 2026-08-31 — the stale homes were RESTATEMENTS of a table, and the authority is
+  > the document MISSING the row. Nobody could have found it from the document that names itself the
+  > authority.** `[self-found, ruling `entity-browser-rust`'s window-index proposal]`
+  > They asked arch to mint a slot for the live window set. Searching first (**L7**) found
+  > **`app/state/layout` already declared** — in `GUIDE-PEER-CONCERNS-AND-NAMESPACES` §5.1 and
+  > `GUIDE-SDK-PATTERNS` §2, both canonical, both **published** — with no schema, no prose and no
+  > consumer anywhere in the corpus, and **absent from `GUIDE-ENTITY-WORKBENCH-APP` §4.2, the table
+  > §4.1.1 names outright as the authority** (*"the slot table (§4.2) enumerates the current
+  > cross-impl canonical types"*). §4.2's three-impl consensus had assigned arrangement to
+  > *"renderer-specific decoration … per-impl, not portable"* — **retiring the layout slot — and the
+  > two copies were never swept.** The corpus has been publishing a canonical type name its own
+  > authority decided against.
+  > **Why the prior shapes' enforcement points do not reach it.** All three say *enumerate the homes
+  > before rewriting the rule.* That is an instruction to the session doing the rewrite — and the
+  > rewrite here was §4.2's consensus, sessions ago, by someone else. **The defect is not in the
+  > enumeration; it is that nothing in the two copies says it is a copy.** A reader of either table
+  > sees a flat list of canonical type names with no pointer, so there is no signal to follow and no
+  > reason to suspect one. **The filing seat read the authority correctly and could not have found
+  > this**, which is the test: a divergence invisible from the authoritative document is not a
+  > reading failure, it is a structural one.
+  > **This is the preventive half the rule has been missing.** L23 so far is entirely a *sweep*
+  > discipline — do the search, and do it by subject. Sweeps are expensive, run once, and go stale
+  > the next time anyone edits the source. **A restatement that names its source makes the next
+  > sweep a grep instead of a search, and makes a reader of the copy self-correcting.**
+  > ***Enforcement point, additive to the sweep:*** **a document restating another's canonical table,
+  > schema, or enumeration names the authority in the restatement** — *"§X of DOC is the authority
+  > for this set; the rows here are the common ones, not the whole table"* — so a copy is readable as
+  > a copy. Mechanically checkable and cheap: a table of canonical names in a non-authoritative
+  > document with no pointer to its source is the violation. **And when a ruling retires or adds a
+  > row to an enumeration, grep the corpus for the enumeration's OTHER MEMBERS**, not for the row
+  > being changed — the sibling copies are found by what they still agree on, never by the token that
+  > is moving.
+
 - **L22 — a borrowed sentence is re-verified by the borrower, not the author.**
   `[candidate, 2026-08-20 — the C-7 assignment; the filing seat offered to take the blame and arch
   declined it]`
@@ -474,7 +653,40 @@ the working detail; **the charter is the set.**
   assignment whose subject differs from the subject in the source packet is the violation. And where the
   assignment carries a multi-clause acceptance test, **read every clause against the proposed artifact
   before assigning it**, which is the check that would have caught this one for free.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
+  ~~**Candidate: one incident.**~~ **Ratified 2026-08-31 on the second shape below** — a different
+  mover, a different distance, and the enforcement point is the broadened one stated there.
+
+  > **Second shape — the mover was the FILING SEAT, not arch, and the transplant crossed one slot
+  > inside one file rather than one seat to another. Same property, and it shows the rule is not
+  > about arch.** `[2026-08-31 — the window-index ruling; arch caught it only by opening the tree,
+  > having already carried the sentence into the ruling draft]`
+  > `entity-browser-rust`'s proposal argued the `{window_id}` gap is portable rather than one impl's
+  > experience, and evidenced it with `entity-workbench-go`'s own comment: *"today the slot is
+  > write-only; future 'restore last session' … features read from it"* — filed as *"the same defect
+  > not yet triggered."* **The comment is on `SaveAlias`**, the shell-alias slot at
+  > `workspace/shells/aliases/{alias}`, **keyed by a user-chosen alias name.** An alias name is
+  > durable, so that slot has none of the defect. True sentence, wrong subject, one slot over in the
+  > same file.
+  > **The correction found something better, which is the half worth carrying.** Opening the tree
+  > for the *window* slot produced live evidence that is stronger than the borrowed sentence:
+  > `log_model.go:143` reads per-window state keyed on a session ordinal, into `updateWindowState`'s
+  > read-modify-write merge. So the seat is **not** *"not yet triggered"* — it is the same defect,
+  > live, on a read path. ***A borrowed sentence is usually standing where a real measurement would
+  > have gone, and the measurement is usually better than the quote*** — the same lesson L8's
+  > fifteenth form records for retractions, arriving on the transplant axis.
+  > **Why this ratifies rather than tallying.** The first shape was arch moving an app-tier sentence
+  > onto a different *seat's* artifact, and it was tempting to read the rule as *arch must be careful
+  > when relaying*. It is not about arch and it is not about distance: the failure is created at the
+  > moment of transplant, by whoever transplants, **and one slot away in one file is far enough.**
+  > Arch then reproduced it by carrying the quote into a ruling draft unchecked, which is the second
+  > mover on the same sentence.
+  > ***Enforcement point, now binding and broadened beyond routing packets:*** **any document that
+  > quotes another party's claim as evidence for a different subject — a packet, a proposal, a
+  > ruling, a status doc — re-derives it against the new subject at the point of reuse and names what
+  > the sentence was originally true of.** Mechanically checkable in review: a quotation whose subject
+  > differs from the subject in the source is the violation, whatever the two subjects' distance.
+  > **And where the source is a tree you can open, prefer the measurement to the quote** — the quote
+  > is a shortcut past the evidence, and the evidence is right there.
 
 - **L21 — folding is routing, to everyone, whether or not that was the intent.**
   `[candidate, 2026-08-20 — `EXTENSION-COMPUTE` v3.24, caught by `entity-core-go` doing exactly the right
@@ -565,6 +777,31 @@ the working detail; **the charter is the set.**
   from what a peer produced; this is that rule pointed at **our own peers' code**, which is the case it
   did not obviously cover.
   **Candidate: one incident.** Honor it; do not claim it generalizes.
+
+  > **A save, not a second incident — recorded because it is the cleanest evidence this rule will
+  > ever get, and it arrived in twenty-four hours.** `[2026-08-31 — FM-1]`
+  > `entity-core-formalization`'s draft led with **"four sites against one"** and a source-read census
+  > of 29 / 6 / 11. Arch ruled the same direction but **replaced the vote with a derivation** — §4.6
+  > step 1's own replay rationale, RT-6's adjacent ruling, §4.6's status ladder — and applied L18's
+  > operative test explicitly in §6 Q1 point 5: *if every seat had implemented the other reading,
+  > would the argument change?*
+  > **The next day `entity-core-keystone` measured it on the wire and the count moved: 38 / 6 / 1.**
+  > More importantly their **control run** — the same `authenticate` *after* a valid `hello` — showed
+  > **39 of 45 peers answer identically either way.** They never model the case; they fall through to
+  > the nonce check and find nothing. **So the 38–6 majority is 6 considered decisions and 38
+  > fall-throughs**, and read as a vote it *inverts*: the only peers that reasoned about connection
+  > sequence chose the other answer.
+  > **Arch withdrew its own corroboration clause and the ruling did not move**, because nothing was
+  > standing on it. Had the ruling shipped in the filed draft's framing, the correct response to
+  > keystone's measurement would have been to **reopen a settled cross-impl semantic** after three
+  > seats had already built against it.
+  > **Two transferable halves.** *(1)* **A vote is not just weak evidence; it is evidence that
+  > expires**, and it expires on someone else's schedule. A derivation from the spec's own text has
+  > no such clock. *(2)* **A cohort majority can be an artifact of which answer is cheaper to reach.**
+  > Row 6 is what a peer emits by *not* implementing the case. Before citing cohort weight, ask
+  > whether the majority position is one a peer arrives at by **deciding** or by **falling through** —
+  > and note that a source read cannot tell the difference, which is why keystone's control existed
+  > and why it is the thing to ask a measuring seat for.
 
 - **L19 — say which kind of "vector," and check the corpus before inventing the taxonomy.**
   **`[RATIFIED 2026-08-20 — second shape: a class declared, from the right table, wrong row, without
@@ -880,7 +1117,90 @@ the working detail; **the charter is the set.**
   > correctly and delivering wrongly. **Both come from writing the enforcement point as the specific act
   > that would have fixed the original case**, rather than as the property that has to hold. State the
   > property; let the topology be a fact recorded once, where it can be changed without touching a rule.
-  **Candidate: one incident, enforcement point corrected once.** Honor it; do not claim it generalizes.
+  > **Fourth axis, 2026-08-31 — the item was routed correctly, to ARCH, and arch is the seat that
+  > never acted. A decision on a board is not an execution.** `[operator-raised: "I thought we
+  > stopped tracking machine spec — all it does is drift"]`
+  > **Retiring `ENTITY-CORE-MACHINE-SPEC` was decided 2026-08-02.** Its single blocking precondition
+  > — relocate §1.8 to `ENTITY-CBOR-ENCODING` §5.4 — was met **2026-08-10**. The retirement was then
+  > **not done for four weeks**, and on 2026-08-31 it was executed in about twenty minutes with no
+  > new information required. Nothing was blocked. Nobody disagreed.
+  > **It was tracked the whole time, and being tracked did nothing.** The 08-13 proposal audit logged
+  > it verbatim: *"`NAMESPACE-CLEANUP`: `ENTITY-CORE-MACHINE-SPEC.md` not yet retired | **holds** |
+  > still present."* True, correctly filed, re-measured — **and a status row is not a hand that moves
+  > a file.**
+  > **The cost was paid by a later session from the outside.** FM-1 spent review effort discovering
+  > that §6.4 had no `invalid_nonce` row and §6.2 still carried F32's blanket 403 — **two defects in a
+  > document already under sentence**, found by reading it as though it were live, and one of them was
+  > then written into a routing packet and a precedence sentence that had to be unwound the same week.
+  > **Why it is L13's shape and not laziness.** L13's content is *an item must reach its owner*. Every
+  > prior axis is about a **peer** not being reached — by omission, by a "not yours" heading, by a
+  > severity label. **This axis is arch not reaching itself**, and it has a specific suppressor: an
+  > item on arch's own board has already been *delivered* by construction, so the one signal the rule
+  > watches for — *did it get to the owner?* — reads green forever while nothing happens. **We route to
+  > peers with a session deadline and to ourselves with none.**
+  > ***Enforcement point:*** **an arch-owned item whose remaining work is an EXECUTION rather than a
+  > decision does not go on the ledger as an open row — it is done in the session that decides it, or
+  > the row records what it is waiting on and that blocker is checkable.** *"Not yet done"* is not a
+  > state; it is the absence of one. Mechanically: a ledger row owned by **arch** whose text contains
+  > no blocker, no owner outside arch, and no named unblocking event is the violation — and the cheap
+  > habit is one question when filing against ourselves: ***what would I have to learn before doing
+  > this?*** If the answer is *nothing*, it is not a backlog item, it is an unfinished task.
+  >
+  > **Fifth axis, 2026-08-31 — the item reached its owner FOUR TIMES, and that is the defect. Two arch
+  > sessions ran in parallel, each routed correctly, and neither knew the other existed.**
+  > `[operator-raised: "let's converge with the other architecture team and make sure we're all on the
+  > same track"]` **Nine packets went out on one day** — `-a` … `-i` — **four to `entity-core-go`,
+  > three to `entity-core-keystone`.** The routing model forbids exactly this and its own note says
+  > *consolidation is the thing that worked; do not undo it in the reply.*
+  > **The suppressor is new and it is the reason the 2026-08-19 fix did not cover it.** That incident
+  > was **one** session fanning out to five seats, and the correction — *route by the topology table,
+  > not per-seat* — was obeyed here: every one of the nine was correctly addressed, correctly scoped,
+  > and went to the right seat by the right path. **The fragmentation is invisible from inside any
+  > single session and only exists in aggregate.** A rule about how one session routes cannot see it.
+  > **And it produced a live wrong instruction, not just noise.** `ROUTING-2026-08-30-c` asked keystone
+  > to **hold** their regeneration so the cohort sweeps once. `-b` then told them *"the spec landed,
+  > regenerate, it sweeps once"* — **true when written.** `0.8.2.2` landed hours later from the *other*
+  > session with a change touching **all 46 peers**. Acting on `-b` would have produced the exact
+  > double sweep `-c` existed to prevent. Caught only because keystone had not moved yet (`1ed013c`,
+  > measured), so it was **their caution, not our sequencing.**
+  > **The generalizable half: *"regenerate now" / "rebuild against X" / "you are unblocked" is a
+  > BUILD-STATE INSTRUCTION and expires like a build-state claim (L9) — except the clock is arch's own
+  > fold queue.** A packet telling a seat to act on a landed version is void the moment arch lands
+  > another, and **only arch can know that, which makes it the one expiry a peer cannot defend
+  > against.** The seat has no way to ask *"is anything else folding today?"*
+  > ***Enforcement point:*** **an "act now" instruction to a seat is sent at the END of the arch day,
+  > not at the end of the finding that produced it** — and before it goes, arch checks what else landed
+  > in the corpus since that session started (`git log` on the spec repos, not memory). Where two arch
+  > sessions are live, **the last one to finish consolidates**: one packet per seat, superseding the
+  > fragments by name. Mechanically checkable and cheap: **more than one `ROUTING-*` addressed to the
+  > same seat with the same date is the violation**, and it is a `ls docs/status/`.
+  >
+  > **A save on the fourth axis, one day later — and it turns the axis into a rule about ASSIGNMENTS,
+  > not just backlog rows.** `[2026-08-31, PD-1c]` The PD-1 fold was gated on measuring three
+  > ground-up trees, and arch had routed that to `entity-core-go` with the words *"the measurement is
+  > yours to take, not arch's to infer."* **That sentence was correct about inference and wrong about
+  > the work.** Asking the fourth axis's question — *what would I have to learn before doing this?* —
+  > the answer was **nothing**: the instrument was `entity-core-go`'s own `authz_peers_target_from_uri`
+  > plus `cmd/peer-manager`, both sitting in a tree arch reads routinely, and the whole measurement
+  > took one session. Arch took it, and the result **inverted the proposal's cost model** and found the
+  > probe-polarity defect above — neither of which would have surfaced from waiting.
+  > **The generalization: the axis fires on anything arch is WAITING for, not only on rows arch owns.**
+  > A blocker assigned to a peer reads as *delivered* for exactly the same reason an arch-owned row
+  > does — the board says someone has it — and an assignment is the more dangerous form, because it
+  > also looks like correct routing. **L13's content is that an item must reach its owner; it never
+  > said arch may not be the owner**, and defaulting a mechanical measurement to the seat that happens
+  > to own the code is how a fold sits for a week.
+  > **The distinction that keeps this from eating L18 and the read-the-worktree rule:** what arch may
+  > take is a **measurement** — running an existing instrument and reporting numbers. What arch still
+  > may not do is **infer** a build state from a grep (L8's twelfth form), or treat a cohort
+  > implementation as evidence for a ruling (L18). Arch measuring is not arch guessing, and the packet
+  > says plainly that the assignment was reversed and why.
+  > ***Enforcement point, extending the fourth axis:*** **before a fold is held on a peer's
+  > measurement, ask whether arch can take it with an instrument that already exists** — `ls` the
+  > seat's harness directory and read its `--help` (**L7**). If yes, arch takes it in the same session
+  > and tells the seat it was taken. A fold gate whose remaining work is *running something* is an
+  > unfinished task wearing an assignment.
+  **Candidate: one incident, enforcement point corrected once, fourth axis added, one save recorded.** Honor it; do not claim it generalizes.
 
 - **L3 — a partial fold does not get a completeness marker, and `implemented/` is one.**
   `[RATIFIED 2026-08-17 — second incident, a different marker]` v3.11 was the version-bump shape.
@@ -1377,6 +1697,50 @@ reconstruction pass.
   you get a false clean *and* a false failure from the same mistake. **64-hex content hashes are
   never flagged: they are the fix.** Reader by default on purpose — the backlog is 808 and a gate
   red on day one teaches people to skip it.
+
+- **`spec census` — what does the cohort actually cite?** The instrument for the one question every
+  other analyzer structurally cannot answer: *arch cannot observe build state directly, and every
+  check it can run is the same check that produced the error*
+  (`DOCTRINE-COHORT-STATE-TRACKING`, and it has never been arch that caught one of these).
+  **The join already existed and nobody had opened it** — the implementations annotate their own
+  source with `§` references back into this corpus, **27,466 of them across the five non-generated
+  seats**, a map written by the implementers of what they believe is theirs.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py census                    # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py census --doc RELAY        # scope to one document
+  python3 <arch-tools>/spec-tool/cli.py census --drift            # the time axis (~4 s)
+  ```
+
+  **`unobserved-must` is the row to read first** — normative tokens, cited by product code, gated by
+  **no oracle check**. That is the FM-1 class stated mechanically: `ENTITY-CORE-PROTOCOL` §4.7 calls
+  itself a MUST-emit contract, declares ten rows, and roughly one is driven. It is live here too —
+  `EXTENSION-RELAY` §4.2's poll-visibility rule landed 2026-08-30 behind three private unit tests
+  and **zero cross-impl checks**, which is **L17's missing half** on a rule one day old.
+  **`spec-moved-under` is the mechanical form of *who did not get told***: the section's normative
+  content changed after the citing file was last touched.
+
+  ***A citation is evidence of ATTENTION, never of correctness**, and the tool prints that on every
+  run.* A seat can cite §4.2 and implement it wrong; a seat can implement it perfectly and cite
+  nothing. **A blank cell is unknown, never unbuilt** — D2's rule, applied to the instrument.
+
+  **Four wrong versions were measured before this one, and they are why the self-test exists.**
+  529 orphans from bare-path inference charged to the cohort — fixed by ruling that **only a
+  qualified citation may accuse**, since an inferred attribution that misses is a defect in the
+  inference · 12 from `\bTYPE\b` matching inside `TYPE-SYSTEM`, a hyphen being a word boundary ·
+  431 more from an open uppercase qualifier eating `TODO`/`HTTP`/`PUT`, **which made ambiguity go
+  UP**, a matched qualifier naming no document being worse than none. **An instrument that publishes
+  to five seats at once has to be wrong in the quiet direction.**
+
+  **And drift is `[ADR-0027]`'s problem again, which is worth carrying beyond this tool.** A
+  blame-based first draft reported **2,174** findings on one date — a corpus-wide prose sweep had
+  touched every line without moving an obligation — so the unit is now a **digest of the normative
+  sentences**, and rewording rationale does not fire. The rebuild still reported **176**, because
+  **nine of `ENTITY-CORE-PROTOCOL`'s ten commits carry one date**: the release boundary re-authors
+  published history, so **commit dates are not a time axis in a boundary-crossed repo at all.**
+  That is **L24 on the time axis** — an identifier that does not survive the boundary cannot carry a
+  claim across it — and it is now **detected and reported per document as COULD-NOT-LOOK**, never
+  measured through. What survives is 20, every one of them the RELAY rule landed the day before.
 
 - **`spec ledger` is a separate run and is NOT in `check`** — it gates the counts
   `docs/proposals/INDEX.md` **and `docs/research/INDEX.md`** declare against the directories they
