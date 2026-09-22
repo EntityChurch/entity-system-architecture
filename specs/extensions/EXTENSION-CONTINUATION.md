@@ -1,6 +1,6 @@
 # Continuation Extension — Normative Specification
 
-**Version**: 1.23
+**Version**: 1.24
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
@@ -461,7 +461,13 @@ The caller passes a continuation entity directly as `params`; the install path i
 ```
 handle_install(ctx, params):
   ; Step 1: install path comes from EXECUTE.resource per V7 §3.2.
-  if ctx.resource is null or len(ctx.resource.targets) != 1:
+  ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
+  ; different remedies, and the code selects the remedy. Collapsing them is
+  ; non-conformant on the absent case.
+  if ctx.resource is null or len(ctx.resource.targets) == 0:
+    return error(400, "path_required",
+      "install requires a resource target (the suspended path)")
+  if len(ctx.resource.targets) != 1:
     return error(400, "ambiguous_resource",
       "install requires exactly one resource target (the suspended path)")
   install_path = ctx.resource.targets[0]

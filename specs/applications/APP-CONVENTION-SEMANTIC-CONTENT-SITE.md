@@ -1,8 +1,15 @@
-# APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5 DRAFT
+# APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5.1 DRAFT
 
-**Version**: 0.5
+**Version**: 0.5.1
 **Status**: Draft
-`{publisher_peer_id}/content/sites/{site_id}/_root` placement (a layer violation: `system/content/*` is the
+
+**v0.5.1:** `app/site-asset`'s `payload` is **narrowed to `inline-payload / pointer-payload`** and the
+`child` arm is refused as **invalid for its type** (§4), with a §9 vector asserting the three payload
+outcomes stay distinctly attributed. The field imported a union wider than the type admits; an asset
+names bytes, and a `child` ref names an entity whose dispatch tag would be a second `media_type`. Per
+the site-asset-child-arm-and-publication-grant proposal.
+
+**v0.5:** `{publisher_peer_id}/content/sites/{site_id}/_root` placement (a layer violation: `system/content/*` is the
 CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always
 `{hex(H)}` per `EXTENSION-CONTENT §6.4.2`; an L5 application subgraph has no business there). Sites are now
 free subgraphs at publisher-chosen tree paths; the site's capability scope is its own subgraph root. Adds a
@@ -240,7 +247,64 @@ site-page = {                                ; type = app/site-page
   ? frontmatter: { ? title: tstr, * tstr => any },   ; title-only is conformant; MAY derive title from first H1
   ? embeds:   [* (path / content-hash)],     ; sibling Embed entities this page transcludes (child mode)
 }
+
+; --- a NAMED, site-local binary asset (image, font, stylesheet). It exists because §3.2's
+;     directory-relative `ref` resolves against the TREE, and a bare content-store blob has
+;     no name; the naming binding points at this.
+site-asset = {                               ; type = app/site-asset
+  type: "app/site-asset",
+  data: {
+    media_type: tstr,                        ; IANA type — an asset has no dispatch tag of its own
+    payload:    inline-payload / pointer-payload,   ; APP-CONVENTION-EMBED §3's arms, NARROWED — see below.
+                                             ; NOT a second payload union; the embed ones, reused.
+                                             ; `child-payload` is NOT admitted here (the [MUST NOT] below).
+  }
+}
 ```
+
+**`app/site-asset` — declared, and the `[MUST]` closes a bypass rather than adding a rule.**
+
+> **[MUST]** An asset whose bytes exceed `inline-payload`'s `.size (1..16384)` ceiling **MUST** use a
+> **`pointer`** payload, placing the bytes in the content store **where §6.1's canonical chunking governs
+> them.** An implementation **MUST NOT** inline unbounded bytes in a site asset.
+>
+> **Why this is a bypass and not merely a size preference.** §6.1 makes *"same image → same site root"*
+> depend on every v1 publisher chunking at the canonical 1 MiB FastCDC default. **Bytes that never enter
+> the content store never meet that rule** — so on an all-inline asset path the MUST is not failing, it is
+> *unreachable*, and no reproducible-publish check can observe it. That is why an inline-at-any-size asset
+> makes its row incomparable across implementations rather than merely large. `APP-CONVENTION-EMBED` §3's
+> inline ceiling exists for the adjacent measured reason (inline bytes inflate trie nodes and `.list`).
+
+**The payload field is NARROWER than the union it imports, and the narrowing is normative.**
+
+> **[MUST NOT]** An `app/site-asset` **MUST NOT** carry a `child-payload`. Its `payload` admits
+> `inline-payload` and `pointer-payload` only. A reader that decodes one **MUST** refuse the entity as
+> **invalid for its type**, and **MUST NOT** report it as a malformed or untagged payload.
+>
+> **Why the arm is excluded — an asset NAMES BYTES, and `child` names an entity.** `child-payload.ref`
+> resolves to a sibling `Embed`, and an `Embed`'s **dispatch key is its type tag**
+> (`app/embed/{media_type}`). `APP-CONVENTION-EMBED` §3 carries **no `data.media_type` field**, for the
+> stated reason that it *"would be a redundant second source of truth."* A site asset carries
+> `media_type` beside its payload. **So an asset with a `child` payload holds two media types that can
+> disagree, with nothing to say which wins** — the exact redundancy the embed convention removed by
+> hand, reintroduced one convention over. The naming argument is the same one this type exists for
+> (above): a bare blob has no name and needs this binding; an entity in the tree already has one.
+>
+> **`child` is also the only arm that may cross a peer boundary** (EMBED §3 — it is why that arm alone
+> carries the authority term), and this type is declared **site-local**. §6's `.entsite` bundle is
+> *closure-complete*; a cross-peer reference inside an asset makes closure uncloseable, and it would
+> surface at bundle time rather than at authoring time.
+>
+> **This narrows the asset and nothing else — sites keep `child` where it belongs.** A `site-page`'s
+> `::embed` directive **MUST** lower to a `child` payload on a sibling `Embed` (§3.2; EMBED §3's v1
+> embedding mode), and §9 names the round-trip vector for it. **A page transcludes; an asset names
+> bytes.** No authoring capability is removed.
+>
+> **The refusal is its own outcome, and collapsing it loses the attribution.** EMBED §3's *"decoders
+> MUST reject an untagged/ambiguous payload"* governs a payload with **no discriminator**. A `child`
+> payload here is correctly tagged, well-formed and unambiguous — it is invalid *for this type*. Three
+> outcomes stay distinct: **a tag the reader has not built** is the reader's gap; **`child` on an
+> asset** is the publisher's schema violation; **no tag at all** is a malformed payload.
 
 **Merge policy (`S-9`):** v1 SiteManifest merge is **last-write-wins on the whole manifest** (simple-publisher
 posture). Field-level named strategies (nav = ordered-set union; root = conflict-error) are **deferred** with the
@@ -475,6 +539,12 @@ names the cases; the fixtures, the bytes and the run are the implementations' an
 - A **`.entsite` bundle** vector (`C-1`): a closure-complete bundle of a small site, canonical-CBOR, byte-equal
   cross-impl, with `pin.root == envelope.root` and a verifying signature (§6.0).
 - A **passive-only refuse** vector (v1 consumer refuses a non-empty `requires`/`sandbox` embed — §5).
+- An **asset payload discrimination** vector (§4's `[MUST NOT]`) — one `app/site-asset` per outcome,
+  asserting the three stay **distinct and distinctly attributed**: an `inline` and a `pointer` asset
+  **accepted**; a **correctly tagged `child`** asset **refused as invalid for its type** (the
+  publisher's defect); an **untagged** payload refused as malformed (EMBED §3). **A run that reports
+  the `child` case as malformed, or as an unimplemented arm, fails this vector** — the whole point is
+  that the three outcomes are not one.
 - *(EMBED ships the `EmbedOutput`/payload/`raw`-drop-clean/unknown-`kind`/agility-pair/rendition vectors; this
   convention does not duplicate them — it cites EMBED §9.)*
 

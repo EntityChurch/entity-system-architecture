@@ -242,6 +242,26 @@ feed-entry = {                       ; type = app/feed/entry
 **`body` is an embed node and this convention defines no content types of its own.** A photo post and a
 text post are one shape with a different embed inside.
 
+> **`body` is an `embed-node` — `APP-CONVENTION-EMBED` §3.1, the INPUT surface, carried INLINE.** It is
+> **not** `EmbedOutput` (EMBED §4): an entry stores what was **authored**, and the handler runs at the
+> **reader**. Typing it as the output surface would fix the rendition choice at authoring time for every
+> reader forever, leave EMBED §5's handler dispatch nothing to run, and — because §4's vocabulary is
+> closed by design — publish a wire format that can never carry a content kind that vocabulary did not
+> anticipate.
+>
+> **No separate `Embed` ENTITY is required for an entry**, and this is the practical consequence: a text
+> post is an inline payload, an image post is a pointer payload, and both are one field of one entity.
+>
+> ```
+> text post    { type: "app/embed/text/plain",
+>                data: { payload: { tag: "inline", bytes: <utf8> }, fallback: "…" } }
+> image post   { type: "app/embed/image/png",
+>                data: { payload: { tag: "pointer", hash: <content-hash> },
+>                        fallback: "…", renditions: [ … ] } }
+> ```
+>
+> **Only the `child` arm names a separate entity** — that arm is transclusion, and it is optional.
+
 **`reply` carries `root` as well as `parent`, and the second field is load-bearing.** With `parent`
 alone, assembling a conversation is a hop-by-hop walk and **one unreachable author truncates everything
 below them**. `root` lets any holder of any entry name the whole conversation in one step, which is what

@@ -551,7 +551,7 @@ prefix rename **is** the fold)* · `MATURITY-MODEL-AND-ROADMAP-COMMUNICATION`
 several are deliberately parked — but it is not visible anywhere else, which is why it is stated
 here.
 
-## 2. Implemented — 80 (moved this cycle)
+## 2. Implemented — 82 (moved this cycle)
 
 **`A-CONVENTION-STATES-WHAT-A-CHECK-MUST-DISCRIMINATE-AND-SHIPS-NO-ARTIFACT` — FOLDED 2026-09-09**,
 `specs/applications/CHARTER.md` **v1.1**. A correction, not a design: discipline **#5** said each

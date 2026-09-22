@@ -1,6 +1,6 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.29
+**Version**: 3.30
 **Status**: Active
 **v3.29 — the builtin override prohibition stands on its own** (§4, override prohibition). The rule previously described itself as *"a subset of"* the core `system/*` reservation and told implementers that enforcing that reservation needed *"no separate compute-specific guard."* **That reservation has been withdrawn from the core protocol entirely** (`ENTITY-CORE-PROTOCOL` 0.8.2.13), so the subset claim named a rule that no longer exists — and before the withdrawal it was already false in the direction that opens a hole. The prohibition now states its own basis: it binds every installation path because it is a **cross-peer determinism requirement**, not a namespace policy. Two peers disagreeing about what `"add"` means is an interop failure, which is why this is a MUST while local install policy is not. *(v3.28 stated the same conclusion by reference to the core rule's scope and is superseded.)*
 **v3.27 — the contained set is a RULE, not a count; and eval limits are not ordinary errors**
@@ -707,7 +707,13 @@ Receives an EXECUTE requesting evaluation of a compute expression.
 handle_eval(ctx, params):
   ; The expression path comes from EXECUTE.resource per the path-as-resource
   ; convention (V7 §3.2). params optionally carries operation knobs (budget).
-  if ctx.resource is null or len(ctx.resource.targets) != 1:
+  ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
+  ; different remedies, and the code selects the remedy. Collapsing them is
+  ; non-conformant on the absent case.
+  if ctx.resource is null or len(ctx.resource.targets) == 0:
+    return error(400, "path_required",
+      "eval requires a resource target (the expression path)")
+  if len(ctx.resource.targets) != 1:
     return error(400, "ambiguous_resource",
       "eval requires exactly one resource target (the expression path)")
   expression_uri = ctx.resource.targets[0]
@@ -762,7 +768,13 @@ Registers a compute subgraph for reactive evaluation. The caller provides the ro
 handle_install(ctx, params):
   ; Root expression path comes from EXECUTE.resource per the path-as-resource
   ; convention (V7 §3.2). params optionally carries result_path override and budget.
-  if ctx.resource is null or len(ctx.resource.targets) != 1:
+  ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
+  ; different remedies, and the code selects the remedy. Collapsing them is
+  ; non-conformant on the absent case.
+  if ctx.resource is null or len(ctx.resource.targets) == 0:
+    return error(400, "path_required",
+      "install requires a resource target (the root expression path)")
+  if len(ctx.resource.targets) != 1:
     return error(400, "ambiguous_resource",
       "install requires exactly one resource target (the root expression path)")
   root_path = ctx.resource.targets[0]
@@ -1046,7 +1058,13 @@ Removes a subgraph from reactive evaluation. Clears the dependency registrations
 handle_uninstall(ctx, params):
   ; Subgraph path comes from EXECUTE.resource per the path-as-resource
   ; convention (V7 §3.2). params is the empty-params shape (V7 §3.2).
-  if ctx.resource is null or len(ctx.resource.targets) != 1:
+  ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
+  ; different remedies, and the code selects the remedy. Collapsing them is
+  ; non-conformant on the absent case.
+  if ctx.resource is null or len(ctx.resource.targets) == 0:
+    return error(400, "path_required",
+      "uninstall requires a resource target (the subgraph path)")
+  if len(ctx.resource.targets) != 1:
     return error(400, "ambiguous_resource",
       "uninstall requires exactly one resource target (the subgraph path)")
   subgraph_path = ctx.resource.targets[0]

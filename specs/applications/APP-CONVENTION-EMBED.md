@@ -146,7 +146,40 @@ sandbox-constraint = {                       ; substrate-NEUTRAL (no "iframe"/"w
   ? read_only_within: path,                  ; the prefix the embed's compute may read (default: its own subtree)
   ? deny_external_handlers: bool,            ; default TRUE — refuse handler_targets outside the subtree (§7, C3)
 }
+
+; --- the INLINE form. An Embed is ordinarily an addressable entity; where a consuming
+;     convention carries one INSIDE another entity's field rather than beside it, it carries
+;     an embed-node: the same (type, data) pair, inline and not separately addressed.
+embed-node = {
+  type: tstr,                                ; "app/embed/" .cat media-type — the SAME dispatch key
+  data: embed-data,                          ; §3 above, unchanged
+}
 ```
+
+### 3.1 `embed-node` — the inline form `[the INPUT surface; consuming conventions cite this]`
+
+**A node and an entity differ in ADDRESSING only.** The dispatch key is carried, not dropped: §3 puts
+the media type in the type tag rather than in `data` so there is one source of truth, and an inline node
+keeps that property where a bare `embed-data` would lose it. **A handler that accepts one accepts the
+other, and an implementation MUST NOT make behaviour depend on which form the embed arrived in.**
+
+**When to use which.** Inline where the embed **is** the field's value and is never referenced
+independently — `APP-CONVENTION-FEED` §2.3's `body` is the reference case. A **separate entity** where it
+is referenced by path or hash from more than one place, or transcluded — which is exactly what
+`child-payload` names, and is why the child arm is a reference and the other two are not.
+
+**The inline bound applies unchanged.** `inline-payload`'s `.size (1..16384)` ceiling is a property of the
+payload and not of the addressing, so a node carrying large bytes uses `pointer` for the reasons the
+inline-ceiling note below already gives.
+
+> ⚠ **`embed-node` is the INPUT surface (this section), never `EmbedOutput` (§4), and a consuming
+> convention that confuses the two publishes the wrong half of the model.** §4's vocabulary is **CLOSED
+> by design** (§4.0), so a stored wire format typed by it can never carry a content kind the vocabulary
+> did not anticipate; the input surface is open on purpose. **Storing output also disables three
+> `[LOCKED]` mechanisms at once** — §5's `{media_type → handler}` dispatch has nothing left to run,
+> §5.3's rendition selection would have been decided by the author for every reader rather than by each
+> reader's own substrate capabilities, and §6's degradation ladder has nothing left to degrade. **An
+> entry stores what was authored; the handler runs at the READER.**
 
 **Normative notes:**
 - **`content-hash` is self-describing and variable-length** (V7 §1.2). The convention is **encoding-agnostic** —

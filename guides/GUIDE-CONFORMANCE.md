@@ -148,7 +148,27 @@ The `signature` category uses fixed Ed25519 seeds named in the `.diag` as 32-byt
 
 **Corollary — do not audit for this by grepping declaration strings.** The declaration is not the check, and name-grepping scores it wrong in *both* directions: core-go's `authz` category scores **0/11** on a refusal-word grep while *being* the negative halves, and `encryption`'s `sender_auth_peer` reads as a single positive declaration while carrying two tamper vectors. **Read the implementation.** An audit that reports coverage from category names has measured its own vocabulary.
 
-This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, **§2.4a is a surface the suite reaches and scores backwards**, and §5.2c is a surface the suite reaches only **by accident**.
+This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, **§2.4a is a surface the suite reaches and scores backwards**, §2.4b is a surface the suite reaches and scores **forwards for the wrong reason**, and §5.2c is a surface the suite reaches only **by accident**.
+
+### §2.4b A deny-only check MUST establish its own antecedent `[MUST]`
+
+**§2.4a is a category that scores a correct peer badly, and a red is investigated. This is its mirror and it fails the quiet way: a check that asserts only a refusal cannot tell the refusal it is testing from a refusal it caused.**
+
+> **The rule.** Where a check asserts that an input was **refused**, and the property under test is *why* it was refused — the declaration reads *"MUST refuse this, **even though** the input is otherwise valid"* — the check MUST establish that antecedent **inside itself**: a positive control on the **same probe**, over the **same operation, target and scope**, built from the **same material**, with the property under test as the **only** variable.
+
+**Why this is not pedantry: a refusal is the cheapest observable a peer produces.** Any construction fault on the driving side — a malformed field, a signature over the wrong bytes, a mismatched grantee, a resource pattern that does not cover — produces **exactly** the observable the check is looking for, at **every** peer at once. The check then reports PASS across the whole cohort having measured nothing about the rule, and the more implementations that agree, the more confident the wrong conclusion becomes. **A fault in the harness arrives wearing a green three-way.**
+
+**The discriminating shape is two arms on one probe, differing in exactly the property under test.** Where the rule says *this form of authority does not authorize what that form does*, the control is the other form: the accepting form MUST succeed — asserted on the **field that proves it landed**, not on a status alone — and the refused form MUST be refused, with the form as the only difference between them.
+
+**Three things that look like the control and are not:**
+
+1. **A mutation witness recorded in a comment, or in the oracle author's own unit test.** It is evidence about one artifact at one commit. It does not run at the other peers — where the same check reports the same green — and it does not fire when the construction it vouches for later drifts. §2.4a's corollary requires that a check be *makeable to fail*; this requires that its **passing be attributable**.
+2. **A neighbouring check that drives a different input.** The same surface is not the same probe: a second credential, minted separately, controls for nothing about the first.
+3. **An in-process validity assertion run through the same implementation's verifier.** Construction and verification from one source catches a typo and cannot catch a shared misreading — two operands, one judgement. Acceptable as a cheap floor **beneath** the control; never as the control.
+
+**The mechanical tell, and it is worth grepping for.** A deny-only check that needs this rule almost always **says so in its own declaration**: read the declarations for *"even though"*, *"while"*, *"despite"*, *"notwithstanding"* — then ask which arm establishes the clause that follows. If none does, the check measures the clause before it and nothing else.
+
+> **The declaration KEEPS the antecedent, and names the arm that establishes it.** The tell above has an obvious perverse discharge — **delete the *"even though"* clause and the grep goes quiet while the check is unchanged** — so the rule is stated in the direction that closes it. **The antecedent is the reason the property is not obvious**, and a declaration that drops it leaves the next reader unable to tell a paired check from a bare one without reading the body. A conformant declaration says both halves: *what MUST be refused, even though X holds* — **and** *paired with the arm that establishes X.*
 
 ---
 
@@ -504,11 +524,102 @@ Both use `primitive/any` params/results, ECF. Mechanism, reentry model, and cont
 - **result**: the params entity **verbatim** (`result.value == params.value`)
 
 **`system/validate/dispatch-outbound` — operation `dispatch`** — proves §6.13(b)/§6.11: the target **originates**, not just responds. No continuation/INSTALL/subscription/compute.
-- **params**: `{ target: text` (pattern to invoke **at the caller**, e.g. `system/validate/echo`)`, operation: text, value: <any>, reentry_capability, reentry_granter, reentry_cap_signature }` — the last three are the caller-minted authority for the reentry direction (this peer → caller); carriage convention is the one open Go-ruling item (§7a.2a).
+- **params**: `{ target: text` (pattern to invoke **at the caller**, e.g. `system/validate/echo`)`, operation: text, value: <any>, reentry_capability, reentry_granters, reentry_cap_signatures }` — the last three are the caller-minted authority for the reentry direction (this peer → caller). **`reentry_granters` and `reentry_cap_signatures` are PLURAL carriers `[0.8.2.19]`** — arrays, and the single-granter case is an array of one. **They were singular, and that made one normative rule ungateable:** `ENTITY-CORE-PROTOCOL` §1.4's multi-signature root rule needs a K-of-2 root to drive it, which requires **two** granter identities and **two** signatures; a single-credential carrier cannot express the input, so every seat drove it in-process only. **The set is all-or-none:** supplying the three selects the presented arm, omitting all three selects the ambient arm, and a partial set is `400 invalid_params` — a partial credential is malformed, not ambient.
 - **behavior**: originate **exactly one** outbound EXECUTE via the §6.11 reentry sender → `operation` on `target`, **back to the caller over the same inbound connection** (see §7a.2a) → await the response.
 - **result**: `{ status: uint, result: <downstream result entity> }`
 
 These are **behavioral contracts**, satisfied by a **native handler each impl supplies** (validator drives them black-box over the wire). They are *not* a declarative body vocabulary the peer interprets — that would re-open the body-evaluator question and re-couple to compute. The guide specifies *what EXECUTE must do*; the impl provides *how*.
+
+> ### ⛔ `dispatch-outbound`'s handler grant MUST be NARROW, and this is a scaffold-contract requirement
+>
+> **The `system/validate/dispatch-outbound` handler's own grant MUST be scoped to a fixed, declared
+> operation set — not the peer's bootstrap grant.** A conforming scaffold declares that set; the
+> obvious minimum is the `echo` operation on `system/validate/echo`, which is the only operation the
+> reentry contract needs.
+>
+> **Why this is a requirement and not an implementation detail.** `ENTITY-CORE-PROTOCOL` §1.4's
+> outbound gate admits **two** authority contributions — the executing handler's grant (Dimensions
+> 1–3, always) and a target-minted credential (Dimension 4 only). A check set MUST discriminate a
+> **compose** from a **bypass**, and the discriminating vector is *a valid credential presented to a
+> handler whose own grant does not cover the request → MUST refuse*. **That vector is unconstructible
+> against a wide grant:** if the handler's grant already covers every operation, the composed reading
+> and the bypassed reading return the same answer for every input the probe can send. **The probe
+> would sit exactly at the point where the two readings agree** — which is how a cohort-wide
+> confused-deputy bypass passed two green vectors across three reference trees and 46 generated peers.
+>
+> **The discriminating probe, therefore:** drive `dispatch-outbound` to sub-dispatch an operation
+> **outside** the handler's declared set, **while presenting a credential that does cover it**. A
+> conformant peer refuses; a peer whose credential path bypasses the handler grant succeeds. Pair it
+> with the existing reentry probe, which must still succeed — **one arm alone does not discriminate**,
+> and a refusal raised *upstream* of the gate is indistinguishable from the refusal under test unless
+> the check is validated against a peer that restores the bypass.
+>
+> **This generalizes and is the reason it is stated here rather than in one vector's prose: an
+> authorization gate admitting N authority sources needs N compose-vs-bypass discriminators, and the
+> two obvious vectors — all sources agree → allow, no source at all → refuse — are precisely the two
+> that are blind to a bypass.**
+
+> ### ⛔ The multi-signature-root vector the plural carrier unblocks is DENY-ONLY, and §2.4b binds it
+>
+> **The rule it drives is `ENTITY-CORE-PROTOCOL` §1.4's: a multi-signature root MUST NOT relax
+> Dimension 4 *even though chain verification accepts the root*** — an antecedent in the property
+> itself. A check that mints a K-of-N-rooted credential, presents it, and asserts only that the
+> sub-dispatch was refused **does not measure that rule.** A credential invalid for any unrelated
+> reason — a malformed multi-granter encoding, a signature over the wrong bytes, a grantee mismatch,
+> a resource that does not cover — is refused by every conformant peer for that reason, and the check
+> goes green cohort-wide having measured nothing.
+>
+> **The required control is the single-granter arm, on the same probe:** same operation, same target,
+> same scope, same grantee, **the granter form the only variable.** The single-signature credential
+> MUST succeed and reach the sub-dispatched handler exactly once; the K-of-N credential over the
+> identical request MUST be refused and MUST NOT reach it. That is the compose-vs-bypass shape above,
+> rotated onto the authority-form axis, and it is the reason the plural carrier was worth a breaking
+> params change: **the carrier makes the input expressible, and only the paired arms make it
+> measurable.**
+>
+> **The existing reentry probe does not substitute** — it is a different check driving a separately
+> minted credential, which controls for nothing about this one (§2.4b, item 2).
+>
+> **A control that establishes the credential is valid does NOT establish that the peer can VERIFY
+> that credential form.** A peer whose chain walk rejects every multi-granter root passes this vector
+> for a reason that has nothing to do with §1.4 — *fail-closed by absence*, §2.4b's own concern
+> arriving at the peer rather than at the check, and the single-signature control cannot see it
+> because the control is single-signature. **The discriminating input is a multi-signature root in a
+> context where the rule does NOT forbid acceptance**, which does not exist inside this vector —
+> §1.4's prohibition is unconditional — so it lives in the capability-chain category as an ordinary
+> **accept** of a valid K-of-N root. **Read that row before reading this one at a new seat:** a seat
+> that cannot accept a valid multi-signature root anywhere has not been measured here.
+
+### §7a.1a How a REFUSED reentry sub-dispatch surfaces `[MUST]`
+
+**The status SHAPE is not pinned; the CODE is, and it always was.** Two shapes are conformant and both
+are already in the corpus — **relayed** (the handler propagates the refusal as its own outer `403`) and
+**wrapped** (outer `200`, the refusal carried as the inner status). §7a.2's ambient arm accepts both,
+deliberately, and this section does not narrow that.
+
+> **What a refusal MUST NOT do is change the CODE.** When `system/validate/dispatch-outbound`'s own
+> outbound sub-dispatch is refused by the §1.4 gate — whether on the handler's grant (Dimensions 1–3)
+> or on Dimension 4 — the surfaced code is the authorization domain's code, **`capability_denied`** by
+> default or a more-specific defined authorization code. **A transport- or gateway-class code is
+> non-conformant**, and this is not a new rule: `ENTITY-CORE-PROTOCOL` §3.3's authorization-path code
+> discipline already says *implementations MUST NOT surface a generic catch-all default on an
+> authorization path; the catch-all is a sign that an authorization failure escaped its defined code.*
+> The same document normalizes the code **regardless of which pipeline layer detects the rejection**,
+> for exactly this reason: a caller must not be able to read a peer's internal layering off its error
+> codes.
+
+**Why a scaffold section restates a core rule instead of pointing at it.** The scaffold is where the
+refusal is *caught and re-emitted* — the handler learns its own sub-dispatch was refused and chooses
+what to return — and that re-emission is a code path the core rule's authors were not describing. **A
+handler that wraps every unsuccessful sub-dispatch in one generic failure code launders an
+authorization verdict into a transport fault**, and the resulting observable is indistinguishable from
+*"the route was broken"*. That is the same unattributability §2.4b refuses in a check, one layer over:
+the property may hold perfectly and the wire cannot say so.
+
+**The tell, and it is worth checking against your own handler before a run:** if the refusal branch for
+an **ambient** sub-dispatch surfaces `capability_denied` and the branch for a **credential-presented**
+sub-dispatch surfaces a generic failure, **the two branches disagree about what the same gate decided.**
+Both are the §1.4 outbound check returning DENY.
 
 **Shape clarification (post §7b matrix — per the concurrency-gate §7b matrix rulings):** `echo` returns the params **entity** (`{value: X}`), not a bare scalar — `result.value == params.value`. `dispatch-outbound` is a **generic relay**: its `result` field carries the downstream handler's **result entity verbatim**, with **no unwrapping** (it relays arbitrary `target`/`operation` and cannot assume the downstream's shape). So for the echo round-trip the value rides as `result.value` (an entity), and a probe MUST assert `result.value == sent`, **not** `result == sent`. A relay that unwraps, or a probe that expects a bare scalar, is the non-conformant party — not a peer that returns the entity.
 
@@ -530,7 +641,9 @@ These are **behavioral contracts**, satisfied by a **native handler each impl su
 
 This corrects the A-013 bounce-back's "no wire-reachable outbound surface" conclusion: a **fresh dial to an arbitrary third peer** genuinely has no core surface (Go was right about *that*) — but **reentry to the caller does**. So `dispatch-outbound` is a **real black-box wire gate**, not the code-attestation fallback. No V7 change — §6.11 reentry was always the surface; this names it as the attestation path.
 
-**The one thing still to ratify (Go's call — Go builds the validator side):** how the caller hands the reentry capability to `dispatch-outbound`. The reentry direction can only be authorized by the caller (a cap valid *at the caller*). Two shapes: **(a) in-band, nested in params** (`reentry_capability`/`reentry_granter`/`reentry_cap_signature`) — self-contained, transport-agnostic, no reliance on an included-set convention; or **(b) the envelope `included` set** (how caps normally travel) with a hash reference in params. **All six-impl-leaning + arch-leaning: (a) in-band params** — all three keystone peers already implement it, and it doesn't depend on the high-level session API exposing the `included` set. Go ratifies (or flags (b) — then it's one uniform ×N change, not divergent rework). Secondary confirm: the validator drives `target` as **itself** (B-role on the same connection), not a third-peer dial.
+**RATIFIED — shape (a), in-band params.** *(The validator seat's call, as this section reserved it, and now exercised on the wire by both `0.8.2.19` discriminators rather than only leaned toward.)* **The reentry authority travels nested in the `dispatch-outbound` params** — `reentry_capability` + `reentry_granters` + `reentry_cap_signatures` — **not** in the envelope `included` set: self-contained, transport-agnostic, and it does not depend on a session API exposing `included`. The record of how it was decided follows.
+
+**How it was decided (Go's call — Go builds the validator side):** how the caller hands the reentry capability to `dispatch-outbound`. The reentry direction can only be authorized by the caller (a cap valid *at the caller*). Two shapes: **(a) in-band, nested in params** (`reentry_capability`/`reentry_granters`/`reentry_cap_signatures`, plural since `0.8.2.19` — see the params contract in §7a.1) — self-contained, transport-agnostic, no reliance on an included-set convention; or **(b) the envelope `included` set** (how caps normally travel) with a hash reference in params. **All six-impl-leaning + arch-leaning: (a) in-band params** — all three keystone peers already implement it, and it doesn't depend on the high-level session API exposing the `included` set. Go ratifies (or flags (b) — then it's one uniform ×N change, not divergent rework). Secondary confirm: the validator drives `target` as **itself** (B-role on the same connection), not a third-peer dial.
 
 ### §7a.3 What stays a pure wire test (no body needed) — the register *contract*
 

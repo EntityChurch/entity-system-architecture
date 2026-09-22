@@ -1,7 +1,13 @@
-# APP-CONVENTION-SHARE — the share record, its audience binding, and the audience-less publication — v0.2 DRAFT
+# APP-CONVENTION-SHARE — the share record, its audience binding, and the audience-less publication — v0.2.1 DRAFT
 
-**Version**: 0.2
+**Version**: 0.2.1
 **Status**: Draft
+
+**v0.2.1:** §2.5's *"no grant"* is disambiguated — it names the **audience model** (no member
+enumerated, no per-member token), never an instruction to leave the target unauthorized, which is the
+only reading under which `SHARE-9` can pass. Adds the reachability `[MUST]`, a `[SHOULD]` on how the
+authorizing entry is written, and **`SHARE-10`** for the request-path narrowing that authoring one can
+cause. Per the site-asset-child-arm-and-publication-grant proposal.
 **Domain:** `applications/` (third member).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §3.6 / §5.2 / §5.4 (grant structure, `check_permission`,
@@ -213,8 +219,40 @@ share-publication = {
 }
 ```
 
-- **No `audience` and no grant.** Authorization at fetch is **none required, pull-only**. A
+- **No `audience` and no minted token.** Authorization at fetch is **none required, pull-only**. A
   publication carrying an `audience` field is **invalid**.
+
+> **"No grant" is a statement about the AUDIENCE MODEL, and it does NOT mean the publisher authorizes
+> nothing.** There is no member to enumerate and no per-member token minted for anybody — that is the
+> single axis this type splits on. **It is not an instruction to leave the target unreachable**, and
+> reading it that way makes the next sentence unkeepable and `SHARE-9` unpassable: a consumer
+> presenting no token would be refused, not for lacking one, but for there being no authority at all.
+>
+> **[MUST]** A publisher of an `app/share/publication` **MUST** ensure the `target` is retrievable by a
+> consumer that presents no token and performs no binding lookup. **Where the peer's connection-time
+> floor does not already cover the target, something must authorize that read, and authoring it is part
+> of publishing.**
+>
+> **The mechanism is the core's and this convention does not restate it** (`SPECIFICATION-FORMAT`
+> §10.3): `ENTITY-CORE-PROTOCOL` §4.4 makes an inbound peer's initial scope the **union** of the SHOULD
+> floor and the matched policy entry — *"implementations without a policy table populated for peer A
+> deliver only the SHOULD floor"* — and §6.2 resolves that entry **exact-match-or-`default`-fallback**.
+> A floor that covers only the type and handler namespaces reaches no published target, so on such a
+> peer the `default` entry is what keeps the promise above.
+>
+> ⚠ **AUTHORING THAT ENTRY HAS A SECOND EFFECT, IN THE OPPOSITE DIRECTION, AND IT IS EASY TO SHIP
+> BLIND.** By `ENTITY-CORE-PROTOCOL` §6.2 the **same** entry is a **union term** at §4.4
+> authenticate-response and a **per-peer ceiling** at `system/capability:request` — both intended, and
+> that section is the authority for both. §6.2 also states that with no entry at all, request-time
+> *"pure-attenuation flow … works … by skipping the policy ceiling — step 3 only enforces bounds that
+> exist."* **So creating a `default` entry where a deployment had none converts *no request-time
+> ceiling* into *this request-time ceiling*, for every peer holding no entry of its own.**
+>
+> **[SHOULD]** A `default` entry authored to satisfy the `[MUST]` above **SHOULD** be written as the
+> **union** of the publication's read grants with whatever that deployment already intends to allow at
+> `request` — never as the publication's grants alone. **The failure is silent in the direction that
+> matters:** the publication becomes reachable, so the change looks correct, while unrelated requests
+> from unlisted peers begin failing subset-validation. `SHARE-10` is the vector.
 - **A consumer needs no token and performs no binding lookup.** Reaching the bytes is the whole
   protocol.
 - **The publisher cannot know who fetched it**, and an implementation MUST NOT present it as though
@@ -415,6 +453,8 @@ The cases this document names:
 | SHARE-7 | `app/share/record` with an **empty** `audience` → read as **self-only**, never as public | §2.2, the state the split exists to keep distinct |
 | SHARE-8 | `app/share/publication` carrying an `audience` field → **rejected as invalid**; one with a `prefix-target` → **accepted as ordinary** | §2.5, both directions of the new type's shape |
 | SHARE-9 | a consumer fetching a publication presents **no token** and is **not refused for lacking one**; an `app/share/follow` naming a publication is **rejected** | §2.5 / §2.4, the pull-only posture and the silent-empty mistake made loud |
+| SHARE-10 | on a peer with **no** policy entry, a peer holding no entry of its own issues a `request` the caller's own cap covers → **succeeds**; a publication is then published and its read authority authored; **the same `request` still succeeds**, and the publication is fetchable with no token | §2.5's `[SHOULD]` — that keeping the publication promise did not narrow the request path. **Both halves are required**: a run asserting only the fetch reports success while the regression is live |
 
 **SHARE-4, SHARE-6 and SHARE-9 are the three that matter** — they are the assertions that fail loudly if an
-implementation adopts the intuitive-but-wrong reading.
+implementation adopts the intuitive-but-wrong reading. **`SHARE-10` is the one that fails QUIETLY**, which is
+why it is named separately: everything it guards keeps working from the publisher's side.

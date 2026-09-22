@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "accepted debt; --update-baseline may only lower",
-    "total": 2415,
+    "total": 2407,
     "files": 168,
     "rules": [
       "amendment-provenance",
@@ -34,10 +34,6 @@
       "impl-team-ref": 13,
       "operator-quote": 1
     },
-    "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-FEED.md": {
-      "impl-team-ref": 4,
-      "operator-quote": 1
-    },
     "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-CONTRACT.md": {
       "impl-team-ref": 5,
       "internal-path-ref": 1
@@ -62,7 +58,7 @@
     },
     "docs/proposals/active/applications/PROPOSAL-WINDOW-ID-LIFETIME-AND-THE-WINDOW-INDEX.md": {
       "discipline-letter-ref": 10,
-      "impl-team-ref": 33
+      "impl-team-ref": 25
     },
     "docs/proposals/active/extensions/PROPOSAL-CLOCK-ADDRESSABLE-TICK-AND-DEADLINE.md": {
       "impl-team-ref": 1
@@ -91,12 +87,6 @@
     "docs/proposals/active/extensions/PROPOSAL-MEMBERSHIP-CONDITIONED-GRANTS.md": {
       "internal-path-ref": 1
     },
-    "docs/proposals/active/extensions/PROPOSAL-PEER-TRANSPORT-SET.md": {
-      "discipline-letter-ref": 12,
-      "impl-team-ref": 32,
-      "internal-path-ref": 1,
-      "operator-quote": 7
-    },
     "docs/proposals/active/extensions/PROPOSAL-RELAY-COMPLETE-THE-MODE-SET.md": {
       "discipline-letter-ref": 14,
       "impl-team-ref": 33,
@@ -123,15 +113,16 @@
     "docs/proposals/active/process/PROPOSAL-CORPUS-REFERENCE-INTEGRITY.md": {
       "impl-team-ref": 2
     },
-    "docs/proposals/active/process/PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD.md": {
-      "internal-path-ref": 2
-    },
     "docs/proposals/active/process/PROPOSAL-MATURITY-MODEL-AND-ROADMAP-COMMUNICATION.md": {
       "impl-team-ref": 17,
       "internal-path-ref": 1
     },
     "docs/proposals/deferred/PROPOSAL-IDENTITY-CROSS-ALGORITHM-MIGRATION.md": {
       "impl-team-ref": 9
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-APP-CONVENTION-FEED.md": {
+      "impl-team-ref": 4,
+      "operator-quote": 1
     },
     "docs/proposals/implemented/applications/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md": {
       "impl-team-ref": 17
@@ -305,6 +296,12 @@
       "impl-team-ref": 10,
       "operator-quote": 11
     },
+    "docs/proposals/implemented/extensions/PROPOSAL-PEER-TRANSPORT-SET.md": {
+      "discipline-letter-ref": 12,
+      "impl-team-ref": 32,
+      "internal-path-ref": 1,
+      "operator-quote": 7
+    },
     "docs/proposals/implemented/extensions/PROPOSAL-PIN-THE-PATH-REQUIRED-STATUS.md": {
       "discipline-letter-ref": 8,
       "impl-team-ref": 6
@@ -413,6 +410,9 @@
       "discipline-letter-ref": 4,
       "impl-team-ref": 23,
       "internal-path-ref": 5
+    },
+    "docs/proposals/implemented/process/PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD.md": {
+      "internal-path-ref": 2
     },
     "docs/proposals/implemented/process/PROPOSAL-HASH-WIDTH-IS-NEVER-FIXED.md": {
       "impl-team-ref": 11,
