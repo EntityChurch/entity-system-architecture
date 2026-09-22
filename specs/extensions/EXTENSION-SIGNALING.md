@@ -1,10 +1,12 @@
 # Signaling Extension — Normative Specification
 
-**Version**: 1.1
+**Version**: 1.2
 
 **Status**: Draft
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.9+), EXTENSION-NETWORK.md (v1.6+ — §6.7 reachability facts, §10.3 live-establishment seam)
 **Optional**: EXTENSION-REGISTRY.md (**v1.5+** — §3b service advertisement, the deployment-wide reflector/signaling/relay pools this spec's §4.5.1 complements per-node); EXTENSION-RELAY.md (v1.2+) — Mode-F as an alternate carrier, Mode-C/S as fallbacks
+
+> **v1.2 — the wrapped surface's generic error code is `invalid_request`, not `bad_request` (§4.3, §9.2 scope note).** `ENTITY-CORE-PROTOCOL.md` §4.7 pins `invalid_request` as the generic malformed-request code and forbids extension specifications from minting a synonym. §4.3's error list sits in the **wrapped** handler section and named `bad_request`, so both implementations correctly emitted a synonym on the surface where that MUST NOT applies. **§9.2's closed enum is unchanged and stays `bad_request`** — it is the `error: tstr` set of the §9 non-entity protocol, which §4.7 does not reach; §2.2 binds the three *verbs* to be semantically identical, not their error encodings, and the two surfaces cannot share an encoding. The class boundaries are identical on both surfaces; only the spelling and the envelope differ.
 
 > **v1.1 — `advertise` publishes the node's own reflection listener (§4.5, new §4.5.1).** §9.1 gives this service two listeners and §4.5 advertised only one, so **a node running §9.3 STUN could not say so and a peer could not ask.** Additive and MUST-ignore-safe: absent decodes to the already-legal no-reflection state, and no deployment window is needed. Conformance is conditional — reflection stays a MAY (§11.3), but a node that *does* serve it MUST now publish it, on **both** surfaces (§2.2). Every browser peer negotiates on host candidates only, because nothing in the ecosystem fills its ICE server list. **What v1.1 deliberately does not close** is the TURN half and the read-once-at-boot consumption model — those are design work, named as §13 item 5 and tracked in `PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME`, not silently folded here.
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -234,7 +236,9 @@ system/signaling:advertise()                     → { endpoint, limits }
 
 Deposits an opaque blob at a key. `rendezvous_key` is **33 opaque bytes compared byte-wise** — the service derives nothing and knows nothing about the modes of §3. `message` is an opaque byte string whose framing is pinned peer-side (§6.2); the service never decodes it and never needs to.
 
-Errors: `message_too_large` (§5 pin 5), `bucket_full` (§5 pin 5), `bad_request` (malformed input or wrong key length), `rate_limited` (§8.2).
+Errors: `message_too_large` (§5 pin 5), `bucket_full` (§5 pin 5), `invalid_request` (malformed input, wrong key length, or a missing field), `rate_limited` (§8.2).
+
+> **The two surfaces carry errors in different shapes, and §4 is the wrapped one (v1.2).** This list is the **wrapped** surface's EXECUTE `result.data.code` set, so it uses the core's codes: `ENTITY-CORE-PROTOCOL.md` §4.7 pins `invalid_request` as the generic malformed-request code and states that extension specifications **MUST NOT mint a synonym**. The **unwrapped** surface answers `{ ok: false, error: tstr }` — a bare string in a non-entity protocol with no status line — and its own closed enum (§9.2) spells this same class `bad_request`. That is not a divergence §2.2 forbids: §2.2 binds the three verbs to be **semantically identical**, and the two surfaces already represent errors differently by construction. The **class boundaries are identical on both surfaces**; only the spelling and the envelope differ. *(Until v1.2 this list read `bad_request`, and both implementations correctly emitted that on the wrapped surface, where §4.7's MUST NOT applies.)*
 
 ### 4.4 Collect
 
@@ -653,9 +657,9 @@ Whether the two share a port is an implementation detail; they cannot share a *t
 { ok: false, error: tstr }                      ; any — closed enum below
 ```
 
-**The key is exactly 33 bytes**, opaque, compared byte-wise. Any other length is `bad_request`.
+**The key is exactly 33 bytes**, opaque, compared byte-wise. Any other length is `bad_request` on this surface (`invalid_request` on the wrapped surface — see the scope note below).
 
-**Error codes (closed enum).**
+**Error codes (closed enum) — this is the UNWRAPPED surface's `error` string set, not EXECUTE codes.**
 
 | Code | Meaning |
 |---|---|
@@ -665,6 +669,8 @@ Whether the two share a port is an implementation detail; they cannot share a *t
 | `rate_limited` | admission control refused it (§8.2) |
 
 A client receiving an unrecognized code **MUST** treat the request as failed and **MUST NOT** retry it as if it had succeeded. Services **MUST NOT** invent codes outside this set.
+
+> **Scope — these are `error: tstr` values in the §9 protocol, and nothing else (v1.2).** They appear in `{ ok: false, error: tstr }` on the unwrapped TCP surface, which has no status line and is not entity dispatch. They are **not** EXECUTE `result.data.code` values, and `ENTITY-CORE-PROTOCOL.md` §4.7 — which pins `invalid_request` for the generic malformed-request class and forbids extension specs from minting a synonym — governs the **wrapped** surface only. **§4.7 is the authority for the wrapped surface's codes; §4.3 lists them.** The two sets partition the same failure classes and differ only in spelling and envelope, which is what §2.2 requires: §2.2 binds the *verbs* to be semantically identical, not their error encodings, and the two surfaces could not share an encoding in any case.
 
 ### 9.3 Reflection — RFC 5389 STUN, unmodified (UDP)
 

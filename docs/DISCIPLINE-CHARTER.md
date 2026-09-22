@@ -45,7 +45,7 @@ real outcome rather than a gap.
 | **L6** | Resolve divergence from the table, before the fix is written | A6 | **CANDIDATE** — no arch-side incident yet |
 | **L7** | Check the toolkit for the instrument before building one — and **quote the invocation with the count** | — | **CANDIDATE** — five instances, enforcement partial |
 | **L8** | An artifact is not a conclusion about the thing it names — open it | — | **RATIFIED** 2026-08-17 |
-| **L9** | A deferral is a build-state claim and expires like one | — | **CANDIDATE** — one spec's whole deferral list |
+| **L9** | A deferral is a build-state claim and expires like one — **including a resolved open item in a folded proposal** | — | **RATIFIED** 2026-08-20 — second shape, a folded proposal's open item; sixth instance 2026-08-22 (self-blocking sequencing note) |
 | **L10** | Check the *framing* of a routed finding, not only the finding | — | **CANDIDATE** — one incident |
 | **L11** | Read the study that produced a design space before ruling inside it | — | **RATIFIED** 2026-08-17 |
 | **L12** | A mechanism cited in a ruling must be reachable by the actor the ruling assigns it to | — | **CANDIDATE** — one incident |
@@ -54,14 +54,34 @@ real outcome rather than a gap.
 | **L15** | A ruling goes back to the seat that filed it before it goes to anyone else | — | **CANDIDATE** — one incident, operator directive |
 | **L16** | Before ruling a cross-impl semantic, search **every** tier for a seat that already implements it | — | **RATIFIED** 2026-08-19 — second instance, opposite direction |
 | **L17** | A normative MUST naming a value **or a capability** does not land without a declared site a peer can carry and a conformance check | — | **RATIFIED** 2026-08-20 — second shape, the capability-encoding axis |
-| **L18** | A cohort implementation is not evidence that a cohort ruling is right | — | **CANDIDATE** — one incident, operator correction; one save recorded |
+| **L18** | A cohort implementation is not evidence that a cohort ruling is right — **and a citation labelled *corroboration* is verified like any other claim, or dropped** | — | **RATIFIED** 2026-09-02 — second shape, an unopened corroboration citation false about both peers it named; one save recorded |
 | **L19** | Say which kind of "vector," and state its satisfaction mode — open the section that owns the surface, not §7.0's index | — | **RATIFIED** 2026-08-20 — second shape |
 | **L20** | An example set cannot falsify a rule it does not span | — | **CANDIDATE** — one incident, third shape |
-| **L21** | A fold is a delivery to every seat that reads the corpus — sequencing that lives only on the board does not travel | — | **CANDIDATE** — one incident |
+| **L21** | A fold is a delivery to every seat that reads the corpus — route by who **consumes** it (implements, cites, **pins**), not only who implements; name the **divergence unit** when a dormant field goes load-bearing; and scope a relay by the fold's **diff**, never by what the seat shipped | — | **RATIFIED** 2026-09-01 — second shape, a guide consumed by a pin; third + fourth shapes 2026-09-02 |
 | **L22** | A borrowed sentence is re-verified by the borrower, not the author — whoever moves it, however short the move | — | **RATIFIED** 2026-08-31 — second shape, the filing seat as mover |
 | **L23** | A rule has every normative home it is stated in — enumerate by the rule's **subject**, not its tokens; and a restatement names its authority | — | **RATIFIED** 2026-08-30 — second shape; third and fourth shapes 2026-08-31 |
 | **L24** | A reference is only a pin if it resolves in the history **and the layout** the receiving audience gets | — | **RATIFIED** 2026-08-23 — second shape, the build surface |
 | **L25** | Read the section for its **examples**, not only the clause you came for — a tightening that closes no hole is not conservative | — | **CANDIDATE** — one incident, refuted by a peer who built it |
+| **L26** | The cohort discovers by **building** — arch's failure mode is not folding what they built; do not write a constraint telling seats to hold off | — | **RATIFIED** 2026-09-02 — operator correction; `spec ledger`'s `proposal-state-mismatch` is the fold debt and it ratchets to zero |
+
+> **Fourth recurrence, 2026-09-02 — two days after the third, and it is now BUILT rather than
+> re-diagnosed.** Four rows were stale: **L9** and **L21** read CANDIDATE here while `AGENTS.md` had
+> carried them as RATIFIED since 2026-08-20 and 2026-09-01; **L18** ratified today; **L26** was missing
+> entirely. Found by opening this table to update one row — the same way the third was found, which is
+> the tell: **every recurrence has been found by someone who happened to be editing the file for an
+> unrelated reason, and never by a check.**
+> **So the diagnosis was complete three times and changed nothing, because all three remedies were
+> habits.** The third note's own prescription — *"the rows land the same session the rule is earned"* —
+> is exactly the discipline that had just failed twice, restated as a resolution. **A rule whose
+> enforcement point is "remember to do it" is the theater this repo's own ladder forbids** (§3: *a
+> discipline with no enforcement point does not count*), and the ladder was not applied to the document
+> that contains it.
+> ***Enforcement point, and it is a gate, not a habit:*** **`spec charter`** (arch-tools) parses the
+> `L{n}` status out of **both** homes — this table and `AGENTS.md`'s summary line — and diffs them. A
+> rule ratified in one and candidate in the other, or present in one and absent from the other, is an
+> error. **This is L23's fourth shape applied to our own two homes:** `AGENTS.md` restates this table
+> without marking itself a restatement, so neither document is readable as a copy and the divergence is
+> invisible from both. The gate makes the next sweep a `make check` instead of a lucky edit.
 
 > **L17–L25 were added to this table on 2026-08-31 — the third recurrence of the drift the two notes
 > below describe, and the largest.** Nine rules, **six of them RATIFIED**, were earned and written up

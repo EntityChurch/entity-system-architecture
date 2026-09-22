@@ -174,11 +174,16 @@ the working detail; **the charter is the set.**
   the next day, running the opposite direction)* · **L17** a normative MUST that names a value **or a
   capability** does not land without a declared site a peer can carry and a conformance check
   *(**ratified** 2026-08-20 — second shape)* · **L18** a cohort
-  implementation is not evidence that a cohort ruling is right *(candidate)* · **L19** say which kind
+  implementation is not evidence that a cohort ruling is right — **and a citation labelled
+  *corroboration* is verified like any other claim or dropped** *(**ratified** 2026-09-02 — second shape:
+  a corroboration citation, never opened, false about both peers it named)* · **L19** say which kind
   of "vector," and state its satisfaction mode — **open the section that owns the surface, not just
   §7.0's index** *(**ratified** 2026-08-20 — second shape)* · **L20** an example set cannot falsify a
   rule it does not span *(candidate)* · **L21** a fold is a delivery to every seat that reads the corpus —
-  sequencing that lives only on the board does not travel with it *(candidate)* · **L22** a peer's true
+  route by who **consumes** it (implements, cites, **pins**), name the **divergence unit** when a
+  dormant field goes load-bearing, and scope a relay by the fold's **diff**, never by what the seat
+  shipped *(**ratified** 2026-09-01 — second shape, a guide consumed by a pin; third and fourth
+  shapes 2026-09-02)* · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
   party that moves it owns re-checking it, whoever they are and however short the move
   *(**ratified** 2026-08-31 — second shape: the filing seat as mover, one slot away in one file)* ·
@@ -190,7 +195,11 @@ the working detail; **the charter is the set.**
   canonical table, invisible from the authority)* ·
   **L24** a reference is only a pin if it resolves in the history **and the layout** the receiving
   audience gets — a `dev` SHA never resolves on public `master`, and a sibling path never resolves in
-  a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)*.
+  a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)* ·
+  **L25** read the section for its **examples**, not only the clause you came for — a tightening that
+  closes no hole is not conservative *(candidate)* · **L26** the cohort discovers by **building**;
+  arch's failure mode is not folding what they built, so do not write a constraint telling seats to
+  hold off *(**ratified** 2026-09-02 — operator correction)*.
 
 - **L8's fifteenth form — the spec's own pseudocode, read as a conclusion about the implementations.
   It is the artifact class an arch session trusts without checking, because we wrote it.**
@@ -839,6 +848,116 @@ the working detail; **the charter is the set.**
   > edited. A guide with a `[MUST]` in it is a build input to whoever pinned it, whatever the folder
   > it lives in says.
 
+  > **Third shape, 2026-09-02 — ENFORCING A DORMANT FIELD IS A FLAG DAY, and the ruling has to say so
+  > because only arch can see it coming.** `[self-found, folding FM-2; the partition is recorded in
+  > `entity-core-py`'s own source comment]`
+  > **Corrected the same day by the operator, and the correction is the more important half — see the
+  > note below this entry. The original wrote the lesson as "the seats should not have implemented
+  > ahead of the fold." That is wrong, and it inverted the actual failure.**
+  > FM-2 §2 ruled `ENTITY-CORE-PROTOCOL` §4.7 row 1 — *"not aspirational; §4.5 already pins
+  > `protocols` as intersection-must-be-non-empty, so this is a conformance gap, and **the row needs
+  > no spec change.**"* Correct on every clause. What it did not say is that the field **had been read
+  > by nothing**, so the moment the first seat enforced it, every seat still advertising a wrong value
+  > became unreachable. `entity-core-py` had advertised `entity-core/7.0` since Genesis — invisible
+  > for the life of the project — and **the day `entity-core-go` landed the check, py could no longer
+  > dial a go peer.** Same-day fix, and the break is what surfaced the Genesis defect, so the outcome
+  > was good. **The outcome was not the sequencing.**
+  > **Why it is L21 and not a new letter.** L21's property is that arch cannot scope who a corpus
+  > change reaches. The first shape is a fold reaching a seat that should have waited; the second is a
+  > fold reaching a seat through a pin nobody knew existed. **This is the same blindness on the time
+  > axis: not *who* the fold reaches but *in what order*, and what is broken in between.** A ruling
+  > that changes what peers **accept from each other** has a cost that exists only during adoption and
+  > is invisible in both the before state and the after state — which is exactly why no review catches
+  > it.
+  > **The tell is mechanical and cheap: was the field previously read by anything?** A field that
+  > nothing enforces cannot hold a wrong value *visibly*, so wrong values accumulate in it silently and
+  > **the first enforcement is a discovery event, not a no-op.** *"This is a conformance gap, not a
+  > spec change"* is precisely the sentence that makes a flag day sound free — it is true, and it
+  > describes the destination while saying nothing about the transition.
+  > **The other half, and it is L16 again.** Both seats recommended a cohort ruling on the adjacent
+  > arm (`protocols` absent/empty) having searched **only the three ground-up trees**; the generated
+  > tier already implemented the opposite, and passes conformance doing it. **Two seats agreeing about
+  > a dormant arm is not a cohort position** — and `entity-core-py` said so themselves, in the filing,
+  > while still recommending it: *"two seats declining to widen an unruled divergence, not
+  > convergence."* When a seat writes that sentence, it is the finding, not a caveat on it.
+  > ***Enforcement point:*** **a ruling that makes a previously-unenforced field or check load-bearing
+  > names its DIVERGENCE UNIT — what refuses what, between the first seat landing it and the last.**
+  > Mechanically: for any ruling that changes what a peer **accepts** (rather than what it emits), ask
+  > *what breaks during adoption*, and if the answer is "connections," say so in the fold text. **The
+  > information is arch's to supply and the sequencing is the seats' to choose** — they are the ones
+  > who know what is deployed against what. What is forbidden is arch knowing a ruling is a flag day
+  > and not saying it, so the seat that gets refused is the one who finds out.
+
+  > **Fourth shape, 2026-09-02 — the relay scoped the fold by WHAT THE SEAT HAD SHIPPED instead of by
+  > the fold's DIFF, and the sentence that did the damage was the reassuring one.**
+  > `[caught by `entity-core-rust`, whose rule this is]`
+  > `0.8.2.4` split §4.7 row 10 and, in the same edit, **moved the state half's status 400 → 409.**
+  > Everyone landed the unknown-**name** half. **Nobody was told about the status move** — not by
+  > arch's packet, not by go's. Arch's relay section said *"rows 1 and 10 as you built them are
+  > conformant; nothing you shipped moves."* **Both clauses true. Neither is a statement about a row
+  > the seat had never shipped**, and rust was answering an out-of-order input with `400
+  > handshake_failed` and a second `hello` with `400 authentication_failed` — **pairs that appear in
+  > no row of §4.7 at all.**
+  > **Why this is not L22 and not the third shape.** L22 is a *borrowed* sentence re-pointed at a new
+  > subject; this sentence is arch's own and about the right subject. The third shape is about what
+  > breaks *during* adoption. **This is a scoping failure at the moment of relay: the worklist was
+  > derived from the recipient's current state rather than from the change**, so every row the seat
+  > had already implemented was checked and every row it had *not* was invisible. **A fold's audience
+  > is defined by the diff, and a seat's existing behaviour is exactly the wrong index for it.**
+  > **The tell is the genre of the sentence.** *"Nothing you shipped moves"* is a **reassurance**, and
+  > reassurances are not audited the way instructions are — nobody re-derives a sentence whose
+  > function is to let the reader stop reading. It is the same property that makes *"filed, not
+  > yours"* (L13's second shape) worse than silence: **a packet that tells a seat where not to look
+  > produces confident wrong work.**
+  > ***Enforcement point, and it is rust's, adopted verbatim:*** **before scoping a relay, read the
+  > fold commit's own diff and its §9.1 conformance block, and report the items the relay did not
+  > name.** A relay that cites a spec **version** has a boundary — *the version's diff* — and the
+  > recipient's worklist is that diff minus what they already do, **computed in that order**. Never
+  > write a clean bill of health for a fold without having read the fold.
+
+- **L26 — the cohort discovers by building. ARCH'S failure mode is not folding what they built, and
+  a rule that tells them to wait is a rule pointed at the wrong party.**
+  `[**RATIFIED** 2026-09-02 — operator correction, on a constraint arch had written into two proposals
+  and three packets in two days]`
+  Arch wrote ***"no seat implements ahead of the fold"*** into FM-2 §7 and PD-2 §8, routed it three
+  times, and then — when all three seats built anyway and one adoption briefly partitioned the cohort
+  — recorded the partition as *the constraint was right and they ignored it.* **The operator's
+  correction:** draft to implementation to feedback to folding is practically the normal way of
+  working here, and discovery happens through implementation a lot. The failure on this side is
+  the opposite one: not folding something that has been adopted and implemented, and leaving it
+  in a proposal instead.
+  **The lifecycle is not proposal-then-build. It is proposal → build → feedback → fold**, and the
+  build is where the proposal gets tested. Every strong finding in this record arrived that way: go
+  refuted Edit E **by building it**; go found PD-2's check constructible **by tracing a driver arch
+  had not imagined**; py found the §4.5 vocabulary gap **by implementing row 1**; rust corrected a
+  probe **by running it**. A rule forbidding that would have suppressed all four.
+  **Where the bad rule came from, and it is worth knowing because the impulse recurs.** It was
+  reverse-engineered from a real cost — staggered adoption partitioned the cohort for a few hours —
+  and arch reached for the remedy that constrains *the other party*. **The same cost has a remedy on
+  arch's side** (name the divergence unit, above) which costs the cohort nothing and removes no
+  discovery. *When a failure has a remedy that restricts peers and a remedy that adds information,
+  the second one is nearly always the right one, and the first is nearly always the one arch reaches
+  for* — because arch writes the rules and peers do not.
+  **The real failure is the mirror image and it is arch's.** A proposal whose deltas the cohort has
+  already implemented and confirmed, left sitting in DRAFT, makes the corpus a **trailing indicator
+  of its own cohort** — the seats are conformant to something the spec does not say yet, new seats
+  read the stale text, and the proposal accumulates the corrections that should have been folded.
+  **Measured 2026-09-02: nine proposals sat in `active/` whose own status header said the edit had
+  landed**, some for weeks — the `spec ledger` `proposal-state-mismatch` rule had been reporting
+  exactly this and the count had never been burned down. All nine verified against the specs and
+  moved the same session; the ledger gate went to **0 errors for the first time.**
+  **This is L13's fourth axis** — *an arch-owned item whose remaining work is an EXECUTION rather
+  than a decision is done in the session that decides it* — arriving on the fold. The question that
+  axis asks (*what would I have to learn before doing this?*) answered **nothing** for all nine.
+  ***Enforcement point:*** **when a ruling has been implemented and confirmed by the seats it
+  addresses, folding it is the same session's work, not a backlog row.** A proposal may stay DRAFT
+  only while something is genuinely unknown — and *"waiting for the seats to confirm"* stops being
+  unknown the moment they report. Mechanically checkable and already built: **`spec ledger`'s
+  `proposal-state-mismatch` count is the fold debt, and it ratchets to zero.** Corollary for the
+  drafting side: **do not write a constraint into a proposal that tells seats to hold off building.**
+  State what is unknown and what would resolve it; the seats decide whether to build against a draft,
+  and their answer is usually yes, and that is the point.
+
 - **L20 — an example set cannot falsify a rule it does not span.**
   `[candidate, 2026-08-19 — caught by `entity-browser-rust`; third instance of one shape]`
   Auditing their `is_broad` classifier, arch checked it against **§4.1a's six default rows**, found one
@@ -917,6 +1036,43 @@ the working detail; **the charter is the set.**
   > whether the majority position is one a peer arrives at by **deciding** or by **falling through** —
   > and note that a source read cannot tell the difference, which is why keystone's control existed
   > and why it is the thing to ask a measuring seat for.
+
+  > **Second shape, 2026-09-02 — and it ratifies. The citation was labelled CORROBORATION, which is
+  > exactly why nobody checked it, and it was false about both peers it named.**
+  > `[caught by `entity-core-go`, who read the source; arch had not opened either file]`
+  > `ROUTING-2026-09-02-d` §3 grounded the FM-2e ruling on **L16**: *"keystone's csharp
+  > (`ConnectHandler.cs:70`) and typescript (`connect-handler.ts:80`) already require the field and pass
+  > conformance."* Both peers do the **opposite** — `Ecf.Require` throws a generic handler error on an
+  > absent field, and an **empty** array falls to `!protocols.Contains(version)` → **`incompatible_protocol`**,
+  > which is the reading `0.8.2.4` forecloses in its own sentence. Arch cited the anchor as evidence for
+  > reading 2 while the anchor implements reading 3.
+  > **Why it is a distinct shape and not another tally.** The first incident is **circular** — our own
+  > cohort's code offered as validation of our own ruling. This one is **false**: the corroboration was
+  > not weak evidence, it was a claim about two files nobody had opened, published to the cohort with a
+  > `file:line` attached. **A `(path, line)` in a corroboration clause reads as a source read and is
+  > indistinguishable from one.**
+  > **The mechanism, and it is the transferable half: a supporting citation gets LESS scrutiny than the
+  > argument it supports, while carrying the same factual weight.** Review effort tracks what a sentence
+  > is load-bearing *for*, not whether it is *true* — so labelling a clause "corroboration, cited last
+  > per L18" **lowers its scrutiny without lowering its cost if wrong.** The rule that was supposed to
+  > demote cohort evidence had, in practice, created a class of claim that is published unchecked. That
+  > is L18 being obeyed in form and defeated in substance.
+  > **The ruling did not move, which is the trap and the reason it nearly stood.** FM-2e derives from
+  > §4.5 plus §4.7's own `invalid_request` class list (*"a missing or empty required negotiation field
+  > (§4.5)"*) — landed text, both legs, no cohort behaviour anywhere in it. **A false clause under a
+  > correct conclusion breaks nothing downstream**, so only a seat that opens the file finds it — the
+  > same property recorded in L8's fourteenth and fifteenth forms, now on the corroboration axis.
+  > **And it had a live consequence the derivation did not:** because the anchor implements reading 3,
+  > `entity-core-go`'s `connect_absent_protocols` **FAILs every generated peer** — correctly. Had the
+  > false clause stood, the obvious response to that red run would have been *"the check is wrong,"*
+  > since arch had published that these peers already conform.
+  > ***Enforcement point, and it is the cheap one:*** **a corroboration citation is verified in the tree
+  > at a named commit exactly like a load-bearing one — or it is deleted.** Deleting is usually right:
+  > a ruling that still stands without it never needed it, and a ruling that needs it was not derived
+  > (which is L18's first shape). Mechanically checkable in review: **a cohort `(repo, path, line)` in a
+  > clause marked *corroboration*, *supporting*, *cited last*, or *for what it is worth*, with no
+  > commit beside it, is the violation.** The habit is one question before publishing a supporting
+  > clause — ***if this sentence were false, would I want to know?*** If yes, check it. If no, cut it.
 
 - **L19 — say which kind of "vector," and check the corpus before inventing the taxonomy.**
   **`[RATIFIED 2026-08-20 — second shape: a class declared, from the right table, wrong row, without
@@ -1704,6 +1860,26 @@ the working detail; **the charter is the set.**
   claim.** Name the repo, never the language, and when the claim is an absence, name every tree searched
   and the commit each was searched at.
 
+  > **Extended to spec-gap claims, 2026-09-02 — `entity-core-keystone`'s rule, adopted verbatim
+  > because it is better than arch's and it binds arch harder than it binds them.**
+  > `[F51 withdrawal, keystone `4736e69`]` They filed *"the spec answers this nowhere we can find"*
+  > about a MUST that was **in the snapshot their own finding header cited**, four lines from where
+  > they were reading. The search used the vocabulary of the **question** (`peers`, `target_peer`,
+  > `check_permission`, `extract_peer`); the rule is written in the vocabulary of **addressing** and
+  > contains none of those four terms.
+  > **Their diagnosis is the transferable half: a negative claim cites nothing, so nothing can
+  > contradict it.** A wrong *positive* claim about the spec is caught by the next person to read the
+  > cited line. *"The spec is silent"* names no line, is re-checked by nobody, and sat published across
+  > three of their documents for two days. `AGENTS-STANDARD` already says **prove a negative before you
+  > claim it** — it says to **do** the search and never to **show** it, and that gap is the whole
+  > failure.
+  > ***Enforcement point:*** **a claim that the corpus is silent on something records WHICH SECTIONS
+  > WERE READ, by number** — which converts an unfalsifiable negative into a reviewable one. **And
+  > grep for the DISPOSITION you would expect, not only the concept**: one `grep -c invalid_request`
+  > over the snapshot returns 1, and it is the answer. **This lands hardest on arch**, which is the
+  > ecosystem's heaviest publisher of negatives — *"the string appears in no ground-up tree," "it
+  > occurs in one place in the corpus," "no seat implements this."*
+
   **Twelfth form — an assignment, read as a conclusion about the path that reaches it. It produced a
   cohort-facing measurement that was backwards.** `[2026-08-17 — caught by `entity-core-rust`, both legs
   validated by `entity-core-go`]` `PROPOSAL-CAPABILITY-MINT-TEMPORAL-CEILING` §3.1 measured three impls
@@ -1943,6 +2119,28 @@ reconstruction pass.
   That is **L24 on the time axis** — an identifier that does not survive the boundary cannot carry a
   claim across it — and it is now **detected and reported per document as COULD-NOT-LOOK**, never
   measured through. What survives is 20, every one of them the RELAY rule landed the day before.
+
+- **`spec charter` — the discipline set, checked against itself. Run it whenever you touch a rule.**
+  The set lives in **two homes** — `docs/DISCIPLINE-CHARTER.md` (canonical) and this file's summary
+  line (always in context) — and **neither says it is a copy of the other**, so a divergence is
+  invisible from both. That is **L23's fourth shape pointed at the two documents that define L23**.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py charter    # 0 clean · 1 divergence · 2 could-not-look
+  ```
+
+  **The drift recurred four times before it was gated** — twice a release behind, once **nine rules
+  (six RATIFIED) missing for twelve days**, once four stale rows *two days after* that was fixed. Each
+  was found by someone editing the file for another reason, and each remedy was a habit: *"the rows
+  land the same session the rule is earned"* — the habit that had just failed, restated as a
+  resolution. **The ladder's own §3 says a discipline with no enforcement point does not count, and it
+  had never been applied to the document that contains the ladder.**
+
+  **An unmarked rule is UNMARKED, not CANDIDATE** — L1/L2/L4/L5 are the founding set and carry no
+  marker; firing on them would be four noise findings against three real ones. The count is reported
+  instead. **Its first run caught the direction nobody watches:** this file's summary said `(candidate)`
+  for **L21**, which its *own body section* had ratified, and was missing **L25** and **L26** — the
+  canonical table was right and the always-in-context document was wrong.
 
 - **`spec ledger` is a separate run and is NOT in `check`** — it gates the counts
   `docs/proposals/INDEX.md` **and `docs/research/INDEX.md`** declare against the directories they
