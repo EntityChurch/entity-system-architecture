@@ -40,23 +40,41 @@ network/resolution family still converging (M2–M4, 🟡) to early proposals (M
 The mature core library. 3-way converged + gated by conformance vectors (`validate-peer`
 categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1 surface.
 
+> **Each spec's own `**Version**` header is authoritative for that document. This table restates those
+> headers for navigation and is not the authority** — if the two disagree, the header wins and this
+> table is the defect. Re-synced against the headers at the 0.8.2 line.
+
 | extension | ver | what it provides |
 |---|---|---|
+| `EXTENSION-TREE` | 4.3 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
 | `EXTENSION-CONTENT` | 3.6 | content-hash address space, closure materialization, partial-sync |
 | `EXTENSION-TYPE` | 1.2 | runtime type registration |
-| `EXTENSION-REVISION` | 3.8 | revision chains, diff/merge-config, deletion markers |
-| `EXTENSION-SUBSCRIPTION` | 3.16 | reactive subscriptions, cross-peer mirror |
-| `EXTENSION-CONTINUATION` | 1.21 | forward continuations, structural-transform chains |
+| `EXTENSION-REVISION` | 3.12 | revision chains, diff/merge-config, deletion markers |
+| `EXTENSION-SUBSCRIPTION` | 3.18 | reactive subscriptions, cross-peer mirror |
+| `EXTENSION-CONTINUATION` | 1.23 | forward continuations, structural-transform chains |
 | `EXTENSION-INBOX` | 5.9 | message inbox, delivery |
-| `EXTENSION-HISTORY` | 1.6 | parent-ref history walk |
+| `EXTENSION-HISTORY` | 1.7 | parent-ref history walk |
 | `EXTENSION-QUERY` | 1.7 | entity query / path-prefix |
-| `EXTENSION-COMPUTE` | 3.22 | expression evaluation, the lowering toolkit |
+| `EXTENSION-COMPUTE` | 3.27 | expression evaluation, the lowering toolkit |
 | `EXTENSION-GROUP` | 1.4 | group membership |
 | `EXTENSION-IDENTITY` | 3.10 | identity convention over the attestation substrate |
 | `EXTENSION-ATTESTATION` | 1.3 | generic attestation edge substrate |
 | `EXTENSION-QUORUM` | 1.2 | K-of-N quorum primitive |
 | `EXTENSION-CLOCK` | 1.3 | logical/wall clock |
 | `EXTENSION-ROLE` | 2.0 | role assignment + delegation (M4→M5: v2.0 root-cap green round pending) |
+
+> **How an extension attaches, which is not visible from a version column and which an implementer
+> needs before choosing an order.** Most extensions register a **new handler at a new pattern**
+> (`system/content/*`, `system/inbox`, `system/query`, …) and install through `SDK-OPERATIONS` §11.6's
+> `register_handler` without touching anything the core peer already bootstrapped.
+> **`EXTENSION-TREE` is the exception**: its §9 adds `snapshot`/`diff`/`merge`/`extract`/`create`/
+> `destroy` to core's **existing** `system/tree` handler rather than registering its own, and
+> `SDK-OPERATIONS` §11.6 returns **409** on a pattern collision and forbids silent overwrite — so
+> installing TREE onto a conformant core peer is not yet expressible through the registration
+> primitive. `EXTENSION-TYPE` may be in the same class. `EXTENSION-TREE` §9 additionally records that
+> `system/tree/snapshot/node` and `system/tree/tracking-config` require bootstrap type IDs in the core
+> protocol's table. **Both are open specification items**; an implementer building TREE onto a
+> separately-built core peer should expect to need them resolved.
 
 **Phase note:** ROLE v2.0 is the one Stage-A item with a pending convergence round (root-cap
 shape); promote to M5/🟢 on green. The identity stack (IDENTITY/ATTESTATION/QUORUM/GROUP) is a
@@ -70,11 +88,12 @@ Landed as specs; implementation converging. This is the **release-critical work-
 | extension | ver | maturity | phase / open work |
 |---|---|---|---|
 | `EXTENSION-NETWORK` | 1.6 A14 | M4 | transport family; v1 publish/relay gate 3-way green. Base wire framing is core. Amdt 8 (session entity) / 11 (dispatch-fallback) / 13 (reachability facts) / 14 (`establish_live` seam) folded. |
-| `EXTENSION-RELAY` | 1.2 | M4 | dispatch-fallback seam folded; R8 raw-frame impl gaps tracked (Rust/Py) |
+| `EXTENSION-RELAY` | 1.3 | M4 | dispatch-fallback seam folded; §8 store bounds (retention clamp + storage refusal) landed; R8 raw-frame gaps tracked. **2 of the 4 modes still carry no normative text** |
 | `EXTENSION-ROUTE` | 1.0 | M3 | source-routed multi-hop; Go build-tested, cohort catching up |
-| `EXTENSION-SUBSTITUTE` | 1.0 | M4 | CDN release v1 (Tier-1) — Mechanism-A storage substrate |
-| `EXTENSION-REGISTRY` | 1.2 | M2→M3 | substrate + local-name + peer-issued resolve landed; **v1 NOT complete** (see Stage E) |
-| `EXTENSION-DISCOVERY` | 1.0 | M2→M3 | mDNS peer-finding; impl-ready |
+| `EXTENSION-SIGNALING` | 1.1 | M3 | `system/signaling` rendezvous carrier + `system/nat/*`; built three ways, unwrapped surface + punch not yet built |
+| `EXTENSION-SUBSTITUTE` | 1.3 | M4 | CDN release v1 (Tier-1) — Mechanism-A storage substrate |
+| `EXTENSION-REGISTRY` | 1.21 | M2→M3 | substrate + local-name + peer-issued resolve landed; **v1 NOT complete** (see Stage E) |
+| `EXTENSION-DISCOVERY` | 1.1 | M2→M3 | mDNS peer-finding; impl-ready |
 | `EXTENSION-ENCRYPTION` | 1.0 | M2→M3 | self/peer/group; BLOCK-0 byte-pin green 3-way; **BLOCK-1 end-to-end gating v1.0** (Stage E) |
 
 **Phase ordering in this family:** NETWORK transport → RELAY/ROUTE forwarding → REGISTRY/DISCOVERY

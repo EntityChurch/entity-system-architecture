@@ -447,6 +447,87 @@ the working detail; **the charter is the set.**
   > probe defect is found in one harness, grep every other harness for that probe by name in the same
   > session.**
 
+- **L8's eighteenth form — TWO MECHANISMS, ONE OBSERVABLE. The measurement was real, correctly taken,
+  and credited to the gate that did not fire. And the corpus already carried the refutation.**
+  `[2026-09-01 — self-found, reviewing a sign-off; the finding underneath it is PD-2]`
+  Arch signed off the Edit E withdrawal with *"the network bound is carried entirely by `peers` —
+  omitted, **still checked, measured on the wire in all three trees**."* **The wire run was real and it
+  measured a different gate.** Post-PD-1h a foreign-namespace EXECUTE is refused at **canonicalization**
+  (§6.5 step 3), so the `400` that came back was the routing gate, not §5.2 Dimension 4 — and
+  **`ENTITY-CORE-PROTOCOL` §1.4 says so in terms**, in text arch had folded eight days earlier: *"the
+  check is not redundant here; it is **unreachable** here."* Measured properly, by source read at named
+  commits, **no ground-up tree runs the check at all**: go `50f2140` `local.go:316` returns twenty-one
+  lines above its ceiling check, rust `b754508` `connection.rs:2969` returns and **documents** the
+  exemption, py `bac0244` `peer.py:4648` returns above the line that computes `target_peer`.
+  **Why it is not the twelfth form.** That one is *a line of code is an artifact; what a path does is a
+  claim* — the guards **before** a site. This is the inverse and it has no site to read: **two
+  independent gates on one path produce a byte-identical observable, and a black-box measurement cannot
+  attribute it.** A green probe is evidence that *something* refused. Nothing more.
+  **The tell that was available and unused:** the same session had already written that PD-1h's gate
+  runs *before* `check_permission`. **Arch held both sentences and never asked whether the second
+  invalidated the first measurement** — the same conjunction failure as L8's sixteenth form, one
+  session tight instead of two documents apart.
+  **The cost had it stood:** a normative rationale in §6.2 (*"is still checked … consequently
+  **cannot** dispatch at a foreign peer"*) resting on a measurement of the wrong gate, while three
+  seats ship a live gap — and `entity-core-keystone` had been told their *"the dimension is a no-op"*
+  premise was false, when it was **true of every implementation** and they could not have seen why from
+  the wire.
+  ***Enforcement point:*** **when two mechanisms on one path can produce the same observable, cite the
+  line that fired, not the status code** — and the measurement is evidence for neither until the other
+  is disabled, the paths distinguished, or the refusal attributed in the peer's own logs. Mechanically
+  checkable in review: **a claim naming a specific check, evidenced only by a response status, where
+  another gate on the same path returns the same status, is the violation.** This is
+  `entity-core-go`'s positive-control discipline pointed at **attribution** rather than polarity — a
+  negative control proves a gate *can* fire, and neither control proves it is the gate that *did*.
+  **And the general half, which is the older lesson arriving on a new noun:** *a spec claim about what
+  an implementation does is checked in that implementation's tree* (L8's fifteenth form) — **including
+  when arch has a green probe in hand.** A passing measurement is the most persuasive form the
+  unchecked claim takes, because it looks like the tree was opened.
+
+- **L8's nineteenth form — a generated cohort's uniform absence of a property is a fact about the
+  GENERATOR'S INPUT SET, not about the specification. The artifact read here is 46 peers, and it is
+  the largest one the ecosystem has.**
+  `[2026-09-01 — self-found, auditing keystone to open the `entity-system-generator` track]`
+  The inference that was one step from being published: *46 peers were generated from the spec; none of
+  them exposes a way to install a handler; therefore the protocol has no extension seam and the new repo
+  must design one.* **Every clause of the premise is true and the conclusion is false.**
+  `SDK-OPERATIONS` §11.6 specifies the seam in full — `register_handler(spec, body) → Handle`, four
+  ordered mutations, tree-before-index with compensation, 409 on collision, handle lifecycle, and an
+  explicit V1→V2 authorization progression. It has simply never been in
+  `entity-core-keystone/protocol-generator/shared/spec-data/`, which holds **three files** — the whole
+  of `entity-core-protocol/specs/` — and has only ever held those. **The generator's boundary is the
+  repo boundary**, so its output scope was decided by its input scope, and the peers are evidence about
+  the snapshot rather than about the corpus.
+  **Why it is L8 and not a new letter.** L8 is *an artifact is not a conclusion about the thing it
+  names.* Its prior forms read a filename, a `cfg` line, a doc comment, an SDK module, a repo name, our
+  own pseudocode, a tool's contract block. This one reads **an entire generated cohort**, and the
+  inference crosses the same category boundary: *what a generator produced* is a claim about its inputs
+  and its phase contracts; *what the protocol specifies* is a claim about the corpus. Minting L26 here
+  would be the *"adding a rule is not doing the work"* move L0 rule 4 forbids.
+  **The aggravating half, and it is what makes the form worth recording: the absence is not even
+  uniform.** By source read of five peers — `csharp` (`Peer.RegisterHandler`) and `typescript`
+  (`Peer.registerHandler`) expose a public bind-a-body registration API; `go`'s `Peer` exports exactly
+  `Listen`/`Identity`/`Store`/`LocalPeer`; `rust`'s and `haskell`'s `register_handler` is the §6.13(a)
+  **wire** operation, not an install seam. So *"no generated peer can host an extension"* would have
+  been wrong twice over — **wrong about the spec, and wrong about the cohort** — and both errors come
+  from the same shortcut of reading output instead of input. **A cohort is a sample until someone counts
+  it**, and this one had never been counted on this axis because no gate asks.
+  ***Enforcement point:*** **before concluding that a generated artifact lacks a property, read the
+  generator's input manifest and its phase contracts, and name the one that omits the property.** For a
+  pinned-snapshot generator the manifest is a file you can `ls`. Mechanically checkable in review: **a
+  sentence of the form "the generated peers do not X" with no citation to the input snapshot or to the
+  phase contract that excludes X is the violation.** The constructive half: **a generator's input scope
+  IS its output scope, so extending the output means extending the snapshot first** — which is exactly
+  what makes `entity-system-generator` a different repo rather than a keystone phase.
+  **The corollary underneath the rule, and it is the finding the form was extracted from.** Keystone
+  publishes a **capability** claim in four places — *"the community installs those atop a generated
+  peer"* — and the whole conformance apparatus around it measures **behaviour under refusal**. *A gate
+  that scores what a peer refuses cannot see what a peer cannot be extended with.* That is keystone's
+  own vacuous-green family (§4.8, *"the oracle passes a peer that doesn't do the thing"*) with the
+  polarity turned outward, and the cheap habit it earns is one question at publication time: ***which
+  sentence in this document is a claim about what someone else can do with our artifact, and what
+  measures it?*** **Candidate: one incident.** Honor it; do not claim it generalizes.
+
 - **L25 — read the section for its EXAMPLES, not only for the clause you came for. And a tightening
   that closes no hole is not conservative.**
   `[candidate, 2026-08-31 — `entity-core-go` refuted a ruling by building it, same day it was folded]`
@@ -722,7 +803,41 @@ the working detail; **the charter is the set.**
   primitive that is whichever seat leads new features. Mechanically checkable: a fold whose spec belongs to
   a non-ACTIVE track, with no same-session routing to the tier that implements it, is the violation. The
   cheap habit is one question at fold time — ***who will read this version bump as an instruction?***
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
+  ~~**Candidate: one incident.**~~ **Ratified 2026-09-01 on the second shape below** — a guide, and a
+  consumer relationship no arch process looks for. The enforcement point is the broadened one there.
+
+  > **Second shape — the fold was a GUIDE, the consumer was a PIN, and the seat found it themselves
+  > because their manifest hash stopped matching. Arch never knew it had shipped into someone's
+  > build.** `[2026-09-01 — `entity-core-keystone`, during the sweep arch had just authorized]`
+  > The de-versioning fold rewrote **`GUIDE-CONFORMANCE` §5.1** — a `[MUST]` retiring integer corpus
+  > versions for `(spec-version, corpus-name, artifact sha256)` — plus a new §5.1a. The document moved
+  > `7d59fee6… → f7d4191d…`. **`entity-core-keystone` pins arch documents by hash in
+  > `spec-data/v0.8.2/MANIFEST.md`**, and that manifest still pinned the old one. Their sentence is
+  > the finding: *"that MUST governs how this repo vendors its test corpora, so it is a change to **our
+  > inputs**, not to arch's prose — a pinned input that moves silently is the defect the pin exists to
+  > prevent."*
+  > **Why the first shape's enforcement point does not reach it.** L21 as written asks, at fold time,
+  > *who will read this version bump as an instruction* — a question about **spec** changes and the
+  > seats that **implement** them. **This fold changed a guide, and guides read as arch's own
+  > documentation**: no version bump, no implementers, nothing that looks like a work order. The
+  > delivery still happened, silently, into a build.
+  > **The generalizable half is the consumer relationship, not the document class.** A seat can consume
+  > an arch document three ways — **implement** it, **cite** it, or **pin/vendor** it — and only the
+  > first is visible from arch's side. **A pin is a consumer relationship that is invisible to the
+  > party being pinned**, by construction, and it is the one that breaks silently: an implementer who
+  > misses a change is merely behind, while a pinner who misses one has a manifest asserting a
+  > verification it no longer performed.
+  > **What makes this ratify rather than tally:** the first shape is arch **over**-delivering (a fold
+  > reaching a paused track), this is arch **under**-delivering to a seat it did not know was
+  > downstream — and both come from the same missing question. The fold asked *who implements this*
+  > and never *who consumes this*.
+  > ***Enforcement point, now binding and broadened past specs:*** **before folding a change to any
+  > canonical document — spec, guide, schema, corpus — grep the cohort for seats that PIN or VENDOR
+  > it, not only seats that implement it, and route to them in the same session.** Mechanically
+  > checkable and cheap: **the pins are declared** — `grep -rl <doc-name>` across the cohort's
+  > `MANIFEST`/`spec-data`/vendor directories names every seat holding a hash of the file being
+  > edited. A guide with a `[MUST]` in it is a build input to whoever pinned it, whatever the folder
+  > it lives in says.
 
 - **L20 — an example set cannot falsify a rule it does not span.**
   `[candidate, 2026-08-19 — caught by `entity-browser-rust`; third instance of one shape]`
@@ -926,6 +1041,38 @@ the working detail; **the charter is the set.**
   built**, and recorded as owed in `docs/COHORT-OPEN-ITEMS.md` §2.
   ~~**Candidate: one incident family, four seats.**~~ **Ratified 2026-08-20 on the second shape
   above** — the capability-encoding axis. The enforcement point is the broadened one stated there.
+
+  > **Third shape, 2026-09-01 — the site was declared, the check was declared, and the MUST was still
+  > unimplementable: nobody declared the UNIT. It fired on a fold that was one day old and had passed
+  > both of L17's existing tests.** `[filed by `entity-core-go`, spec-issue `2026-09-01-a`]`
+  > `EXTENSION-RELAY` §8.2 (v1.3): *"when accepting a `:put` would exceed the relay's advertised
+  > `limits.max_storage_bytes`, the relay MUST refuse with `storage_full`/507."* §4.1 declares the
+  > site — `max_storage_bytes: u64` — and §8 declares the satisfaction mode, in a note that correctly
+  > flags the bound as an operator knob no wire input can reach. **Both of L17's boxes ticked.** The
+  > MUST turns on a **byte count of the stored entry**, and nothing anywhere says **which bytes**:
+  > inner payload only · store-entry + inner envelope · full on-wire encoded size · relay-wide vs
+  > per-namespace. All four defensible, all different, and the §8 storage-full check *"fills a peer's
+  > store past its advertised `max_storage_bytes`"* — **so how many bytes is past depends on the
+  > metric**, and a check authored to one implementation's reading mis-fills every other relay,
+  > reporting a false FAIL or never reaching the bound at all.
+  > **`u64` is a type. A type is not a unit.** That is the whole rule, and it is why the existing
+  > enforcement point could not see it: *"does the value have a declared site"* is a question about
+  > **where the number lives**, and it is satisfied by a schema line that fixes the number's width and
+  > says nothing about what it measures. **A declared site with a declared type reads as fully
+  > specified** — which is precisely the state that makes a defect survive review.
+  > **The tell is available and mechanical:** the value is a **count of something**. Any MUST whose
+  > threshold is a quantity — bytes, entries, milliseconds, depth, rate — has a unit *and* a
+  > population *and* a scope, and the type declaration carries none of the three. Here the misses
+  > were unit (which bytes), population (deduped or not — the store is content-addressed, so a
+  > hash-equal re-put must cost nothing), and scope (relay-wide or per-namespace).
+  > ***Enforcement point, extending L17's:*** a normative `[MUST]` whose condition compares against a
+  > **numeric threshold** does not land until, beside the declared site and the check, the spec states
+  > **(iii) what the number measures, over what population, at what scope** — and, where the metric can
+  > differ between conformant peers by a constant, **that the check crosses the threshold by a margin
+  > rather than asserting the exact point of refusal.** The last clause is what actually makes the
+  > vector portable, and it was the sentence the filing was really asking for. Mechanically checkable:
+  > *a MUST citing a `u64`/`u32`/integer field with no prose sentence defining its unit is the
+  > violation*, and it is a grep from the schema block to the MUST.
 
 - **L16 — before ruling a cross-impl semantic, search EVERY tier for a seat that already implements it.**
   `[**RATIFIED** 2026-08-19 — second instance the next day, running the opposite direction]`
@@ -1200,7 +1347,58 @@ the working detail; **the charter is the set.**
   > seat's harness directory and read its `--help` (**L7**). If yes, arch takes it in the same session
   > and tells the seat it was taken. A fold gate whose remaining work is *running something* is an
   > unfinished task wearing an assignment.
-  **Candidate: one incident, enforcement point corrected once, fourth axis added, one save recorded.** Honor it; do not claim it generalizes.
+  >
+  > **Second instance of the fourth axis, 2026-09-01 — and it moves the axis from MEASUREMENTS arch
+  > can take to DESIGN arch can do. The deliverable was a list of blockers, and a list of blockers
+  > reads as rigour.** `[operator-raised, and unambiguously: a list of what cannot be done is
+  > infinite, and it is not the deliverable. The answer is the design that fixes it, the amount
+  > of work that takes, and what it needs to look like.]`
+  > The T1 audit measured keystone correctly and closed on four seams, three filed **OPEN** and owned
+  > by a repo that does not exist yet. Ask the fourth axis's question — ***what would I have to learn
+  > before doing this?*** — and the answer was **nothing**: `SDK-OPERATIONS` §11.6 was on disk, the 46
+  > peers were on disk, their `CONFORMANCE-REPORT.json`s were on disk. One session produced the entire
+  > normative delta (D1–D9), the gate design, the per-peer sizing and the extension sequence.
+  > **Everything filed as blocking was authorable the same day by the seat that filed it.**
+  > **And the audit was wrong in the direction the stopping caused.** Re-deriving instead of filing
+  > found that §11.6.1's first three mutations are **built and gated** (eleven `core_register_*`
+  > checks, all 46 peers), that the native/entity-native dispatch fork **already exists**
+  > (`go/src/peer/peer.go:413–420`), and that the real blocker was not the one filed — it is that
+  > §6.2 reserves `system/*` against *"user-installed"* handlers while §9.1 says *"user"* and §11.6.7
+  > says *"application-owned"*, and **none of the three names the party that installs an extension.**
+  > That defect is invisible from the blocker framing, because a blocker list asks *what stops us* and
+  > never *why is this the shape of the obstacle*.
+  > **Why a blocker list is the hardest thing to catch in review.** Each row is measured, cited and
+  > true. Nothing in it is refutable. It passes every check the toolkit runs — and it is still not the
+  > work, because **an obstacle correctly described is an input to a design, not an output of one.**
+  > This is the same asymmetry L25 records for tightenings (*caution reads as rigour*), arriving on
+  > the shape of a deliverable rather than the content of a ruling.
+  > ***Enforcement point, extending the fourth axis to design:*** **an audit does not close on an
+  > obstacle. Every blocker it names carries, in the same session, the fix, the owner, and the size —
+  > or the reason the fix is not yet derivable, stated as something learnable.** *"Blocked on a
+  > proposal nobody has written"* is not a state when arch writes the proposals. Mechanically
+  > checkable at close-out: **a finding owned by arch whose disposition is `OPEN` with no named
+  > blocker outside arch is an unfinished task, whatever its evidence quality** — and the cheap habit
+  > is one question per row: ***if this were the only thing I had to do today, could I finish it?***
+  > If yes, it is not a row.
+  >
+  > **The entry above was written mid-session and is the smallest thing that went wrong that day.
+  > Four more claims were published and withdrawn after it, and NO NEW RULE IS BEING WRITTEN FOR
+  > THEM.** The full accounting is
+  > `docs/status/HANDOFF-2026-09-01-b-what-went-wrong-opening-the-generator-track-and-what-to-audit.md`,
+  > and an audit of that session is owed. In summary: an install seam was called *"unbuilt and
+  > unmeasured"* without opening the conformance reports that gate it in all 46 peers; a
+  > `register_consumer` primitive was proposed for a mechanism `entity-core-go` has shipped since
+  > before the session (`core/store/notifying.go:105`); `SYSTEM-COMPOSITION.md` — 859 normative lines,
+  > the spec for the exact subject — was not opened until the fourth turn; and an extension *ordering*
+  > was prescribed twice off a measurement that said the extensions are independent.
+  > **Three of those are L8 and D12 and read-the-live-worktree, already recorded, already carrying
+  > nineteen worked forms. They did not fire.** The catalog was in context from the first token.
+  > **So the finding is not a twentieth form; it is that the catalog did not function**, and a
+  > twentieth form written by the session that missed the first nineteen is worth nothing. **That
+  > question is the audit's, and this note exists to hand it over, not to discharge it** — which is
+  > L0 rule 4, and this session already broke it once by minting an authoring standard (D10) to close
+  > out a correction.
+  **Candidate: one incident, enforcement point corrected once, fourth axis added and then broadened to design, two saves recorded.** Honor it; do not claim it generalizes.
 
 - **L3 — a partial fold does not get a completeness marker, and `implemented/` is one.**
   `[RATIFIED 2026-08-17 — second incident, a different marker]` v3.11 was the version-bump shape.
@@ -1436,7 +1634,11 @@ the working detail; **the charter is the set.**
   toolkit · **a path prefix** · **a placeholder name in a peer's own prose** · **a document's title,
   read as its scope** · **absence from a tool's output, read as absence from its scope** · **an
   assignment, read as a conclusion about the path that reaches it** · **a repo name, read as a
-  language** · **a capability, read as a conclusion about the call site that would use it**.
+  language** · **a capability, read as a conclusion about the call site that would use it** · **our own
+  normative pseudocode, read as a claim about three programs** · **a tool's contract block, read as
+  what the tool checks** · **a response status, read as which of two gates fired** · **a generated
+  cohort's uniform absence, read as a fact about the specification rather than about the generator's
+  input set**.
 
   **Fourteenth form — a capability, read as a conclusion about the call site. It was the ground under
   a release cut.** `[2026-08-20 — caught by `entity-browser-rust`; their rule, and it is better than

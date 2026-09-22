@@ -1,6 +1,6 @@
 # EXTENSION-RELAY
 
-**Version**: 1.3
+**Version**: 1.4
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
 **Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
@@ -286,7 +286,7 @@ data: {
   endpoints:       [<dial-able endpoint per NETWORK §6.5>],
   limits: {
     max_envelope_size:    u64 (optional),
-    max_storage_bytes:    u64 (optional, Mode S),
+    max_storage_bytes:    u64 (optional, Mode S; the metric is defined in §8.2),
     max_retention_ms:     u64 (optional, Mode S; the retention CEILING, §8),
     forward_rate_limit:   u32 (optional, Mode F; envelopes/sec)
   },
@@ -567,6 +567,16 @@ A Mode S relay MAY enforce a maximum lifetime for stored entries. Where it does:
 When accepting a `:put` would exceed the relay's advertised `limits.max_storage_bytes`, the relay **MUST** refuse the new entry with `storage_full` (507, §4.3) and **MUST NOT** evict an already-accepted entry to make room.
 
 **The two behaviours are cross-peer observable and differently honest.** A 507 tells the sender its message was not taken, and the sender can try another relay from the destination's §3.5 declaration. A silent eviction discards a message the sender was already told was `stored` — the same class of failure §4.3's *deliver-or-signal, never silently drop* posture exists to prevent, arriving after the operation returned.
+
+**What `max_storage_bytes` counts (normative, v1.4).** The bound is on what the relay **persists**, summed **relay-wide**. A `u64` declares the type; it does not declare the unit, and a bound whose metric is inferred is a bound two conformant relays enforce at different points.
+
+- **Counted:** for each stored entry, the ECF byte length of the `store-entry` entity **plus** the ECF byte length of the inner envelope entity it holds — the two entities the relay writes into its own store, in the relay's own home `content_hash_format` (core §1.2).
+- **Counted once per distinct content hash.** The store is content-addressed and deduplicating, so a `:put` of an entry already held adds nothing to the total and MUST NOT be refused on this bound. A metric that counted a dedup twice would not describe the relay's storage.
+- **Not counted:** wire framing, transport overhead, and any encoding the relay does not retain. On-wire size varies with the connection's negotiated active format (core §4.5a) while the stored bytes do not, so a wire-derived count makes one entry cost different amounts on different connections. **The bound is a property of the store, never of the connection that delivered the entry.**
+- **Relay-wide, not per-namespace.** `limits.max_storage_bytes` is advertised once, in one `system/relay/advertise`. A per-namespace bound would require a per-namespace advertisement, and none is declared.
+- **Freed on expiry (§8.1); never freed by eviction** (the MUST above).
+
+**Consequence for the §8 storage-full check.** Because the count is taken in the relay's own stored encoding, two conformant relays MAY differ by a small constant for the same logical content. A conformance check therefore fills **past** the advertised bound by a margin and asserts the refusal; it MUST NOT assert the exact byte at which refusal begins, and MUST NOT be authored against one implementation's constant.
 
 **§8.1's ceiling is what makes this safe, and neither rule is landable alone.** Refuse-without-evict on its own is a denial of service: one putter fills the store with null-expiry entries, nothing may ever be evicted, and the relay refuses everyone forever. **Time bounds the store (§8.1), refusal bounds the burst (§8.2), and no eviction policy is needed as a spec item.** Per-namespace eviction remains an operator affordance and is not a conformance surface.
 
