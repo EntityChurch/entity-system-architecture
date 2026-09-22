@@ -14,7 +14,7 @@ re-tier if it lands.
 
 **Rests on:** `ANALYSIS-REDUCING-FOLLOW-THE-PATTERN-THE-DATA-AND-THE-TWO-ROUTES` (the reduction) ·
 `EXPLORATION-THE-OPERATING-MODELS-AND-THE-ALWAYS-ON-TIER` (why pull is the primary model) ·
-`REFERENCE-PRIOR-ART-BY-AXIS` (the comparators).
+`REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS` (the comparators).
 
 ---
 

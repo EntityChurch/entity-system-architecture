@@ -1,6 +1,7 @@
 # System Revision Extension
 
-**Version**: 3.12
+**Version**: 3.13
+**v3.13:** `pull` against a remote with no versions at the prefix is a `200` with `merge-result.status = "remote_empty"`, not a `500`. Nothing failed internally, and the declared result type carries the outcome.
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
@@ -1568,6 +1569,15 @@ Steps 3-5 repeat until the client has everything it needs.
 
 Fetch + incremental fetch-entities (trie walk, multiple rounds) + merge in one operation.
 
+**An empty remote is a result, not an error `[MUST]` (v3.13).** When the remote has no versions at the
+requested prefix — the fetched head is the zero hash — `pull` returns **`200`** with
+`merge-result.status = "remote_empty"` and `version` absent. It MUST NOT be reported as a `500`:
+nothing failed internally, and a peer that answers `500 remote_empty` tells a caller its own machinery
+broke when the honest answer is that the remote has nothing to send. The criterion is the same one
+`EXTENSION-TYPE` Appendix A applies — ***can the declared result type carry the outcome?*** — and
+`merge-result.status` is precisely the field for it, with `version` already specified as absent for the
+outcomes that produce no merge.
+
 ```
 handle_pull(ctx, params):
   fetch_result = handle_fetch(ctx, params)
@@ -2741,7 +2751,9 @@ system/revision/merge-result := {
     status:    {type_ref: "primitive/string"}
                 ; "already_in_sync", "fast_forward", "already_ahead",
                 ; "merged", "merged_with_conflicts", "would_merge", "would_conflict",
-                ; "converged_identical", "oscillation_detected"
+                ; "converged_identical", "oscillation_detected",
+                ; "remote_empty"  (v3.13 — pull only; the remote has no versions
+                ;                  at the requested prefix. `version` absent.)
     version:   {type_ref: "system/hash", optional: true}
                 ; Content hash of the merge version (absent for already_in_sync/already_ahead)
     conflicts: {array_of: {type_ref: "system/tree/path"}, optional: true}

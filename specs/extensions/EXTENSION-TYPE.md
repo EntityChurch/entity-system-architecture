@@ -1,6 +1,7 @@
 # Type Extension — Normative Specification
 
-**Version**: 1.2
+**Version**: 1.3
+**v1.3:** Appendix A — operation error codes. A typing verdict is a `200`; an unresolvable referenced type is `404 type_not_found` on every analysis operation whose result type cannot carry the outcome, and a `200` `structural` violation on `validate`. Three implementations had converged on this ahead of the fold.
 **v1.2 naming normalization:** the 7 `system/type/constraint/*` type-path leaves are renamed snake → kebab per `STYLE-NAMING-CONVENTIONS.md` §3.2; **parameter keys stay snake** — the path is now `system/type/constraint/min-length`, the field key remains `min_length`. This is **breaking** for these extension type-entity content-hashes; impls land in lockstep at this fold.
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
@@ -1242,6 +1243,50 @@ The type handler needs grants for:
 - Custom format validators beyond the standard set (§4.5)
 - Batching constraint dispatch (multiple constraints per handler call)
 - Constraint validation timing beyond system boundaries (on tree write, on explicit request)
+
+---
+
+## Appendix A: Operation Error Codes
+
+**A typing verdict is not an error.** `validate-result` carries `valid` + `violations`,
+`compatibility-report` carries the comparison, and `reconcile-result` carries the analysis. **The
+analysis outcome is the payload**, so an entity that fails validation, or a pair that compares
+incompatible, is a **`200`** — never a `4xx`. Error codes on these operations are reserved for
+**structural defects of the request itself**: the operation could not be performed at all. A peer that
+returns `400` for `valid: false` has made the operation useless to a caller doing schema exploration.
+
+| Failure | `code` | Status |
+|---|---|---|
+| Params not decodable as the declared request type, **or a required field absent** (`entity`; `type_a`/`type_b` for the §7 pairwise ops) | `invalid_request` | 400 |
+| `entity.type` absent **and** `type_path` absent — no type to validate against | `invalid_request` | 400 |
+| A referenced type does not resolve — **on `compare`, `compatible`, `converge`, `adopt`, `reconcile`** | **`type_not_found`** | **404** |
+| A referenced type does not resolve — **on `validate`** | **none — `200`, `valid: false`, `structural` violation** | 200 |
+| The entity fails validation | **none — `200` with `valid: false`** | 200 |
+| Type comparison finds the pair incompatible | **none — `200` with the report** | 200 |
+| Encode failure building the result | `internal_error` | 500 |
+
+**Rows 1 and 2 are one row, not two.** An earlier draft assigned `invalid_params` to an absent
+required field and `invalid_request` to a malformed one. **In a typed decoder there is no seam between
+them** — both arrive at the same site, and no implementation emits a distinct code. `invalid_params`
+remains a valid `ENTITY-CORE-PROTOCOL` §3.3 code for surfaces that *can* separate the two; this
+operation set is not one of them.
+
+**Why the 404 split, and the criterion that produced it.** The question is ***can the declared result
+type carry the outcome?*** — checkable against §7.1's manifest, not a judgement call:
+
+- `validate` → `validate-result` has `valid` + `violations`, so *"I could not resolve that type"* **is**
+  the analysis outcome and belongs in the payload.
+- `compare` / `compatible` → `compatibility-report` has no field for it.
+- `converge` / `adopt` → `output_type` is a bare **`system/type`**. There is no failure field at all.
+- `reconcile` → `reconcile-result.incompatibilities` describes *fields that could not be reconciled
+  across sources that resolved*; nothing carries a source path that did not resolve.
+
+The criterion generalizes to any operation added later, which is why it is stated rather than only its
+outcome.
+
+**`type_not_found`, not `handler_not_found`.** §3.3's 404 default names the case where **no handler is
+registered**; here a handler is registered and the *type* is missing. This is the more-specific
+defined code §3.3's 500/404 escape requires, and this table is where it is defined.
 
 ---
 

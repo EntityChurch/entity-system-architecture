@@ -8,7 +8,7 @@ review before it is made.
 a generalizable mechanism. Which parts are which, and does the substrate already do it?*
 
 **Method note.** The reduction in §3 is derived from the reference systems
-(`REFERENCE-PRIOR-ART-BY-AXIS`) and then checked against the landed specs, in that order —
+(`REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS`) and then checked against the landed specs, in that order —
 so the pattern is not simply a restatement of what we happen to have built.
 
 ---
@@ -53,7 +53,7 @@ Stripping each system to the mechanism underneath its vocabulary:
 | **Mastodon** | actor URI | — (push) | — | — | **YES — the follower collection** |
 
 **Four of five put the state on the reader.** Mastodon is the outlier, and Mastodon is also the one
-where delivery is `O(followers)` work for the publisher on every post (`REFERENCE-PRIOR-ART-BY-AXIS`
+where delivery is `O(followers)` work for the publisher on every post (`REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS`
 §7). **That is not a coincidence — it is the same fact stated twice.**
 
 ### The reduction

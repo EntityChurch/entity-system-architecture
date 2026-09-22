@@ -1,6 +1,34 @@
-# REFERENCE — prior art by axis: relay · inbox/outbox · DHT · federation · authority · identity
+# REFERENCE — prior art, federated and P2P publishing systems, by axis
 
 **Status:** Reference (design record). Not a proposal, not normative. **A library, not an argument.**
+
+> **Renamed 2026-09-04** from `REFERENCE-PRIOR-ART-BY-AXIS`, on the operator's objection that the old
+> name **claimed a scope it never defined.** *"Prior art by axis"* reads as *all* prior art; it is not,
+> and the gap between the two is what let a whole lineage stay invisible (§0).
+
+## §0 Scope — what is in this file and, more importantly, what is not
+
+**In scope: systems that are deployed, that publish content between independent operators, and that a
+person can join.** SMTP · Usenet/NNTP · Mastodon/ActivityPub · Nostr · ATProto/Bluesky · Matrix ·
+Secure Scuttlebutt · IPFS · libp2p · BitTorrent · Tor · RSS/Atom/WebSub · Willow/Earthstar.
+
+**The eight axes are the ones a *federation* question needs:** relay · inbox/outbox · DHT ·
+federation · authority · user-facing identity · change detection · economics.
+
+**Explicitly NOT in scope, each with the document that owns it:**
+
+| Not here | Why it is not | Where it lives |
+|---|---|---|
+| **Undeployed hypertext designs** — Xanadu, Hyper-G, Memex, Intermedia, Microcosm | this file is organized around *deployed* systems, so it was **structurally unable to see them** — and that is exactly how a forty-year lineage stayed out of the corpus until 2026-09-04 | `EXPLORATION-THE-HYPERTEXT-LINEAGE-…` · `EXPLORATION-HYPER-G-…` |
+| **Serialization and schema evolution** — Protobuf, Avro, Thrift, ASN.1, CBOR, Lexicon, room versions | a different layer entirely; nothing here is an *interop-between-operators* axis | `EXPLORATION-EVOLVABLE-SCHEMAS-AND-THE-VOCABULARY-PROBLEM` |
+| **Per-system deep reads** — the full Willow, Hyper-G and ATProto data models | this file's rows are deliberately one paragraph; a deep read is its own document | `EXPLORATION-WILLOW-…` · `EXPLORATION-HYPER-G-…` · `EXPLORATION-THE-BRIDGE-…` |
+| **Games, marketplaces, collaborative editors** | **no specifications exist to read**, so a survey row would be reasoning dressed as a citation | `EXPLORATION-THE-INTERACTION-LANDSCAPE-…` §2, which says so |
+| **Moderation and admission as a first-class axis** | genuinely missing; touched only inside §5 | **nowhere — §9** |
+
+**The generalizable lesson, and it is why the scope block now exists at all:** *a survey's organizing
+principle is also its blind spot.* This file could not see Xanadu because Xanadu never deployed, and
+nothing in the file said so — **so its absence read as an absence in the field rather than an absence
+in the method.**
 **Companion:** `EXPLORATION-THE-OPERATING-MODELS-AND-THE-ALWAYS-ON-TIER` — the synthesis. This is the
 decomposition it rests on, kept separately because a synthesis is re-argued and a source list is not.
 

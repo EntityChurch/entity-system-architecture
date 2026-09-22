@@ -1,6 +1,6 @@
 # PROPOSAL — `EXTENSION-TYPE` declares eight operations and zero error codes, so the one seat that built them minted its own
 
-**Status:** DRAFT
+**Status:** **FOLDED 2026-09-04** — landed as `EXTENSION-TYPE` **v1.3 Appendix A**. Verified in the tree: the `200`-verdict rule (§2), the merged rows 1+2 (SA-PY-39), the `404 type_not_found` split across `compare`/`compatible`/`converge`/`adopt`/`reconcile`, `validate`'s `200` `structural` violation, and the `500 internal_error` encode row. **Target corrected:** the proposal named §8.5, which is already `system/type/violation` — folded as **Appendix A**, matching `EXTENSION-TREE`'s house pattern, so nothing renumbers.
 **Target:** `specs/extensions/EXTENSION-TYPE.md` — new §8.5 (operation error codes).
 **Filed by:** arch, self-found while sweeping `ENTITY-CORE-PROTOCOL` §4.7's `MUST NOT mint a synonym`
 clause by subject (`PROPOSAL-GENERIC-400-SYNONYMS-AND-THE-PRE-ESTABLISHMENT-EXECUTE` §5).

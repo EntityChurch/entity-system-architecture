@@ -18,7 +18,11 @@ terms; nothing in §4.2's reasoning is reopened and §3 below satisfies it rathe
 
 **Rests on:** `EXPLORATION-THE-L5-CONTENT-TAXONOMY-AND-THE-FLOOR-THAT-STOPS-THE-EXPLOSION` (**why
 these four shapes and not eleven** — the test, the landscape, and where a gallery, a forum, a story
-and a chat each land) · `EXPLORATION-THE-RESOLUTION-CHAIN-FROM-A-SOCIAL-IDENTIFIER-TO-AN-ENTITY` (the chain
+and a chat each land) · `EXPLORATION-THE-FALSIFICATION-TEST-FOUR-REAL-OBJECTS-AGAINST-THE-FLOOR`
+(**the floor tested against four objects nobody designed for us** — the floor holds, §13 item 5; and
+the four-for-four derivation behind §2.2's second atom) ·
+`EXPLORATION-THE-DURABLE-REFERENCE-THE-ANCHOR-AND-THE-THREE-WAY-READ` (the two reference intents and
+the three-way read that §2.2.4 states) · `EXPLORATION-THE-RESOLUTION-CHAIN-FROM-A-SOCIAL-IDENTIFIER-TO-AN-ENTITY` (the chain
 audit that found this link empty) · `EXPLORATION-THE-PUBLIC-SOCIAL-STACK-THE-COMPLETE-MAP` §4 (where
 these four shapes were worked out) · `EXPLORATION-WHAT-CONVERGES-WHAT-CANNOT-AND-THE-ORDER-TO-BUILD-IT`
 (why this is stage 1 and why the forum is not) · `APP-CONVENTION-EMBED` (the body) ·
@@ -86,6 +90,25 @@ anyone else's key, so you cannot author in their name; you cannot alter a byte w
 failing; and **an entry stays verifiable when its author is offline, when their origin is gone, and
 when it reaches you from a stranger.** *The only operation republication permits is carrying what they
 already chose to publish.*
+
+> **What this costs, corrected — it is a PUBLISHER change, and the table above reads as if it were a
+> mirror-carriage cost.** `[entity-browser-rust` `62c6d62`, from their implementation.]`
+> **Nothing signs individual entities today: a publish signs exactly one thing, the root.** So the
+> detached per-entry signature is a **new obligation on the composer**, and a mirror cannot supply it —
+> *a mirror can only carry a signature the author already minted.* Three consequences worth stating
+> rather than discovering:
+>
+> 1. **The composer signs.** Whatever authors an entry mints its signature at authoring time, not at
+>    publish time and not at mirror time.
+> 2. **The cost is per-entry-once, not per-publish**, and the entities **dedup** — which makes it much
+>    cheaper than the table's *"per entry"* framing suggests to a reader who assumes republishing.
+> 3. **Entries published before this rule can never be attributed once mirrored**, because nobody can
+>    retroactively mint a signature they did not make. **That is a permanent boundary in the data, not
+>    a migration window**, and a reader will encounter unattributable old entries forever. It should be
+>    stated in the spec rather than found.
+>
+> **The machinery is proven** — the registry already mints and verifies detached signatures at the same
+> invariant-pointer path — so this is an obligation to schedule, not a mechanism to design.
 
 ### §1.2 One entry is one addressed unit — entries reference, they never embed
 
@@ -167,15 +190,29 @@ tree-path    = tstr                  ; absolute or peer-relative per V7 §1.4
 
 **No fixed-width hash form appears anywhere in this document.**
 
-### §2.2 The reference — the shape everything points with
+### §2.2 The two references — pinned and live, and they are two shapes on purpose
+
+**There are two reference intents and they demand different consumer behaviour, so there are two
+atoms.** An earlier draft had only the first, derived it from the reply case, and generalized it to a
+domain that contains a second case with the opposite requirement.
 
 ```cddl
-reference = {
+reference = {                        ; "THIS EXACT THING" — the pin, and the default
   peer: peer-id,                     ; WHO published it
   hash: content-hash,                ; WHAT it is — the assertion
   ? path: tree-path                  ; WHERE they put it — a hint, and OPTIONAL
 }
+
+live-reference = {                   ; "WHATEVER IS AT THIS PLACE NOW"
+  peer: peer-id,                     ; WHO publishes there
+  path: tree-path,                   ; THE address of record — required
+  ? seen: content-hash               ; what the linker saw at link time — an EXPECTATION, not a requirement
+}
+
+any-reference = reference / live-reference   ; only where a site declares it takes both (§2.2.3)
 ```
+
+#### §2.2.1 `reference` — the pin
 
 **The hash is the claim; the locator is a convenience.** A consumer holding the bytes fetches nothing.
 One that does not may obtain them **from anybody** — the author, a mirror, a cache, a stranger —
@@ -189,6 +226,70 @@ that location and lets a parent be edited underneath its replies. The other carr
 beside the locator for precisely that reason. We get the second for free, and the `peer` term is added
 because that is the unit the naming layer resolves.
 
+#### §2.2.2 `live-reference` — the maintained document
+
+**The use case is ordinary and the pin cannot express it:** *"read this document, at this place, and I
+will keep updating it."* A publisher linking to their own maintained page under `reference` either pins
+a hash that goes stale on the next edit, or rewrites every referring entry on every edit — **which is
+precisely the cascade §2.3.2 removed `prev` to avoid, arriving through a different door.**
+
+**The two atoms are the same three terms with required and optional swapped**, and that inversion is
+the entire content of the distinction:
+
+| | `reference` | `live-reference` |
+|---|---|---|
+| **Authoritative** | the hash | the path |
+| **Fetch strategy** | **anywhere** — the hash validates the bytes regardless of source | **the named peer at the named path** — nobody else can answer for what is *current* there |
+| **A hash mismatch means** | the reference is **unsatisfied** — refuse it | the document **evolved** — expected, and the reader is told (§2.2.4) |
+| **A 404 at `path` means** | **nothing** — `path` is a hint | the reference is **broken**, modulo `seen` (§2.2.4 row 5) |
+
+**`seen` is named for what it claims.** `hash` asserts *this is what it is*; `seen` asserts only *this
+is what was there when I linked*. It is optional, and an author who omits it is saying they have no
+expectation to offer.
+
+#### §2.2.3 The discriminator is the field name, and each site declares what it accepts
+
+**A reference carries `hash` or it carries `seen`; an atom carrying both is invalid and a conformant
+reader MUST reject it.** The distinction is therefore never a mode value a consumer might fail to
+branch on — **which is the whole reason there are two shapes rather than one shape with `hash` made
+optional.** Under an optional `hash`, a reference arriving without one is indistinguishable between
+*"the author wants the live version"*, *"the author's implementation did not populate it"* and *"the
+author only ever had a URL"*: one intent and two bugs, with no way for a reader to tell them apart.
+**That would degrade the guarantee §2.2.1 exists to provide into a convention.**
+
+**Each site that takes a reference declares which atom it accepts, and the pinned sites do not widen:**
+
+| Site | Accepts | Why |
+|---|---|---|
+| `reply.root`, `reply.parent` | **`reference` only** | the rug-pull argument in §2.2.1 is the reason this field exists; it is undiminished, because the site that needed the pin never gains the weak form |
+| `prev` | `content-hash` — **unchanged** | an append-only commitment to a *specific* predecessor is meaningless against a moving target |
+| `context` | **either** | *"part of a topic"* is often a maintained index; *"part of this event"* is often a fixed entity |
+| `attachments` | **either** | an attached file is usually pinned; an attached *living* document is the case this atom exists for |
+
+#### §2.2.4 Resolving a `live-reference` — the comparison result is information, not an error
+
+Because `path` is authoritative and `seen` is only an expectation, resolution has more than two
+outcomes, and **a reader MUST be able to tell which one it got.**
+
+| # | `(peer, path)` | vs `seen` | Meaning | Reasonable behaviour |
+|---|---|---|---|---|
+| 1 | resolves | matches, or `seen` absent | you are seeing what the linker saw, or they offered no expectation | render |
+| 2 | resolves | **differs** | **the document evolved** — the ordinary case | render current, **and surface that it moved**; the pinned version remains fetchable |
+| 3 | **404** | — | the path moved or was unpublished | **fall back to `seen`, fetched from anywhere** — author, mirror, cache, stranger |
+| 4 | 404 | `seen` absent or unobtainable | genuinely dangling | the honest failure. Nothing to hide |
+
+**Row 3 is where the second naming layer earns its keep and it is the row the surveyed field does not
+have.** A content hash resolves against *any* store, so **a live reference survives its author
+unpublishing the path** — the property Hyper-G obtained with a server-owned link database, obtained
+here without one.
+
+**The normative half is the reader's ability to tell, not which policy it picks.** Strict (refuse on
+mismatch) and lenient (render current) are both legitimate and are the *reader's* choice; what this
+convention requires is that **a view built from a `live-reference` whose resolved hash differed from
+`seen` MUST make that fact available to the view.** This is the capstone rule applied to references —
+*a view that names its own provenance is debuggable; one that does not is indistinguishable from a
+bug.*
+
 ### §2.3 `app/feed/entry`
 
 ```cddl
@@ -199,9 +300,9 @@ feed-entry = {                       ; type = app/feed/entry
     created_at:  uint,               ; ms since epoch, author's clock — a DISPLAY HEURISTIC (§2.3.1)
     body:        embed-node,         ; APP-CONVENTION-EMBED — this convention defines no content types
     ? reply:     { root: reference, parent: reference },   ; present ⇒ this entry is a reply
-    ? context:   reference,          ; what this is PART OF — never who it is for
+    ? context:   any-reference,      ; what this is PART OF — never who it is for. Either atom (§2.2.3)
     ? prev:      content-hash,       ; OPT-IN append-only commitment — see §2.3.2. NOT navigation.
-    ? attachments: [* reference]     ; referenced, never inlined (§1.2)
+    ? attachments: [* any-reference] ; referenced, never inlined (§1.2). Either atom (§2.2.3)
   }
 }
 ```
@@ -246,6 +347,37 @@ because most publishing is not that, and imposing it would take away the curatio
 establishes for everyone in order to serve the minority who want to surrender it.
 
 **Navigation is by key (§3), never by chain.**
+
+##### The derivation has a second half, and two deployed systems pay for it
+
+The argument above is about **the author's own history** — a chain makes curation cost a republish. Two
+systems that took the mandatory-chain branch show two further costs, and both are structural rather
+than incidental.
+
+**A mandatory chain is a single-writer commitment, so it is a one-device commitment.** The surveyed
+append-only-log lineage puts `previous` and `sequence` in the message envelope and requires them. **One
+human with a phone and a laptop then has one sequence and two writers**, and publishing from the second
+device either forks the log or requires the devices to coordinate on every post. The deployed answers to
+this are all unsatisfying — a single designated device, or last-write-wins over a clock nobody can
+verify. **Our rule survives this cleanly precisely because `prev` is opt-in**: a multi-device author
+simply does not use it, and pays nothing.
+
+> **This is not a claim that we have solved multi-device publishing.** We have not — two devices sharing
+> one key and advancing one signed root is a race this corpus does not describe, and that gap is real
+> and open. **What §2.3.2 establishes is narrower and still worth stating: making `prev` mandatory would
+> have made that open problem strictly harder**, by adding a second ordering commitment on top of the
+> root sequence.
+
+**And a chain forces a deletion mechanism, which is where the second cost shows up.** A system whose
+events carry backward pointers cannot remove an event without breaking the graph, so it must keep the
+skeleton and empty the contents — an entire redaction algorithm, and a permanently unreclaimable
+placeholder in place of what was removed. **That is §5b.3's property lost**: our removal leaves no trace
+in the current tree, and it can do so only because the integrity anchor is the root and not a chain.
+
+> **So an author who opts into `prev` is opting into that system's problem, knowingly.** They gain *"I
+> cannot have quietly edited this"* and they give up clean removal — not just for the entry they remove,
+> but for everything published after it. **That is the right trade to offer and the wrong one to
+> impose.**
 
 #### §2.3.1 `created_at` is not an ordering authority
 
@@ -712,6 +844,28 @@ which sources, which mirrors, which exclusions — when it presents itself as mo
 feed. A view that names its own provenance is debuggable; one that does not is indistinguishable from
 a bug, and that is the difference between two clients disagreeing and the system appearing broken.
 
+### §6.4 Addressing — *who this entry is for*
+
+**No field in this document says who an entry is addressed to, and that is deliberate.** `context`
+says what an entry is *part of* and never who it is *for* (§2.3); `reply` names what it answers, which
+is an entry rather than an audience.
+
+**This is worth stating rather than leaving as an absence, because the surveyed field carries it and a
+reader of this document would reasonably expect it.** Three of the four systems mapped in the
+falsification exploration carry an explicit mention or addressing list, and in all three it is the
+input to **notification and delivery** — not to rendering.
+
+**The reason to decline it here is that it is a different concern with a different owner.** An
+addressing list is a delivery instruction: it decides who gets told, which is an inbox question and a
+capability question, and it drags in consent, rate limits and the whole surface by which unsolicited
+delivery becomes abuse. **Putting it in the content vocabulary would place a delivery mechanism in a
+format that has no delivery.** A mention that is merely *rendered* — a link to a peer inside a body —
+already works today and needs nothing from this document.
+
+**So: not an oversight, and not permanently closed.** If a seat builds notification and finds it needs
+a structured addressee list, that is a proposal against the inbox surface, and this section is the
+statement of what was decided and why rather than a claim that the question is settled.
+
 ---
 
 ## §7 The chain, walked end to end — *"I add someone. What happens?"*
@@ -867,6 +1021,7 @@ everywhere — **it is the wrong granularity here and hides the whole class.** C
 | D5 | `specs/applications/APP-CONVENTION-SHARE.md` | §2 | add one sentence distinguishing `app/share/follow` (follows a **grant**) from `app/feed/follow` (follows a **namespace**), pointing at `APP-CONVENTION-FEED` §2.4 |
 | D6 | `ROADMAP-APPLICATIONS.md` | members | list the new convention |
 | D7 | `specs/applications/APP-CONVENTION-EMBED.md` | §3 or §5 | one pointer noting that an image or video **entry** is an entry whose body is an embed with a pointer payload, and that renditions are the selection mechanism — so nobody builds a second media path for feeds (§3a.1) |
+| D9 | `specs/applications/CHARTER.md` | the discipline list, beside #7 and #8 | **the disposition rule, and it is `entity-browser-rust`'s** *(`62c6d62`)*: **a property governing what a consumer may DO with an entity — may it be republished, must it be warned over, may it be cached — MUST live on the entity, never on a collection, conversation, index or mirror that contains it. Containers do not travel; entities do.** Derived from a live case (a closed-conversation message lifted into a feed carries no *do-not-mirror* bit) and it generalizes past that case immediately — it settles `[OPEN-FEED-9]`'s shape and it is the structural statement of FEED-9's *integrity without authorship* failure. **It belongs in the domain rather than in one member**, because every `APP-CONVENTION-*` that mints a container will face it |
 | D8 | `specs/applications/CHARTER.md` | the discipline list, beside #7 | **the growth rule**: a new product is a new body type or a new renderer; it is a new *entity type* only if a conformant consumer must behave differently, and a proposal minting one **names that behaviour**. This is the anti-explosion gate and it belongs in the domain, not in one member |
 
 **D4 and D5 are the reason this proposal enumerates its homes rather than editing one file.** A rule
@@ -889,8 +1044,11 @@ exactly when it stops being true.
 | **`[OPEN-FEED-3]`** | Retention — republication makes storage grow monotonically and nothing reclaims it. **The mirror (§4) is what makes this load-bearing rather than tidy-up** | unowned | a policy exists |
 | **`[OPEN-FEED-4]`** | The quiet-publisher / withholding-origin indistinguishability (§5) | unowned across the corpus | a second-source comparison is specified |
 | **`[OPEN-FEED-5]`** | Bare-id → origin (§7 step 3) | `PROPOSAL-PEER-TRANSPORT-SET` | that proposal lands |
-| **`[OPEN-FEED-6]`** | **Does a chat message unify with `app/feed/entry`?** The taxonomy says the *message* is an entry and the *conversation* is genuinely different machinery — so `PROPOSAL-APP-CONVENTION-CHAT` would contribute conversation identity, roster and delivery, and stop minting a message type. **If they stay separate, every crossing between a feed, a forum and a conversation needs a mapping, and mappings are where vocabularies fork** | **both application seats** — this is not arch's to rule | the seats converge |
-| **`[OPEN-FEED-7]`** | **Where does a profile live?** Nobody asked for one, every surveyed system has one, and it is not obviously any of the four shapes. **The most likely fifth type, and therefore the one to watch** | unowned | someone needs a display name |
+| **`[OPEN-FEED-6]`** | **Does a chat message unify with `app/feed/entry`? — LEANING NO, on arch's own test, argued by the seat that builds both.** `entity-browser-rust`: the shapes match on 4 of 6 fields, **but the conversation carries a policy — `closed`/`invite`/`open` — and a consumer holding a message from a closed conversation MUST NOT republish it.** The policy lives on the **conversation**, so **a chat message lifted into a feed carries no bit saying *do not mirror me***. That is FEED-9's failure mode one layer up: bytes that verify, in a tool that will republish them, with the **disposition missing rather than wrong.** **The general rule, and it is theirs: *a property governing what a consumer may do with an entity must live on the entity, not on its container — containers do not travel, entities do.*** Unifying would put a republish-forbidding message into the one type the mirror is built to republish | **both application seats.** One has now ruled with a measurement-grade argument; **`entity-workbench-go` has not weighed in and the item says two seats** | workbench-go responds. **Arch is not closing this on one seat** |
+| **`[OPEN-FEED-7]`** | **Where does a profile live?** Nobody asked for one and every surveyed system has one. **Reframed, and it is probably no longer a fifth type:** checked against four primary schemas, the profile is four-for-four a **live-addressed** object — its distinguishing property is not its content shape but that **it is never pinned**. What made it look like a fifth type was that our only reference shape pinned a hash, so a profile modelled as an entry would have had every reference to it go stale on the first edit — **a missing intent presenting as a missing type.** With §2.2.2 landed, the likely answer is a well-known path plus a `live-reference` | unowned | someone needs a display name. **No longer blocked on a taxonomy question** |
+| **`[OPEN-FEED-9]`** | **A self-applied content warning has no home**, and it is the clearest thing in the residue to pass the taxonomy's own test — a conformant consumer holding one must **behave** differently (render behind an interstitial) rather than merely lay it out differently. One of the four surveyed systems carries it as a first-class record field. **Its *shape* is already decided by `[OPEN-FEED-6]`'s rule, which was written for a different question and answers this one:** a content warning is exactly *a property governing what a consumer may do with an entity*, so **it lives on the entry — never on a collection, a mirror or an index that contains it.** What remains open is whether it is a field at all versus a reader-side list | unowned — **raise with both application seats**, since it is a field in a document under their review | a seat needs it, or the ActivityPub read confirms a second carrier |
+| **`[OPEN-FEED-11]`** | **`collection`'s authored order is weak evidence for the shape.** §3a distinguishes the collection partly on **authored order**, and FEED-8 asserts `members` order is preserved — but `entity-browser-rust` reports that **their one real bounded-complete set renders in *derived* order**, so the property the type leans on is not the one the only implementation exercises. Their suggestion: **an optional order field on one type rather than two types.** *Bounded* and *complete* are unaffected and still hold | `entity-browser-rust`, raised `62c6d62` | a second bounded-complete consumer exists, or the seat proposes the optional-order shape |
+| **`[OPEN-FEED-10]`** | **A quote — *render that entry inside this one* — is expressible two ways and assigned neither.** It is neither a reply (it asserts no answer) nor an ordinary attachment (it is an entry, not a file). `attachments` is a reference list; the body's handler layer is open, so an entity-ref embed type is legal. **Two candidate homes, no rule, and picking one is cheap** | unowned | a seat renders a quote |
 | **`[OPEN-FEED-8]`** | Is `context` doing too much? It carries *part of a topic*, *part of an album* and *part of an event* in one field. **If consumers must branch on which, it fails the taxonomy's own test and should be split** | unowned | a second consumer of `context` exists |
 
 ---
@@ -919,3 +1077,19 @@ Stated because a proposal that cannot say what would refute it has not been stre
    form is too bounded, and the mail lineage's full chain was carrying something we removed.
 4. **If two implementations produce different bytes for the same authored entry**, the vocabulary is
    underspecified somewhere and §10's vectors are the instrument that says where.
+5. ~~**If a real object from a comparable system needs a fifth content shape**, the four-shape floor is
+   wrong and the taxonomy explodes after all.~~ **TESTED, AND IT HOLDS — with a caveat that is part of
+   the result.** Four objects designed by four other teams — an ATProto post, a Nostr kind-1, a Matrix
+   `m.room.message` and an SSB `post` — were mapped field by field onto the floor from their primary
+   schemas. **All four are `app/feed/entry`. None demanded a fifth shape.** Two things did not fit, and
+   **both were predicted in advance by the taxonomy document**: the Matrix *room* is none of the three
+   collection provenances (it satisfies all four of the obligations §5.2 listed for a conversation), and
+   the profile is `[OPEN-FEED-7]`.
+   **The caveat, stated because the result is worth less without it: all four are microblog-lineage
+   systems.** A wiki, a marketplace listing, a map annotation and a collaborative document are untested,
+   and that is where a genuine falsification would come from.
+   **What the test found instead is the more valuable half, and it is the same shape as item 1's
+   lesson:** the floor survived and **the atom next to it did not.** All four systems carry *both*
+   reference intents and all four express the difference as a distinct shape or name — never as an
+   optional field — which is the derivation behind §2.2. **A claim that survives its own test can still
+   be resting on a false neighbour.**

@@ -318,9 +318,28 @@ no selectors, no fuzzy match, no orphan state, no confidence score.
 > Xanadu built enfilades for it. Hypothes.is built fuzzy anchoring for it. We would need one optional
 > pair of integers on an existing atom.
 
-**Not proposed here** (L1 — this is an exploration, and a normative change is proposal-first). Filed
-as an open question in §8, with the caveat that a span into a *rendered* body is not the same as a
-span into *encoded bytes*, and which one a quote wants is genuinely unobvious.
+> ### CORRECTED 2026-09-04 — the mechanism was right and the problem was wrong.
+> `[operator, same day: "the problem is an offset and length… if I'm known to a hashed reference. But
+> I could hash a tree redirect — say I want to say 'check out this document', but it's a document I
+> continuously update, and then I drop an anchor in there."]`
+>
+> **`{reference, offset, length}` is exact, permanent — and it can only ever address a frozen
+> snapshot.** The use case that matters is the opposite one: a link into a document the author **keeps
+> editing**, where an offset does not go stale, it goes **silently wrong**. It still resolves, to
+> different words.
+>
+> **The correct shape has three parts with three stabilities:** `(peer, path)` the durable name,
+> maintained by the publisher · `target_hash` the expectation, frozen at link time · **`#anchor` the
+> spot inside, maintained by the document's author** — which is HTML's answer, is the one that shipped,
+> and is the one Xanadu spent forty years trying to replace with a machine.
+>
+> **And the gap this exposes is not span addressing at all.** Our atom is `{peer, hash, path?}` with
+> the hash required and the path explicitly *"not an address of record"* — a `strongRef`, correct for
+> replies, **and structurally unable to express "whatever is at this place now."**
+>
+> **Authority: `EXPLORATION-THE-DURABLE-REFERENCE-THE-ANCHOR-AND-THE-THREE-WAY-READ`**, which also
+> establishes that two of the three parts are deployed prior art (ATProto's `strongRef`) and the third
+> is a slot that prior art reserved and never filled.
 
 ### §6.4 Bidirectional links — **we correctly do not have them, and Hyper-G is the evidence**
 

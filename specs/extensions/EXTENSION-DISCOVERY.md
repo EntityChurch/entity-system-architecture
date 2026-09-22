@@ -1,6 +1,7 @@
 # EXTENSION-DISCOVERY
 
-**Version**: 1.1
+**Version**: 1.2
+**v1.2:** Appendix A — the discovery handler's defined error codes. `backend_error` (500) is the code §3.3 already required for a backend failure without naming one; `unknown_backend` (400) is tabulated from the §3.3 erratum.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
 **Related**: EXTENSION-SIGNALING.md (the carrier the `rendezvous` backend rides, §5.5); EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
@@ -373,3 +374,22 @@ All retention windows are operator-configurable knobs; defaults conservative.
 - **Q1: `filter` shape for richer backends.** §3's mDNS `filter` is opaque + backend-MAY-ignore. Richer backends (registry-assisted, gossip) MAY define structured filter shapes; substrate stays opaque.
 - **Q2: Decision-history audit UX.** §7 says decisions are durable; per-impl UI / CLI surface for "show me everything I've admitted" is impl convenience, not substrate.
 - **Q3: Multi-LAN / VPN-traversal scope for mDNS.** mDNS is single-broadcast-domain by protocol; future tunneling / bridged-mDNS configurations are deployment concerns, not substrate.
+
+---
+
+## Appendix A: Error Codes
+
+The discovery handler's defined codes. Per `ENTITY-CORE-PROTOCOL.md` §3.3, a more-specific code is
+conformant only where a spec code set defines it; this is that set. Codes not listed here fall back to
+§3.3's per-status defaults.
+
+| Operation | `code` | Status | Condition |
+|---|---|---|---|
+| `scan` | `unknown_backend` | 400 | `backend` names a backend the peer has not registered. **Not** 404 — `backend` is a parameter value, not an addressed resource (§3.3 erratum, Ruling-5) |
+| `scan` | **`backend_error`** | **500** | The backend failed to execute the scan — including an unparseable `filter`. §3.3 requires this be surfaced as an error code rather than a silent empty result, and this row is the code it requires |
+
+**Why `backend_error` is a defined code and not `internal_error`.** §3.3 mandates that a backend
+failure be distinguishable from *"no candidates this scan"* — a successful
+`ScanResult { candidates: [], truncated: false }`. Collapsing it to the §3.3 default would erase the
+distinction the rule exists to create. The condition is a **backend** fault, not a fault in the
+discovery handler, which is what makes it more specific than `internal_error`.

@@ -1,6 +1,7 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.21
+**Version**: 1.22
+**v1.22:** Appendix A — the registry's defined error codes. `unsupported_mode` is pinned at both statuses (400 store-refusal, 501 fail-closed live registration) and is explicitly NOT a synonym of `unsupported_operation`: the handler is registered and `register` is implemented.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -1821,3 +1822,24 @@ data: {
 - **Q3: Identity-rotation interaction.** When the publisher of a peer-issued binding rotates their identity, do existing bindings remain valid? Per EXTENSION-IDENTITY §9.5 cap-survival semantics: yes, cap chains rebind; the published binding is signed by the cert at issuance; that cert remains live or is properly superseded via supersedes-chain. Worth cross-checking against EXTENSION-IDENTITY in cross-impl review.
 - **Q4: Local-name-store size limits.** Operator concern; exposed as `max_local-names` knob (default unlimited).
 - **Q5: Local-name namespace partitioning.** §11.3 MAY but undefined; defer to revision when a driver emerges.
+
+---
+
+## Appendix A: Error Codes
+
+The registry's defined codes. Per `ENTITY-CORE-PROTOCOL.md` §3.3, a more-specific code is conformant
+only where a spec code set defines it; this is that set for the registry's operations. Codes not
+listed here fall back to §3.3's per-status defaults.
+
+| Operation | `code` | Status | Condition |
+|---|---|---|---|
+| `set-issuer-policy` | `unsupported_mode` | 400 | `mode: "domain-control"` — refused rather than stored while the challenge format is deferred (§6a.9.1) |
+| live registration (`register`) | **`unsupported_mode`** | **501** | A `domain-control` policy is already stored — seeded out-of-band, written directly, or predating the §6a.9.1 refusal. The registry fails closed and MUST NOT fall back to `open`, `manual`, or a `404` (§6a.9.2) |
+| `set-issuer-policy` | `invalid_request` | 400 | A policy that can reach *approve* with `default_ttl: null` (§6a.3, §6a.4) |
+| `get-issuer-policy` | *(none — `404`, no code minted)* | 404 | No policy entity stored. MUST NOT synthesize a default `open` |
+
+**`unsupported_mode` at 501 is not a synonym of `unsupported_operation` (0.8.2.8).** The registry
+handler is registered and `register` **is** implemented; the refusal is about the *mode of a stored
+policy*, not about operation existence. `ENTITY-CORE-PROTOCOL` §9.1's 501-slot synonym list is scoped
+to spellings of *that* row and does not reach a domain code naming a different failure at the same
+status. The test is the failure named, never the status shared.

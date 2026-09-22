@@ -661,8 +661,8 @@ EXECUTE  uri: "system/tree"  operation: "snapshot"
 3. **Signatures point TO content** — scan `included` for `system/signature` where `target == entity.content_hash`
 4. **Grants have three required fields** — `handlers`, `resources`, `operations`. All three must be present. Each has one purpose.
 5. **Two checks always** — dispatch scope (`check_permission` with resource target) AND handler path scope (`check_path_permission`, defense-in-depth) must both pass
-6. **Entity fidelity** — validate hash on receipt, then trust it. Store original bytes. Forward original. Never re-serialize.
-7. **Unknown fields preserved** — entities may contain fields not in their type definition. Don't strip them.
+6. **Entity fidelity** — validate hash on receipt, then trust it. Store original bytes. Forward original. Never re-serialize. **`ENTITY-CBOR-ENCODING.md` §5.4 is the authority for this contract**, including the property-vs-mechanism distinction that permits a lossless-parse-plus-canonical-re-encode alternative; the line here is the short form, not the rule.
+7. **Unknown fields preserved** — entities may contain fields not in their type definition. Don't strip them. **`ENTITY-CORE-PROTOCOL.md` §2.10 is the authority**, and it is a correctness requirement rather than a courtesy: content hashing covers all of `{type, data}`, so a peer that strips an unknown field publishes a different hash for the same entity.
 8. **Connection setup is the only special case** — no auth required. Everything else follows the same dispatch chain.
 9. **Canonicalize both sides** — when pattern matching, canonicalize both the path AND the pattern with the local peer_id
 10. **Root capabilities must be local** — `granter.data.peer_id == local_peer_id` (string comparison)

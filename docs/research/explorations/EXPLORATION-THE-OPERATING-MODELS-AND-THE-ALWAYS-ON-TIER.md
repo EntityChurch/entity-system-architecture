@@ -4,7 +4,7 @@
 **Question it answers:** *how do Mastodon, ATProto, Nostr, RSS and SMTP actually operate — not what
 their primitives are — and what does that say about what this design still owes?*
 
-**Companion:** `REFERENCE-PRIOR-ART-BY-AXIS` — the same systems decomposed axis by axis (relay ·
+**Companion:** `REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS` — the same systems decomposed axis by axis (relay ·
 inbox/outbox · DHT · federation · authority · user-facing identity), with sources, for use while
 designing.
 

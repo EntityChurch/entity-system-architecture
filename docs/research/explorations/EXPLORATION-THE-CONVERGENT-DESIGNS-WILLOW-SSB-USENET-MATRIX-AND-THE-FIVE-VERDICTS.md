@@ -4,7 +4,7 @@
 
 **Companion:** `EXPLORATION-THE-HYPERTEXT-LINEAGE-…` covers the dead designs. This covers the **living
 and the operationally-retired** ones — systems that ran long enough to produce a verdict rather than a
-theory. **The five documents `REFERENCE-PRIOR-ART-BY-AXIS` §9 named as its honest gaps are four-fifths
+theory. **The five documents `REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS` §9 named as its honest gaps are four-fifths
 closed here** (SSB, NNTP, Matrix, BitTorrent), plus one it did not know to name: **Willow**, which
 turns out to be our nearest living neighbour by a wide margin.
 

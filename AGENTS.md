@@ -148,7 +148,7 @@ What binds today:
   only ever lowers.
 
 **The discipline set is assembled and ratified — `docs/DISCIPLINE-CHARTER.md` is the canonical
-home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-21), the honest
+home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-22), the honest
 enforcement table, and the doctrines this repo adopts **by reference**. The sections below stay as
 the working detail; **the charter is the set.**
 
@@ -170,8 +170,10 @@ the working detail; **the charter is the set.**
   **L14** `ENTITY-CORE-PROTOCOL` is not ours to version — extension versions are ordinary work
   *(**ratified** 2026-08-18 — operator ruling)* · **L15** a ruling goes back to the seat that filed it
   before it goes to anyone else *(candidate)* · **L16** before ruling a cross-impl semantic, search
-  **every** tier for a seat that already implements it *(**ratified** 2026-08-19 — second instance
-  the next day, running the opposite direction)* · **L17** a normative MUST that names a value **or a
+  **every** tier for a seat that already implements it — **and before claiming our own corpus is
+  silent, search every `specs/` extension, not the layer the question sounds like** *(**ratified**
+  2026-08-19 — second instance the next day, running the opposite direction; **corpus axis added
+  2026-09-04**)* · **L17** a normative MUST that names a value **or a
   capability** does not land without a declared site a peer can carry and a conformance check
   *(**ratified** 2026-08-20 — second shape)* · **L18** a cohort
   implementation is not evidence that a cohort ruling is right — **and a citation labelled
@@ -1329,6 +1331,89 @@ the working detail; **the charter is the set.**
   > ecosystem" or "anywhere" is not proven until every one of them is searched. **The fix is the list,
   > not another rule** — and **adding the two unpublished repos to §7.3 is the operator's call, not
   > arch's**, because a published architecture document naming an unpublished repo is a disclosure.
+
+  > **The corpus axis, 2026-09-04 — the same property, and this time the search space was narrowed by a
+  > LAYER rather than a tier. Self-found, one day after the correction above.**
+  > A checkpoint published *"multi-device publishing is undesigned — two devices sharing one key,
+  > advancing one signed root sequence, is a race **nothing in the corpus describes**"* and carried it
+  > across two sessions and a commit message as *"arguably the most important gap this arc found."*
+  > **`EXTENSION-IDENTITY` §§11.3/11.5/11.6 is a landed multi-device model** — three-key default,
+  > per-device agent keys with **their own peer-IDs**, and §11.6 verbatim: *"concurrent
+  > multi-controller… used for desktop + phone deployments where each device holds its own
+  > controller."* **`EXTENSION-REVISION` v3.13 is a landed multi-writer merge framework** with a
+  > version DAG, a per-path merge framework and conflicts stored as entities. Both in `specs/`.
+  > **One `grep` for `multi-device` returns `EXTENSION-IDENTITY` in the first three hits.**
+  > **Why it felt safe, and it is the transferable half: the question sounded like a social-layer
+  > question, and the answer lives in the identity and tree extensions.** L16's ratified content is
+  > that *tier membership predicts neither who owns a question nor who has answered it*; this is the
+  > identical property one axis over — **layer membership predicts neither either.** A negative about
+  > our own corpus is still a negative, and `AGENTS-STANDARD`'s *prove a negative* rule does not exempt
+  > the tree we wrote.
+  > **The aggravating detail:** the same session ran an exhaustive primary-source sweep of four
+  > *foreign* systems and cited every one. **Rigour on the outside world and none on our own `specs/`
+  > directory** — the shortcut gets taken where familiarity is highest, which is L8's twelfth form's
+  > tell arriving on a corpus instead of a code path.
+  > **What the correction bought, and it is why the rule is *re-derive* rather than merely *retract*.**
+  > The search did not just delete a claim; it replaced a vague *"undesigned consensus problem"* with a
+  > specific checkable **seam** — `FEED` §1.1 requires an entry's author to equal its namespace and
+  > §2.4's follow targets one namespace, while the identity model makes *"the same Alice"* N peer-IDs,
+  > **so a cross-namespace merge produces entries a conformant reader must reject.** The real item is
+  > smaller, is vocabulary rather than consensus, and was **invisible from the wrong framing.**
+  > ***Enforcement point, extending the seat list to the corpus:*** **a claim that this corpus does not
+  > describe something is discharged by naming the region searched — `specs/`, `specs/extensions/`,
+  > `guides/`, `docs/proposals/` — never by the absence of a memory.** Mechanically: **`grep` the
+  > corpus for the plain-language noun of the capability** (`multi-device`, `merge`, `conflict`) before
+  > the sentence is written, and cite what was searched. **`spec coverage` is the instrument for *"do we
+  > already have X?"* and this file already says start there** — it was not run.
+  >
+  > > **AMENDED 2026-09-05, THE DAY AFTER, BECAUSE THIS ENFORCEMENT POINT LICENSED THE NEXT FAILURE.**
+  > > As written above it says *`grep` the corpus … and cite what was searched*, and the session that
+  > > wrote it did exactly that — then **reasoned about what the two documents SAY from the grep
+  > > output**, and got both wrong in the confident direction (see L4 below). **A `grep` discharges an
+  > > existence question and nothing else.** The moment the answer stops being *"does the corpus
+  > > mention X"* and becomes *"what does the corpus say about X"*, the instrument is **reading**, and
+  > > the region to read is the section that owns the surface — which is L19's rule arriving on our own
+  > > documents. **So: grep to find the document; open the document to say anything about it.**
+
+- **L4 — a claim about a document is checked by opening it. `grep` FINDS a document; it never READS
+  one — and a §10 disclaimer admitting you only skimmed does not make the claims safe.**
+  `[2026-09-05 — operator challenge: the published claims did not correspond to anything he
+  recognised. Two claims, both wrong, both about specs in our own tree.]`
+  **The two claims.** *(1)* `EXTENSION-REVISION` *"can host merge strategies and cannot host a CRDT,
+  despite naming one"* — derived from the single sentence *"no persistent CRDT metadata"* in the
+  overview, checked against a **2018 CRDT survey**. **§5.4 is titled *CRDT as Merge Strategy* and names
+  the principle it follows — Eg-walker: *CRDT is a computational artifact during merge, not a storage
+  format*. The causal record IS the version DAG's parent pointers**, replayed at merge; the survey
+  predates the result. **§7.2 then argues convergence outright** and names its one exception
+  (asymmetric strategies under caller-perspective ordering) with a remedy (`deterministic` ordering)
+  and a backstop (oscillation detection). *(2)* C-2 "reframed" as *"Alice is N peer-IDs, so following
+  her is N follows"* — **`EXTENSION-IDENTITY` §6: *"the controller's pubkey IS the user's published
+  handle. Contacts cache it."*** Agents are per-device daemon keys acting **on behalf of** one
+  identity. **Alice publishes under one peer-id, which is what "stable cross-peer recognition" means.**
+  **The measurement that makes it inexcusable: `EXTENSION-REVISION` is ~3,800 lines and 130 were
+  opened.** §5.4, §7.2 and §8.1 — the three sections that answer the objection — sit ~3,000 lines below
+  the one that prompted it.
+  **Why the guard did not fire, and this is the transferable half.** The document **did** state the
+  limit: its own §10 read *"only the spec's opening sections were opened… that check is owed before
+  this becomes a proposal."* **Stating a limit and then reasoning past it is not caution, it is a
+  disclaimer attached to unfinished work** — and it reads as rigour, which is why review does not catch
+  it. **A limit you are willing to publish a conclusion on top of is not a limit.** Same asymmetry L25
+  records for tightenings and L13's second axis records for *"filed, not yours"*: the sentence whose
+  function is to lower scrutiny is the one that should raise it.
+  **And it was the CORRECTION that was wrong, not just the first claim** — the session found the two
+  extensions by grep (fixing an L16 failure), then reasoned about their *content* from the same grep.
+  **The enforcement point it had written hours earlier said *grep the corpus and cite what was
+  searched*, and that is precisely what it did.** A rule that names the wrong instrument is worse than
+  no rule, because it certifies the shortcut; amended in place above.
+  **What the operator supplied that the corpus could have:** *"our revision is already a CRDT with the
+  auto merge and the deterministic ordering… the settings are a bit specific to get that right."* Every
+  clause checkable in §5.4/§7.2, in under five minutes of reading.
+  ***Enforcement point:*** **a sentence about what a document says cites the section it says it in, and
+  that section was opened in this session.** Mechanically checkable in review: *a claim about spec X's
+  behaviour whose only citation is X's overview, title, or a matched line, where the spec has a section
+  owning that surface, is the violation.* **For a spec over ~500 lines, read its section list first and
+  open the ones that own the surface** — `grep -n "^#"` costs one call and would have surfaced *CRDT as
+  Merge Strategy*, *Convergence* and *Concurrent Commits* by name, before any of this was written.
 
 - **L14 — `ENTITY-CORE-PROTOCOL` is not ours to version. Extension versions are ordinary work.**
   `[RATIFIED 2026-08-18 — operator ruling, then corrected by the operator the same hour]`

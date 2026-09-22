@@ -13,7 +13,7 @@ the substrate, the second produces a clear edge people design around. **The most
 is the list of things this should NOT be used for**, and §5 is that list.
 
 **Rests on:** `EXPLORATION-THE-L5-CONTENT-TAXONOMY-AND-THE-FLOOR-THAT-STOPS-THE-EXPLOSION` (the four
-shapes and the test) · `REFERENCE-PRIOR-ART-BY-AXIS` (the deployed-systems library).
+shapes and the test) · `REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS` (the deployed-systems library).
 
 **Honest sourcing note, up front.** The social-protocol material in this corpus was read from primary
 specifications. **The categories in this document mostly have no specification to read** — games,
@@ -405,8 +405,18 @@ ten thousand entry hashes do you already hold?"* across peers whose layouts have
 1. **The game material is reasoned, not surveyed.** No game data model was read from a specification,
    because they are products and mostly do not publish one. **Treat §2 as a hypothesis a game
    developer could refute in a conversation.**
-2. **The CRDT recommendation is a pointer, not a design.** §4.1 says a separate convention; it does
-   not say which family, and that choice is consequential.
+2. ~~**The CRDT recommendation is a pointer, not a design.** §4.1 says a separate convention; it does
+   not say which family, and that choice is consequential.~~ **ANSWERED — state-based (CvRDT), in its
+   delta-state form; not operation-based.** Derived from our delivery model rather than from
+   preference: op-based requires every operation **reliably delivered**, and *"most operation-based
+   CRDT designs require causal delivery"* — a precondition this substrate has declined to build at
+   every layer, since replication is pull-based, partial and coverage-bounded. **State-based asks for
+   exactly what we have**: two parties in contact exchanging state in any order, possibly twice, with
+   merge idempotent, commutative and associative. **Delta-state is unusually cheap here** — each delta
+   is an immutable content-addressed entity, so dedup is automatic and merge is a fold over whatever
+   deltas you hold; and the literature's *"full state on first contact"* bootstrap **is** the published
+   snapshot, which makes §4.1's *"the seam is publication"* the literature's own step rather than a
+   convenience. `EXPLORATION-THE-DATA-MODEL-LADDER-…` §8.
 3. **§5.2's product risk is unmeasured.** Whether people accept per-reader counts is an empirical
    question about users and nobody here can answer it from first principles.
 4. **Nothing here was reviewed by an application seat.** It is arch reasoning about categories it does
