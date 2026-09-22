@@ -391,11 +391,9 @@ title = "Architecture: Identity, Authority, and Deployment Infrastructure"
 blurb = "The architecture-side work on identity, authority, and deployment patterns has produced a substantial body of artifacts — multiple specs across the layered stac"
 group = "System & architecture"
 
-[[doc]]
-path  = "specs/ENTITY-SYSTEM-REFERENCE.md"
-title = "Entity System — Condensed Working Reference"
-blurb = "This document is the minimum context needed to work with the entity system: make requests, build handlers, understand responses, and reason about security."
-group = "System & architecture"
+# `specs/ENTITY-SYSTEM-REFERENCE.md` was declared here until 2026-09-08. RETIRED and moved to
+# `docs/archive/`: a condensed restatement is the class `SPECIFICATION-FORMAT.md` §8.4.3 forbids
+# authoring, and it was never a citation target. Do not re-declare it; do not author a successor.
 
 [[doc]]
 path  = "specs/SYSTEM-ARCHITECTURE.md"

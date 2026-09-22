@@ -336,7 +336,63 @@ would exist afterwards.
 
 ---
 
-## 6. Open questions
+## 5a. The call §5 deferred has been made — **more than one oracle gets built**
+
+> **Amendment, 2026-09-08.** §5 said this proposal *"does not require a second oracle to be
+> built. It makes one possible, which is the point; whether anyone builds one is a separate
+> call."* **That call is now made, and it changes this proposal from permissive to
+> directive.**
+
+**The target state, in one paragraph.** The conformance check set is **specified here, in
+neutral language, so that any party can implement it** — and more than one party does. The
+**core** check set is built independently by the conformance anchor. The **extension** check
+sets are built, extension by extension, by the generation repository, as it works through the
+corpus. The existing reference oracle **stays**, is not forked and is not reassigned; it
+remains the standing independent implementation, which is the failsafe that makes the others
+checkable. Where a second builder finds a requirement the reference oracle does not cover,
+**the gap is ported back into it** as well as being covered in the new one. A third and fourth
+builder are anticipated and are not scheduled.
+
+**Why more than one, stated as the mechanism rather than as a preference:** a single oracle
+cannot distinguish *"the peer is wrong"* from *"the oracle is wrong."* Every check it runs is
+scored by the same judgement that wrote it, so its own errors are invisible **by
+construction** — which is the argument §1 already makes about corpora, applied one layer up to
+the thing that scores them. **A second implementation is the first real measurement of the
+first.**
+
+**Verified state, 2026-09-08 — read from each seat's own tree, not inferred.** Both consuming
+seats already record that they do not author the check set: the anchor's build file says the
+suite *"is validate-peer and which we do not author"*, and the generation repository's own
+guidance names it *"our gate"* and *"our conformance axis."* **So this is not a correction of
+anyone's practice — it is a capability that no seat has claimed and that no document has ever
+asked for.** The reference check set is 116 source files and roughly 68,000 lines; **nobody
+should read that number as the size of the specification**, which is the point of §2 being
+generated rather than transcribed.
+
+### 5a.1 The extension half is blocked on something this proposal does not own
+
+**The §2 register is derived from the oracle's own declarations.** That is right for the core
+half and it is the reason §2 got cheap — but it means the register can say *what the reference
+oracle tests* and **structurally cannot say what the specification requires.** For the core,
+the gap is small: the core spec's normative sections are cited by the checks themselves.
+
+**For the extension half there is no addressable source at all.** An extension's conformance
+inventory is its `Conformance` section, and across the 26 extension specs those sections
+have **no declared shape and no stable row identifiers** — measured: 18 use level-named
+subsections, 2 a table, 5 something else each, and **one has no conformance section at
+all.** A requirement row is addressable today only by its English, so a check cannot name the
+requirement it measures, only the section the requirement lives in — and a section routinely
+carries four separate rows.
+
+**So: an addressable conformance inventory is a hard prerequisite for specifying the extension
+check sets, and it is tracked as its own open item rather than absorbed here.** This proposal
+can land its core half without it. It cannot land the extension half.
+
+**One thing that is cheaper than it looks:** the identifier scheme does not need inventing.
+Three extension specs already carry `SUBJECT-CONDITION-N` vector ids in their own conformance
+sections. **The house convention exists; extending it beats minting a second one.**
+
+## 6. Open questions — **answered 2026-09-08**
 
 1. **Does this spec live here or in `entity-core-protocol`?** Conformance to the *core* is a
    core concern, and V7 §9.0 already carries oracle text. But the register spans core and
@@ -356,3 +412,41 @@ would exist afterwards.
    coupling this proposal exists to remove. **Recommended: pin the names, and say plainly
    that they are inherited** — the alternative is invalidating every conformance number in
    the ecosystem to win a naming argument.
+
+**All three recommendations are adopted, 2026-09-08, and the reasoning that settles each is
+the same one: a second implementation now has to be written from this document.**
+
+| # | Answered | Because |
+|---|---|---|
+| **1** | **Here.** The core spec's §9.0 reduces to a pointer | A register stopping at the core boundary leaves the extension categories exactly as unspecified as they are today — and the extension half is now the half with two builders queued behind it |
+| **2** | **Cite, don't move.** The conformance handlers stay where they are and are referenced | Moving them makes this proposal a re-organisation as well as a contract, and it is already the larger of the two |
+| **3** | **Pin the inherited names, and say they are inherited** | A second builder needs the names to mean the same thing on day one. Renaming to win the coupling argument would invalidate every published conformance number in the ecosystem, and the coupling it removes is cosmetic where the coupling that matters — expected values derived by running an implementation — is what §3(a) already prohibits |
+
+**What is still genuinely open, and it is the ruling work rather than a design question:** the
+**212 unresolved register rows**, and specifically the four groups §4 names — a core-profile
+category with 10 checks and 0 citations resolved, another with 9 checks and 1, a third whose
+checks are peer-attributable 0 of 4, and four checks asserting an amplification bound **with
+no normative home anywhere**, citing a proposal that exists in neither this repository nor the
+pre-split archive. **Those are arch's to rule and they were always ours.** They are bounded,
+they are enumerated, and none of them blocks the two builders from starting on the categories
+that do resolve.
+
+## 7. Sequencing — what a second builder can start on today
+
+**Nothing in §5a waits for this proposal to land.** Stated explicitly because the failure mode
+this repository keeps measuring is an implementer holding off while a document is drafted, and
+the standing rule is that implementations discover by building.
+
+| Phase | What | Blocked on |
+|---|---|---|
+| **now** | A second builder implements the **core** categories that already resolve, from the generated register plus the cited normative sections | nothing |
+| **now** | The generation repository continues extension-by-extension, recording what it had to *author* rather than transcribe | nothing |
+| **next** | Arch rules the 212 unresolved rows | arch only |
+| **next** | The conformance inventory gains a declared shape and stable row ids across the 26 extension specs | `GI-11` |
+| **then** | The **extension** check sets are specified in neutral language, per extension | the row above |
+| **then** | This spec lands, §2's register becomes normative, and the five core-spec citations go oracle-neutral | the rulings |
+
+**The direction of the port is one-way and worth pinning:** a gap found by a second builder is
+fixed in **both** its own check set and the reference one. A divergence that is left standing
+in either direction turns two oracles into two dialects, which is worse than one oracle,
+because it produces two defensible conformance numbers for the same peer.

@@ -1,7 +1,18 @@
 # AGENTS-STANDARD.md — how we work (entity-core ecosystem)
 
 **This file is identical in every entity-core repo.** It is maintained in one place and
-injected unchanged ([ADR-0010]). **Do not edit it in your repo** — propose changes upstream.
+injected unchanged ([ADR-0010]).
+
+> **Between releases you MAY edit it in your repo `[operator direction, 2026-09-08]`.** The
+> earlier rule here was *"do not edit it — propose changes upstream,"* and in practice that
+> meant a real convention either went into a parallel document nobody injected, or did not get
+> written at all. **The workflow is now: edit locally during development; at the release
+> boundary the meta DevOps seat reviews every repo's divergence from the standard and
+> reconciles them deliberately; development resumes from one re-synced file.** The drift is
+> the flag — which is the whole point, and is why a second standards document is the wrong
+> answer. **Keep an edit general enough to belong in every repo**, and expect it to be
+> rewritten or dropped at the boundary; if it is only true of your seat it belongs in your own
+> `AGENTS.md`.
 
 Your repo's own `AGENTS.md` sits beside it and adds the repo-specific details (languages,
 build/test commands, layout, boundaries). Where the two differ, the repo `AGENTS.md` wins
@@ -61,6 +72,58 @@ with an independent lifecycle. You are working inside one of them; see its `AGEN
   in repo Y", run an exhaustive named search and `git log --since`. Pass this on to any
   agent you spawn.
 - **Pin citations to `(symbol, path, commit)`, not line numbers.**
+
+## Routing packets — how a finding reaches another seat
+
+**Delivery in this polyrepo is: you commit a document to your own tree and the other party
+reads it.** There is no notification and no queue. That is deliberate and it works — but it
+means **a packet nobody enumerates is a packet nobody receives**, and in September 2026 five
+packets addressed to the architecture seat sat unread in the sending seat's tree, none of them
+cited anywhere in the receiving one. Nobody was careless. Nothing could list them.
+
+A routing packet lives at `docs/status/ROUTING-<id>-<recipient>-<slug>.md` and **MUST** open
+with an addressee block, each field on its own line:
+
+```
+**To:** `entity-core-go`
+**From:** `entity-system-generator`
+**cc:** `entity-core-rust`, `entity-core-py`
+```
+
+- **`To:` names repositories, one per line-item, never a person or a nickname.** Write the
+  full repo name. A brace list (`entity-core-{go,rust,py}`) is fine and is expanded.
+- **`cc:` is a real distinction, not decoration** — it says *this is not addressed to you and
+  you are not on the hook for it.* A packet you need acted on goes in `To:`.
+- **The three fields go on their own lines.** `**To:** X · **From:** Y` on one line parses,
+  but it is the shape that made the field unreadable often enough to be worth pinning.
+
+### The id is unique or it is not an id
+
+**`<id>` is `<date>-<letter>` and that is unique to one repository on one day — which is not
+unique at all.** Measured across the ecosystem: one seat's own tree carried **five** internal
+`date-letter` collisions, and the same `ROUTING-2026-09-06-b` named an outbound packet in one
+repo and an inbound one in another. **A citation of that form cannot be resolved by the
+reader**, which is the failure that matters, because a packet is cited far more often than it
+is opened.
+
+- **Cite a packet by its FULL stem**, not by date and letter:
+  `ROUTING-2026-09-06-b-arch-the-code-set-that-omits-the-code-it-musts`.
+- **Letters are per-day and per-repo**, so never reuse one within a day in your own tree —
+  two documents sharing an id is a defect in the sender's tree, not the reader's problem.
+
+### Receiving
+
+**Every packet addressed to you gets a row on your reconciled ledger**, created by the
+session that learns of it, and it is discharged only by the owner confirming in their own
+tree. Answering in a reply and never recording it is how the channel silts up: the reply is
+in *your* outbox, and the next session reads neither.
+
+**An enforcement point exists and is the reason this section is short.** The architecture
+seat's toolkit ships `spec inbound`, which scans sibling `docs/status/ROUTING-*` for packets
+naming your corpus and reports which have no ledger row — with `to`, `cc` and **`unaddressed`
+counted separately, because a packet whose recipient cannot be parsed is UNKNOWN and never
+"not yours."** Point it at your tree; if you have no ledger it says so rather than reporting
+a clean inbox.
 
 ## Respect the protocol
 

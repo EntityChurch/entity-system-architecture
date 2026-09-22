@@ -128,6 +128,25 @@ that had just demonstrated it does it well — `entity-core-go` had consolidated
 set into one packet, and arch answered by fragmenting it again. **Consolidation is the thing that
 worked; do not undo it in the reply.**
 
+### Cadence — routing is not how a session ends `[operator direction, 2026-09-08]`
+
+**Do not write a routing packet because a session is finishing. Keep working; accumulate what is
+owed on `docs/COHORT-OPEN-ITEMS.md`; route when there is a body of rulings worth a seat's
+attention.** The rule above says *one* packet and not five — this says *not one per session
+either.*
+
+- **The ledger is the durable surface; a packet is a delivery event.** An item is not lost by
+  going unrouted — §0.2's row is what makes it survive, and the row is created when the finding
+  is filed, not when it is sent.
+- **Consolidation across sessions is the same argument as consolidation across seats.** A packet
+  per session is a fresh set of documents to keep consistent and a fresh place a later correction
+  has to travel to, for work that is still moving. **A ruling routed mid-arc gets re-routed.**
+- **Packets already written stay where they are.** They are committed record; do not retract or
+  rewrite one because the cadence changed.
+- **The operator says when a body of work is ready to go out.** If a finding genuinely blocks a
+  seat *now*, that is the exception and it is worth saying so plainly — a seat that is blocked is
+  not "more work to route later."
+
 ## How we work here — tier **AUTHORING**
 
 This repo runs the entity-OS methodology at the **Authoring** tier — the framework is
@@ -520,6 +539,39 @@ reconstruction pass.
   debt, gate the delta. **The unpinned count is the number that ratchets down**, and the four pinned
   today are the blocks where SA-2/SA-3/SA-4 actually landed.
 
+- **`spec inbound` — has a packet addressed to US reached our ledger? RUN IT AT SESSION START.**
+  The enforcement point for `docs/COHORT-OPEN-ITEMS.md` §0.2, which already said a row is created
+  *"the moment a finding is filed anywhere"* — a rule that was canonical, correct, three weeks old,
+  and enforced by nothing. **Five packets from `entity-system-generator` sat unread with zero
+  citations in this tree**, found by a human reading their directory (§0h).
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py inbound                # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py inbound --owed         # the worklist, one path per line
+  python3 <arch-tools>/spec-tool/cli.py inbound --unaddressed  # packets nobody can route mechanically
+  python3 <arch-tools>/spec-tool/cli.py inbound --gate         # 0 clean · 1 findings · 2 could-not-look
+  ```
+
+  **First run: 397 packets across ten sibling repos · 212 addressed here · 14 on the ledger · 198
+  owed**, plus 44 that cc us and **73 that name no recipient any parser can read.** That last
+  bucket is the design: **`unaddressed` is UNKNOWN and is never counted as "not ours"** — folding
+  it into *addressed-elsewhere* would silently discard a quarter of the channel, which is
+  `could-not-look wearing a verdict's clothes` for the fourth time in this toolkit.
+
+  **It caught the toolkit's own recurring defect before shipping.** The first cut required a
+  citation to equal the full filename and reported **0 of 210** — `register`'s *"0 of 97 where the
+  truth was 2"* and `ledger`'s *6 where a hand count found 9*, a third time. **Three analyzers have
+  now been calibrated against the spelling the rule-writer expects rather than the corpus's actual
+  vocabulary**; the ledger cites `ROUTING-2026-08-20-e`, the file is that plus a title. Matching is
+  a leading clause with a separator required, and a bare date credits nothing.
+
+  **Its second finding is the naming scheme itself: four ledger citations reach more than one
+  packet** (`ROUTING-2026-08-20-e` reaches three). A `date-letter` id is unique to one repo on one
+  day, which is not unique — **arch's own tree carries five internal collisions**, and arch's
+  `ROUTING-2026-09-06-b` is outbound while the generator's is inbound. **Cite packets by full
+  stem.** The standard is in `AGENTS-STANDARD.md` §*Routing packets*; ambiguity is its own bucket,
+  never a silent credit or a silent drop.
+
 - **`spec pins` — does a citation resolve for the reader it ships to?** The **L24** gate. Every other
   analyzer asks whether a document is correct; this asks whether its identifiers are reachable by the
   audience it is published to. **Run it before a release cut, and after adding any commit citation to
@@ -535,8 +587,75 @@ reconstruction pass.
   cross-repo and says which repo holds the commit**, because a keystone doc citing an
   `entity-core-go` SHA is not a keystone defect — resolving it against the citing repo alone is how
   you get a false clean *and* a false failure from the same mistake. **64-hex content hashes are
-  never flagged: they are the fix.** Reader by default on purpose — the backlog is 808 and a gate
+  never flagged: they are the fix.** Reader by default on purpose — the backlog is large and a gate
   red on day one teaches people to skip it.
+
+  > **Its composition filter was discarding real citations, and the error was arithmetic
+  > `[fixed 2026-09-08]`.** `looks_like_sha` required both a digit and a hex letter, on its own
+  > comment's claim that a real hash failing that is *"~1 in 10^8"* — **the figure for a full
+  > 40-character SHA, applied to the short ones the corpus cites**, where the true rate is
+  > `(10/16)^7 + (6/16)^7` ≈ **3.8%, about 1 in 26.** And it ran **before** resolution, so those
+  > tokens were dropped unread while the run reported a measured surface. **A token git can look up
+  > is a commit whatever it is made of** — composition is now a last-resort filter for what resolves
+  > nowhere. **686 → 699 considered; 13 real citations had been invisible.**
+  > **The transferable part is how it surfaced: as a ~5% flaky self-test**, because the fixtures
+  > build real repositories and the gate rejected its own generated hashes. **A test that fails
+  > intermittently for no visible reason is a measurement telling you something**, and the instinct
+  > to re-run it until green is the instinct to stop measuring. This is the fifth could-not-look in
+  > this toolkit and the first that arrived as a wrong number rather than a wrong scope.
+
+- **`spec inventory` — is a conformance requirement addressable, or only quotable? Run it after
+  editing any `## N. Conformance` section.** The enforcement point for `SPECIFICATION-FORMAT` §8.5a.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py inventory                    # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py inventory --owed             # the worklist
+  python3 <arch-tools>/spec-tool/cli.py inventory --gate             # 0 clean · 1 findings · 2 could-not-look
+  python3 <arch-tools>/spec-tool/cli.py inventory --update-baseline  # raise the floor; it never lowers
+  ```
+
+  **The defect it exists for is not untidiness.** `SPEC §9.1` names a *section*, and a conformance
+  section routinely holds a dozen independently failable obligations — so *which requirements does no
+  check drive* and *which checks drive nothing declared* cannot be asked at all. **Both are
+  mechanical the moment a row has a name**, and this is the extension-tier half `spec census`'s
+  `unobserved-must` can only do for the core.
+
+  **The shape was already declared and enforced by nothing** — §5.1 prescribed it from the first
+  version of the format standard, and **19 of 26 specs follow it**. *That* is why the routed finding's
+  first clause (*"no declared shape"*) is wrong and its second (*"no stable ids"*) is the whole cost:
+  **restating a correct rule changes nothing.** Check the framing, not only the finding.
+
+  **Two gate conditions, and keeping them separate is the design.** A defect **inside** an adopted
+  inventory — a duplicate id, a level outside the closed six — fires whatever the backlog is. The
+  backlog itself is held by a ratchet on the conformant count in `.spec-inventory-baseline.json`,
+  which **rises and never falls**. A first run of 24 reds teaches people to skip the gate.
+  **Today: 26 specs · 1 conformant · 24 legacy · `EXTENSION-ROLE` with no conformance section at
+  all**, which is a real gap and is authoring work, not formatting.
+
+- **`spec declare` — what does installing this extension touch? Run it after touching any extension
+  spec's header.** The enforcement point for `GUIDE-EXTENSION-DEVELOPMENT` §3.3's seven-field
+  dependency contract, with the same two-condition shape as `inventory`.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py declare                    # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py declare --owed             # the worklist
+  python3 <arch-tools>/spec-tool/cli.py declare --update-baseline  # raise the floor
+  ```
+
+  **Measured 2026-09-08 — and the number on the ledger was generous: 1 of 26, not 2.** The two specs
+  credited with the header carry **six of seven** — both omit `Owned properties.kind`, which **25 of
+  26 omit** — and 23 declare `Depends` and nothing else. **One field of seven is not partial
+  adoption.** `EXTENSION-HISTORY` is the first complete one, written this session and derived from
+  its own sections with each entry cited.
+
+  > **Two measurement invariants, both from a hand count of this question that was wrong in BOTH
+  > directions in one pass, and they generalize past this gate.** ① **The header is a REGION ending
+  > at the first `##`, not a line window** — one spec carries sixty lines of version history above
+  > its `Depends` line, and a 40-line read scored it as declaring nothing. ② **A field name in BODY
+  > prose is not the field** — *"the integration point used by the history extension"* contains
+  > `used by`, and a whole-file grep credits it. ① under-reports and is visible; ② **reports a false
+  > clean** and is not. **Scope the read to the region the rule is about, and require the field's
+  > syntax, not its words.**
 
 - **`spec census` — what does the cohort actually cite?** The instrument for the one question every
   other analyzer structurally cannot answer: *arch cannot observe build state directly, and every

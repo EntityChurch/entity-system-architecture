@@ -192,7 +192,6 @@ specs/                                   ← the published normative surface
 ├── SYSTEM-COMPOSITION.md                    ← L2 coordination layer
 ├── SYSTEM-IDENTITY-COMPOSITION.md           ← identity navigation doc (informative)
 ├── ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md  ← identity architecture (informative)
-├── ENTITY-SYSTEM-REFERENCE.md               ← condensed working reference
 ├── SPECIFICATION-FORMAT.md                  ← spec authoring standard
 ├── STYLE-NAMING-CONVENTIONS.md              ← identifier naming standard
 ├── extensions/                          ← L2.5 extension specs

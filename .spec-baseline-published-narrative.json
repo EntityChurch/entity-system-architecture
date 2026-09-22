@@ -1,7 +1,7 @@
 {
   "meta": {
     "note": "accepted debt; --update-baseline may only lower",
-    "total": 2421,
+    "total": 2415,
     "files": 168,
     "rules": [
       "amendment-provenance",
@@ -173,7 +173,7 @@
     },
     "docs/proposals/implemented/core/PROPOSAL-POLICY-PATH-KEY-FORMS-6-2-VS-6-9A-1.md": {
       "impl-team-ref": 19,
-      "operator-quote": 4
+      "operator-quote": 3
     },
     "docs/proposals/implemented/core/PROPOSAL-STATUS-CODE-SLOT-AND-THE-DEFAULT-CODE-FORCE.md": {
       "discipline-letter-ref": 10,
@@ -260,8 +260,7 @@
     },
     "docs/proposals/implemented/extensions/PROPOSAL-DISPATCH-AUTHORIZATION-FRAME.md": {
       "discipline-letter-ref": 1,
-      "impl-team-ref": 19,
-      "operator-quote": 2
+      "impl-team-ref": 19
     },
     "docs/proposals/implemented/extensions/PROPOSAL-ENCRYPTION-NAMESPACE-AND-RECIPIENT-RESOLUTION.md": {
       "impl-team-ref": 8,
@@ -348,7 +347,7 @@
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PEER-ISSUED-REGISTRATION.md": {
       "impl-team-ref": 30,
       "internal-path-ref": 6,
-      "operator-quote": 15
+      "operator-quote": 14
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PIN-AUTHORITY-CAPABILITY-ENCODING.md": {
       "discipline-letter-ref": 2,
@@ -432,7 +431,7 @@
       "discipline-letter-ref": 17,
       "impl-team-ref": 14,
       "internal-path-ref": 3,
-      "operator-quote": 35
+      "operator-quote": 34
     },
     "docs/research/README.md": {
       "impl-team-ref": 1,
@@ -444,7 +443,7 @@
       "operator-quote": 2
     },
     "docs/research/explorations/ANALYSIS-CONNECTION-FLOWS-AND-MINIMAL-INFRA-FOOTPRINT.md": {
-      "operator-quote": 2
+      "operator-quote": 1
     },
     "docs/research/explorations/ANALYSIS-CONNECTIVITY-LIBP2P-COMPARATIVE-AUDIT-AND-LANDSCAPE.md": {
       "impl-team-ref": 1,

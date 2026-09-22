@@ -1142,7 +1142,7 @@ The type handler and standard constraint handler are read-only — all operation
 | system/type | reconcile | No writes | — |
 | system/type/constraint/* | validate | No writes | — |
 
-Cross-peer operations (`compare`, `compatible`, `adopt`) read from remote peer type definitions. The type handler's grant must cover `*/system/type/*` with read access.
+Cross-peer operations (`compare`, `compatible`, `adopt`) read from remote peer type definitions. The type handler's grant must cover `/*/system/type/*` with read access. (The peer wildcard is spelled `/*/rest`; `ENTITY-CORE-PROTOCOL.md` §5.4's `canonicalize` rejects a bare leading `*/` by name.)
 
 See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
 

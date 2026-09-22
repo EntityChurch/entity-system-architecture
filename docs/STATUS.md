@@ -82,8 +82,7 @@ floor. Concretely, the published surface is:
   Content Site) so web / Godot / terminal front-ends render the same bytes.
 - **Domains** — `specs/domains/DOMAIN-LOCAL-FILES.md`, the handler-domain pattern.
 - **System model** — `specs/SYSTEM-ARCHITECTURE.md`, `specs/SYSTEM-COMPOSITION.md`,
-  `specs/SYSTEM-IDENTITY-COMPOSITION.md`, `specs/ENTITY-SYSTEM-REFERENCE.md`,
-  `specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md`.
+  `specs/SYSTEM-IDENTITY-COMPOSITION.md`, `specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md`.
 - **Guides** — `guides/GUIDE-*.md`, developer how-to + discipline docs (incl.
   `guides/GUIDE-CONFORMANCE.md`, the conformance methodology + vector index, and
   `guides/GUIDE-EXTENSION-DEVELOPMENT.md`).

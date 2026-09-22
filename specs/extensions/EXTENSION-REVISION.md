@@ -753,7 +753,7 @@ Version operations require capability for the `system/revision` handler plus cap
 
 For cross-peer operations (fetch, pull, push), the caller also needs capability for the remote peer connection.
 
-**Config path ownership.** The revision handler's grant includes `put` access to `system/revision/*`. External callers SHOULD NOT hold direct `put` grants for `system/revision/*/config` — config writes route through the `revision/config` operation (§4.4.17), which validates before writing. If an implementation's capability model cannot restrict direct tree.put to handler-owned paths, the §6.1 emit-consumer check serves as defense-in-depth.
+**Config path ownership.** The revision handler's grant includes `put` access to `system/revision/*`. External callers SHOULD NOT hold direct `put` grants reaching any prefix's `config` binding — config writes route through the `revision/config` operation (§4.4.17), which validates before writing. If an implementation's capability model cannot restrict direct tree.put to handler-owned paths, the §6.1 emit-consumer check serves as defense-in-depth.
 
 ### 4.4 Operations
 

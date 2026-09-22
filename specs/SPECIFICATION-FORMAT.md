@@ -1,7 +1,8 @@
 # Entity System — Normative Specification Format
 
-**Version**: 1.2
+**Version**: 1.3
 **Status**: Active
+**v1.3:** §5.1's conformance block and new §8.5a — the inventory is a table of individually identified requirements, `Level` is a closed six-value vocabulary, and each row carries a stable `<PREFIX>-R<n>` id that is allocated once and never reused. A conformance item names the requirement ids it drives.
 **v1.2:** §4.1, new — a requirement that constrains a party, a namespace or a path states the failure it prevents. §8.5's conformance-class list follows `GUIDE-CONFORMANCE` §7.0 from three classes to four (the host-seam check, §7d).
 
 ---
@@ -206,11 +207,18 @@ Every normative spec follows this structure. Sections may be omitted if empty, b
     ; Status codes, error codes, limits, enumerations
 
 ## N. Conformance
-    ### N.1 MUST Implement
-    ### N.2 SHOULD Implement
-    ### N.3 MAY Implement
-    ### N.4 Implementation-Defined
+    ; **Requirement id prefix:** `XXX`
+    ### N.1 Requirements
+        ; a table — one row per requirement, each with a stable id (§8.5a)
+    ### N.2 Types Installed        ; if the spec installs types
+    ### N.3 Handler Registered     ; if the spec registers a handler
 ```
+
+**The inventory is a table of identified requirements, not headings of bullets `[MUST]`.** The
+grouped-by-level form — `### N.1 MUST Implement` / `N.2 SHOULD` / `N.3 MAY` /
+`N.4 Implementation-Defined` — was this standard's shape through v1.2 and is **superseded**. It
+cannot express what §8.5a requires: a level that belongs to the row rather than to the heading
+above it, and a requirement that can be cited by something other than the section it sits in.
 
 ### 5.2 Optional Sections
 
@@ -534,6 +542,89 @@ rules, not only the four states — the conditional rules are where implementati
   never `value: null`. **This one needs its own vector because it is invisible to a reader that only
   checks `state`** — a peer emitting `value: null` passes every state assertion and still breaks a
   consumer that branches on field presence.
+
+### 8.5a The conformance inventory — one row, one requirement, one stable id
+
+**A requirement is addressable or it is prose.** A citation of the form `SPEC §9.1` names a
+section, and a conformance section routinely holds a dozen independently failable obligations —
+so a check that cites one has not said which requirement it drives, and a requirement that no
+check drives cannot be distinguished from one that several do. **Both are unanswerable today at
+the extension tier, and both become mechanical once a row has a name.**
+
+**The shape `[MUST]`:**
+
+```
+## N. Conformance
+
+**Requirement id prefix:** `HIST`
+
+### N.1 Requirements
+
+| id | Requirement | Level | § |
+|---|---|---|---|
+| `HIST-R1` | Store transition entities in the content store | MUST | §3.1 |
+| `HIST-R2` | Store head pointers at `system/history/head/{path}` | MUST | §3.2 |
+| `HIST-R7` | Support `max_depth` retention | SHOULD | §3.3 |
+```
+
+**One row is one requirement `[MUST]`.** A row needing the word "and" between two independently
+failable obligations is two rows. This is the rule the whole inventory rests on: a row that
+bundles three obligations under one id gives a check set one name for three different failures,
+which is the same defect as no name at all, wearing an id.
+
+**`Level` is a closed vocabulary `[MUST]` — six values, no others:**
+
+| Level | Meaning |
+|---|---|
+| `MUST` | required for conformance |
+| `MUST NOT` | prohibited; **a requirement, and as checkable as a MUST** |
+| `SHOULD` | required absent a stated reason (§4) |
+| `SHOULD NOT` | discouraged absent a stated reason |
+| `MAY` | permitted; a peer omitting it is conformant |
+| `IMPL-DEFINED` | **the specification declines to constrain this surface** — a deliberate statement, and a row a check set MUST NOT test |
+
+**`MUST NOT` is a level and not a fourth group.** Filing a prohibition under a heading named
+*Implementation-Defined* — which several specifications did under the superseded shape — puts a
+binding rule in the position a reader has been taught means *unconstrained*, and two
+implementers reading the same section can reasonably reach opposite conclusions about whether it
+binds them. A level attached to the row cannot fail that way.
+
+**The id is `<PREFIX>-R<n>` `[MUST]`:**
+
+- **The prefix is declared by the specification**, on its own line above the table. It is not
+  inferred from the filename: a reader must not have to guess, and a tool inferring it is
+  guessing on the reader's behalf.
+- **One prefix per specification, covering requirements and conformance items alike.** Where a
+  specification already uses a prefix for its conformance-item identifiers, that is the prefix.
+- **`n` is allocated sequentially, never reused, and never renumbered `[MUST]`.** Rows may be
+  added, reordered or retired freely; the number does not move. **A retired row keeps its id and
+  its text, marked retired** — a citation that resolves to *"this was a requirement and no longer
+  is"* is strictly more useful than one that resolves to nothing, and the table's growth is
+  bounded by the specification's own history.
+- **`R` distinguishes a requirement from a conformance item.** `ROUTE-R3` is a requirement;
+  `ROUTE-EXACT-1` is an item that may exercise it. The `SUBJECT-CONDITION-N` item form is
+  unchanged.
+
+**A conformance item names the requirement ids it drives `[SHOULD]`:**
+
+```
+- `ROUTE-EXACT-1` — exact `match` → forward to `via`. **Drives:** `ROUTE-R2`, `ROUTE-R3`.
+```
+
+`SHOULD` rather than `MUST` because the two sides have different authors and land at different
+times — an item authored before its requirement rows exist is not a defect. **What the annotation
+buys is the pair of counts nobody can produce today: requirements no item drives, and items
+driving no declared requirement.** The first is a rule the ecosystem believes it enforces and does
+not. The second is a check asserting a private opinion — and a check asserting the wrong thing
+passes exactly as green as one asserting the right thing.
+
+**Numbered conformance levels compose with this and are not superseded.** Where a specification
+defines tiers, the tier is a **column**, not a second sectioning axis; the rows carry both.
+
+**Converting an inventory is a shape change and nothing else `[MUST]`.** Where converting one
+surfaces a requirement that is really two, or one no check can reach, **that is a finding to
+file, not a thing to fix inside a formatting edit** — silently splitting or dropping an
+obligation under cover of reformatting is how a normative change lands with no proposal behind it.
 
 ---
 

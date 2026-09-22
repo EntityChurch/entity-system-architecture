@@ -1,9 +1,46 @@
 # System History Extension
 
-**Version**: 1.7
+**Version**: 1.10
 **Status**: Active
+**v1.10:** §2.2 gains `pattern_exclude` with a stated evaluation order, and §6.3's worked configuration uses it. A `pattern: "*"` config recorded the peer's own protocol bookkeeping — signature bindings, grant storage, peer status — as ordinary transitions, one or more per served request, permanently. A wildcard is a statement about scope, not consent to audit the machinery; naming such a path explicitly is how you ask for it. The exclusion list in §6.3 is an example for the recommended path convention and deliberately not a normative set. Also: the §2.2 specificity paragraph's peer-wildcard example is corrected to `/*/project/*`, the spelling v1.8 ruled.
+**v1.9:** §9.1 is the worked reference for `SPECIFICATION-FORMAT` §8.5a — fifteen requirements, each with a stable `HIST-R<n>` id, a per-row `Level` and the section that owns it. Two rows changed meaning and are called out under the table: `HIST-R7` now states §3.3's retention floor rather than the "pruning" the v1.8 chain ruling removed, and `HIST-R8` is restated as the `MUST NOT` it always was.
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.19+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-REVISION` — declares this an **optional** dependency; between two revision entries,
+  history shows every individual write (§8).
+- `EXTENSION-COMPUTE` — recommends this extension's query operations for bounded read-only subtree
+  inspection.
+- `EXTENSION-CLOCK` — not a consumer of the handler, but a consumer of the **configuration
+  surface**: it requires its scheduled tick paths to be history-excluded by default, because a
+  periodic tick otherwise generates history at wall rate forever.
+
+**Owned namespaces (closed):**
+- `system/history/` — the whole subtree. No other extension binds inside it.
+  Occupants: `system/history/transition` · `system/history/config` and
+  `system/history/config/{name}` · `system/history/head/{path}` · the four operation parameter and
+  result types (§9.2).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in
+the kind-ownership table.
+
+**Owned handler ops:**
+- `system/history:query` (§4.3)
+- `system/history:rollback` (§4.3)
+
+**Extension points exposed:** none. Nothing registers against this extension.
+
+**Extension points consumed:**
+- **The emit pathway** — the integration point, not an optional hook. Recording is triggered by any
+  tree mutation, and this extension's position in the consumer ordering (after clock, before compute
+  and subscription) is fixed by `SYSTEM-COMPOSITION.md` §2.2 (§5).
+- **The extension-contributed context field `clock`**, owned by `EXTENSION-CLOCK`, typed
+  `system/clock/state` (`SYSTEM-COMPOSITION.md` §1.5; §5).
 
 ---
 
@@ -130,9 +167,14 @@ system/history/config := {
   fields: {
     pattern:    {type_ref: "system/tree/path"}
                  ; Path pattern. Uses core pattern syntax (V7 §5.4).
-                 ; E.g., "docs/*", "local/files/*", "*/project/*"
+                 ; E.g., "docs/*", "local/files/*", "/*/project/*"
     enabled:    {type_ref: "primitive/bool"}
                  ; Whether to record transitions for matching paths
+    pattern_exclude: {array_of: {type_ref: "system/tree/path"}, optional: true}
+                 ; Paths matching any of these are NOT recorded, even when
+                 ; `pattern` matches. Same core §5.4 pattern syntax as `pattern`
+                 ; — this field does not define a matcher of its own.
+                 ; Absent = no exclusions.
     events:     {array_of: {type_ref: "primitive/string"}, optional: true}
                  ; Which events to record. Default: ["created", "updated", "deleted"]
     max_depth:  {type_ref: "primitive/uint", optional: true}
@@ -150,9 +192,16 @@ Stored at `system/history/config/{config_name}`.
 |---------|---------|
 | `project/*` | Subtree under `project/` (short-form → canonicalized to `/{local}/project/*`) |
 | `/{peerB}/project/*` | Subtree under peerB's `project/` |
-| `*/project/*` | Peer wildcard — `project/*` subtree in any peer's namespace |
+| `/*/project/*` | Peer wildcard — `project/*` subtree in any peer's namespace |
 | `*` | Match everything |
 | `project/readme` | Exact match (short-form → `/{local}/project/readme`) |
+
+**The wildcard is in the peer position or at the tail — there is no mid-path wildcard.**
+ENTITY-CORE-PROTOCOL.md §5.4's `matches_pattern` recognises exactly bare `*`, a leading `/*/`
+peer wildcard, and a trailing `/*` subtree; **anything else is compared as an exact string.**
+A `*` in a middle segment is therefore not a wildcard at all — `a/*/c` matches the literal
+three-character-segment path and nothing else. The peer wildcard is spelled `/*/rest` and
+**never `*/rest`**, which `canonicalize` rejects by name.
 
 **Pattern canonicalization.** Config patterns are stored as-is in entity data (entity data is content-addressed and immutable). When evaluating patterns, the history recorder canonicalizes them using `canonicalize_pattern`:
 
@@ -160,9 +209,19 @@ Stored at `system/history/config/{config_name}`.
 canonicalize_pattern(pattern, local_peer_id):
   if starts_with(pattern, "/"):
     return pattern                          ; already absolute
+  ; Bare "*" is match-everything, NOT a peer wildcard: it canonicalizes to the
+  ; local namespace per ENTITY-CORE-PROTOCOL.md §5.4. Tested before the
+  ; first-segment check, which would otherwise read it as a peer wildcard and
+  ; emit the degenerate "/*/".
+  if pattern == "*":
+    return "/" + local_peer_id + "/*"
   first_segment = first_segment_of(pattern)
   if first_segment == "*":
-    return pattern                          ; peer wildcard — already cross-peer
+    ; Peer wildcard. Emit the CANONICAL spelling "/*/" + rest — a bare leading
+    ; "*/" is rejected by core canonicalize and is not recognized by
+    ; matches_pattern, so returning it unchanged produces a pattern that
+    ; stores, resolves, and silently matches nothing.
+    return "/*/" + rest_after_first_segment(pattern)
   return "/" + local_peer_id + "/" + pattern ; short-form → local namespace
 ```
 
@@ -170,7 +229,24 @@ Short-form patterns like `"project/*"` are canonicalized to `"/{local_peer_id}/p
 
 This function is specific to history config pattern evaluation. The core `canonicalize` (ENTITY-CORE-PROTOCOL.md §5.4) is unchanged.
 
-**Pattern specificity.** When multiple configurations match a path, the most specific pattern wins. Specificity is determined by: (1) number of literal (non-wildcard) segments, then (2) total segment depth. A pattern with more literal segments is more specific. A pattern with an explicit peer ID (e.g., `"/{peerA}/project/*"`) is more specific than a wildcard peer ID (e.g., `"*/project/*"`) at the same depth. If history is not configured for a path, no transitions are recorded (history is opt-in).
+**Pattern specificity.** When multiple configurations match a path, the most specific pattern wins. Specificity is determined by: (1) number of literal (non-wildcard) segments, then (2) total segment depth. A pattern with more literal segments is more specific. A pattern with an explicit peer ID (e.g., `"/{peerA}/project/*"`) is more specific than a wildcard peer ID (e.g., `"/*/project/*"`) at the same depth. If history is not configured for a path, no transitions are recorded (history is opt-in).
+
+**Exclusions.** `pattern_exclude` entries use the **same core §5.4 pattern syntax** as `pattern`; this
+field does not define a matcher of its own. **Evaluation order `[MUST]`:** exclusion is checked
+**after** the most-specific matching configuration is selected and **before** the event-type filter.
+A path excluded by the selected configuration is **not** recorded and **does not fall through to a
+less specific configuration** — an exclusion is a decision, not a failure to match. Two conformant
+readings exist without that sentence, and they differ on a path two configurations cover.
+
+**What exclusions are for.** `pattern: "*"` is a statement about **scope** — every path — and not a
+statement of intent to audit the peer's own machinery. A peer writes to its tree while *serving* a
+request as well as *because of* one: signature bindings, grant storage, peer and connection status.
+Those writes are how the peer did the thing, not the thing it was asked to do, and a wildcard did not
+ask for them; without exclusions they accrue one transition per served request, permanently, in a
+store where §3.3's retention is a floor rather than a ceiling. **They are excluded by default only in
+the sense that the worked configuration in §6.3 excludes them** — nothing here forbids recording
+them, because a deployment auditing capability issuance has a good reason to want exactly that.
+**Naming such a path explicitly is how you ask for it.**
 
 **Default events:** `["created", "updated", "deleted"]`. To enable read audit, add `"accessed"` to the events list.
 
@@ -272,13 +348,16 @@ Remote peers' `system/history/` paths arriving via sync MAY be tracked if a conf
 
 ### 3.3 GC Interaction
 
-Transition entities in the content store are subject to the same GC policies as other entities. The `max_depth` configuration limits how many transitions to retain per path. When a new transition exceeds `max_depth`, the oldest transitions in the chain are eligible for GC (the head pointer is updated to truncate the chain).
+Transition entities in the content store are subject to the same GC policies as other entities. The `max_depth` configuration bounds how many transitions per path are **retained** — how many the peer undertakes to keep, not how many it must destroy.
 
-Pruning algorithm:
+**`max_depth` is a retention policy. The chain is never rewritten and the head is never re-pointed `[v1.8]`.** A transition chain is hash-linked: reachability from the head **is carried by** the `previous` fields, so making the `(N+1)`-th transition unreachable would require a version of the `N`-th without its `previous` — a different entity with a different content hash — which changes what the `(N−1)`-th points at, and so on to the head. **Truncating a hash-linked chain means rewriting all of it, and rewriting an audit chain defeats the purpose of keeping one.** Re-pointing the head at the last-kept transition is worse still: it orphans the *newest* entries rather than the oldest.
 
 ```
 prune_history(path, max_depth):
   ; path is peer-namespaced (e.g., "/{peer_id}/docs/report")
+  ; Walks the chain and marks the retention boundary. It MUTATES NOTHING:
+  ; no entity is rewritten, the head pointer is not moved, and the chain
+  ; stays fully linked from head to origin.
   head_hash = tree.get("system/history/head/" + path)
   if head_hash is null: return
 
@@ -288,11 +367,14 @@ prune_history(path, max_depth):
     transition = content_store.get(transition.data.previous)
     count += 1
 
-  ; transition is now the last one to keep
-  ; sever the chain — the old transition keeps its previous field
-  ; (immutable in content store), but it's no longer reachable from the head.
-  ; GC will collect unreachable transitions per normal GC policy.
+  ; `transition` is the oldest RETAINED entry. Everything reachable through
+  ; its `previous` is beyond the retention bound and is no longer held by
+  ; this policy — it becomes collectable under the peer's ordinary
+  ; collection policy, exactly as any other unreferenced content.
+  return transition
 ```
+
+**A peer that collects nothing is conformant.** `max_depth` is `SHOULD` (§9.1); a peer that retains every transition forever has satisfied it, because the bound is a floor on what is kept and never a ceiling. Consequently a `query` MAY return transitions older than `max_depth` — they were never required to be gone — and a caller MUST NOT infer from their absence that they were pruned rather than never written.
 
 ---
 
@@ -507,6 +589,12 @@ emit_entity(path, new_entity, execution_context):
   if config is null or not config.data.enabled:
     return  ; history not enabled for this path
 
+  ; Exclusions (§2.2). Checked against the SELECTED config only — an excluded
+  ; path does not fall through to a less specific one.
+  for excl in (config.data.pattern_exclude or []):
+    if matches_pattern(path, canonicalize_pattern(excl, local_peer_id)):
+      return
+
   if event not in (config.data.events or ["created", "updated", "deleted"]):
     return  ; event type not configured
 
@@ -675,11 +763,23 @@ Compare as an ordered tuple, most significant first:
 | 2 | **total** segment depth — higher wins |
 | 3 | **lexicographic byte order on the canonicalized pattern** — lower wins |
 
-Key 3 makes the order **total**, which keys 1–2 are not: two distinct patterns can agree on both (`a/*/c` and `a/b/*` are each 2 literal segments at depth 3). It is peer-independent, so every conformant peer selects the same config. **§2.2's peer-ID rule needs no separate key** — an explicit peer segment is literal and a `*` peer segment is not, so key 1 already ranks `/{peerA}/project/*` above `*/project/*`.
+**§2.2's peer-ID rule needs no separate key** — an explicit peer segment is literal and a `*` peer segment is not, so key 1 already ranks `/{peerA}/project/*` above `/*/project/*`.
 
-**A worked pair that separates the two readings**, because it is the one an implementation gets wrong silently: `a/b/c/d` (4 literal, depth 4) against `a/*/c/*/e` (3 literal, depth 5). Under the tuple, the first wins on key 1. Under any *"2 points per literal segment, 1 per wildcard"* scalar both score 8, and the winner is whichever the store listed first.
+**Keys 1–2 are already a total order over the patterns §5.4 admits, and key 3 is a defensive tiebreak no constructible pair reaches `[v1.8]`.** Fix an absolute path `/{P}/s₁…sₙ`. Every pattern the core grammar admits that can match it is one of three families:
 
-**Conformance vector `HIST-CONFIG-SPECIFICITY-1` (REQUIRED).** Configure both patterns above with distinguishable settings, write at a path both match, and assert the `a/b/c/d` config is selected — **with the two configs written in both insertion orders**, since a peer that ties resolves by enumeration and will pass one order by luck.
+| Family | literal segments | depth |
+|---|---|---|
+| exact `/{P}/s₁…sₙ` | `n+1` | `n+1` |
+| `/{P}/s₁…s_k/*`, `0 ≤ k < n` | `k+1` | `k+2` |
+| `/*/s₁…s_j/*`, `0 ≤ j < n` | `j` | `j+2` |
+
+A key-1 **and** key-2 tie needs two rows agreeing on both columns: the second and third families agreeing on depth forces `j = k`, which contradicts agreement on literals; the exact family ties neither (`n+1 = k+1` forces `k = n`, excluded because a trailing-`/*` prefix match requires the path to be **strictly deeper** than the prefix; `n+1 = j` and `n+1 = j+2` are inconsistent). **Key 3 is retained so the order stays total if the grammar ever gains a form that reaches a tie** — it is peer-independent, so every conformant peer would resolve such a pair identically.
+
+**The scalar collapse this MUST prevents is likewise not constructible today, and the rule is retained as forward-looking.** With `scalar = 2·literals + 1·wildcards = literals + depth`, the three families score `2n+2`, `2k+3` and `2j+2` — the second is **odd** and the others **even**, so no cross-family tie exists; the one same-parity pair needs `2n+2 = 2j+2`, i.e. `j = n`, which the strictly-deeper rule excludes. **So under §5.4's grammar a scalar and the tuple agree on every pair a peer can construct.** The tuple is required so that they still agree if the grammar widens — not because a peer can exhibit the divergence today. **A specification that claimed otherwise would be asking implementers to defend against a case they cannot write a test for**, which is what v1.7's worked pair did: it used `a/*/c/*/e`, a mid-path spelling that is not a pattern at all (§2.2).
+
+**Conformance vector `HIST-CONFIG-SPECIFICITY-1` (REQUIRED) — selection is by specificity, not by enumeration order.** Configure `a/b/*` and `a/*` with distinguishable settings and write at `a/b/c`. Both match; key 1 is 3 against 2, so the `a/b/*` config MUST be selected. **Write the two configs in both insertion orders and assert the same selection each time** — an implementation that returns the first match rather than the most specific one passes exactly one order, by luck.
+
+**Conformance vector `HIST-CONFIG-SPECIFICITY-2` (REQUIRED) — key 2 is load-bearing.** Configure `*` (canonicalizes to `/{local}/*` — 1 literal, depth 2) and `/*/a/*` (1 literal, depth 3) and write at `a/b`. **Key 1 ties at 1 and only key 2 separates them**, so the `/*/a/*` config MUST be selected. Both insertion orders. This pair fails an implementation that compares literal counts alone and never consults depth.
 
 ### 6.3 Default Configuration
 
@@ -689,12 +789,30 @@ No history is recorded by default. History is opt-in. A peer that wants history 
 system/history/config/everything := {
   type: "system/history/config"
   data: {
-    pattern: "*"              ; match everything
+    pattern: "*"                     ; match everything the peer was ASKED to do
+    pattern_exclude: [               ; ...but not how it did it. See below.
+      "system/signature/*"           ; signature bindings written while serving
+      "system/capability/grants/*"   ; grant storage
+      "system/peer/*"                ; peer and connection status
+    ]
     enabled: true
     max_depth: 10000
   }
 }
 ```
+
+**The exclusion list here is an EXAMPLE for the recommended path convention, not a normative set.**
+`ENTITY-CORE-PROTOCOL` §1.9 makes those locations a recommended convention rather than a structural
+requirement — a conformant peer may store this state elsewhere and communicate it through grants — so
+a deployment substitutes the paths **its** machinery actually writes. The rule is §2.2's and is about
+consent, not about these three prefixes.
+
+**Why the example carries them at all:** a `pattern: "*"` configuration without exclusions records the
+peer's own protocol bookkeeping as ordinary transitions, at a rate of one or more per served request,
+permanently. Measured on one implementation: a single `system/tree:put` produced **three** consumer
+events, two of them the peer's own signature bookkeeping. Nothing is corrupted — head pointers are
+per-path — but the accumulation is unbounded and §3.3's retention floor does not oblige anyone to
+collect it.
 
 ---
 
@@ -755,20 +873,43 @@ A peer can have history without versioning (local audit and undo). A peer can ha
 
 ## 9. Conformance
 
+**Requirement id prefix:** `HIST`
+
 ### 9.1 Requirements
 
-| Requirement | Level |
-|-------------|-------|
-| Store transition entities in content store | MUST |
-| Store head pointers at `system/history/head/{path}` | MUST |
-| Record `author`, `capability`, `timestamp` in transitions | MUST |
-| Record `caller_capability` when it differs from `capability` | SHOULD |
-| Record `handler`, `operation`, `chain_id` in transitions | SHOULD |
-| Support `"accessed"` event type | MAY |
-| Support `max_depth` pruning | SHOULD |
-| Exclude local peer's `system/history/*` from history recording | MUST |
-| Dual capability check on all operations | MUST |
-| Validate rollback target is in path history | MUST |
+| id | Requirement | Level | § |
+|---|---|---|---|
+| `HIST-R1` | Store transition entities in the content store | MUST | §3.1 |
+| `HIST-R2` | Store head pointers at `system/history/head/{path}` | MUST | §3.1 |
+| `HIST-R3` | Record `author`, `capability`, `timestamp` in transitions | MUST | §2.1 |
+| `HIST-R4` | Record `caller_capability` when it differs from `capability` | SHOULD | §2.1 |
+| `HIST-R5` | Record `handler`, `operation`, `chain_id` in transitions | SHOULD | §2.1 |
+| `HIST-R6` | Support the `"accessed"` event type | MAY | §2.1 |
+| `HIST-R7` | Retain at least `max_depth` entries per path | SHOULD | §3.3 |
+| `HIST-R8` | Record the local peer's own `system/history/*` writes | MUST NOT | §3.2 |
+| `HIST-R9` | Apply the dual capability check on all operations | MUST | §4.2, §7.1 |
+| `HIST-R10` | Validate that a rollback target is in the path's history | MUST | §4.3 |
+| `HIST-R11` | Refuse a rollback target absent from the chain with `404 not_in_history` | MUST | §7.5, Appendix A |
+| `HIST-R12` | Emit error codes from Appendix A's set and no other, more specific spelling | MUST | Appendix A |
+| `HIST-R13` | Select the most specific matching config, independent of enumeration order | MUST | §6.2 |
+| `HIST-R14` | Compare specificity as the §6.2 tuple, never as a collapsed scalar | MUST | §6.2 |
+| `HIST-R15` | Canonicalize a leading-`*` config pattern to `/*/` + remainder | MUST | §2.2 |
+| `HIST-R16` | Apply `pattern_exclude` against the selected config only, after selection and before the event filter; an excluded path does not fall through to a less specific config | MUST | §2.2, §5.1 |
+
+**Ids are allocated once and never reused** (`SPECIFICATION-FORMAT` §8.5a). A row may be added,
+reordered or retired; its number does not move.
+
+**Two rows changed meaning in this conversion and are called out rather than folded into it**,
+per §8.5a's rule that a shape change is a shape change:
+
+- **`HIST-R7`** read *"support `max_depth` pruning"*, which contradicts §3.3 as of v1.8: the
+  chain is never rewritten and `max_depth` is a **retention floor**, not a truncation instruction.
+  The row now states the obligation §3.3 actually imposes. This is folding a ruling that had
+  already landed in the section, not a new requirement.
+- **`HIST-R8`** was levelled `MUST` on the sentence *"exclude the local peer's `system/history/*`
+  from recording."* A negated obligation stated as a `MUST` to exclude is the same rule as a
+  `MUST NOT` to record, and the second spelling is the one a check can be written against. Same
+  requirement, stated in the direction that fails.
 
 ### 9.2 Types Installed
 
@@ -795,3 +936,36 @@ system/handler/system/history := system/handler {
   }
 }
 ```
+
+---
+
+## Appendix A: Error Codes
+
+The `system/history` handler's code set, per `ENTITY-CORE-PROTOCOL` §3.3's default-code force:
+a more-specific code is conformant only where one is **defined for the operation in a spec code
+set**, and this table is that set for this handler. An undefined spelling is non-conformant and
+falls back to the status's default.
+
+**This table is closed over the codes this handler DEFINES, not over every code it may emit.** The
+core status table (`ENTITY-CORE-PROTOCOL` §3.3) is a spec code set too, and the codes it enumerates
+are available to every handler without restatement here. **Restating a core code in an extension
+appendix is the error, not omitting it:** a condition raised at dispatch, before this handler runs,
+is not this document's to define, and a copy of it here is a second home for a rule this document
+does not own.
+
+| Operation | Error Code | Status | Description |
+|-----------|-----------|--------|-------------|
+| `rollback` | `not_in_history` | 404 | The `target_hash` does not appear in the chain for this path (§4.3.2). **A domain 404 — the handler is registered and the operation ran; the requested restore point is not in this path's history.** §3.3's 404 default is `handler_not_found`, which would be actively wrong here |
+| `query`, `rollback` | `access_denied` | 403 | Either half of the §4.2 dual capability check refused — the history handler grant or the target-path grant (§4.2, §7.1) |
+
+**Core codes this handler also emits, defined by `ENTITY-CORE-PROTOCOL` §3.3 and not by this table:** `path_required` (400, no `resource` on a directly-callable op) · `unexpected_params` (400) · `unsupported_operation` (501) · `storage_error` (500, a content-store or tree read/write failure). **They are named here so an implementer knows which arise, and defined there so there is one home.**
+
+**`not_in_history` is security-relevant and is why this appendix exists.** §7.5 makes it the
+refusal that stops `rollback` being an unrestricted write primitive — *you can only restore
+entities that were previously at that path.* §4.3.2's algorithm spells the token; before v1.8
+no code set defined it, so a peer following §3.3's closed-set rule to the letter had to fall
+back to the 404 default and lose the distinction the security model depends on.
+
+**The token is the `code`, never a label in the `message`.** `message` is optional and
+human-readable (`ENTITY-CORE-PROTOCOL` §3.3); a discriminator a caller must branch on cannot
+live there, because a conformant peer may omit the field entirely.
