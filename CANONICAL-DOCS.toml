@@ -372,9 +372,9 @@ blurb = "The share record and how its audience binds. Third member of the applic
 group = "Applications"
 
 [[doc]]
-path  = "specs/applications/CHARTER.md"
-title = "`applications/` — the L5 Application-Convention domain — CHARTER"
-blurb = "A home for cross-impl, application-layer (L5) conventions — standards that let independent applications and"
+path  = "guides/GUIDE-APPLICATION-DEVELOPMENT.md"
+title = "Application development — what an L5 application convention must be"
+blurb = "The applications tier standard: what makes a cross-impl, application-layer convention a convention rather than a dumping ground, and which corpus-wide rules bind one."
 group = "Applications"
 
 # ── Domain patterns ───────────────────────────────────────────────────────────

@@ -3,8 +3,9 @@
 **Status:** IMPLEMENTED (2026-09-08) — **FOLDED as `specs/applications/APP-CONVENTION-REFERENCE.md` v0.1**,
 the domain's fourth member. All eight deltas landed; **two were adjudicated differently from the text
 below and two defects were found in the fold — see §12, which is the authority on what actually
-shipped.** The convention is **authored and NOT ratifiable**: the §7 vectors are specified and not
-shipped (charter #5), and they are carried on the spec's own §6.2.
+shipped.** The convention is **authored; not yet exercised** — the §7 checks are named and are carried on the spec's
+own §6.2, and the implementations build and run them (charter #5, as corrected by
+`PROPOSAL-A-CONVENTION-STATES-WHAT-A-CHECK-MUST-DISCRIMINATE-AND-SHIPS-NO-ARTIFACT`).
 **Target:** a new `specs/applications/APP-CONVENTION-REFERENCE.md` (the atom and its string projection,
 imported by the tier) · `specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md` §4 (`nav-node.target`
 gets a grammar instead of *"the renderer's classifier"*) · `specs/applications/APP-CONVENTION-EMBED.md` §3

@@ -12,7 +12,7 @@ convention that all front-ends agree to render the same way."
 > this is the forward, stage/phase view.
 
 **Owning workstream:** W1 (Outer Limits / application).
-**Charter:** `applications/CHARTER.md` (Draft).
+**Tier standard:** `guides/GUIDE-APPLICATION-DEVELOPMENT.md` v2.0 (Active) — *was `applications/CHARTER.md`; moved 2026-09-09.*
 
 ---
 
@@ -28,9 +28,12 @@ coherence" (GUIDE-EXTENSION-DEVELOPMENT §3.5).
 
 | artifact | version | hdr | maturity | role |
 |---|---|---|---|---|
-| `applications/CHARTER` | — | Draft | **M1** | the domain charter + convention discipline |
+| `guides/GUIDE-APPLICATION-DEVELOPMENT` | 2.0 | Active | **M1** | the tier standard — what a convention must be, and which corpus-wide rules bind one |
 | `APP-CONVENTION-EMBED` | 0.2.3 | Draft | **M1→M2** | the generic rich-content typed-node primitive |
 | `APP-CONVENTION-SEMANTIC-CONTENT-SITE` | 0.5 | Draft | **M1→M2** | content sites built on Embed (the first consumer) |
+| `APP-CONVENTION-SHARE` | 0.1 | Draft | **M1** | the share record and its audience binding — a share is a titled grant |
+| `APP-CONVENTION-REFERENCE` | 0.1 | Draft | **M1** | **foundational** — the reference atom (*"this points at that"*) and its `entity+ref://` string form; the single home for the tier's shared atoms |
+| `APP-CONVENTION-FEED` | 0.1 | Draft | **M1** | *a thing someone posted* — entry, key-addressed index, bounded collection, mirror. What makes following someone across independent hosts a shared format |
 
 **Important:** this domain is **mostly plan, not spec.** The SITE convention exists as a draft;
 SPACES and REPOS are named directions with **zero design** today. Distinguish plan from

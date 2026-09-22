@@ -2,7 +2,8 @@
 
 **Version**: 0.1
 **Status**: Draft
-**Domain:** `applications/` (third member — see `CHARTER.md`). **Charter class:** FORMAT-only.
+**Domain:** `applications/` (third member).
+**Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §3.6 / §5.2 / §5.4 (grant structure, `check_permission`,
 pattern matching) · `EXTENSION-TREE.md` §3.3a (`published-root`) · `APP-CONVENTION-EMBED.md` §3
 (`content-hash` atom).
@@ -10,7 +11,7 @@ pattern matching) · `EXTENSION-TREE.md` §3.3a (`published-root`) · `APP-CONVE
 > **What this document is.** A share is **not a new mechanism.** It is a titled capability grant plus a
 > small record that names it, so that two independent front-ends produce byte-compatible entities and can
 > read each other's shares. The convention adds **no** kernel feature, **no** required SDK surface, and
-> **no** new authorization path (charter #2, #3). Everything normative about *whether access is allowed*
+> **no** new authorization path (GUIDE-APPLICATION-DEVELOPMENT §2.2; proposal-first). Everything normative about *whether access is allowed*
 > already lives in `ENTITY-CORE-PROTOCOL` §5.2 and is untouched here.
 
 ---
@@ -67,7 +68,7 @@ The cross-impl contract is the **type tag**, not the path. Type tags live under 
 tree **with no peer filter** — the type tag *is* the index key. A tag under one application's prefix
 (`app/entity-browser/share`) makes browser↔go aggregation impossible **even with a perfect mirror**,
 because the query does not match. A tag under `system/` is equally wrong: `system/` is the substrate
-namespace and a convention adds no kernel surface (charter #2).
+namespace and a convention adds no kernel surface (GUIDE-APPLICATION-DEVELOPMENT §2.2).
 
 | Type | Role |
 |---|---|
@@ -91,7 +92,7 @@ peer-id      = tstr                  ; V7 §1.5 Base58 peer-id
 tree-path    = tstr                  ; absolute or peer-relative per V7 §1.4
 ```
 
-**No fixed-width hash form appears anywhere in this document** (charter #6). A convention that bakes one
+**No fixed-width hash form appears anywhere in this document** (SPECIFICATION-FORMAT §8.4.5). A convention that bakes one
 re-locks the cage the hash-agility arc removed.
 
 ### 2.2 `app/share/record`
@@ -158,6 +159,23 @@ share-follow = {
 **The follow surface is NOT LOCKED.** `strategy` is optional and its vocabulary is undefined here on
 purpose — see §5. Everything else in this document is settled; this part is not, and an implementation
 should not read the rest of the spec's firmness as extending to it.
+
+> ### ⚠ `app/share/follow` and `app/feed/follow` are DIFFERENT TYPES, and the discriminator is the subject
+>
+> **This one follows a GRANT. `APP-CONVENTION-FEED` §2.4's follows a NAMESPACE.** That is not a naming
+> accident and the two are not interchangeable:
+>
+> | | `app/share/follow` (here) | `app/feed/follow` |
+> |---|---|---|
+> | Subject | one titled **share record** | a peer **namespace** |
+> | Authorization | an audience the publisher authorized | **none required** — public, pull-only |
+> | Does the publisher know? | **yes** — they minted the grantee's token | **no**, and cannot |
+>
+> **An implementer who finds this type first and never sees the other will use the wrong tag**, and the
+> failure is silent: a type-filtered query on the wrong tag returns a correct, complete, **empty** answer.
+> They are not unified because doing so would require making the `record` field optional, which changes
+> what an absent field means in an already-landed schema. **If the implementing peers converge on
+> unifying them, that is recorded rather than ruled** — the same stance §5 takes on this follow surface.
 
 ---
 
@@ -257,11 +275,11 @@ is not in question — progress is meaningful to any reader.
 
 ### 5.1 Also deliberately out of scope
 
-**Rendering, share UX, front-end wiring** — charter #2: format is the contract; presentation is per
+**Rendering, share UX, front-end wiring** — GUIDE-APPLICATION-DEVELOPMENT §2.2: format is the contract; presentation is per
 front-end and lives in the application. **When enforcement tightens** — nothing here says when a
 development-mode open-grants shortcut comes off; that is the consumer's call.
 
-## 6. Floor (charter #4)
+## 6. Floor (SPECIFICATION-FORMAT §8.6)
 
 A peer with no group extension, no revision extension and no subscription engine is a **valid participant**:
 
@@ -286,12 +304,14 @@ moves.**
 
 ---
 
-## 8. Conformance vectors — OWED, NOT SHIPPED
+## 8. Required checks — what an implementation must discriminate
 
-**Charter #5: a convention is a byte-level cross-impl contract and is not validated until vectors exercise
-it.** v0.1 ships **none**, and is therefore **not ratifiable**.
+**GUIDE-EXTENSION-DEVELOPMENT §7: a convention is a byte-level cross-impl contract and is not validated until conformance checks
+exercise it — and the convention names the cases while the implementations and the conformance oracle produce
+the fixtures and run them** (`GUIDE-CONFORMANCE` §5.1a). **This convention is authored; it is validated when
+these have been exercised.**
 
-The vector set this document owes:
+The cases this document names:
 
 | # | Vector | Asserts |
 |---|---|---|
@@ -299,7 +319,7 @@ The vector set this document owes:
 | SHARE-2 | the same with a `prefix-target` | tagged-union discrimination |
 | SHARE-3 | a record whose grant omits `peers`, presented cross-peer → **200** | §1.1, the correct shape |
 | SHARE-4 | the same grant with `peers: {include: [grantee_id]}` → **403 `capability_denied`** | §1.1, the defect made observable — **the vector that makes the silent failure loud** |
-| SHARE-5 | `content-hash` under a non-SHA-256 format code round-trips | charter #6, no fixed width |
+| SHARE-5 | `content-hash` under a non-SHA-256 format code round-trips | SPECIFICATION-FORMAT §8.4.5, no fixed width |
 | SHARE-6 | policy-entry removal → subsequent `request` yields `403 scope_exceeds_authority`; a previously `request`-minted token still verifies | §3.1, both halves of the withdrawal claim |
 
 **SHARE-4 and SHARE-6 are the two that matter** — they are the assertions that fail loudly if an

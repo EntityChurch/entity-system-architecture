@@ -1,6 +1,7 @@
 # EXTENSION-REGISTRY
 
-**Version**: 1.25
+**Version**: 1.26
+**v1.26:** §2.3 and §12 — two claims about reverse `peer_id → endpoint` lookup are withdrawn. §2.3 said `:resolve` is *"name-keyed by contract"* and scoped reverse lookup to the identity extension; §12 said that scoping *"lives in an EXTENSION-IDENTITY amendment, separately authored."* **No such amendment exists, the two clauses cited each other, and the widening went beyond what §2.3's fallback-loop argument establishes** — which is only that the transport-fallback loop re-resolves the original *name*. **Reverse peer-id → transport lookup is `EXTENSION-NETWORK` §6.5.1c's `system/peer/transport-set`**, which needs neither a name nor a registry. A registry MAY serve or index one; that is lookup machinery and is not the same as defining the record.
 **v1.25:** §6a.3a — the enumeration-completeness claim now cites the rule that delivers it (`EXTENSION-TREE` §3.8 R1), having asserted flatly that a hostile origin *"cannot omit a node from the walk without the walk failing"* while the walk it depended on never specified the branch. §6a.6 — the signed-root walk it offers as the better-than-TTL path inherited the same absent-vs-withheld collapse it was offered as an escape from; §3.8 R1 is what separates them, and the reason the keyed index does **not** get the same guarantee is now stated rather than left to be inferred. §11.1 gains **`REG-BROWSE-WITHHELD-1`**, the registry-side check the claim never had.
 **v1.24:** §6.6 — retired `Public_X` vocabulary for EXTENSION-IDENTITY's landed function names, and corrected a false rotation claim: a binding survives **agent** rotation, while §4.3/§4.4 rotation of the handle-bearing cert replaces the key `target_peer_id` names and is not specified here. §12 Q3 split into the binding's validity (answered) and the receiver's ability to follow (open).
 **v1.23:** §8.2 — the inherited "cross-peer subscription does not exist" blocker is withdrawn (see `EXTENSION-RELAY` §11.1a). Registry federation is unblocked; Mode A's normative text is what remains unwritten.
@@ -171,7 +172,9 @@ try(transport T1) → fail → try(T2) → fail
   → try(T3 from refreshed set) → ...
 ```
 
-`:resolve` is name-keyed by contract. Reverse `peer_id → binding` lookup is address-discovery and is scoped to EXTENSION-IDENTITY per §12. NETWORK §6.6's session entity holds the original name that produced the current peer-id binding; the transport-fallback loop re-resolves THAT name. Re-resolves from the fallback loop SHOULD be tagged `is_fallback_reresolve: true` when logged (see §11.1) — they are NOT counted toward the resolution-log's per-call sampling budget.
+**The transport-fallback loop re-resolves the original NAME, and that is the whole of what this clause says.** `EXTENSION-NETWORK` §6.6's session entity holds the name that produced the current peer-id binding; when the fallback loop needs to re-resolve, it re-resolves **that name** — it does not perform a reverse lookup from the peer id. Re-resolves from the fallback loop SHOULD be tagged `is_fallback_reresolve: true` when logged (see §11.1) — they are NOT counted toward the resolution-log's per-call sampling budget.
+
+> **What this clause does NOT establish:** that `:resolve` is name-keyed *by contract*, or that reverse `peer_id → endpoint` lookup is scoped to the identity extension. Those were a widening beyond the argument, and they were circular — §12 cited this clause and this clause cited §12. **Reverse peer-id → transport lookup is answered by `EXTENSION-NETWORK` §6.5.1c's `system/peer/transport-set`**, which needs no name and no registry.
 
 The `ResolutionResult` shape (§2.1) returns `transports` + `ttl` — the right output for this loop. Consumers MUST understand that `:resolve` is invoked **on transport failure, not only on cold-start.** TTL-bounded caching of resolutions interacts with this: a resolution MAY be re-fetched before its TTL expires if the cached endpoints stop working.
 
@@ -1862,7 +1865,7 @@ data: {
 - **Anti-squatting / abuse prevention.** Per-backend concern; substrate has no opinion.
 - **Privacy of the resolver query** beyond the §4.1 `name_format_dispatch` filtering. Per-backend (e.g., encrypted DNS-over-HTTPS at DNS-TXT backend; oblivious DHT for DHT backend).
 - **Discovery (peer-finding).** Distinct concern; lives in sibling extension `EXTENSION-DISCOVERY.md`.
-- **Address-discovery (`runtime-peer-endpoint`) — reverse peer_id → endpoint lookup.** Lives in EXTENSION-IDENTITY amendment, separately authored. `:resolve` is name-keyed by contract (§2.1 / §2.3).
+- **Address-discovery (`runtime-peer-endpoint`) — reverse peer_id → endpoint lookup.** **Owned by `EXTENSION-NETWORK` §6.5.1c**, which defines `system/peer/transport-set`: the peer's own signed, complete statement of its transports, verifiable against the peer id alone and servable by any party. **It is not owned here and it is not owned by the identity extension.** A registry MAY serve or index transport-sets — that is lookup machinery, which is this extension's business — but it does not define the record, exactly as it does not define the transport shapes named by `binding.transports`. `:resolve` is name-keyed by contract (§2.1 / §2.3).
 - **Cross-peer local-name sharing.** Local-names are local; sharing is a different mechanism (group-shared registry).
 - **Local-name syncing between user's own devices.** Out of v1 scope.
 - **Ergonomic SDK seam (`browse_resolve`, `browse_reach`, `browse_fetch`, …)** — belongs to W1 (Outer Limits / SDK / Application). This extension stops at the handler contract; the L5 browse SDK consumes it.

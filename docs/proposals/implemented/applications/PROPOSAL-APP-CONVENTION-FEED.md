@@ -1,6 +1,10 @@
 # PROPOSAL — `APP-CONVENTION-FEED` — the entry, the reference, the index and the mirror
 
-**Status:** DRAFT (2026-09-04)
+**Status:** IMPLEMENTED 2026-09-09 — **FOLDED** as `specs/applications/APP-CONVENTION-FEED.md` **v0.1**, the applications domain's **fifth** member. All nine deltas landed, including three new charter disciplines (#7 compatibility contract · #8 the growth rule · #9 the disposition rule). **Authored; not yet exercised** — §11.2 names eleven required checks and the implementations build and run
+them (charter #5, as corrected by
+`PROPOSAL-A-CONVENTION-STATES-WHAT-A-CHECK-MUST-DISCRIMINATE-AND-SHIPS-NO-ARTIFACT`; the charter wording
+this document folded said the convention *ships* them, which was wrong about who produces an artifact). **§14 is the fold record and is the authority on what shipped**, including the section renumbering and the `[OPEN-FEED-*]` → `F-*` id mapping.
+**Prior status:** DRAFT (2026-09-04)
 **Tier:** applications — an `APP-CONVENTION-*` member. **No protocol change, no extension change, no
 new kernel surface.**
 **Target:** `specs/applications/APP-CONVENTION-FEED.md` (new; the fourth `applications/` member) + a
@@ -942,12 +946,15 @@ step 9 and one hole in step 3. Second, the cost model: **step 9 is the steady st
 small fetch per followed peer with no publisher-side work at all. **The publisher does no work per
 follower; a million followers and one cost the same.**
 
-**The hole in step 3 is real and is not this document's to close.** With a name you get transports for
-free; with only a bare peer id there is currently nowhere to look. Every id-first system in the
+**The hole in step 3 is CLOSED, and it was closed outside this document.** With a name you get
+transports for free; with only a bare peer id there was nowhere to look. Every id-first system in the
 deployed field solves this the same way — *the endpoint set is published by the id holder, signed by
-the id holder, fetched by id* — and `PROPOSAL-PEER-TRANSPORT-SET` is that work. **A feed reader can
-ship without it** (follows acquired by name or by link carry an origin), which is why this is a
-dependency to name rather than a blocker.
+the id holder, fetched by id* — and that is now **`EXTENSION-NETWORK` §6.5.1c's
+`system/peer/transport-set`**: signed by the peer, verifiable against the peer id alone, complete (so
+a reader can tell a short answer from a whole one), expiring, and **servable by any party**, so a
+reader takes the first answer that verifies. **A feed reader was always able to ship without it** —
+follows acquired by name or by link carry an origin — so this was a dependency to name rather than a
+blocker, and it is now neither.
 
 ---
 
@@ -974,9 +981,10 @@ because the two sides never hold each other's data at all.
 > compatibility mints a new name and leaves the old one meaning what it meant.
 
 **And the enforcement point, because a discipline without one is theatre:** the type tags a convention
-pins are greppable, and a convention's vector set (charter #5) is the artifact that fails when a shape
-changes. **Concretely: every tag this document pins ships with a vector (§10), so a rename or a type
-change fails a byte comparison rather than passing silently as an empty query.**
+pins are greppable, and a shape change fails **cross-impl comparison**. **Concretely: every tag this
+document pins is covered by a named check (§10), so a rename or a type change fails a byte comparison
+rather than passing silently as an empty query.** The comparison is the implementations' to run
+(charter #5); what this document owes is that the case is named.
 
 ---
 
@@ -1094,7 +1102,7 @@ exactly when it stops being true.
 | **`[OPEN-FEED-2]`** | Whether `app/feed/follow` and `app/share/follow` should eventually unify | the implementing peers; recorded here, not ruled | peers converge |
 | **`[OPEN-FEED-3]`** | Retention — republication makes storage grow monotonically and nothing reclaims it. **The mirror (§4) is what makes this load-bearing rather than tidy-up** | unowned | a policy exists |
 | **`[OPEN-FEED-4]`** | The quiet-publisher / withholding-origin indistinguishability (§5) | unowned across the corpus | a second-source comparison is specified |
-| **`[OPEN-FEED-5]`** | Bare-id → origin (§7 step 3) | `PROPOSAL-PEER-TRANSPORT-SET` | that proposal lands |
+| ~~**`[OPEN-FEED-5]`**~~ | ~~Bare-id → origin (§7 step 3)~~ | — | ✅ **CLOSED.** `EXTENSION-NETWORK` §6.5.1c `system/peer/transport-set` is landed and normative: a reader holding only a peer id obtains a signed, complete, expiring transport set from any party and verifies it against the id. **This was the only item on this list gating stage 1** |
 | **`[OPEN-FEED-6]`** | **Does a chat message unify with `app/feed/entry`? — LEANING NO, on arch's own test, argued by the seat that builds both.** `entity-browser-rust`: the shapes match on 4 of 6 fields, **but the conversation carries a policy — `closed`/`invite`/`open` — and a consumer holding a message from a closed conversation MUST NOT republish it.** The policy lives on the **conversation**, so **a chat message lifted into a feed carries no bit saying *do not mirror me***. That is FEED-9's failure mode one layer up: bytes that verify, in a tool that will republish them, with the **disposition missing rather than wrong.** **The general rule, and it is theirs: *a property governing what a consumer may do with an entity must live on the entity, not on its container — containers do not travel, entities do.*** Unifying would put a republish-forbidding message into the one type the mirror is built to republish | **both application seats.** One has now ruled with a measurement-grade argument; **`entity-workbench-go` has not weighed in and the item says two seats** | workbench-go responds. **Arch is not closing this on one seat** |
 | **`[OPEN-FEED-7]`** | **Where does a profile live?** Nobody asked for one and every surveyed system has one. **Reframed, and it is probably no longer a fifth type:** checked against four primary schemas, the profile is four-for-four a **live-addressed** object — its distinguishing property is not its content shape but that **it is never pinned**. What made it look like a fifth type was that our only reference shape pinned a hash, so a profile modelled as an entry would have had every reference to it go stale on the first edit — **a missing intent presenting as a missing type.** With §2.2.2 landed, the likely answer is a well-known path plus a `live-reference` | unowned | someone needs a display name. **No longer blocked on a taxonomy question** |
 | **`[OPEN-FEED-9]`** | **A self-applied content warning has no home**, and it is the clearest thing in the residue to pass the taxonomy's own test — a conformant consumer holding one must **behave** differently (render behind an interstitial) rather than merely lay it out differently. One of the four surveyed systems carries it as a first-class record field. **Its *shape* is already decided by `[OPEN-FEED-6]`'s rule, which was written for a different question and answers this one:** a content warning is exactly *a property governing what a consumer may do with an entity*, so **it lives on the entry — never on a collection, a mirror or an index that contains it.** What remains open is whether it is a field at all versus a reader-side list | unowned — **raise with both application seats**, since it is a field in a document under their review | a seat needs it, or the ActivityPub read confirms a second carrier |
@@ -1145,3 +1153,85 @@ Stated because a proposal that cannot say what would refute it has not been stre
    reference intents and all four express the difference as a distinct shape or name — never as an
    optional field — which is the derivation behind §2.2. **A claim that survives its own test can still
    be resting on a false neighbour.**
+
+---
+
+## §14 The fold record — what shipped, and the two id maps a reader needs
+
+**Folded 2026-09-09** as `specs/applications/APP-CONVENTION-FEED.md` v0.1. **This section is the
+authority where it and the sections above disagree.**
+
+### §14.1 All nine deltas landed
+
+| Delta | Where |
+|---|---|
+| **D1** | `specs/applications/APP-CONVENTION-FEED.md` — **NEW**, §§1–12 |
+| **D2** | `CHARTER.md` Members — the fifth member row |
+| **D3** | `CHARTER.md` **discipline #7** — the compatibility contract, with its enforcement point named (the vector set is the artifact that fails when a shape changes) |
+| **D8** | `CHARTER.md` **discipline #8** — the growth rule: a new product is a new body type or a new renderer; a new *entity type* only if a conformant consumer must behave differently, **and a proposal minting one names that behaviour** |
+| **D9** | `CHARTER.md` **discipline #9** — the disposition rule: *a property governing what a consumer may DO with an entity lives on the entity, never on its container. Containers do not travel; entities do.* |
+| **D4** | `APP-CONVENTION-SEMANTIC-CONTENT-SITE` §4.2 — the deferral is **discharged on its own stated terms**, with the determinism floor explicitly unchanged and still governing raw enumeration views |
+| **D5** | `APP-CONVENTION-SHARE` §2.4 — the `follow`-tag distinction, written as the table an implementer needs plus the reason the silent failure is silent (a wrong-tag query returns a correct, complete, **empty** answer) |
+| **D6** | `ROADMAP-APPLICATIONS.md` — and the roster was **three artifacts stale**, so `SHARE` and `REFERENCE` were added with it |
+| **D7** | `APP-CONVENTION-EMBED` §3 normative notes — an image or video entry is an entry whose body is an embed with a pointer payload, renditions are the selection mechanism, **and nobody builds a second media path for feeds** |
+
+### §14.2 Section renumbering — the proposal's numbers are NOT the spec's
+
+The spec is reorganized so the reader meets things in the order they are used. **Cite the spec by its
+own numbers**; this map is for following a citation made against this document.
+
+| Proposal | Spec |
+|---|---|
+| §1 properties · §2 vocabulary | §1 · §2 *(unchanged)* |
+| §3 the index | **§4** |
+| §3a the collection | **§5** |
+| §4 the mirror | **§6** |
+| §5 freshness · §5a editing · §5b retroactive edit | **§7**, merged into one section |
+| §6 what it does not decide | **§9** |
+| §7 the chain walked end to end | **not folded** — a build-state table, and build state does not belong in a spec |
+| §8 the compatibility contract | **charter #7**, which is where it always belonged |
+| §9 the floor | **§10** |
+| §10 vectors | **§11.2** |
+
+**Four things the spec adds that this document did not have.** A **§3** stating that reply
+notification is grant-scoped — *"replies notify the author"* silently assumes the open delivery grant
+this architecture declines to have, and that had to be said where a reader forms the expectation. An
+**§8** on syndication emission, which is nearly free and is a projection rather than an authority. An
+**addressable conformance inventory** (§11.1, `FEED-R1`…`FEED-R24`), because §5.1 of the format
+standard prescribes it and a conformance section of a dozen independently failable obligations is not
+addressable as one section reference. And **§12**, below.
+
+### §14.3 The open items moved into the spec, and their ids changed
+
+**§12 of this document said its open items must not fold, *"because an open item that folds into an
+implemented proposal becomes invisible exactly when it stops being true."*** Honoring that: **they are
+now `APP-CONVENTION-FEED` §12**, on the durable artifact a reader actually holds, rewritten to be
+read by an outside implementer.
+
+| Was | Now | |
+|---|---|---|
+| `[OPEN-FEED-1]` | `F-1` | the cursor's permanent home |
+| `[OPEN-FEED-2]` | `F-2` | whether the two `follow` types unify |
+| `[OPEN-FEED-3]` | `F-3` | retention |
+| `[OPEN-FEED-4]` | `F-4` | quiet publisher vs withholding origin |
+| **`[OPEN-FEED-5]`** | — | ✅ **CLOSED before this fold** — `EXTENSION-NETWORK` §6.5.1c |
+| `[OPEN-FEED-6]` | `F-5` | chat message vs feed entry |
+| `[OPEN-FEED-7]` | `F-6` | where a profile lives |
+| `[OPEN-FEED-8]` | `F-11` | is `context` doing too much |
+| `[OPEN-FEED-9]` | `F-7` | the self-applied content warning |
+| `[OPEN-FEED-10]` | `F-9` | the quote |
+| `[OPEN-FEED-11]` | `F-8` | `collection`'s authored order |
+| `[OPEN-FEED-12]` | `F-10` | the multi-party record |
+
+**Two of them were partly answered by charter #9 rather than left open**, and the spec says so:
+`F-5`'s general rule and `F-7`'s *shape* both fall out of *a disposition property lives on the entity,
+never on its container* — which was written for one question and answers the other.
+
+### §14.4 What is owed
+
+- **The eleven required checks are named** (spec §11.2) and are **owed from the implementations**, not
+  from this document; the convention is validated when they have been exercised. `FEED-3`, `FEED-5`, `FEED-6` and `FEED-9`
+  are the load-bearing four; `FEED-10` is the one that fails loudest if the design drifts back toward
+  a chain.
+- **`F-5` and `F-8` want the two application-tier implementations**, and are raised with them directly
+  rather than through a core packet.

@@ -196,7 +196,7 @@ specs/                                   ← the published normative surface
 ├── STYLE-NAMING-CONVENTIONS.md              ← identifier naming standard
 ├── extensions/                          ← L2.5 extension specs
 ├── sdk/                                 ← L3-L4 SDK specifications
-├── applications/                        ← L5 conventions + the domain CHARTER
+├── applications/                        ← L5 conventions (tier standard: guides/GUIDE-APPLICATION-DEVELOPMENT.md)
 └── domains/                             ← domain specs
 guides/                                  ← user-facing GUIDE-*.md
 ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md ← the living roadmaps

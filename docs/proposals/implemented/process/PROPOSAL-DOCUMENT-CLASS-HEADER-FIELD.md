@@ -1,6 +1,6 @@
 # PROPOSAL — a document cannot say what kind of document it is, and three analyzers guessed
 
-**Status:** DRAFT — filed 2026-08-17.
+**Status:** IMPLEMENTED (2026-09-09) — filed 2026-08-17, landed with `PROPOSAL-KIND-AND-AUTHORITY-ARE-TWO-AXES-AND-A-DOCUMENT-MUST-DECLARE-WHAT-GOVERNS-IT`, as both proposals said they must.
 **Target:** `specs/SPECIFICATION-FORMAT.md` §5.3 (header fields) + §10 (relationship to architectural
 documents), with a consuming change in `entity-system-arch-tools` `config.default.toml`.
 **Class of change:** an authoring-standard addition. No wire surface, no extension, no core touch.
@@ -142,3 +142,26 @@ members it cannot justify.
 Steps 1–3 are this repo. Steps 4–5 are `entity-system-arch-tools`, same session as the fold, per the
 standing rule that a gate defect or gate addition is fixed in the tool repo with its own commit and its
 own tests.
+
+
+---
+
+## The fold `[2026-09-09]`
+
+**Landed with the kind-and-authority proposal, which is what both documents said had to happen** —
+they targeted the same two sections from opposite ends and either would have been half an answer.
+
+`SPECIFICATION-FORMAT` §5.3 now requires **`Kind`** (one of §10.1's six values) and **`Authority`**
+(`binding` / `informative`), and adds optional **`Governed-by`**. §10 was rewritten on the two axes
+this proposal's §1 diagnosed.
+
+**The wording that carries this proposal's own finding** is in §5.3: *"`Kind` and `Authority` are
+declared because they are not derivable. A reader — and a tool — otherwise infers them from a
+filename or a directory, which is how a document that governs five specifications came to be classed
+informational, and how the corpus's own authoring standard came to be classed a guide."*
+
+**The consuming change in `entity-system-arch-tools` `config.default.toml` is NOT made.** The config's
+filename-pattern class map still stands and is still the tool's source of truth; migrating it to read
+the declared header is real work with a real backlog (the corpus is at five declared documents out of
+41 specs and 36 guides). **Filed, not done** — and the honest statement is that until it happens the
+defect this proposal names is *documented and not yet closed*.

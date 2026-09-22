@@ -1,6 +1,7 @@
 # Network Extension — Normative Specification
 
-**Version**: 1.8
+**Version**: 1.9
+
 
 > **Amendment 12 — partial fold: the §A1/§5.4 join (new §5.4a; §5.4 pseudocode corrected; §12.1 bullet; two new vectors) `[2026-08-12]`.** Amendment 12 remains **ratified but not folded** as a whole; this folds the one part a cohort implementation proved was load-bearing, ahead of the rest. `entity-core-go` found that the §A1 transport-error eviction **destroyed the keepalive loop that owes the §5.4 `suspect → disconnected` escalation, at the moment it became owed** — so the peer stayed `suspect` forever, §4.1 reconnect never fired, and the §A3 consumer latency contract was silently unmet on every transport-error-first path (the *common* path — a transport error is how a dead peer is usually noticed first). **Root cause is a fold gap made worse by this spec's own pseudocode:** §A1 lives only in the proposal, §5.4 lives here, nothing owned the composition — and §5.4's reference pseudocode put the escalation *inside* the ping loop, so the defect was a faithful implementation of what this section said. **The pseudocode is corrected, not merely annotated** (the §8.3 containment lesson: when pseudocode and prose disagree, implementations follow the pseudocode). §5.4a states the join as a MUST, pins the `suspect`-guard scope so §10.2 fallback and RELAY terminal-hop evictions still MUST NOT demote, orders the grace `sleep` before the status read, and **rules `reason` preservation** — the escalation carries the episode's *originating* reason (`transport-error` on the seam path, `keepalive-miss` on the idle path), because re-stamping asserts pings that were never sent and destroys the only signal distinguishing the path that was broken. Both halves vectored; the negative half is required, since escalating on any *unbound* peer rather than any *`suspect`* peer passes the positive vector and breaks the §A1 seam scope. **Second gap of this exact shape in two cycles** (after the §5.5a granter frame): a reachable state all impls agree on by construction that **no vector visits**, so conformance-green said nothing about it — found by an implementation, not by prose review, both times. *(Observed: `entity-core-go`, source-read at `b55101f`, 2026-08-12.)*
 >
@@ -8,9 +9,9 @@
 >
 > **Amendment 12 — third partial fold: §A2 / §A6.2 / §A6.3 / §A6.4 / §A6.5, the retry lifecycle (new §2.2.1, new §2.11; §2.2 gains two OPTIONAL bounds) `[2026-08-13]`.** `system/peer/status` carried a bare three-state enum, so no consumer could tell *why* a peer left and none could choose a recovery — a transient drop, an auth rejection and a deliberate shutdown were one value. §2.11 lands the `reason` vocabulary and its recovery mapping; §2.2 gains `max_attempts`/`max_elapsed_ms` (**both default unset ⇒ retry forever, which §A6.2 now states normatively** so no implementation invents its own cap); exhausting a bound is a `reason` (`retry-exhausted`), **not** a fourth status. §2.2.1 pins the retry schedule as a **pure function of `(failing_since, cfg, now)`**, with `attempt`/`next_attempt_at` **derived and explicitly never stored** — storing them is a tree write per attempt, the exact fan-out §6.6 rejected — and with the three divergence points (1-indexed `k`, `attempt` counts retries *fired*, `elapsed_to(0)=0`) pinned, because an unpinned derivation relocates a divergence rather than removing it. **The fields themselves are declared upstream at `ENTITY-CORE-PROTOCOL` §3.13 (`9829c6f`), not here** — this spec owns the lifecycle semantics only; two specs declaring fields on one entity is how implementations end up with two shapes. **Additive: all OPTIONAL, no wire change, no renumber; today's behavior is preserved exactly when the bounds are unset.** *(Adopted from convergence, not legislated ahead of it: `failing_since` was **measured on the wire 3-of-3** — go, rust `1152d35`, py `ad0ef98`, `network_reconnect_anchor` PASS 5/5 with 0 skips per seat — reported by `entity-core-go` at `a02ab5e`, whose own conformance check had been holding this at WARN on a stale build-state comment that survived because **a WARN is invisible in a green run.** Three implementations interoperating on a field no landed spec carried: the same shape as the `chain_id` defect corrected the same day, caught one step earlier.)*
 
-> **Amendment 14 — the live-establishment seam (new §10.3; §10 step 3b; §10.2 correction).** §10 step 3 resolves *durable* transport profiles, so a NAT'd peer — whose published endpoints are unreachable from outside — falls straight to the store-and-forward terminal even when it is reachable *right now* by traversal. Amendment 14 names `establish_live(peer_id) → connection | null`, consulted at **step 3b**: after profile resolution fails, **before** the §10.2 delivery fallback. **It returns a connection, not a result, and that is why it is a separate seam** — the ladder re-enters ordinary dispatch on success, so the connection is pooled and reused by every later dispatch. Forcing traversal through §10.2's `dispatch_fallback` (which returns a delivered result) would punch a fresh hole per message and hide the connection from §10 step 1. **This corrects §10.2's forward-looking claim** that the punch and store-and-forward would "escalate from the same step-4 site": that paragraph predates the punch's design, and its own "tries live first and store-and-forward last" is unachievable from a single site consulted once. Ordering is now a **MUST** — live first, store-and-forward last. Two obligations on the returned connection, both MUST: it is an **ordinary transport** (never a new transport type, never published as a durable `system/peer/transport/*` profile — the mapping is session-scoped, §6.7.3), and it **MUST run keepalive** (§5), because a punched NAT mapping expires on silence and an idle punched connection dies in a way no same-host test reproduces. **Additive:** `null` when no traversal extension is installed ⇒ byte-identical to the pre-seam ladder; no V7 change, no wire change, no new capability or error code. The v1 policy behind the seam is `EXTENSION-SIGNALING.md` §6. **Cohort review absorbed the same day it landed (2026-07-31), and the seam survives with four additions** — the four open items `PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM` §6 flagged at fold are now closed by two independent implementations that built it (Go and Rust): the signature gains **`ctx`** (a seconds-long seam with no cancel is a hang — both raised it independently); **one call with strict ordering is confirmed** as right rather than merely simple (both rejected racing it against §10.2 as a layering regression); the **`connection` type and the handshake boundary stay unpinned** as impl-idiomatic — the two builds factor the handshake differently on opposite sides of the seam and both interop, because the seam is internal to one peer — while the **identity check and the retry composition become MUSTs** (obligations 3 and 4), because those two *are* cross-peer observable. Per `AGENTS.md`, cohort findings on a just-landed spec fix it **in place**: no rev bump, v1.6 stands, and the proposal's open items now carry their answers. **Build state (peer-reported, observed 2026-07-31, post-review):** `entity-core-go` has built the seam (`core/peer.tryEstablishLive`, `ext/signaling/peerwiring`) and `entity-core-rust` has built its `LiveEstablish` counterpart; Python has not. *(The pre-review draft of this note read "not present in any implementation" — asserted the morning of the day Go's build landed and Rust reported theirs. See `docs/DOCTRINE-COHORT-STATE-TRACKING.md`: build state is peer-reported and dated, and a spec header is a poor place to carry it.)* The gate remains two NAT'd peers establishing a direct transport that survives idle — **not yet run**; both builds are loopback/in-process, which proves the choreography and not NAT traversal.
+> **Amendment 14 — the live-establishment seam (new §10.3; §10 step 3b; §10.2 correction).** §10 step 3 resolves *durable* transport profiles, so a NAT'd peer — whose published endpoints are unreachable from outside — falls straight to the store-and-forward terminal even when it is reachable *right now* by traversal. Amendment 14 names `establish_live(peer_id) → connection | null`, consulted at **step 3b**: after profile resolution fails, **before** the §10.2 delivery fallback. **It returns a connection, not a result, and that is why it is a separate seam** — the ladder re-enters ordinary dispatch on success, so the connection is pooled and reused by every later dispatch. Forcing traversal through §10.2's `dispatch_fallback` (which returns a delivered result) would punch a fresh hole per message and hide the connection from §10 step 1. **This corrects §10.2's forward-looking claim** that the punch and store-and-forward would "escalate from the same step-4 site": that paragraph predates the punch's design, and its own "tries live first and store-and-forward last" is unachievable from a single site consulted once. Ordering is now a **MUST** — live first, store-and-forward last. Two obligations on the returned connection, both MUST: it is an **ordinary transport** (never a new transport type, never published as a durable `system/peer/transport/*` profile — the mapping is session-scoped, §6.7.3), and it **MUST run keepalive** (§5), because a punched NAT mapping expires on silence and an idle punched connection dies in a way no same-host test reproduces. **Additive:** `null` when no traversal extension is installed ⇒ byte-identical to the pre-seam ladder; no V7 change, no wire change, no new capability or error code. The v1 policy behind the seam is `EXTENSION-SIGNALING.md` §6. **Cohort review absorbed the same day it landed (2026-07-31), and the seam survives with four additions** — the four open items `PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM` §6 flagged at fold are now closed by two independent implementations that built it (Go and Rust): the signature gains **`ctx`** (a seconds-long seam with no cancel is a hang — both raised it independently); **one call with strict ordering is confirmed** as right rather than merely simple (both rejected racing it against §10.2 as a layering regression); the **`connection` type and the handshake boundary stay unpinned** as impl-idiomatic — the two builds factor the handshake differently on opposite sides of the seam and both interop, because the seam is internal to one peer — while the **identity check and the retry composition become MUSTs** (obligations 3 and 4), because those two *are* cross-peer observable. Per `AGENTS.md`, cohort findings on a just-landed spec fix it **in place**: no rev bump, v1.6 stands, and the proposal's open items now carry their answers. **The gate is two NAT'd peers establishing a direct transport that survives idle.** A loopback or in-process build proves the choreography and not the traversal, so it does not discharge it.
 
-> **Amendment 13 — reachability facts (new §6.7: observed-address reflection, dial-back, candidate gathering; two new capabilities; two new operations).** A peer dispatches by reachability class (§10) but has had no protocol way to learn its **own** reachability facts — its public NAT mapping, whether it is publicly dialable, what addresses it might be reached at. §6.7 lands the three facts and stops there: **gathering is a local fact, exchanging is a protocol**, and the punch-coordination protocol that acts on them is not in this spec. Adds `observe-address` → `system/network/observe-address-result` (§6.7.1) and `check-reachability` → `system/network/check-reachability-result` (§6.7.2), gated by new `system/capability/network-reflect` (broad default grant reasonable — a mirror) and `system/capability/network-dialback` (restricted — it causes the responder to emit traffic at an address), plus the `system/network/candidate` type (§6.7.3). **Additive and not v1-blocking:** the section is OPTIONAL as a whole (§12.3) — the asymmetric NAT case already works via §10's `held_connection_client`, and this changes no §10 pseudocode, no wire format, and adds no error code. **Every rule inside it is a MUST when offered** (§12.1), because each is a cross-peer seam that prose review does not catch: reflection returns the transport source and never a body echo; the observed address is **never** persisted to `system/connection.address` or a transport profile (it is a *responder-side* fact and every durable address field in this spec is *dialer-side dialable-endpoint* state — the cheap fix corrupts §10 dispatch for every other reader); dial-back targets **only** the observed source (a body-supplied target makes every dial-back peer a DDoS reflector); candidates are never durable profiles; and a `srflx` candidate is the mapping of the socket the peer punches from. Folds `PROPOSAL-NETWORK-REACHABILITY-FACTS` §2–§5 in full, including the 2026-07-29 ownership ruling (the HELLO-handshake mechanism is `entity-core-protocol`'s to ratify, not this repo's — it routes upstream and gates nothing here, so the op is the v1 path) and the §4.2 candidate-to-socket MUST. **Build state (peer-reported, observed 2026-07-31, corrected):** `entity-core-go` **has built the §6.7.1 `observe-address` responder** — dispatched, rate-limited, and live-validated under its `reachability` validator category. **Corrected 2026-08-07 (`entity-core-go`, full-coverage run):** the **client-side srflx gatherer** (dial a reflector → call `observe-address` → produce the `srflx` candidate the punch fires from) is **built in Go and in Rust** — Go via `--reflector` on `cmd/signaling-punch` (`punchwire.ObserveSRFLXFrom` + `signaling.DialReflector`), Rust at the same rung on its `signaling-punch`. The prior "absent in every tree" reading is retracted; it was already stale against this repo's own 07-31 status entry. `check-reachability` remains unbuilt. *(The pre-correction draft of this note claimed both operations were absent everywhere on the strength of an arch-side name search; the peer that had built one reported it the same day. Build state is peer-reported — `docs/DOCTRINE-COHORT-STATE-TRACKING.md` D1.)* The §6.7.5 gate is **PARTIALLY DISCHARGED, not closed `[corrected 2026-08-07]`**: its **reflect half has now run cross-impl, 4/4** — a Go reflector serving both drivers, `srflx_source: "reflector"` on both seats. That half had never been exercised in any implementation before (every V3 crossing the cohort published reported `srflx_source: "bind"` — built, never driven). **The dial-back half across a real NAT is still un-run**, and is one of the three gates blocked on the same missing cohort infrastructure (§6.7.5 dial-back · `EXTENSION-SIGNALING.md` §11.5.1 S5 · the §10.3 seam gate): hosts behind genuinely different NATs. **That is infrastructure, not implementation debt against any repo.** *(Numbered 13, not 12: Amendment 12 — the NETWORK liveness reactive buildout — is ratified but not folded, and holds that number. **Partially folded 2026-08-12** — the §A1/§5.4 join landed as §5.4a; see the Amendment 12 banner above. The rest is still owed.)*
+> **Amendment 13 — reachability facts (new §6.7: observed-address reflection, dial-back, candidate gathering; two new capabilities; two new operations).** A peer dispatches by reachability class (§10) but has had no protocol way to learn its **own** reachability facts — its public NAT mapping, whether it is publicly dialable, what addresses it might be reached at. §6.7 lands the three facts and stops there: **gathering is a local fact, exchanging is a protocol**, and the punch-coordination protocol that acts on them is not in this spec. Adds `observe-address` → `system/network/observe-address-result` (§6.7.1) and `check-reachability` → `system/network/check-reachability-result` (§6.7.2), gated by new `system/capability/network-reflect` (broad default grant reasonable — a mirror) and `system/capability/network-dialback` (restricted — it causes the responder to emit traffic at an address), plus the `system/network/candidate` type (§6.7.3). **Additive and not v1-blocking:** the section is OPTIONAL as a whole (§12.3) — the asymmetric NAT case already works via §10's `held_connection_client`, and this changes no §10 pseudocode, no wire format, and adds no error code. **Every rule inside it is a MUST when offered** (§12.1), because each is a cross-peer seam that prose review does not catch: reflection returns the transport source and never a body echo; the observed address is **never** persisted to `system/connection.address` or a transport profile (it is a *responder-side* fact and every durable address field in this spec is *dialer-side dialable-endpoint* state — the cheap fix corrupts §10 dispatch for every other reader); dial-back targets **only** the observed source (a body-supplied target makes every dial-back peer a DDoS reflector); candidates are never durable profiles; and a `srflx` candidate is the mapping of the socket the peer punches from. Folds `PROPOSAL-NETWORK-REACHABILITY-FACTS` §2–§5 in full, including the 2026-07-29 ownership ruling (the HELLO-handshake mechanism is `entity-core-protocol`'s to ratify, not this repo's — it routes upstream and gates nothing here, so the op is the v1 path) and the §4.2 candidate-to-socket MUST. **The §6.7.5 gate is OPEN.** Its two halves are the reflection path and the dial-back path, and the second requires two hosts behind genuinely different NATs — infrastructure rather than specification work, and the same precondition the signaling extension's §11.5.1 and the §10.3 seam gate wait on. *(Numbered 13, not 12: Amendment 12 — the NETWORK liveness reactive buildout — is ratified but not folded, and holds that number. **Partially folded 2026-08-12** — the §A1/§5.4 join landed as §5.4a; see the Amendment 12 banner above. The rest is still owed.)*
 
 > **Amendment 11 — dispatch-fallback seam at §10 step 4 (store-and-forward escalation; new §10.2).** The §10 ladder's step-4 terminal (queue/502) cannot originate delivery to a peer with no live or recurring session that is offline/NAT'd right now. Amendment 11 names a `dispatch_fallback(peer_id, execute) → {ok, result} | null` seam consulted once at step 4 **before** the terminal; the store-and-forward policy lives in RELAY (§6.2.1), never in NETWORK — same layering boundary as the relay→routing `resolve_next_hop` seam. **Additive / v1.x:** `null` (no RELAY installed) ⇒ byte-identical to the pre-seam terminal; non-RELAY v1 floor unchanged. Two cohort-convergence corrections fold in with it: **(a)** the step-4 terminal is restated as impl-variable — `queue_pending` (§8 outbox) is an OPTIONAL rung an impl MAY interleave only if it implements §8 (Rust + Python ship no §8 outbox; their terminal is a bare error), so "byte-identical when unset" means "behaves as this impl's terminal does today"; **(b)** a normative insertion-site MUST — the seam is consulted at the caller holding both `peer_id` and the `execute` envelope, never inside connection-resolution (3-impl independent convergence). Conformance gates the outcome (offline-target delivery lands at the inbox; target polls + verifies signature as direct), not the policy's internal rung choices. No V7 change, no wire change, no new cap/error code. Cohort review converged 3-way before fold (Go build-tested `INBOX-RELAY-FALLBACK-1` PASS; Rust + Python confirmed seam-vs-inline fit against their dispatch ladders — Rust as a hard crate-DAG constraint).
 
@@ -52,9 +53,12 @@ substrate the whole network tier stands on:
   `close-request` · `observe-address-result` · `check-reachability-result` · `ping` / `pong` and
   `keepalive-config` (§5) · `backoff-config` · `pending-delivery` (§8).
 - **`system/peer/transport/{peer_id}/*` — the transport profiles §6.5 resolves — and
-  `system/peer/published-root`, which this extension SERVES and FETCHES but does NOT own.** TREE
-  §3.3a is the normative home for the published root; treating this spec as its authority is the
-  mistake §6.5.3 exists to prevent.
+  **`system/peer/transport-set`, the signed complete statement of them (§6.5.1c), bound at
+  `{peer_id}/system/peer/transport-set`** — and `system/peer/published-root`, which this extension
+  SERVES and FETCHES but does NOT own.** TREE §3.3a is the normative home for the published root;
+  treating this spec as its authority is the mistake §6.5.3 exists to prevent. **Note that all three
+  sit under `system/peer/`, which is OUTSIDE this extension's own `system/network/` subtree**, and
+  that the third of them is owned by another extension entirely.
 
 **Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
 kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
@@ -1072,7 +1076,34 @@ The MUST list:
 
 Back-compatibility: existing single-`primary` deployments and lex-fallback deployments behave identically — `primary`-unset → 0 sorts first as before; all-unset → all 100 → pure lex order as before. The earlier "name the profile so it lex-sorts after TCP" hack (G1) is no longer needed: set `priority`, name freely.
 
-**Self-publication (D1).** A peer **SHOULD** publish a profile entity for each transport it accepts on, at `system/peer/transport/{peer_id}/{profile-id}`. RECOMMENDED, not REQUIRED — a peer may be reachable only via REGISTRY / manifest / out-of-band (e.g. a browser peer that cannot self-host its tree). **Consumers MUST NOT assume the self-published path exists**; absence falls through to other discovery.
+**Self-publication (D1).** A peer **SHOULD** publish a profile entity for each transport it accepts on, at `system/peer/transport/{peer_id}/{profile-id}`. RECOMMENDED, not REQUIRED — a peer may be reachable only via a registry, a manifest, or out-of-band. **Consumers MUST NOT assume the self-published path exists.**
+
+> **Tree-hosting and dialability are independent axes, and conflating them produces a false
+> inference in both directions.** A peer that cannot self-host its tree is not thereby undialable,
+> and a peer that holds a complete tree is not thereby dialable. The question for a peer with no
+> listening socket is **negotiation versus dial** (§6.5.1b, §6.5.2d) — not whether it stores
+> anything. Reason about the two separately.
+
+**Absence of a self-published profile (D6).** A consumer holding **only** a peer id, and finding no
+profile at the self-published path, has exactly two conformant continuations: **obtain a
+`system/peer/transport-set` for that peer id (§6.5.1c) by any means, and verify it**, or **fail
+closed.** *Absence does not "fall through to other discovery"* — there is no other discovery
+mechanism in this specification for a consumer that holds nothing but an id, and a consumer that
+invents one is guessing. **Reporting the failure as *"the peer is unreachable"* is a MUST NOT:** what
+has been established is that this consumer could not find a route, which is not a fact about the peer.
+
+**Positional authority (D7).** A transport profile carries the subject peer's authority when it is
+obtained in one of exactly three ways: **read at its own path in that peer's namespace**, **walked
+from that peer's signed root**, or **covered by a verified `system/peer/transport-set` (§6.5.1c)**.
+**Obtained any other way it carries none**, and a consumer MUST NOT treat it as the peer's own claim.
+
+> **The inner `peer_id` field is self-description and is not evidence.** It reads as authoritative
+> and is not: anyone can mint a profile entity naming any peer, so on a profile that arrived loose —
+> handed over by a third party, quoted from a cache, lifted out of a set that failed verification —
+> the field says only what its author typed. **What confers authority is the position, or a
+> signature; never the field.** Dialing an unauthenticated endpoint is not by itself unsafe — §6.6's
+> held capability and the handshake are what gate authorization, and the key introduces without
+> authorizing — but a consumer MUST NOT record or republish such a profile as the peer's own.
 
 **`transport_type` consistency (D5).** The `transport_type` field MUST match the entity-type suffix (`system/peer/transport/<X>` ⇒ `transport_type: "<X>"`). Decoders MUST reject a mismatch (fail closed). The field is retained (self-describing for tooling that holds the data without the tree path), but the entity-type is authoritative.
 
@@ -1101,6 +1132,111 @@ Back-compatibility: existing single-`primary` deployments and lex-fallback deplo
 **Half-duplex targets that cannot listen** (a CLI/browser client with no listener and no duplex socket) cannot be dialed at all. Delivery to them requires the **poll-fallback**: the source queues to a source-hosted path the target drains via `TREE_GET`. This inverts the standard subscriber-hosted-inbox model and is **Phase-2** — not specified or conformance-gated in v1. See the exploration referenced in Amendment 7.
 
 **Capability lifecycle across connections is per-peer-session** (Amendment 8, R6): the cap is held by the `system/peer/session/{peer_id}` entity (§6.6), not by the connection, so it survives drops and a second connection (any transport) reuses it. This resolves the cap-direction question — the held cap is the dispatcher's auth, independent of which socket carries the bytes.
+
+#### 6.5.1c The transport set — a peer's signed, complete statement of where it is
+
+A consumer holding **only** a peer id has, from §6.5.1a alone, no way to learn that peer's profiles
+and no way to know it has learned **all** of them. This section defines the record that answers both.
+
+**The governing principle: a signature makes the data valid; serving is not authority.** A
+transport-set verifies against the `peer_id` it names, so **any party may serve one** — a registry, a
+relay, a mirror, a peer that met the subject once, a consumer that was handed it unsolicited. Serving
+it confers nothing on the server and requires nothing from it. **Every rule below is a consumer-side
+verification rule; there is no rule about who may answer.**
+
+```
+system/peer/transport-set := {
+  fields: {
+    peer_id:      {type_ref: "system/peer-id"}
+                  ; whose set this is. The signature verifies against THIS.
+    profiles:     {array_of: {type_ref: "system/peer/transport"}}
+                  ; the member profile entities, carried INLINE (not by hash).
+                  ; MAY be empty — see consumer rule 8.
+                  ; Array order is NOT significant: §6.5.1a D1's
+                  ; (priority asc, profile-id lex) remains the only selection rule.
+    seq:          {type_ref: "primitive/int"}
+                  ; monotonic per peer_id; MUST increase on every publish
+    published_at: {type_ref: "primitive/int"}    ; ms since epoch, UTC
+    expires_at:   {type_ref: "primitive/int"}    ; REQUIRED
+    predecessor:  {type_ref: "system/hash", optional: true}
+                  ; BARE hash of the prior set. A non-normative convenience —
+                  ; see the note under consumer rule 8.
+  }
+}
+```
+
+**Members are carried inline, and that is a normative property rather than an encoding preference.**
+A profile carries its `peer_id` in the field and again inside the URL prefixes built from it, so two
+peers' profiles can never be byte-identical and cross-peer dedup by hash is **zero by construction**.
+The dedup that does exist — one peer's unchanged profile across republishes — inline obtains anyway,
+because the set's own content hash is unchanged. And selection under §6.5.1a D1 orders on `priority`
+and `profile-id`, **both of which live inside the members**, so a by-hash encoding could not defer a
+single fetch: a consumer must hold every member before it can order any of them. Inlining also makes
+partial delivery **unrepresentable**, which is why there is no consumer rule about a member that
+fails to resolve.
+
+**Signature carriage.** `system/signature/{hex(transport_set.content_hash)}`, per the invariant
+pointer path, verified against the key derived locally from `peer_id`'s Base58 form (V7 §1.5).
+**Deliberately identical to `system/peer/published-root`'s carriage** — one convention for *a peer's
+signed statement about itself*, not two.
+
+**Tree binding.** A transport-set is bound at `{peer_id}/system/peer/transport-set`.
+
+- A peer **with** a published root: the root covers the set, so the root's `seq` is the freshness
+  authority and **there is one `seq` stream, not two.** There is no fixed point to solve — the set
+  does not commit to `root_hash`, so binding it changes the root without changing the set.
+- A peer **without** a tree: the set stands alone and its own `seq` carries the freshness.
+- **Same bytes, same signature, two retrieval paths.** A consumer that walks a root and a consumer
+  handed a bare record obtain the identical artifact.
+
+**Consumer rules (MUST):**
+
+1. **Verify** the signature against `peer_id`. On failure, **discard the set entire.** A set is never
+   partially honored.
+2. **Reject a `seq` lower** than one already accepted for that `peer_id`. **The floor is keyed on
+   `peer_id` alone and MUST NOT be keyed on `(peer_id, source)`** — otherwise any second source
+   obtains a fresh floor of zero merely by being a second source, and the rollback defense evaporates
+   at exactly the point where sets travel between parties.
+3. **Honor `expires_at`.** An expired set is **not a weaker answer; it is not an answer.**
+4. **`published_at` is a signed lower bound on age and MUST NOT be read as freshness.** §3.3a of the
+   tree extension applies verbatim: a peer that has not republished and an origin withholding a newer
+   set are byte-identical at the consumer.
+5. **A member whose inner `peer_id` differs from the set's `peer_id` makes the set malformed**, and
+   it is rejected entire.
+6. **The set is the peer's belief about itself, not ground truth.** Consumers attempt profiles in
+   §6.5.1a D1 order and fall through on failure exactly as they do today; a profile appearing in a
+   signed set is not a promise that it currently answers.
+7. **An empty `profiles` array is a valid and meaningful answer** — *"I am not directly dialable, and
+   here is that fact signed by me."* It is **distinguishable from having no set at all**, and a
+   consumer **MUST NOT** report an empty set as *"no record"* or as *"peer down."* An empty set is
+   for a peer that is genuinely unreachable; a peer reachable by negotiation publishes an
+   endpoint-less §6.5.2d-shaped profile instead, and an empty set from such a peer is a **signed
+   false statement**.
+8. **A peer SHOULD NOT publish, in a signed set, a profile for an address it has not confirmed
+   dialable.** §6.7.2 is the confirmation. This is a `SHOULD` and not a `MUST` because no conformance
+   client can observe what a publisher confirmed — the satisfaction mode is in-process, declared by
+   the implementation. **A presence-backed advertisement additionally requires a withdraw path:**
+   where reachability rests on a maintained presence rather than a listening socket, an advertisement
+   that cannot be withdrawn is a standing invitation that outlives the intent behind it.
+
+> **`predecessor` is a convenience and MUST NOT be documented or implemented as a continuity check.**
+> Absence is a legal first publish, so a chain of sets that all omit it looks well-formed while the
+> `seq` floor is inert — a publisher that rebuilds its state per invocation can emit `seq 0` forever
+> with every signature and hash verifying. **Continuity is a publisher-side discipline that no
+> consumer can verify from a single record.**
+
+**Members MAY additionally be published as their own separately signed entities.** The set's
+signature already authenticates its members transitively — it signs the bytes that contain them —
+so per-member signatures are redundant on the common path. They buy exactly one thing: a profile can
+be quoted **in isolation**, with its own provenance, by a party that does not carry the set. That is
+a publishing choice with **no consumer obligation and no indirection on the read path.**
+
+> **Why the set and not just the members: a signed member proves *"the peer authored this profile"*;
+> a signed set proves *"these are ALL of the peer's profiles, as of `seq` N."*** Without the second,
+> a party serving a peer's transports can hand over two of three and a consumer cannot distinguish
+> *"the peer has two"* from *"I was given two."* Signing the complete set is the same choice DNSSEC
+> makes in signing an RRset rather than an individual record, for the identical reason. The
+> corresponding *"there is no set at all"* proof is the registry extension's `coverage: "complete"`.
 
 #### 6.5.2 Profile: `system/peer/transport/quic` (aspirational)
 
@@ -1198,7 +1334,7 @@ data: {
 - **Profile vs channel `[do not conflate]`.** The published profile is a **durable advertisement** ("a direct WebRTC path to me exists"). The **established data channel** is a **session-scoped §10.3 connection** — never itself published as a durable `system/peer/transport/*` profile (per Amendment 14 the §10.3 result is an ordinary transport, session-scoped, and MUST run keepalive). The profile advertises that a punch is *possible*; the channel is its result.
 - **Reachability class.** A peer publishing a `webrtc` profile is reachable as a **punch-substrate class** at the §10.3 `establish_live` seam — not a `full_duplex_listener` (nothing is listening). Resolving such a peer, the §10 dispatcher escalates to §10.3 and drives the `EXTENSION-SIGNALING.md` §6.5 negotiation instead of dialing. No new dispatch branch and **no new reachability class** (the Amendment-14 seam).
 - **Once open, it is ordinary.** The channel carries **bare ECF envelopes** like any live transport; framing is the data channel's own message boundaries (message-oriented, like `http` — it does **NOT** apply the ENTITY-CORE-PROTOCOL.md §1.6 TCP length prefix). The §10 dispatcher, held-capability model (§6.6), and session state (`system/peer/session/*`) apply unchanged.
-- **Who publishes it.** A **native** peer MAY publish a `webrtc` profile to be punchable by browser peers (§14 / `EXTENSION-SIGNALING.md` §7.3.1); until a native WebRTC terminator exists that MAY is latent. Whether a **browser** peer publishes one — versus only ever initiating, its reachability being rendezvous/session-scoped — is open (`PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` open item #1) and gates the later browser↔native-direct milestone, not the browser↔browser S5 gate.
+- **Who publishes it.** A **native** peer MAY publish a `webrtc` profile to be punchable by browser peers (§14 / `EXTENSION-SIGNALING.md` §7.3.1); until a native WebRTC terminator exists that MAY is latent. **A peer with no listening socket MAY also publish one** — an **endpoint-less** profile of this shape, which advertises *reachability by negotiation* rather than an address to dial, and which §10.3's `establish_live` seam is the consumer of. Its reachability being session-scoped is a property of the substrate, not a reason it cannot make a durable, signed advertisement that it is negotiable. **What such an advertisement additionally requires is a withdraw path** (§6.5.1c consumer rule 8): where reachability rests on a maintained presence rather than on a socket, an advertisement is an assertion made to third parties, and one that cannot be withdrawn outlives the intent behind it.
 
 The framing *mechanism* (Content-Length/chunked, no length-prefix) is shared by `http` and `http-poll`; the body *payload* differs by route: the `http` EXECUTE route carries a MaterializedEnvelope (`{root, included}`); the `http-poll` `CONTENT_GET` route carries a single bare-hashable entity `ECF({type, data})` per §6.5.3, the `TREE_GET` **leaf** route carries a `system/hash` pointer `ECF({type: "system/hash", data: H})` (the bound hash, two-hop — §6.5.3.1, Amendment 6; NOT the dereferenced entity), and the `TREE_GET` **listing** route carries a `system/tree/listing` wire entity `ECF({type, data, content_hash})`.
 
@@ -1349,7 +1485,11 @@ The `http-poll` routes (`CONTENT_GET`, `TREE_GET` entity + listing, `MANIFEST_GE
 
 #### 6.5.4 Discovery and freshness
 
-How a consumer learns of a publisher's transport profiles is out of scope of this section. For v1: out-of-band (well-known URL, hard-coded, manually configured). Post-corridor: the EXTENSION-REGISTRY.md extension will define peer-ID → endpoint-set resolution.
+How a consumer learns of a publisher's transport profiles is out of scope of this section. For v1: out-of-band (well-known URL, hard-coded, manually configured), **or a `system/peer/transport-set` (§6.5.1c) obtained from any party and verified against the peer id.**
+
+**This specification defines the record; it does not define a lookup service, and it does not need one.** Because a transport-set is self-authenticating, **no retrieval path is a trust boundary** — a consumer takes the first answer that verifies, and *"ask whoever you are already talking to"* is a conformant implementation. A registry extension may carry the lookup machinery, and that is orthogonal to this extension defining the record: the same division already applies to `binding.transports`, whose shapes this extension defines and a registry merely transports.
+
+> **A consumer holding only `(origin, peer_id)` MUST NOT synthesize a `content_layout` it was not given.** §6.5.3 pins `content_layout` as a closed enum, and profile discovery is out-of-band in v1 — so a consumer that has not obtained a profile has **no conformant basis to choose among the members of that enum**, and a surface whose inputs cannot build a URL **refuses rather than guesses**. This is a MUST because the two legal readings diverge across a peer boundary and **fail identically to something else**: a wrong layout guess and a withholding origin produce byte-identical observations at the consumer, so the guess does not merely fail — it fails **as the wrong diagnosis**, and every blob 404s before a walk ever reaches the closure.
 
 **A static publisher's own transport profile is out-of-band too, and specifically is NOT served at `{manifest_url_prefix}` (MUST).** That slot is reserved for the signed `system/peer/published-root` (§6.5.3, §6.5.3.1). The collision is worth naming because the mistake is a *reasonable* one: a static publisher has no live surface on which to answer "what are your transports," `manifest_url_prefix` is the one singular terminal slot it does serve, and a transport profile is plausibly "the manifest." It is not — a consumer that follows `signed_pointer` to that URL and finds a profile entity has no signed root, and the `signed_pointer` advertisement is then false. Ship the profile beside the site (a well-known URL, a deployment descriptor, a pinned config), or do not advertise `signed_pointer` at all.
 
@@ -1449,6 +1589,15 @@ This section defines the three facts and stops there:
 **They are useful the moment they land, independent of any hole-punch.** NAT-type detection falls out for free (§6.7.1); a peer that knows it is NAT'd stops advertising unreachable direct profiles and leans on its held outbound socket, cutting failed dials. The **punch protocol that exchanges and acts on these facts is deliberately not here** — gathering is a local fact, exchanging is a protocol, and keeping them apart is the clean seam. §6.7.3 gathers and types candidates; nothing in this spec sends one to another peer.
 
 **What is already handled, so it is not re-solved here.** The asymmetric case works today: a non-listening NAT'd peer that holds an **outbound** duplex socket to a public peer receives pushes down that socket (§10 `held_connection_client`) — **NAT'd peer ↔ public peer works in both directions with no traversal at all.** The one genuinely missing case is *two* peers both behind NAT wanting a direct connection, and that is the punch's problem, not this section's.
+
+**These facts are what make an honest advertisement possible, and that is their first consumer.**
+§6.5.1c consumer rule 8 says a peer **SHOULD NOT** publish, in a signed set, a profile for an address
+it has not confirmed dialable — **§6.7.2 is that confirmation.** A peer that has not run it, or that
+has run it and learned it is not dialable, advertises what it can honestly advertise: an
+endpoint-less negotiable profile (§6.5.2d), or a signed empty set. **The obligation is a `SHOULD`
+because its satisfaction is invisible on the wire** — no conformance client can observe what a
+publisher checked before publishing — so an implementation declares its satisfaction mode rather
+than demonstrating it.
 
 #### 6.7.1 Observed-Address Reflection (`observe-address`)
 
@@ -1884,7 +2033,7 @@ establish_live(ctx, peer_id) → connection | null
    >
    > This is §11.5.1's substrate-scoping rule applied to an **obligation** rather than to a property, and it resolves the tension a reader will otherwise find between this MUST on the *mechanism* and the v1-posture paragraph below gating the *outcome*.
    >
-   > **The WebRTC discharge above is reasoned, not measured, and is marked so deliberately.** Consent freshness is unconditional under RFC 7675, so the conclusion follows — but the first peer to answer consequence 1 reported that **consent freshness was not what held its mapping open**: an unrelated application poll was, at roughly two orders of magnitude more traffic, and the peer ran no §5 keepalive at all. **The discharge has therefore never been isolated**, and a rig cannot isolate it while any application traffic flows. **Read this as a substrate-discharge that is sound in principle and unexercised in fact**, and do not cite a green run on such a peer as having demonstrated it. *(This is consequence 1 doing its job on first contact, in the unanticipated direction: it was written expecting peers to discover the substrate was holding the mapping open, and the first answer was that it was not.)*
+   > **The WebRTC discharge above is reasoned, not measured, and is marked so deliberately.** Consent freshness is unconditional under RFC 7675, so the conclusion follows — but **it has never been isolated, and a rig cannot isolate it while any application traffic flows.** Several mechanisms can hold one mapping open at the same time: consent freshness, a §5 keepalive, and ordinary application traffic, the last of which can exceed either of the others by orders of magnitude. **A connection that survives idle therefore demonstrates only that *something* kept it open, never which one** — and the mechanism a peer believes it is relying on is routinely not the one doing the work. An implementation consequently **cannot** discharge consequence 1 by observing that nothing broke; it discharges it by naming the mechanism it relies on and by knowing that mechanism is present. **Read this as a substrate-discharge that is sound in principle and unexercised in fact**, and do not cite a green run on such a peer as having demonstrated it.
    >
    > *(A candidate rule for survives-idle gates generally — **measure the silence, do not assume it** — follows from the same finding and is **not folded here**: it belongs in `EXTENSION-SIGNALING.md` §11.5's gate text, and it rests on one implementation's evidence. It is tracked rather than landed.)*
 
@@ -1946,6 +2095,28 @@ See ENTITY-CORE-PROTOCOL.md §6.8 for the general write authorization model.
   - candidates are **never** written as durable `system/peer/transport/*` profiles (§6.7.3)
   - a published `srflx` candidate is the mapping of the **socket the peer punches from** (§6.7.3)
   - both operations are capability-gated (`network-reflect` / `network-dialback`) and rate-limited (§6.7.4)
+- **The transport set, when a peer consumes one at all (§6.5.1c)** — publishing is OPTIONAL; every
+  consumer rule below is a MUST for a peer that reads one, because each is a cross-peer seam that
+  prose review does not catch. Each row names the vector that drives it:
+
+  | Rule | § | Vector |
+  |---|---|---|
+  | Signature verifies against `peer_id`; failure discards the set **entire**, never partially | §6.5.1c r1 | `NET-TSET-BAD-SIG-DISCARDS-ENTIRE-1` |
+  | A lower `seq` is rejected, **and the floor is keyed on `peer_id` alone** — a second source does not obtain a fresh floor | §6.5.1c r2 | `NET-TSET-SEQ-FLOOR-1` · **`NET-TSET-SEQ-FLOOR-PER-SOURCE-1`** (the negative half — required, since a `(peer_id, source)` floor passes the positive vector and removes the defense exactly where sets travel) |
+  | An expired set is **not an answer** | §6.5.1c r3 | `NET-TSET-EXPIRED-IS-NOT-AN-ANSWER-1` |
+  | A member whose inner `peer_id` differs from the set's makes the set malformed, rejected entire | §6.5.1c r5 | `NET-TSET-MEMBER-PEER-MISMATCH-1` |
+  | An **empty** set is a valid answer and is distinguishable from no set at all; it is not reported as *"no record"* or *"peer down"* | §6.5.1c r7 | `NET-TSET-EMPTY-IS-AN-ANSWER-1` |
+  | A profile obtained outside the three authority positions is not treated as the peer's own claim | §6.5.1a D7 | `NET-PROFILE-POSITIONAL-AUTHORITY-1` |
+  | A consumer holding only an id, finding no profile, obtains a set or **fails closed** — and does not report *"peer unreachable"* | §6.5.1a D6 | `NET-NO-PROFILE-FAILS-CLOSED-1` |
+  | A consumer holding only `(origin, peer_id)` refuses rather than synthesizing a `content_layout` | §6.5.4 | `NET-NO-LAYOUT-SYNTHESIS-1` |
+
+  > **`NET-TSET-SEQ-FLOOR-PER-SOURCE-1` and `NET-TSET-EMPTY-IS-AN-ANSWER-1` are the two that would
+  > not be written by someone implementing from the prose**, and they are the two whose failure is
+  > silent: a per-source floor looks correct until a second party hands you an old set, and an empty
+  > set reported as *"peer down"* is a wrong diagnosis rather than a missing answer.
+  >
+  > **These vectors are OWED, not shipped.** They are named here so the obligations have instruments
+  > that read them rather than being asserted and left unmeasured.
 
 #### 12.1.1 The liveness slice is the required floor and is independently conformant `[MUST]`
 
@@ -2027,6 +2198,7 @@ of §4.1 to get a signal the three status writes already provide.
 | `system/peer/transport/http` | Live HTTP transport profile — EXECUTE over POST (§6.5.2c) |
 | `system/peer/transport/http-poll` | Static HTTP transport profile — CDN/static hosting (§6.5.3) |
 | `system/peer/transport/quic` | Live QUIC transport profile — aspirational (§6.5.2) |
+| `system/peer/transport-set` | The peer's signed, complete, expiring statement of its transport profiles, members inline (§6.5.1c) |
 | `system/network/maintain-request` | Input for maintain-peer operation |
 | `system/network/maintain-result` | Output of maintain-peer operation |
 | `system/network/release-request` | Input for release-peer operation |

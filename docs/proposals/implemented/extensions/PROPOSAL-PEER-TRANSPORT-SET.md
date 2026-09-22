@@ -1,6 +1,7 @@
 # PROPOSAL — a peer's statement of where it is: signed by the peer, servable by anyone
 
-**Status:** DRAFT 2026-08-24 — **fourth pass, refined on `entity-browser-rust`'s answers (`8cd3010`).**
+**Status:** IMPLEMENTED 2026-09-09 — **FOLDED.** `EXTENSION-NETWORK` **1.8 → 1.9** (new §6.5.1c; §6.5.1a gains D6 and D7; §6.5.4 rewritten; §6.5.2d, §6.7, §12.1 and §13 updated) · `EXTENSION-REGISTRY` **1.25 → 1.26** (§2.3, §12) · `EXTENSION-TREE` §3.3a cross-reference. **D1–D7 and D9–D12 landed; D8/D8a/D8b were already folded at v1.21. §11's residue (T11 items 1 and 2) is NOT folded and stays open — see §12.** Ruled without the §10 cross-implementation round; §12.2 records exactly what that round would have answered.
+**Prior status:** DRAFT 2026-08-24 — **fourth pass, refined on `entity-browser-rust`'s answers (`8cd3010`).**
 Stress-tested, measured, then **corrected by the operator on the third pass's central premise**, then
 **corrected again by browser-rust on T11's reason.** All five open questions stand as decided; **R4 is
 restored**; and T11 generalizes — **one gap, three substrates**, which reframes what this record is
@@ -727,3 +728,68 @@ notice (**L8's fourteenth form**).
 
 If any seat has already built something in this shape, **it is corroboration and it is cited last**
 (L18) — §§1–3 stand or fall on the corpus and the prior art, not on a cohort implementation.
+
+---
+
+## §12 The fold record — what landed, what did not, and what was skipped
+
+**Folded 2026-09-09.** `EXTENSION-NETWORK` 1.8 → 1.9, `EXTENSION-REGISTRY` 1.25 → 1.26, and a
+cross-reference in `EXTENSION-TREE` §3.3a. **This section is the authority where it and the sections
+above disagree.**
+
+### §12.1 What landed
+
+| Delta | Where |
+|---|---|
+| **D1** | `EXTENSION-NETWORK` **§6.5.1c** (new) — the record, inline members, tree binding, signature carriage, eight consumer MUSTs, the member-signature MAY, and the `predecessor`-is-not-a-check note |
+| **D2** | §6.5.1a **D7 Positional authority** — the three positions that confer the subject's authority, and that the inner `peer_id` field is self-description rather than evidence |
+| **D3** | §6.5.1a **D6** — absence yields *obtain a set* or *fail closed*, and reporting it as *"the peer is unreachable"* is a MUST NOT |
+| **D4** | §6.5.4 — the registry-will-define-it claim withdrawn; the record/lookup split stated instead |
+| **D5(a)** | §6.7 — R7 recorded as the SHOULD it is, with §6.7.2 named as the confirmation and the withdraw-path obligation carried |
+| **D5(b)** | Amendment 13's dated build-state paragraph deleted |
+| **D9** | `EXTENSION-TREE` §3.3a — one convention, stated once, cited twice |
+| **D10** | §6.5.2d — the expired browser lean replaced by the endpoint-less-profile rule |
+| **D11** | §6.5.1a — tree-hosting and dialability split as independent axes |
+| **D12** | §6.5.4 — no `content_layout` synthesis; refuse rather than guess |
+| **D6 · D7** | `EXTENSION-REGISTRY` §12 and §2.3 — both withdrawals, and they were **circular**: §12 cited §2.3 and §2.3 cited §12, for a scoping neither established |
+
+**Plus one home the delta table did not name.** D5(b) named Amendment 13's build-state paragraph.
+**Amendment 14's banner carried the identical class one paragraph over** — dated peer-reported build
+state inside normative text — and cleaning only the named one would have been precisely the failure
+D5(b) exists to correct. Both are gone; the narrative baseline ratcheted with the fold rather than
+against it.
+
+**Two things the fold added that the proposal did not specify**, both because a MUST needs an
+instrument that reads it: `EXTENSION-NETWORK` **§12.1 gains a conformance table** naming a vector per
+consumer rule, and **§13 gains the type row**. The two vectors flagged as the ones nobody would write
+from the prose are the **per-source `seq` floor** negative and **empty-set-is-an-answer** — both fail
+silently, and both are the shape this specification keeps paying for. **The vectors are named and
+OWED, not shipped.**
+
+### §12.2 What was NOT done, stated plainly
+
+**The §10 cross-implementation round was not run**, and the design was ruled without it. What that
+round was for, carried forward rather than closed:
+
+1. **T1/R7 in practice** — whether a NAT'd engine peer can populate a set honestly today via §6.7.2,
+   and what the `SHOULD` actually costs. The rule is written to be satisfiable by a peer that cannot:
+   it advertises an endpoint-less negotiable profile or a signed empty set. **That is a design answer,
+   not a measurement**, and it has not been measured.
+2. **The wire consequence of the inline decision** — a member type-ref inside a set (§4's
+   parenthetical) is a type-system question the engine seats answer better than arch does. **The fold
+   carries §4's own escape hatch**: if the type system cannot express the family as a member type, the
+   member is an opaque entity and §6.5.1a D5's suffix rule is the decoder's discriminator. **If that
+   escape is the one taken, it is an authoring correction to §6.5.1c and not a design change.**
+
+**§11's residue is NOT folded and remains open.** T11 item 1 (a fifth signaling mode keyed on the
+peer's own id, so a listener has one address a stranger can derive) and item 2 (the intermediary
+locator for the three substrates) are named there as owed and stay owed. **They compose into this
+record rather than replacing it**, which is why folding the record first is coherent.
+
+### §12.3 One framing correction worth keeping
+
+**The proposal's own §0 heading calls the first pass's framing "the A-record gap," and §3 corrects it
+to SRV.** The fold keeps the correction and drops the DNS vocabulary from the spec text entirely —
+the reasoning is here, the rules are there. **What survives into the spec is the one thing the DNS
+comparison actually establishes: sign the complete set, not the members**, because that is the only
+way a consumer detects a *dropped* member.

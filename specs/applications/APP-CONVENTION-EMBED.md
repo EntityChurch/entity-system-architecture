@@ -6,9 +6,10 @@
 + the v0.2.2 raw-role-and-reserved-kinds refinement
 + **joint cross-team round folded** per the joint embed/site convergence synthesis (PF-2/5/6/7;
 spine locked three ways by workbench-go + godot + entity-browser-rust). Pairs with `APP-CONVENTION-SEMANTIC-CONTENT-SITE` v0.4.
-**Next: cut joint conformance vectors → ratify** (the three-substrate round was the high-yield sweep; the vector
-sprint is the lock). Proposal: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`.
-**Domain:** `applications/` (first member — see `CHARTER.md`). **Charter class:** FORMAT-only.
+**Next: exercise the §9 checks jointly with `APP-CONVENTION-SEMANTIC-CONTENT-SITE` → ratify** (the
+three-substrate round was the high-yield sweep; the cross-impl exchange is the lock). Proposal: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md`.
+**Domain:** `applications/` (first member).
+**Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Consumers:** `APP-CONVENTION-SEMANTIC-CONTENT-SITE` (first); workbench-go panels; Godot panels.
 
 > **v0.2 corrections (lead's critical pass):** (1) **`hex33` removed** — it re-locked SHA-256; the system is
@@ -47,7 +48,7 @@ sprint is the lock). Proposal: `PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBE
 
 This convention defines **format**: the `Embed` input entity (§3), the `EmbedOutput` structured value (§4 — the
 cross-substrate lock), the two-level handler/renderer registry (§5), and the degradation contract (§6). It adds
-**no** kernel feature and **no** required SDK surface (CHARTER discipline 2).
+**no** kernel feature and **no** required SDK surface (GUIDE-APPLICATION-DEVELOPMENT §2.2).
 
 ### 1.1 The base/embed model `[LOCKED — read this first]`
 Three layers, kept strictly distinct (this is what keeps the convention small and prevents the "is everything an
@@ -164,6 +165,12 @@ sandbox-constraint = {                       ; substrate-NEUTRAL (no "iframe"/"w
 - `fallback` is **mandatory and non-empty** (anti-graveyard §8; ladder §6).
 - There is **no `renderer_hint` free string** (dropped per S-2 — violates declarative-not-code). If ever needed
   it returns as a `content-hash` pointer to a renderer-policy entity, never a free string.
+- **A feed entry's media needs nothing beyond this document, and there is no second media path.** An
+  image or video **entry** (`APP-CONVENTION-FEED` §2.3) is an entry whose `body` is an embed carrying a
+  **`pointer-payload`** — a content hash into the store — and **`renditions` (§5.3) is the selection
+  mechanism** for size and format. A photo post and a text post are one shape with a different embed
+  inside; that is what factoring this convention as foundational bought, and **nobody should build a
+  parallel media surface for feeds.**
 - **Inline ceiling ~16 KiB** (icons / SVG only); above that use `pointer` (single-chunk or chunked blob). Inline
   bytes inflate trie nodes + `.list`; keep them tiny (workbench-go's >10 MB inline-failure history — S-6). *The
   16 KiB inline ceiling supersedes the site spec's earlier 256 KiB; the 16–256 KiB range is a single-chunk
@@ -314,7 +321,7 @@ diagram, rich table) gets its **own** sub-convention with a real schema — it i
 A new *media type* needs only a new `type` tag + a handler; it does **not** need a new output kind.
 
 **The amendment process (PF-5):** "this convention's amendment process" = the `applications/`-domain proposal flow
-(`CHARTER.md` + a proposal in `proposals/`, cohort review → fold → ratify — the same flow that produced v0.1→v0.2.3).
+(`guides/GUIDE-APPLICATION-DEVELOPMENT.md` + a proposal in `proposals/`, cohort review → fold → ratify — the same flow that produced v0.1→v0.2.3).
 Promoting a reserved kind (§4.0a) or adding a `box.layout` is a versioned amendment with its own conformance
 vectors; it is **never** an ad-hoc per-impl extension of the closed vocabulary.
 
@@ -409,9 +416,11 @@ avoids each **by construction**, and a conformant handler **MUST** satisfy:
 6. **Mandatory `fallback`** — every `Embed` degrades (§6).
 7. **Trust by `content-hash` verify + manifest signature** — SRI / code-signing, entity-native; not a DHT.
 
-## 9. Conformance vectors `[REQUIRED before ratification]`
+## 9. Required checks — what an implementation must discriminate `[REQUIRED before ratification]`
 
-A FORMAT convention is not validated until vectors exercise it (PRIMER meta-rule). v0.2 ships:
+A FORMAT convention is not validated until conformance checks exercise it (PRIMER meta-rule). **This section
+names the cases; the fixtures, the bytes and the run are the implementations' and the conformance oracle's**
+(GUIDE-EXTENSION-DEVELOPMENT §7, `GUIDE-CONFORMANCE` §5.1a). The cases v0.2 names:
 - An `Embed` of each `payload` tag (inline / pointer / child) with a **mandatory `fallback`** — CBOR + expected
   hash.
 - An `EmbedOutput` of **each of the five variants** (`text/image/box/raw/fallback`) and each `box.layout` — CBOR +
@@ -461,4 +470,4 @@ they are markdown, covered by the CommonMark/GFM conformance suite (§1.1), not 
 - Arch first pass: the L5 semantic-content-site arch-first-pass review (`4351f73`).
 - Cross-team passes: entity-browser-rust, workbench-go (`G-PIN-1..4`, `S-1..11`), godot (`[ASK-ARCH-OUTPUT-SHAPE]`).
 - Substrate grounding: `expression_path` core-stable (V7 §3.7/§6.6, EXTENSION-COMPUTE); `system/handler/*`
-  dispatch; self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4). Charter: `applications/CHARTER.md`.
+  dispatch; self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4). Charter: `guides/GUIDE-APPLICATION-DEVELOPMENT.md`.

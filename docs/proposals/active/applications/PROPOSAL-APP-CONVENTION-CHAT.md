@@ -246,7 +246,7 @@ has:** a real chat exchange between two conformant peers (discover → resolve �
 
 - Design record: `docs/research/explorations/EXPLORATION-FULL-STACK-DISCOVERY-INFRA-AND-ENTITY-CHAT.md` (§C),
   `EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md`.
-- Template + discipline: `specs/applications/CHARTER.md`, `specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md`.
+- Template + discipline: `guides/GUIDE-APPLICATION-DEVELOPMENT.md`, `specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md`.
 - Substrate deferred to: EXTENSION-INBOX/CONTINUATION/RELAY (delivery), EXTENSION-NETWORK (transport),
   EXTENSION-SUBSCRIPTION (reactive history), APP-CONVENTION-EMBED (message body), EXTENSION-ENCRYPTION /
   -ENCRYPTED-SESSION (confidentiality ladder), EXTENSION-ROLE + EXTENSION-GROUP (membership authorization —

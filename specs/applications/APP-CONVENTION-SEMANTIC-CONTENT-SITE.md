@@ -20,9 +20,10 @@ determinism floor (lexicographic-by-name presentation rule); frontmatter is opti
 contract; **semantic feeds flagged OPEN / still-researching, deferred to a named post-v1 extension** (L5 — guidance
 now, lock later). v1 primitives: `manifest`/`page`/`nav`/`.list`. Reconciled to **APP-CONVENTION-EMBED v0.2.3**.
 Supersedes the scattered design set (entity-browser-rust `SPEC-SEMANTIC-CONTENT-SITE` Rev 0.1/0.2 + the v1-lock synthesis).
-**Next: cut joint conformance vectors → ratify** (no further team cycle on the contracts — the vector sprint is
-the lock; folds recirculate as a confirm).
-**Domain:** `applications/` (second member, first consumer of EMBED — see `CHARTER.md`). **Charter class:** FORMAT-only.
+**Next: exercise the §9 checks jointly with `APP-CONVENTION-EMBED`'s → ratify** (no further team cycle on the
+contracts — the cross-impl exchange is the lock; folds recirculate as a confirm).
+**Domain:** `applications/` (second member, first consumer of EMBED).
+**Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Consumes:** `APP-CONVENTION-EMBED` (the rich-content node + `EmbedOutput` + the two-level registry + the fallback ladder).
 
 > **What this is.** The convention for a **content site** — a verifiable, transferable, peer-hosted body of pages
@@ -276,12 +277,22 @@ is a **renderer presentation choice, not a tree property** — we are *not* givi
   the same non-determinism `pages` was cut for). Don't let it be load-bearing.
 - **Arbitrary curated order = `nav`** (authored).
 
-**Semantic feeds are explicitly OPEN — flagged, not solved.** "Newest-first," prev/next, RSS — an order that
-*declares its meaning* (date-descending, sequence-ascending) and must agree cross-impl — is the one place a real
-contract is genuinely owed, and **there is something here we haven't fully found.** v1 deliberately does **not**
-guess a field/format ahead of the use case; it pins only the determinism floor above and **defers the semantic
-layer to a named feed/index extension** authored when a concrete feed use case arrives. (This is L5 — guidance
-now, lock later.) Paging of any ordered view is `.list` `limit`/`offset`.
+**Semantic feeds were explicitly OPEN, and the deferral has been discharged on its own stated terms.**
+"Newest-first," prev/next, RSS — an order that *declares its meaning* and must agree cross-impl — was the one
+place a real contract was genuinely owed. v1 deliberately did **not** guess a field or format ahead of the use
+case; it pinned only the determinism floor above and **deferred the semantic layer to a named feed/index
+convention, to be authored when a concrete feed use case arrived.**
+
+> **That convention is `APP-CONVENTION-FEED`, and its §4 is the answer.** A bounded head plus
+> **key-addressed** pages, with exactly one semantic ordering contract — *`entries` within an index page
+> is newest-first, as ordered by the publisher* — and the order is **authored, not derived.**
+>
+> **The determinism floor above is UNCHANGED and continues to govern raw enumeration views.** The feed
+> convention satisfies this deferral rather than reopening it: it adds a semantic layer beside the floor,
+> it does not make `created_at` authoritative, and it makes no claim that the tree is sorted. A renderer
+> presenting a raw `.list` view still sorts by name segment, byte-wise, exactly as pinned here.
+
+Paging of any ordered view is `.list` `limit`/`offset`.
 
 **The principle (so it never creeps back):** the manifest is a **cover, not a collection store.** Every "do we
 also need an ordered list / a set / a keyed map / paging of pages?" is answered **no** — collections of pages live
@@ -300,7 +311,7 @@ contract**, not restated here. This convention only fixes the **site-level** fac
 - An embed is an `app/embed/{media_type}` ECF entity (EMBED §3). The **type tag is the dispatch key**; there is
   no `data.media_type` (`S-4`).
 - All asset/handler references are the self-describing **`content-hash`** `(format_code, digest)` (V7 §1.2) —
-  **never** a fixed-width / SHA-256-locked form. *(This convention inherits the charter's encoding-agnostic rule;
+  **never** a fixed-width / SHA-256-locked form. *(This convention inherits the corpus encoding-agnostic rule (`SPECIFICATION-FORMAT` §8.4.5);
   the old `hex33` is gone everywhere — EMBED v0.2 fix.)*
 - A handler's output is an **`EmbedOutput`** — the closed dispatch vocabulary (EMBED §4): `text`/`image`/`box`/
   `raw`/`fallback`, with `media`/`interactive` **reserved** (EMBED §4.0a). A site renderer **MUST** degrade an
@@ -340,7 +351,7 @@ publishers MUST use the **transactional wrapper**: extract into a **staging** su
 ### 6.0 The `.entsite` bundle — pinned CBOR shape `[LOCKED — C-1; convergent CRITICAL, wb-go + godot]`
 Both teams flagged: blessing the helper while leaving the bytes `[OPEN]` = three impls, three divergent bundles.
 Pinned now. **`.entsite` is NOT a new envelope format** — it is a naming + packaging convention over V7's existing
-`MaterializedEnvelope` (charter #3: improvise no protocol), with three site-specific constraints:
+`MaterializedEnvelope` (proposal-first: improvise no protocol), with three site-specific constraints:
 
 ```cddl
 entsite = {                                  ; a single-file serialization; canonical CBOR (V7 §1.3 / ECF §4.1)
@@ -410,9 +421,11 @@ not need to be carried in the manifest). Cross-peer caching under `/{other_id}/�
 Neither gate blocks the **v1 passive floor** (markdown + passive media + fallback — no active code, no raw HTML by
 default).
 
-## 9. Conformance vectors `[REQUIRED before ratification — ship JOINTLY with EMBED's]`
+## 9. Required checks — what an implementation must discriminate `[REQUIRED before ratification — exercised JOINTLY with EMBED's]`
 
-A FORMAT convention is not validated until vectors exercise it (PRIMER meta-rule). This convention ships:
+A FORMAT convention is not validated until conformance checks exercise it (PRIMER meta-rule). **This section
+names the cases; the fixtures, the bytes and the run are the implementations' and the conformance oracle's**
+(GUIDE-EXTENSION-DEVELOPMENT §7, `GUIDE-CONFORMANCE` §5.1a). The cases this convention names:
 - A **`SiteManifest`** CBOR + expected hash; a **`SitePage`** round-trip (markdown body with a `::embed`
   directive → lowered `child` `Embed` → re-serialized, byte-identical).
 - A **signed `site-root` pin** that verifies **cross-impl** (`G-PIN-3`) — fixture signed by a known identity, with
@@ -480,7 +493,7 @@ repos / spaces / etc.) register their own prefixes in their own specs under the 
 extensibility hook; this convention does not preemptively claim words on their behalf.
 
 **Adoption posture.** The prefix is the SITE convention's claim, not a universal mandate. Adoption by
-other parties is social convergence (cf. CHARTER framing — L5 is convention-not-conformance for
+other parties is social convergence (cf. `GUIDE-APPLICATION-DEVELOPMENT` framing — L5 is convention-not-conformance for
 non-format axes); the convention is here to be analyzed and adopted on merit, not joined.
 
 ## 12. Provenance
@@ -489,7 +502,7 @@ non-format axes); the convention is here to be analyzed and adopted on merit, no
 - Cross-team v1 lock: the content-site v1-lock synthesis (`e8a33c5`) — the output lock (§2,
   now relocated into EMBED), format pins (§4), strain dispositions (§5), G1 conditions (§7).
 - Consumed convention: `applications/APP-CONVENTION-EMBED.md` v0.2.2 (`6f29909`) — node, `EmbedOutput`, registry,
-  ladder, reserved kinds. Charter: `applications/CHARTER.md`.
+  ladder, reserved kinds. Charter: `guides/GUIDE-APPLICATION-DEVELOPMENT.md`.
 - Substrate grounding: `tree:snapshot`/`tree:extract` (EXTENSION-TREE v4.0.2 §3/§6); `content:ensure_closure`
   (SDK-EXTENSION-OPERATIONS §11 Amendment A); `expression_path` core-stable (V7 §3.7/§6.6, EXTENSION-COMPUTE
   v3.14); self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4).

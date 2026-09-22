@@ -2,6 +2,8 @@
 
 **Version**: 1.0
 **Status**: Active
+**Kind**: authoring-standard
+**Authority**: binding
 **Companion to**: SPECIFICATION-FORMAT.md (binding companion — identifier conformance)
 **Enforced by**: the `spec style` analyzer (run `spec check`)
 

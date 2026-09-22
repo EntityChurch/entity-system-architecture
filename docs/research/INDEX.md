@@ -10,7 +10,7 @@ this one describes the **inventory** (what exists). Both are needed and only the
 > you are about to explore has a row here, read that row's document first — and if it does not, add
 > the row when you write it.
 
-**`explorations/` — 73**
+**`explorations/` — 74**
 
 *(That count is gated: `spec ledger` compares it against the directory it names, the same rung that
 holds `docs/proposals/INDEX.md`. Run it after adding or moving a document.)*
@@ -137,6 +137,7 @@ unowned.** The index had rows for identity, rotation and freshness and none for 
 | `ANALYSIS-LANDSCAPE-COMPLETENESS-AND-ENTITY-NATIVE-TRANSLATION` | Landscape completeness + the entity-native translation principle |
 | `ANALYSIS-CORE-CATALOGUE-DUPLICATION-AND-DRIFT` | ~~38 duplicated types, 13 drifted~~ — **struck through in its own title; read before citing** |
 | `ANALYSIS-CORE-NAMESPACE-CLAIMS-IMPACT` | Types inside core-owned namespaces: what is actually wrong |
+| `EXPLORATION-THE-APPLICATION-TIER-FOUR-SLOTS-A-POSTURE-DIAL-AND-A-CARRIER-THAT-ALREADY-CONVERGED` | **The tier's synthesis.** An application is four slots and the tree is the only coupling · static/hosted/live is one dial, and three static properties are structural · **the carrier has already converged: layers 2 and 3 of the field's vocabulary model are ours and are its best, layer 1 is drafted and unlanded** · the layer-number shorthand does not survive the compute question |
 
 ## §6a External landscape — adjacent projects and name collisions
 

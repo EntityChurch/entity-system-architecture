@@ -1,7 +1,10 @@
 # Entity System — Normative Specification Format
 
-**Version**: 1.3
+**Version**: 1.4
 **Status**: Active
+**Kind**: authoring-standard
+**Authority**: binding
+**v1.4:** §10 rewritten on two axes — §10.1 six document kinds, §10.2 authority (`binding` / `informative`) **declared and never derived from the kind**, §10.3 the two-level tier model (a **project tier** binding every document, and **sub-tiers** adding what is specific to one family), §10.4 rationale. §5.3 gains `Kind`, `Authority` and `Governed-by`. §8 retitled *Spec Conventions* and gains **§8.6** a capability has a valid floor · **§8.7** a published vocabulary is a compatibility contract · **§8.8** grow by handler or renderer, not by entity type · **§8.9** a disposition property lives on the entity, never its container. **No existing §8 number moved.** The four are promotions of rules that were true corpus-wide and were filed under the one tier that discovered them.
 **v1.3:** §5.1's conformance block and new §8.5a — the inventory is a table of individually identified requirements, `Level` is a closed six-value vocabulary, and each row carries a stable `<PREFIX>-R<n>` id that is allocated once and never reused. A conformance item names the requirement ids it drives.
 **v1.2:** §4.1, new — a requirement that constrains a party, a namespace or a path states the failure it prevents. §8.5's conformance-class list follows `GUIDE-CONFORMANCE` §7.0 from three classes to four (the host-seam check, §7d).
 
@@ -235,8 +238,31 @@ Specs MAY include additional sections before Conformance:
 |-------|----------|-------------|
 | Version | Yes | Semantic version of this spec |
 | Status | Yes | Draft, Active, or Superseded |
+| Kind | Yes | One of §10.1's six values |
+| Authority | Yes | `binding` or `informative` (§10.2) |
+| Governed-by | If applicable | The **sub-tier standard** whose rules bind this document, by path |
 | Depends | If applicable | Normative specs required as prerequisites |
 | Encoding | If applicable | Wire encoding reference (e.g., ECF) |
+
+**`Kind` and `Authority` are declared because they are not derivable.** A reader —
+and a tool — otherwise infers them from a filename or a directory, which is how a
+document that governs five specifications came to be classed informational, and
+how the corpus's own authoring standard came to be classed a guide. Neither
+document was wrong; nothing had asked them.
+
+**`Governed-by` names the sub-tier standard, and only that.** The project tier
+(§10.3) binds every document unconditionally, so declaring it in every header
+would be noise that goes stale. **Omit `Governed-by` when the document has no
+sub-tier** — that omission *is* the statement that the project tier governs it
+directly, and §10.3 says so once.
+
+```
+**Version**: 1.0
+**Status**: Active
+**Kind**: normative-spec
+**Authority**: binding
+**Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md`
+```
 
 ### 5.4 Section Numbering
 
@@ -299,9 +325,12 @@ Examples are supplementary. The type definition IS the specification — example
 
 ---
 
-## 8. Extension Spec Conventions
+## 8. Spec Conventions
 
-System extension specs (inbox, compute, relay, etc.) follow additional conventions:
+§8.1–§8.5a are conventions for **system extension specs** (inbox, compute,
+relay, …). **§8.6–§8.9 bind every binding spec in the corpus**, whatever its
+tier: they are the project-tier rules for a document that mints a type
+vocabulary, declares a capability, or defines a container (§10.3).
 
 ### 8.1 Dependency Declaration
 
@@ -626,6 +655,75 @@ surfaces a requirement that is really two, or one no check can reach, **that is 
 file, not a thing to fix inside a formatting edit** — silently splitting or dropping an
 obligation under cover of reformatting is how a normative change lands with no proposal behind it.
 
+### 8.6 A capability has a valid floor `[MUST]`
+
+**A spec that defines a capability MUST define what a participant without it
+does, and that participant MUST be valid rather than degraded.** Capability
+*adds*; it is never *assumed*.
+
+A specification that reads correctly only on a peer that has everything has not
+been written against this system. Participants differ in what they have
+installed by design — that is what an optional capability layer *is* — so
+"assume the feature is present" is not a simplification, it is an unstated
+dependency that surfaces as an interoperability failure at somebody else's seam.
+
+### 8.7 A published vocabulary is a compatibility contract `[MUST]`
+
+**A spec's published type vocabulary is a commitment. All data valid under a
+previous version MUST remain valid under the current one, and data produced under
+the current one MUST remain valid under the previous.** Concretely:
+
+- **new fields are optional**
+- **a field's type never changes**
+- **a field is never renamed**
+- **a tag is never repurposed**
+- **a breaking change takes a new type tag**
+
+A spec that must break compatibility **mints a new name and leaves the old one
+meaning what it meant.**
+
+**Why this is a `MUST` and not advice.** The ecosystem holds the *wire* half
+already — unknown fields are MUST-ignore and the locked core is never renumbered
+— and held nothing equivalent for a **type vocabulary**, which specs at every
+tier mint constantly. **A naming divergence has no discovery path except somebody
+reading both implementations**, because a type-filtered query using the wrong tag
+returns a correct, complete, **empty** answer. It never surfaces as a byte
+mismatch, because the two sides never hold each other's data at all.
+
+***Enforcement point:*** the type tags a spec pins are greppable, and a shape
+change fails **cross-impl comparison** — so a rename or a type change fails a
+byte comparison instead of passing silently as an empty query. **The comparison
+is the implementations'**; what the spec owes is that the case is *named* in its
+conformance inventory (§8.5a), so there is a comparison to run.
+
+### 8.8 Grow by handler or renderer, not by entity type `[MUST]`
+
+**A new entity type is minted only when a conformant consumer must *behave*
+differently, and a proposal minting one MUST name that behaviour.** Where a
+spec's extension point is open — a body type, a handler, a renderer — new
+products go there.
+
+This is the anti-explosion gate. Without it every subject-matter category argues
+for its own type, and the vocabulary a third party has to implement grows without
+bound while consumer behaviour does not. **The test is behavioural, not
+taxonomic:** two things that a consumer treats identically are one type
+regardless of how differently a human would describe them.
+
+### 8.9 A disposition property lives on the entity, never on its container `[MUST]`
+
+**A property governing what a consumer may *do* with an entity — may it be
+republished, must it be warned over, may it be cached — MUST live on the entity
+itself, never on a collection, conversation, index, or mirror that contains it.**
+
+***Containers do not travel; entities do.***
+
+**The live case that produced it:** a message from a closed conversation, lifted
+into a feed, carries no *do-not-mirror* bit — because the policy lived on the
+conversation and the conversation stayed behind. The failure mode is bytes that
+**verify**, in a tool that will republish them, with the **disposition missing
+rather than wrong**, which no integrity check can catch. It generalizes to every
+spec that mints a container.
+
 ---
 
 ## 9. Document Lifecycle
@@ -642,21 +740,68 @@ Version bumps:
 
 ---
 
-## 10. Relationship to Architectural Documents
+## 10. Document Kinds and Authority
 
-Normative specs answer: **what must an implementation do?**
+**Kind and authority are independent axes.** What a document is *for* does not
+determine whether it *binds*. A guide may be binding; a document that governs a
+whole family may be advisory. Both axes are **declared** in the header (§5.3),
+never inferred from a filename, a directory, or the other axis.
 
-Architectural documents answer: **why does the system work this way?**
+### 10.1 Kind — what the document is for
 
-| Aspect | Normative Spec | Architectural Document |
-|--------|---------------|----------------------|
-| Audience | Implementors | Designers, evaluators |
-| Content | Type definitions, algorithms, constraints | Rationale, tradeoffs, vision |
-| Authority | Binding | Informational |
-| Format | This format | Prose, diagrams, free-form |
-| Stability | Versioned, breaking changes tracked | Evolves freely |
+| Kind | Answers | Example |
+|------|---------|---------|
+| `normative-spec` | What must an implementation do? | `EXTENSION-TREE.md` |
+| `authoring-standard` | What must a *document* be? | this document, `STYLE-NAMING-CONVENTIONS.md` |
+| `tier-standard` | What must a member of this family be? | `guides/GUIDE-APPLICATION-DEVELOPMENT.md`, `guides/GUIDE-EXTENSION-DEVELOPMENT.md` |
+| `process` | How does work move between parties? | `guides/GUIDE-CONFORMANCE.md` |
+| `subject-guide` | How do I use this surface? | `guides/GUIDE-QUORUM.md`, `guides/GUIDE-REVISION.md` |
+| `architecture` | Why is it this way? | `SYSTEM-ARCHITECTURE.md` |
 
-Normative specs MAY include brief contextual notes (1-2 sentences) explaining why a rule exists. Extended rationale belongs in architectural documents.
+### 10.2 Authority — whether it binds
+
+`binding` · `informative`. A `binding` document's requirements are conformance
+obligations and its changes are versioned. An `informative` document explains,
+motivates, or records; it MUST NOT be the only home of a requirement.
+
+**Authority is stated, not derived.** A subject guide is usually informative and
+some are binding; an architecture document is usually informative and is not
+required to be. **If the two axes disagree with a reader's expectation, the
+header wins** — that is the point of declaring it.
+
+### 10.3 The tier model — what governs a document
+
+Governing standards form **two levels, and only two.**
+
+- **The project tier** — `SPECIFICATION-FORMAT.md` and
+  `STYLE-NAMING-CONVENTIONS.md`. These are the corpus-wide authoring standards
+  and they **bind every document in the corpus, always.** They are the root, so
+  a document does not declare them; a rule that is true of every spec belongs
+  here and nowhere else.
+- **A sub-tier** — a `tier-standard` governing one family (extensions,
+  applications, …). It adds what is specific to that family and **restates
+  nothing that is true corpus-wide.**
+
+**Where a rule goes follows directly: true of everything ⇒ the project tier;
+specific to one family ⇒ that family's tier standard.** A general rule filed
+under whichever tier happened to discover it is the defect this section exists to
+prevent — it leaves every other tier ungoverned by a rule that was always true of
+them.
+
+**A document with no sub-tier is a member of the project tier.** The top-level
+`SYSTEM-*` and `ARCHITECTURE-*` specs are governed by the authoring standards and
+by nothing else. That is a positive statement, not a gap.
+
+**A sub-tier standard MAY restate a project-tier rule for its readers, and when it
+does it MUST name the authority it is restating** and add nothing to it. A
+restatement that does not name its authority is invisible from that authority, so
+the next sweep of the rule misses it.
+
+### 10.4 Rationale in a normative document
+
+A `normative-spec` MAY include brief contextual notes (1–2 sentences) explaining
+why a rule exists. Extended rationale belongs in an `architecture` document or in
+the proposal that landed the rule.
 
 ---
 

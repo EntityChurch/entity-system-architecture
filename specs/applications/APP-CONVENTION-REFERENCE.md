@@ -2,7 +2,8 @@
 
 **Version**: 0.1
 **Status**: Draft
-**Domain:** `applications/` (fourth member — see `CHARTER.md`). **Charter class:** FORMAT-only.
+**Domain:** `applications/` (fourth member).
+**Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §1.2 (content hash, self-describing) · §1.4 (URI and path
 model) · §1.5 (`PeerID`) · `APP-CONVENTION-EMBED.md` §3 (the pointer slots that adopt this atom) ·
 RFC 3986 (URI generic syntax).
@@ -10,7 +11,7 @@ RFC 3986 (URI generic syntax).
 > **What this document is.** One shape for *"this points at that"*, and one string form for it. Every
 > other member of this domain needs to point at something — a page, an image, an entry, a blob — and
 > before this document each defined its own way of doing so. This convention adds **no** kernel
-> feature, **no** required SDK surface and **no** wire form (charter #2, #3). It is a format, and the
+> feature, **no** required SDK surface and **no** wire form (GUIDE-APPLICATION-DEVELOPMENT §2.2; proposal-first). It is a format, and the
 > only thing it asks of the substrate is content addressing, which already exists.
 
 > **Foundational member.** The other conventions in this domain **import** the atoms defined in §2.1
@@ -48,10 +49,10 @@ a hash resolves to bytes) exposed as two entry points. A consumer that collapses
 ### 2.1 Shape
 
 ```cddl
-; ---- shared atoms — THIS DOCUMENT IS THE SINGLE HOME (charter, Members) -------
+; ---- shared atoms — THIS DOCUMENT IS THE SINGLE HOME (tier standard, Members) -------
 content-hash = bstr   ; self-describing (format_code, digest) per ENTITY-CORE-PROTOCOL §1.2.
                       ; The leading varint is the content_hash_format and THE DIGEST LENGTH
-                      ; FOLLOWS THE CODE. NOT fixed-width (charter #6). SHA-256 -> 33 B is one
+                      ; FOLLOWS THE CODE. NOT fixed-width (SPECIFICATION-FORMAT §8.4.5). SHA-256 -> 33 B is one
                       ; instance; SHA-384, BLAKE3 and future codes are equally valid.
                       ; Unknown code -> unsupported_content_hash_format.
 peer-id      = tstr   ; a PeerID in the canonical Base58 form of ENTITY-CORE-PROTOCOL §1.5.
@@ -300,7 +301,7 @@ the corpus of published documents, not for this specification.
 
 ---
 
-## 5. Floor (charter #4)
+## 5. Floor (SPECIFICATION-FORMAT §8.6)
 
 **An atom with no `via` and no `at` is the whole floor.** A peer that resolves only pinned references,
 only within its own namespace, and ignores every hint, is a **valid participant** — not a degraded
@@ -350,11 +351,13 @@ Nothing in this convention requires a network, a registry, or any extension.
 **Ids are allocated once and never reused** (`SPECIFICATION-FORMAT` §8.5a). A row may be added,
 reordered or retired; its number does not move.
 
-### 6.2 Vectors — OWED, NOT SHIPPED
+### 6.2 Required checks — what an implementation must discriminate
 
-**This convention is authored and is NOT ratifiable until these ship** (charter #5). Class:
-application-tier format vectors — example atoms plus expected bytes and expected strings. These are
-not wire-oracle checks and not host-seam checks.
+**These are the cases this convention names; the fixtures, the bytes and the run are the
+implementations' and the conformance oracle's** (GUIDE-EXTENSION-DEVELOPMENT §7, `GUIDE-CONFORMANCE` §5.1a). Class:
+application-tier format checks — example atoms compared as bytes and as strings across independent
+implementations. These are not wire-oracle checks and not host-seam checks. **The convention is
+authored; it is validated when these have been exercised.**
 
 | # | Vector | Drives | What fails without it |
 |---|---|---|---|

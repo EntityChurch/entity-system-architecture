@@ -541,6 +541,46 @@ reconstruction pass.
   debt, gate the delta. **The unpinned count is the number that ratchets down**, and the four pinned
   today are the blocks where SA-2/SA-3/SA-4 actually landed.
 
+- **`spec expiry` — is a tracker row still asserting OPEN on evidence from a tree that moved? RUN IT
+  AT SESSION START, beside `inbound`.** The enforcement point for this file's *"verify build state
+  before you assert it"* rule, which had none for three months.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py expiry                    # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py expiry --owed             # the worklist, one id per line
+  python3 <arch-tools>/spec-tool/cli.py expiry --gate             # 0 clean · 1 expired · 2 could-not-look
+  python3 <arch-tools>/spec-tool/cli.py expiry --update-baseline  # raise pin coverage; it never lowers
+  ```
+
+  **It asserts the row's EVIDENCE died, never that the item is open or closed — an expired row is
+  UNKNOWN, and re-taking it is one `git log` in the owning tree.** Six states; only `expired` gates (a
+  row that *still* asserts open on a dead pin). `discharged` is the same dead evidence under a closed
+  row and is inert **on purpose**: gating it would make this permanently red.
+
+  **Measured 2026-09-09 — 223 rows · 6 EXPIRED · 16 discharged · 168 unpinned · 32 ambiguous.** Pin
+  coverage is the number that ratchets (`.spec-expiry-baseline.json`, floor 22): **75% of ledger rows
+  cite no commit at all**, so most of the ledger is a claim resting on a date, and a date does not say
+  which tree was read.
+
+  > **The founding incident, because it is this repo's most-repeated defect and it recurred under its
+  > own remedy.** `COHORT-OPEN-ITEMS` §0b's four publication-gate rows: **every row arch could reach was
+  > already CLOSED by the time anyone looked.** B-1 and B-4 were caught only because an unrelated
+  > history rewrite invalidated a SHA *by accident*; **B-2 was caught sixteen days late, and it had been
+  > fixed the day AFTER the measurement that declared it open.** The remedy written after the first pair
+  > was a **habit** — *"re-measure a row at the moment it is quoted"* — and B-2 went stale under it.
+  > **A habit is not an enforcement point**, which is §3 of the ladder applied to the one rule that had
+  > never been pointed at itself.
+  >
+  > ***And three defects in the gate were found by replaying it against that incident — do this for every
+  > instrument you build here.*** ① it first fired on any pin that was not literally HEAD (`10 expired ·
+  > 0 current` — a permanent red, not a worklist); ② a pin that resolves but is **unreachable from HEAD**
+  > was filed as UNKNOWN, which is backwards — **a rewritten history is the strongest expiry signal there
+  > is, and it is the exact accident that produced the only successful manual catch**; ③ repo attribution
+  > matched substrings, so a row quoting `` `site:entity-core-protocol-main` `` scored as naming two
+  > repos — **the one row the module existed for was the one row it could not classify.** All three
+  > reported a confident **clean 0** on the founding incident. **A new gate is validated against the
+  > incident that motivated it, in both directions, before its first number is published.**
+
 - **`spec inbound` — has a packet addressed to US reached our ledger? RUN IT AT SESSION START.**
   The enforcement point for `docs/COHORT-OPEN-ITEMS.md` §0.2, which already said a row is created
   *"the moment a finding is filed anywhere"* — a rule that was canonical, correct, three weeks old,
@@ -886,6 +926,35 @@ So, concretely, before editing any `specs/` file:
 - **Stay in the spec lane.** STATUS/proposals record the spec delta + the MUST/SHOULD
   + the owning team for any follow-on — not impl-execution checklists. Don't track
   what impl teams owe.
+- **THE CONFORMANCE LOOP AND WHERE WE SIT IN IT — `GUIDE-EXTENSION-DEVELOPMENT` §7 already specifies
+  this. Read it instead of re-deriving it.** `[operator, 2026-09-09; the corpus has said it since
+  Stage 0 was written, and the applications charter contradicted it for five conventions]`
+  **Stage 0** arch drafts the spec — *"don't pre-write test vectors; those are an output of cross-impl
+  convergence"* · **Stage 1** one seat builds and files ambiguities; arch amends · **Stage 2** the
+  others build, each divergence triaged **spec gap or impl bug** — that triage is ours and it is the
+  job · **Stage 4** *"TVs are NOT architecture-team-authored inputs; they are byproducts of impls
+  running against each other and the architecture team canonicalizing what surfaced"* · **Stage 5**
+  Stable, and §9's grade requires **conformance MUSTs covered by TVs**.
+  **So: we do not write test sets, diagnostic vectors, harnesses or fixtures, and we do not run
+  code.** We **do** own — and are on the hook for — **the requirements a check set must satisfy**
+  (every feature, every MUST driven; the uncovered edge cases where peers drift), **knowing the sets
+  exist and declaring them**, **specifying them** once convergence has shown their shape, **reviewing
+  the results and the final sign-off**, and **canonicalizing a converged set** so it can seed the next
+  implementation. `spec census`'s `unobserved-must` is the instrument for the coverage half.
+  **Never write "not ratifiable — vectors owed" as arch's worklist item**: the honest state is
+  *authored; not yet exercised*, and it resolves by somebody building. **And a set is pinned AFTER the
+  seats exchange the format, not before** — intercommunication is a better oracle than a set we invent
+  in advance. Register rows `AP-6a` · `AP-6b`; authorities `GUIDE-EXTENSION-DEVELOPMENT` §7/§9,
+  `GUIDE-CONFORMANCE` §1/§5.1a/§7.0/§7c.6, `guides/GUIDE-APPLICATION-DEVELOPMENT.md` §3.
+- **ONE ORACLE CANNOT MEASURE ITSELF — a second implementation of the check set is the point, not a
+  nicety.** *A single oracle cannot distinguish "the peer is wrong" from "the oracle is wrong": every
+  check it runs is scored by the same judgement that wrote it, so its own errors are invisible by
+  construction.* A bug in `validate-peer` becomes a bug enforced into every peer. **The target is
+  clean-room parallel implementations of the check set** — the anchor builds the core set, the
+  generation repo builds the extension sets, the reference oracle stays as the standing independent
+  one. `PROPOSAL-CONFORMANCE-ORACLE-CONTRACT` §5a owns this and is **DRAFT**; its extension half is
+  blocked on an **addressable conformance inventory** (`spec inventory`, 1 of 26 — that is what the
+  ratchet is actually for). Register row `AP-6c`.
 - **Pin the cross-impl-observable surface, leave internals to converge.** A `MAY`/
   `SHOULD` whose two conformant readings diverge *across a peer boundary* is a latent
   interop bug — lean MUST (prefer a general determinism MUST over a point-scope).
