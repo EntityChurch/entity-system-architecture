@@ -168,7 +168,9 @@ These are normative; impl teams will test against them. They emerged from cross-
 
 ### 4.1 Path-as-resource (V7 §3.2 MUST)
 
-Every directly-callable handler op operates on a resource path that targets the tree binding location. The op's params carry the operation-specific fields; the op's resource targets the path. Calling a `:create` / `:supersede` / `:revoke` style op without a resource MUST return error `path_required`.
+Every directly-callable handler op operates on a resource path that targets the tree binding location. The op's params carry the operation-specific fields; the op's resource targets the path. Calling a `:create` / `:supersede` / `:revoke` style op without a resource MUST return **`400 path_required`**.
+
+**This section is the authority for that status.** `path_required` is a *more-specific 400* under `ENTITY-CORE-PROTOCOL.md`'s 400 row, which sanctions them by name alongside `invalid_params` and `unexpected_params`. It is **not** a forbidden synonym for `invalid_request`: a synonym is a differently-spelled generic, whereas `path_required` names a specific remediable defect, and the code selects the remedy — *supply a resource* is a different instruction from *fix your request*. Extension specifications restating this rule cite this section rather than re-pinning the status.
 
 This applies uniformly across kernel ops, substrate ops, and consumer-extension ops. Don't invent op surfaces that work without a resource — they break the dispatcher's authorization machinery.
 

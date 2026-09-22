@@ -372,7 +372,7 @@ This lets callers distinguish "I need to install another extension" (C3) from "t
 
 ## 6. Handler operations
 
-**Path-as-resource (MUST).** All four handler operations follow path-as-resource per `ENTITY-CORE-PROTOCOL.md` §3.2 (architectural-side MUST). The operation's resource targets the tree binding location; the params carry the operation fields. Calling `system/quorum:create` (or `:update` / `:publish`) without a resource MUST return error `path_required`. Content-store-only writes use the V7 kernel's `tree:put` operation directly with a content-store-only flag, NOT the substrate's handler ops.
+**Path-as-resource (MUST).** All four handler operations follow path-as-resource per `ENTITY-CORE-PROTOCOL.md` §3.2 (architectural-side MUST). The operation's resource targets the tree binding location; the params carry the operation fields. Calling `system/quorum:create` (or `:update` / `:publish`) without a resource MUST return **`400 path_required`** (`GUIDE-EXTENSION-DEVELOPMENT.md` §171 is the authority for this code). Content-store-only writes use the V7 kernel's `tree:put` operation directly with a content-store-only flag, NOT the substrate's handler ops.
 
 ### 6.1 `system/quorum:create`
 
@@ -504,7 +504,7 @@ The `system/quorum/{quorum_id_hex}/event/...` subtree holds the quorum's self-ev
 - Implementations MUST provide `is_quorum_id(hash, ctx)` per §4.3 with path-based lookup at `system/quorum/{hex(hash)}`. MUST pass cross-impl test vectors TV-Q6 through TV-Q9.
 - Implementations MUST fully implement historical-state resolution per §4.2: `current_signer_set(quorum_id, ctx, as_of)` MUST return the signer set + threshold live at the `as_of` timestamp; the resolver hook MUST honor `as_of` correspondingly. MUST pass cross-impl test vectors TV-Q-V16a through TV-Q-V16c.
 - Implementations MUST enforce `max_resolver_depth = 8` and cycle detection on resolver handlers per §5.2. MUST return `identity_resolver_max_depth_exceeded` on depth exceedance and `identity_resolver_cycle` on cycle detection. MUST pass TV-Q-V-IDENTITY-2 and TV-Q-V-IDENTITY-2-cycle.
-- All `system/quorum:*` handler ops follow path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST); `:create` / `:update` / `:publish` without a resource target MUST return `path_required`.
+- All `system/quorum:*` handler ops follow path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST); `:create` / `:update` / `:publish` without a resource target MUST return **`400 path_required`** (authority: `GUIDE-EXTENSION-DEVELOPMENT.md` §171).
 - **Handler-op type registration:** the four `system/quorum:*` ops register `input_type` / `output_type` per ENTITY-CORE-PROTOCOL.md §3.7 convention (`{handler-path}/{op-name}-request` / `-result`). Type definitions MUST be installed at `system/type/{type_name}` during handler installation.
 - **Signature ingestion:** signatures arriving in `envelope.included` are bound at V7 invariant pointer paths by the dispatcher per ENTITY-CORE-PROTOCOL.md §6.5. `verify_k_of_n_signatures` MUST find ingested signatures via the standard `find_signature_by_signer` lookup; no quorum-specific ingestion surface is required.
 

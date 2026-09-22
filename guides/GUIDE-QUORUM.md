@@ -47,7 +47,7 @@ EXECUTE
   ; result: {quorum_id: <hash>}
 ```
 
-**Path-as-resource is MUST.** The resource targets the canonical storage path. Calling `:create` without a resource returns `path_required`.
+**Path-as-resource is MUST.** The resource targets the canonical storage path. Calling `:create` without a resource returns **`400 path_required`** (authority: `GUIDE-EXTENSION-DEVELOPMENT.md` §171).
 
 **The quorum entity is structural and not signed.** Authorization for `:create` is per Coherent Capability — application-level grants cover `system/quorum:create`, not raw `tree:put` to `system/quorum/...`.
 

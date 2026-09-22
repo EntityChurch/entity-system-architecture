@@ -47,7 +47,7 @@ EXECUTE
   ; pointer path /{P_a_peer_id}/system/signature/{att_hash_hex}
 ```
 
-**Path-as-resource is MUST** (per V7 §3.2 + spec §6). The resource targets the tree binding location; the params carry the attestation fields. Calling `:create` without a resource returns `path_required`.
+**Path-as-resource is MUST** (per V7 §3.2 + spec §6). The resource targets the tree binding location; the params carry the attestation fields. Calling `:create` without a resource returns **`400 path_required`** (authority: `GUIDE-EXTENSION-DEVELOPMENT.md` §171).
 
 **Storage paths are consumer-defined.** The substrate doesn't mandate a path. Identity uses `system/identity/{tier}/cert/{h}`; quorum uses `system/quorum/{q}/event/{h}`; a VC issuer might use `system/vc/issued/{h}`. The substrate stores and indexes by field — `attesting`, `attested`, `properties.kind`, `supersedes` — so graph operations work regardless of where consumers place attestations.
 

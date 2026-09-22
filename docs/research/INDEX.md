@@ -10,7 +10,7 @@ this one describes the **inventory** (what exists). Both are needed and only the
 > you are about to explore has a row here, read that row's document first — and if it does not, add
 > the row when you write it.
 
-**`explorations/` — 38**
+**`explorations/` — 39**
 
 *(That count is gated: `spec ledger` compares it against the directory it names, the same rung that
 holds `docs/proposals/INDEX.md`. Run it after adding or moving a document.)*
@@ -94,6 +94,22 @@ holds `docs/proposals/INDEX.md`. Run it after adding or moving a document.)*
 | `EXPLORATION-NON-INTERACTIVE-FRESHNESS-AND-ANTI-REPLAY` | The freshness/anti-replay trade-off surface + the three knobs |
 | `ANALYSIS-NON-INTERACTIVE-FRESHNESS-CRITICALITY` | Is strong non-interactive freshness critical for v1? |
 
+## §4a The social chain — identifier → peer → tree → content → follow → bridge
+
+| Document | What it establishes |
+|---|---|
+| `EXPLORATION-THE-RESOLUTION-CHAIN-FROM-A-SOCIAL-IDENTIFIER-TO-AN-ENTITY` | **Read this before any work on feeds, posts, following, or bridging to an outside social protocol — it is the only document that traces the whole path at once.** Rates **five links** by what exists rather than what is intended: identifier → peer (**designed, one hole**) · peer → tree (**deployed**) · **the content model (EMPTY)** · the follow loop (**designed, unbuilt**) · the bridge (**framed, never carried forward**). **The keystone finding: link 3 is empty and sits between two finished links** — we can resolve a name and pull a signed tree and have no vocabulary for what to put in it, so every downstream item (feed, follow UI, feed emission, every bridge) has nothing to be *about*. Establishes that the content-site convention **already deferred semantic feeds on a named trigger** — *"authored when a concrete feed use case arrives"*, plus its own *"there is something here we haven't fully found"* — and that **the trigger has now fired**. Supplies the **ninth prior-art axis** the source library lacks (it has eight, none of them the data model — which is *why* the empty link never surfaced): the ActivityPub/WebFinger and ATProto/DID resolution chains read from primary specs, the ActivityStreams-object vs Lexicon-record comparison, and **Lexicon's compatibility rule** (*"all old data must still be valid under the updated Lexicon, and new data must be valid under the old"*) — of which **we hold the wire half and not the vocabulary half**. Two rules to steal, both independently confirmed by our own defects: **bidirectional name verification** (ATProto refuses to trust a handle until the document links back — the same hazard as a resolver that checks a binding's signature but not that it is *for the name asked*) and a **stated compatibility contract with conformance artifacts** for any published vocabulary. Also carries: why **public following of a stranger is the static route only** (no grant), the measurement that makes an **ordered feed index a prerequisite rather than a feature** (verifying a known region ≈ tree depth; discovering what is new under a prefix costs the whole tree), and **the honest asymmetry** — we hold the hard halves (content addressing, canonical Merkle, signed pointers, keys-not-servers, fine-grained authority) and lack the easy one (*a record with an author, a timestamp, a body, and a place in an order*), which is why the gap is invisible from inside |
+
+## §5a Authority · capability management · the permission surface
+
+**This section did not exist until 2026-09-03, and its absence is part of why the track was
+unowned.** The index had rows for identity, rotation and freshness and none for *authority* — so
+"what have we studied about permissions?" had nowhere to resolve.
+
+| Document | What it establishes |
+|---|---|
+| `REVIEW-2026-09-03-THE-CAPABILITY-MANAGEMENT-SURFACE-…` (`reviews/`, internal) | **Start here for any capability-management, permission-UX, audit or revocation-surface question — and read §0 before trusting any prior list of what exists.** Establishes that **the mechanism is finished and the surface is not**: V7 §3.6's four-axis grant, §5.2's check, §5.6's attenuation, §4.4's connect-time delivery, §6.2's `request` dual-ceiling and `revoke` marker, `EXTENSION-ROLE`'s bundling, and the L0–L3 progression stated twice (`GUIDE-CAPABILITIES` §7 / `SDK-OPERATIONS` §11.2A) are **all landed** — ten things the next session need not study. **The gap is one verb: `system/capability` has exactly three operations — `configure`, `request`, `revoke` — and no read.** `inspect_grants` is declared in `SDK-OPERATIONS` §11.2 as *"dispatch[ing] to the `system/capability` handler"* and restated in two more normative places, and **there is no operation behind it** (`CM-1`, **L17's third position**). Capability state *is* readable via `system/tree:get` (V7 §3474) but `GUIDE-CAPABILITIES` §10 classes it **sensitive** and SHOULD-refuses subscription under `system/capability/` **unless the scope explicitly enumerates a narrower path under operator-class authority** — so a live surface is **reachable but authority-shaped**, which is a design input rather than a wall. Also: **A-2 is mis-posed and legacy already ruled its lower half** (`RULING-NAMED-CAPABILITY-MAPPING-cgid-10-219` — *no fifth axis; a named cap is shorthand for a `(handler, operation)` grant*), so the four-tuple is the unit of **authority** and a role is the unit of **management**, at no new mechanism cost. Carries the corrected reading list — **eight browser-rust documents, not four, at `docs/architecture/reviews/` not `docs/plans/`** — and the correction that the *"two seats converged on `GrantEntry` independently"* claim is **false**: both import their own kernel's rendering of V7 §3.6, which is L18's rule and makes the design conclusion **stronger**, not weaker |
+
 ## §6 Application tier · L5 · corpus shape
 
 | Document | What it establishes |
@@ -122,7 +138,9 @@ the 502 + the backoff formula · the compute corpus first run · the cycle-close
 preconditions · **connectivity + chat buildability**.
 
 **`REVIEW-*`** — identity pre-rotation first pass · device cohort coverage dispatch · keystone
-retrospective + red-team · **gaps in keystone's analysis (red-teaming the red-team)**.
+retrospective + red-team · **gaps in keystone's analysis (red-teaming the red-team)** · the relay
+prior-art read · the acquisition path · the keystone audit + what the generator inherits ·
+**the capability management surface (§5a — the A-1 deliverable)**.
 
 ---
 

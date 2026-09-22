@@ -148,7 +148,7 @@ What binds today:
   only ever lowers.
 
 **The discipline set is assembled and ratified — `docs/DISCIPLINE-CHARTER.md` is the canonical
-home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-9), the honest
+home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-21), the honest
 enforcement table, and the doctrines this repo adopts **by reference**. The sections below stay as
 the working detail; **the charter is the set.**
 
@@ -181,9 +181,11 @@ the working detail; **the charter is the set.**
   §7.0's index** *(**ratified** 2026-08-20 — second shape)* · **L20** an example set cannot falsify a
   rule it does not span *(candidate)* · **L21** a fold is a delivery to every seat that reads the corpus —
   route by who **consumes** it (implements, cites, **pins**), name the **divergence unit** when a
-  dormant field goes load-bearing, and scope a relay by the fold's **diff**, never by what the seat
-  shipped *(**ratified** 2026-09-01 — second shape, a guide consumed by a pin; third and fourth
-  shapes 2026-09-02)* · **L22** a peer's true
+  dormant field goes load-bearing, scope a relay by the fold's **diff**, never by what the seat
+  shipped, and when a fold pins a **vocabulary**, grep the cohort for the names being pinned **and the
+  names they replace** *(**ratified** 2026-09-01 — second shape, a guide consumed by a pin; third and
+  fourth shapes 2026-09-02; **fifth shape 2026-09-03** — an app-tier convention, where the fourth
+  shape's enforcement point is written in core-spec nouns and so never fired)* · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
   party that moves it owns re-checking it, whoever they are and however short the move
   *(**ratified** 2026-08-31 — second shape: the filing seat as mover, one slot away in one file)* ·
@@ -914,6 +916,41 @@ the working detail; **the charter is the set.**
   > name.** A relay that cites a spec **version** has a boundary — *the version's diff* — and the
   > recipient's worklist is that diff minus what they already do, **computed in that order**. Never
   > write a clean bill of health for a fold without having read the fold.
+
+  > **Fifth shape, 2026-09-03 — the fourth shape recurred on the APP TIER, sixteen days after it was
+  > ratified, because its enforcement point is written in core-spec vocabulary and an
+  > `APP-CONVENTION-*` fold has none of the nouns it names.** `[self-found, taking app-tier bearings]`
+  > `APP-CONVENTION-SHARE` v0.1 landed 2026-08-18 (`bb86cd1`) pinning **three** type tags —
+  > `app/share/record` · `audience-entry` · `follow`. The 08-17 Q2 ruling that preceded it announced
+  > only the **prefix** (`app/share/*`) and said the convention *would* specify a vocabulary.
+  > `entity-browser-rust` shipped `98f8855` on 08-24 emitting **`app/share/manifest`** — built from
+  > the ruling, six days after the fold, and **no packet naming the tags was ever addressed to that
+  > seat.** Measured 2026-09-03: their tree has **zero occurrences of any of the three**;
+  > `entity-workbench-go` emits all three; **the intersection in product code is empty.**
+  > **Why the fourth shape's enforcement point did not fire.** It says *read the fold commit's own
+  > diff **and its §9.1 conformance block**, and report the items the relay did not name* — every
+  > noun of which is a **core-spec** noun. An application convention has no §9.1, no `0.8.2.x` fourth
+  > component, and no version bump the cohort watches. **So the rule reads as not applying, and the
+  > fold went out with no relay at all** rather than with a badly scoped one. That is the more
+  > dangerous variant: the fourth shape produces a *wrong* worklist, this produces *no* worklist, and
+  > a seat that was never written to has nothing to notice.
+  > **The aggravating half is that the seat was waiting.** Their own board still lists
+  > *"`APP-CONVENTION-SHARE` §2 authored — **the one thing blocking us**"* as open. **The thing they
+  > were blocked on landed and the fold told nobody**, so a correct blocker row aged into a wrong one
+  > while the seat did the work anyway, from the last text it had.
+  > **And this divergence class is the one the cohort cannot self-correct.** L26's standing comfort is
+  > that seats discover divergence by intercommunicating. **That is true of byte-level mismatches and
+  > false of naming**: a `type_filter` query over the wrong tag returns a correct, complete, empty
+  > answer, so both seats stay green forever and neither ever holds the other's entity. **A naming
+  > divergence has no discovery path except someone reading both trees.**
+  > ***Enforcement point, generalizing the fourth shape past the core spec:*** **every canonical
+  > document has a fold audience, and for a document that pins a VOCABULARY — type tags, slot names,
+  > operation names, enum values — that audience is every seat that emits or reads one of those
+  > names.** Mechanically checkable and cheap: **on folding a vocabulary, `grep` the cohort for the
+  > names being pinned AND for the names they replace**, and route to every seat that hits either.
+  > The seats are found by what they *currently* emit, never by what the fold says they should — which
+  > is the fourth shape's *"scope by the diff, not by what the seat shipped"* pointed at a document
+  > class that has no diff a peer can read.
 
 - **L26 — the cohort discovers by building. ARCH'S failure mode is not folding what they built, and
   a rule that tells them to wait is a rule pointed at the wrong party.**
@@ -1794,7 +1831,89 @@ the working detail; **the charter is the set.**
   normative pseudocode, read as a claim about three programs** · **a tool's contract block, read as
   what the tool checks** · **a response status, read as which of two gates fired** · **a generated
   cohort's uniform absence, read as a fact about the specification rather than about the generator's
-  input set**.
+  input set** · **a count of one token, read as the distribution of the slot it sits in**.
+
+- **L8's twentieth form — A COUNT OF THE TOKEN YOU EXPECTED IS NOT A CENSUS OF THE SLOT. "Three
+  implementations converged on X" is a positive-sounding sentence whose truth condition is a negative,
+  which is why the *prove a negative* rule does not fire on it — it reads as measured, and it cites a
+  number.** `[2026-09-03 — caught by `entity-core-go`, who measured their own tree and refused to
+  assert the other two]`
+  `0.8.2.6` gave §3.3's 500 row a default code and justified it in **normative spec text**: *"three
+  implementations had independently converged on this spelling with nothing in the corpus saying it."*
+  The evidence was `grep -c internal_error` in three trees — **go 184 · rust 27 · py 18, published as
+  "229 sites, converged."** Censusing the **slot** — every `code` emitted at status 500 — go carries
+  **16 spellings** (183 `internal_error`, **58 bare `internal`**, 60 more across 14 others), rust 15,
+  py ~18. **`internal_error` is the plurality at every seat and the convention at none**, so the claim
+  is false about all three, not only about go — the half go could not have measured.
+  **Why it is a distinct form and not another tally.** Every prior form reads an artifact and infers
+  the thing. This one reads a **measurement** — the class of evidence that exists precisely to stop
+  that — and the inference crosses from *frequency of one value* to *composition of a population*. A
+  `grep -c X` is a fact about X. **It contains no information about what else occupies the same slot**,
+  and the sentence it was used to support is entirely about what else occupies the same slot.
+  **It compounded inside the same fold, which is the part that makes it worth a form.** The `0.8.2.6`
+  sweep retired `unknown_operation` from the **501** slot and reported the class closed. Censused after
+  go landed it: **`not_implemented` survives in all three ground-up trees and four generated peers**,
+  alongside `not_supported`, `unsupported_mode`, `not_available` and `domain_control_unsupported`.
+  **The sweep was scoped by the token and retired one of five.** Same error, one level down, in the
+  remedy for the first one — and a token-scoped sweep reports **done** while the slot stays divergent.
+  **Two smaller instances of the same shortcut in the same document.** The predecessor's cohort table
+  charged `entity-browser-rust` with one `unknown_operation` site; the token is **absent from that tree
+  on every branch searched** — an assignment to a seat that owed nothing, which is the false-defect
+  filing avoided against go two days earlier and then committed against browser-rust. And go's own
+  close-out reported the sweep *"grep-clean"* when it is **emit-clean**, with two correct harness
+  references remaining: true either way, and only one of the two sentences is checkable.
+  ***Enforcement point:*** **a claim about what a cohort does with a value is evidenced by a CENSUS OF
+  THE SLOT — group by the field at that site, publish the whole distribution — never by a count of the
+  spelling you expected.** Mechanically checkable in review: *a convergence or divergence claim whose
+  evidence is `grep -c <token>` rather than a grouped distribution is the violation*, and so is a
+  **sweep scoped by a token** where the rule is about a slot — the worklist is *every value at that
+  site that is not the ruled one*. This is **L7's standing rule** (*quote the invocation with the
+  count*) doing its job on a hand-run grep: had the command been printed beside the number, the defect
+  would have been visible in the sentence. **And a build-state claim of this kind does not belong in
+  spec text at all** — the *spec text is not our log* rule caught none of it, because the sentence was
+  offered as rationale rather than as a claim about a peer, which is the disguise this class travels in.
+
+  > **Second shape, 2026-09-03 — the slot has THREE axes and the census keyed on two. Found the next
+  > day, by the two seats the first shape was routed to, on three different axes at once.**
+  > `[entity-core-rust f0a399b + 91397d2, surfaced by entity-core-go's corrected harness c2ff3a2]`
+  > The first shape says *census the slot, not the token*. **The slot arch censused was
+  > `(status, spelling)`. A code is `(status, FIELD, spelling)`**, and all three axes failed
+  > separately within twenty-four hours:
+  > **(a) The FIELD.** `entity-core-rust`'s `extensions/type-system/{validate,constraint}.rs` each
+  > declared a local `error_entity` shadowing the canonical one and wrote the code under key **`type`**,
+  > not `code` — 14 emit sites decoding to `code = absent` at a conformant reader, violating
+  > `system/protocol/error`'s own descriptor, which declares `code` non-optional. **`4d888f8` had just
+  > landed the correct spelling at two of those sites, so its own fix was invisible on the wire and
+  > every census — arch's included — counted it closed.** Their in-tree test scanned for the
+  > **substring** `invalid_request`, present under `type` and `code` alike, and passed under both
+  > shapes through three revisions. Landed as a `[MUST]` in `GUIDE-CONFORMANCE` §5.2b.1's proxy family.
+  > **(b) The STATUS NAME.** Arch's 500 census put rust at **3** bare `internal`; the tree has **19**
+  > (21 generic-500 sites). The 16 invisible ones are in two crates declaring their own
+  > `const STATUS_INTERNAL: u32 = 500;` while arch's grep keyed on `STATUS_INTERNAL_ERROR`. **A census
+  > of a code slot keys on the status VALUE, never on one spelling of the constant that names it** —
+  > enumerate the aliases first, and treat every helper that fixes a status internally as its own emit
+  > shape. It matters beyond the number: **OP-3 was sized off that census.**
+  > **(c) The ABSENCE.** `PROPOSAL-TYPE-OPERATION-ERROR-TAXONOMY` §1 recorded that
+  > `entity-core-go` and `entity-core-py` *"have not built these handlers."* **go has dispatched all six
+  > type operations since `ae3311c`, the v0.8.0 initial public release — 650 lines, present at the exact
+  > commit §1 cites as searched** — and py dispatches all three. Arch then **adopted rust's independent
+  > version of the same false absence** (*"converge/adopt/reconcile exist in no tree"*) verbatim into a
+  > fold rationale, which is **L22** with arch as the borrower. Two wrong absences about one fact,
+  > reached independently, because both searched for **the vocabulary of the seat already read** —
+  > rust's `bad_request` and `extensions/type-system/` against a tree that spells it `decode_error` in
+  > `ext/type/`.
+  > **The unifying property, and it is why this is one shape and not three:** *a census keyed on a
+  > **name** for a thing is blind to every other name for that thing* — the field key, the status
+  > constant, the code spelling, the directory. The first shape widened token → slot; the slot itself
+  > has axes, and **the axis you did not vary is the one the divergence is hiding on.**
+  > ***Enforcement point, extending the first shape:*** **before publishing a cohort census, name the
+  > axes of the thing being counted and state which one the search varied.** For a code that is
+  > `(status, field, spelling)`; the search must key on the **value** at each axis, not a name for it —
+  > resolve status constants to their integer, decode the field rather than substring the body, and
+  > enumerate the target tree's **own** vocabulary before concluding absence. **An absence claim about
+  > another seat's tree is discharged by naming the bounded region searched** — the dispatch `switch`,
+  > the manifest, the handler directory — **never by a token grep**, and it is verified by the seat that
+  > owns the tree before it is published.
 
   **Fourteenth form — a capability, read as a conclusion about the call site. It was the ground under
   a release cut.** `[2026-08-20 — caught by `entity-browser-rust`; their rule, and it is better than

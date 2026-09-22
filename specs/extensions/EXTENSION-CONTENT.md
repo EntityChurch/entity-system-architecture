@@ -1,7 +1,7 @@
 # Content Extension — Normative Specification
 
 **Version**: 3.6
-**Latest change:** Amendment 4 naming normalization — the frame-limit check label / type-path renamed snake → kebab, now `system/content/frame-limit-respected`, per `STYLE-NAMING-CONVENTIONS.md`; Go renames the check label in lockstep, Rust/Py doc-comment-only for this one. (Version lineage: v3.6 + Amendments 1–3, then v3.6, v3.5, v3.4, v3.3 baselines — see the changelog table for per-version detail.)
+**Latest change:** §10 constants reconciled with the amendment prose they had drifted from — `DEFAULT_CHUNK_SIZE` is **1 MiB** (§3.5, A2) at every site, and `GET_BATCH_SIZE` is **16** (§7.1, A4). A2 and A4 landed in prose and in the §3.6.2 parameter table and never reached §10.1, §10.2, §11.2 or §2.1's convergence recommendation, so the document stated two defaults for the value §2.1 makes the deduplication identity. Also: §10.3 gains the `ingest` row it omitted, and §6.1's `get` gains its `output_type`. Behaviour is unchanged for the value that matters — `entity-core-{go,rust,py}` already emit 1 MiB. Prior: Amendment 4 naming normalization — the frame-limit check label / type-path renamed snake → kebab, now `system/content/frame-limit-respected`, per `STYLE-NAMING-CONVENTIONS.md`; Go renames the check label in lockstep, Rust/Py doc-comment-only for this one. (Version lineage: v3.6 + Amendments 1–3, then v3.6, v3.5, v3.4, v3.3 baselines — see the changelog table for per-version detail.)
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
 
@@ -137,11 +137,11 @@ system/content/blob := {
 
   | `chunking` | `chunk_size` | Deduplicates? |
   |------------|-------------|---------------|
-  | 1 (FastCDC/NC2) | 4 MiB | Yes — same chunks |
-  | 1 (FastCDC/NC2) | 2 MiB | No — different boundaries, different chunks |
-  | 0 (Fixed-size) | 4 MiB | No — different algorithm, different chunks |
+  | 1 (FastCDC/NC2) | 1 MiB | Yes — same chunks |
+  | 1 (FastCDC/NC2) | 4 MiB | No — different boundaries, different chunks |
+  | 0 (Fixed-size) | 1 MiB | No — different algorithm, different chunks |
 
-  Convergence on both values (recommended: `chunking: 1`, `chunk_size: 4 MiB`) maximizes cross-peer deduplication. Peers using custom configurations accept that their chunks will not deduplicate with peers using standardized settings.
+  Convergence on both values (recommended: `chunking: 1`, `chunk_size: 1 MiB` — the §3.5 default, §10.1 `DEFAULT_CHUNK_SIZE`) maximizes cross-peer deduplication. Peers using custom configurations accept that their chunks will not deduplicate with peers using standardized settings.
 
 - `chunks`: Ordered list of entity hashes (`system/hash`) identifying the chunk entities. The order determines reassembly order. This field is in `data`, so it is covered by the blob's own entity hash.
 
@@ -167,7 +167,7 @@ system/content/chunk := {
 
 - `payload`: Raw binary bytes. In the CBOR wire encoding (ECF), this is native binary data (major type 2) — no encoding overhead. Always uncompressed.
 
-The chunk entity has no sequence number, no parent reference, and no metadata. This is deliberate: two chunks with identical payload bytes produce the same entity hash, enabling deduplication across blobs and across peers. If the same 4 MiB block appears at different offsets in different files, or on different peers, it is stored once and identified by the same hash.
+The chunk entity has no sequence number, no parent reference, and no metadata. This is deliberate: two chunks with identical payload bytes produce the same entity hash, enabling deduplication across blobs and across peers. If the same 1 MiB block appears at different offsets in different files, or on different peers, it is stored once and identified by the same hash.
 
 ### 2.3 Design Rationale
 
@@ -619,7 +619,7 @@ The `blob_hash` field serves two purposes: it identifies which content the clien
 
 This operates under the handler's own capability scope. The handler **MUST** verify that the blob belongs to content it manages and that the requested chunk hashes are in that blob's manifest — a handler **MUST NOT** serve arbitrary hashes from the content store, as that would bypass the handler-centric access model (§4.4).
 
-Implementations **MUST** respect **the transport's configured frame budget** (per V7 §1.1.4; consult the connection's configured budget at response-construction time, NOT a hardcoded 16 MiB literal) when constructing the response. If including all resolved entities would exceed the limit, the implementation **SHOULD** include as many as fit (in request order) and move the remainder to `missing`. The requester retries with the missing hashes.
+Implementations **MUST** respect **the transport's configured frame budget** (per V7 §1.6; consult the connection's configured budget at response-construction time, NOT a hardcoded 16 MiB literal) when constructing the response. If including all resolved entities would exceed the limit, the implementation **SHOULD** include as many as fit (in request order) and move the remainder to `missing`. The requester retries with the missing hashes.
 
 **Behavioral conformance — frame-budget response chunking (v3.6+).** The frame-budget MUST is exercised by the `system/content/frame-limit-respected` validate-peer behavioral check. The check verifies behavior by issuing a request whose ideal response would exceed the connection's frame budget and confirming the response carries the partial set in `found` plus the rest in `missing`. Implementations failing this check are non-conformant. Companion: §7.4 transport-aware batching responsibility split (senders SHOULD implement `GET_BATCH_SIZE`-windowed batching per §7.1; receivers MUST respect frame-budget per this paragraph).
 
@@ -786,6 +786,7 @@ system/handler := {
   operations: {
     get: {
       input_type:  "system/content/get-request"
+      output_type: "system/content/content-response"
     }
     ingest: {
       input_type:  "system/content/ingest-request"
@@ -836,7 +837,7 @@ handle_get(params, ctx):
   return {found, missing}
 ```
 
-Implementations **MUST** respect **the transport's configured frame budget** (per V7 §1.1.4; consult the connection's configured budget at response-construction time, NOT a hardcoded 16 MiB literal) when constructing the response. If including all resolved entities would exceed the limit, the implementation **SHOULD** include as many as fit (in request order) and move the remainder to `missing`. The requester retries with the missing hashes.
+Implementations **MUST** respect **the transport's configured frame budget** (per V7 §1.6; consult the connection's configured budget at response-construction time, NOT a hardcoded 16 MiB literal) when constructing the response. If including all resolved entities would exceed the limit, the implementation **SHOULD** include as many as fit (in request order) and move the remainder to `missing`. The requester retries with the missing hashes.
 
 **Behavioral conformance — frame-budget response chunking (v3.6+).** The frame-budget MUST is exercised by the `system/content/frame-limit-respected` validate-peer behavioral check. The check verifies behavior by issuing a request whose ideal response would exceed the connection's frame budget and confirming the response carries the partial set in `found` plus the rest in `missing`. Implementations failing this check are non-conformant. Companion: §7.4 transport-aware batching responsibility split (senders SHOULD implement `GET_BATCH_SIZE`-windowed batching per §7.1; receivers MUST respect frame-budget per this paragraph).
 
@@ -865,7 +866,7 @@ Semantic mapping:
 
 Sync-state determination is implementation-defined; deployments SHOULD document their default predicate. **The annotation is informational — it does not change the `missing` list shape; callers without sync-state awareness MAY ignore `pending` entirely.** Earlier text (v3.6 baseline) suggested per-entry `{hash, pending}` dict entries; this was retracted as internally contradictory (the spec text "does not change the missing list shape" cannot coexist with per-entry dict objects). The sidecar form is the canonical shape; per-entry dict form is non-conformant.
 
-**Path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST).** The `system/content:get` EXECUTE carries a `resource` field naming the namespace path (e.g., `system/content` for the default namespace, `system/content/public` for the `public` namespace; see §6.4). The namespace path is the cap-scope resource; the `hashes` array in `params` is the operation payload. Calling `system/content:get` without a `resource` **MUST** return `path_required`. This is consistent with the ENTITY-CORE-PROTOCOL.md §3.2 pattern: every directly-callable op identifies its resource, even when the op's semantic target is hash-shaped.
+**Path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST).** The `system/content:get` EXECUTE carries a `resource` field naming the namespace path (e.g., `system/content` for the default namespace, `system/content/public` for the `public` namespace; see §6.4). The namespace path is the cap-scope resource; the `hashes` array in `params` is the operation payload. Calling `system/content:get` without a `resource` **MUST** return **`400 path_required`** (`GUIDE-EXTENSION-DEVELOPMENT.md` §171 is the authority for this code). This is consistent with the ENTITY-CORE-PROTOCOL.md §3.2 pattern: every directly-callable op identifies its resource, even when the op's semantic target is hash-shaped.
 
 **Default namespace path (v3.6 — F5 SDK-author clarity).** All `system/content:get` and `system/content:ingest` dispatches MUST carry a `Resource.Targets` value matching the configured namespace prefix. The default namespace prefix for the system content handler when no namespace sub-path is configured is `system/content` (per §6.1 manifest registration); dispatches targeting the default handler use `Resource.Targets = ["system/content"]`. Dispatches targeting a sub-namespace (e.g., `system/content/public`) use `Resource.Targets = ["system/content/public"]`. See §6.4 for the namespace-scoping mechanism and §6.4.3 cap-matrix that scopes which namespaces a given grant covers.
 
@@ -981,7 +982,7 @@ The `extract → result_field` pattern is the inject mode of `execute_dispatch` 
 
 For the snapshot-IS-root case (e.g., `tree/extract → content:ingest → tree/merge`), the wrapper IS the snapshot, and `data.root_hash` is directly usable as `source`. Both navigation paths coexist correctly against the same ingest-result shape.
 
-**Capability and path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST).** Requires a grant for `system/content` with operation `"ingest"`. The EXECUTE carries a `resource` field naming the namespace path (the same path the corresponding `get` would target); the grant's `resources` scope covers the namespace. Calling `system/content:ingest` without a `resource` **MUST** return `path_required`. The hashes embedded in `params.envelope` / `params.entity` are operation payload; the namespace path is the resource the cap scope sees. (Pre-v3.5 wording read "No resource scope is needed — content store writes are hash-addressed, not path-addressed." That posture is reversed in v3.5: the hashes are payload; the namespace is the resource that scopes which writers can land bytes in which namespace partition.)
+**Capability and path-as-resource (ENTITY-CORE-PROTOCOL.md §3.2 MUST).** Requires a grant for `system/content` with operation `"ingest"`. The EXECUTE carries a `resource` field naming the namespace path (the same path the corresponding `get` would target); the grant's `resources` scope covers the namespace. Calling `system/content:ingest` without a `resource` **MUST** return **`400 path_required`** (`GUIDE-EXTENSION-DEVELOPMENT.md` §171 is the authority for this code). The hashes embedded in `params.envelope` / `params.entity` are operation payload; the namespace path is the resource the cap scope sees. (Pre-v3.5 wording read "No resource scope is needed — content store writes are hash-addressed, not path-addressed." That posture is reversed in v3.5: the hashes are payload; the namespace is the resource that scopes which writers can land bytes in which namespace partition.)
 
 **Behavior-change callout (v3.4 → v3.5).** Peers that previously called `system/content:get` / `system/content:ingest` without a `resource` field will now receive `path_required`. v3.4 has no shipped impls, so no migration path is needed in practice — the change lands as a v3.4 → v3.5 normative tightening, not as a deprecation. Impl teams reading the diff should not miss this single line of behavior reversal.
 
@@ -1319,11 +1320,11 @@ Each chunk is transferred as a full entity in an envelope. The per-chunk wire ov
 | CBOR binary payload overhead | ~10 bytes |
 | **Total per-chunk overhead** | **~224 bytes** |
 
-For a 4 MiB chunk: ~4 MiB + ~224 bytes → ~4.0 MiB on wire. Per-chunk overhead is ~0.005%.
+For a 1 MiB chunk: ~1 MiB + ~224 bytes → ~1.0 MiB on wire. Per-chunk overhead is ~0.02%.
 
 At this size, multiple chunks fit within a typical batch `get` response. Individual chunk requests are one chunk per response, which is the expected baseline. CBOR binary encoding (major type 2) carries raw bytes directly — no base64 expansion or encoding overhead.
 
-**Hashing cost per chunk**: The receiver validates the chunk entity hash — one SHA-256 over the ECF-encoded chunk (~4 MiB). Per the envelope transport optimization (ENTITY-CORE-PROTOCOL.md §3.1), the envelope's own content_hash is not validated on the wire, avoiding a redundant O(message_size) hash per frame. Total hashing for a 1 GiB transfer: ~2 GiB of SHA-256 (1 GiB for per-chunk entity hashes on create, ~1 GiB for per-chunk validation on receipt). There is no separate content hash — entity hashing is the only hashing layer.
+**Hashing cost per chunk**: The receiver validates the chunk entity hash — one SHA-256 over the ECF-encoded chunk (~1 MiB). Per the envelope transport optimization (ENTITY-CORE-PROTOCOL.md §3.1), the envelope's own content_hash is not validated on the wire, avoiding a redundant O(message_size) hash per frame. Total hashing for a 1 GiB transfer: ~2 GiB of SHA-256 (1 GiB for per-chunk entity hashes on create, ~1 GiB for per-chunk validation on receipt). There is no separate content hash — entity hashing is the only hashing layer.
 
 ---
 
@@ -1333,23 +1334,26 @@ At this size, multiple chunks fit within a typical batch `get` response. Individ
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-| `DEFAULT_CHUNK_SIZE` | 4,194,304 (4 MiB) | Recommended default target chunk size |
+| `DEFAULT_CHUNK_SIZE` | 1,048,576 (1 MiB) | Recommended default target chunk size (§3.5) |
 | `MIN_CHUNK_SIZE` | 65,536 (64 KiB) | Protocol minimum — no chunk may be smaller (except the final chunk of a blob) |
 | `MAX_CHUNK_SIZE` | 8,388,608 (8 MiB) | Recommended maximum chunk size |
 
-These are protocol-level constraints, independent of the chunking algorithm's internal parameters. For example, FastCDC's `min_size` (§3.6.2) is `target_size / 4` = 1 MiB at the default target — well above `MIN_CHUNK_SIZE`.
+These are protocol-level constraints, independent of the chunking algorithm's internal parameters. For example, FastCDC's `min_size` (§3.6.2) is `target_size / 4` = 256 KiB at the default target — well above `MIN_CHUNK_SIZE`.
 
 ### 10.2 Transfer
 
 | Constant | Value | Description |
 |----------|-------|-------------|
-| `GET_BATCH_SIZE` | 64 | Recommended maximum hashes per get request |
+| `GET_BATCH_SIZE` | 16 | Recommended sender-side batching window — hashes per get request (§7.1) |
 
 ### 10.3 Handler Operations
 
 | Operation | Handler | Description |
 |-----------|---------|-------------|
-| `get` | `system/content/*` (optional) | Retrieve entities by hash from content store |
+| `get` | `system/content/*` (optional) | Retrieve entities by hash from content store (§6.2) |
+| `ingest` | `system/content/*` (optional) | Chunk and store bytes, returning the blob hash (§6.3) |
+
+This table enumerates the operations the `system/content` handler declares in its §6.1 manifest. Both are optional in the sense that the whole handler is optional (§11.3); when the handler **is** installed, both are declared and `ingest` carries the §11.1 `root` MUST.
 
 ---
 
@@ -1373,7 +1377,7 @@ These are protocol-level constraints, independent of the chunking algorithm's in
 - Handler content get operation for handlers that serve binary content (§4.2)
 - Small content optimization — include chunks in metadata response when they fit (§4.3)
 - Resumable transfer (§7.3)
-- Default target chunk size of 4 MiB (§3.5)
+- Default target chunk size of 1 MiB (§3.5, §10.1)
 - CBOR binary encoding for chunk payloads (§2.2)
 
 ### 11.3 MAY Implement
@@ -1403,7 +1407,7 @@ These are protocol-level constraints, independent of the chunking algorithm's in
 |---|---|---|
 | 3.6 Amendment 3 | — | **§6.6 GC reframe — wording only, no impl change.** EXTENSION-GC was retired (no extension; see `proposals/deferred/PROPOSAL-EXTENSION-GC.md` for the structural argument and `GUIDE-GC.md` for the resolution). §6.6 narrative updated: the persistence-by-default + no-delete-op + reachability-roots contract is unchanged in semantics; only the deferral pointer "pending EXTENSION-GC" replaced by a reference to GUIDE-GC. Proposal-first proportionality — wording-only spec hygiene, no impl-impact, version-bump with changelog row. |
 | 3.6 Amendment 2 | — | **§6.2 partial-sync sidecar resolution** (Go post-landing audit Finding 2; Python flagged; three-impl convergence on bare-hash `missing` wire shape ratified). The earlier §6.2 partial-sync paragraph was internally contradictory: said entries MAY carry per-entry `pending` annotation but also said "does not change the `missing` list shape" — incompatible. Amendment 2 retracts the per-entry dict form (non-conformant) and lands the **sidecar form**: response gains a separate optional `pending: array_of system/hash` field that's a subset of `missing` exposing the sync-state-visibility predicate; `missing` stays `array_of system/hash` per v3.6 §6.2 spec-literal-arrays contract. Zero impl changes (all three already emit bare-hash `missing`); ratifies the convergent reality + adds a clean sidecar surface for sync-state-visibility consumers. From the Go post-landing materialization audit, Finding 2 (Direction A — Go's lean). |
-| 3.6 Amendment 1 | — | **F8 spec touch landed** (paired with the content-materialization-first-class change, Amendment D). §6.2 + §4.2 frame-budget MUST clarified — implementations consult the connection's **configured** frame budget per V7 §1.1.4, not a hardcoded 16 MiB literal (per Rust's pin). New `system/content/frame-limit-respected` validate-peer behavioral check pinned at both surfaces (handler-mediated §4.2 + system content handler §6.2). §7.4 new "Transport-aware batching responsibility split" paragraph naming sender-side `GET_BATCH_SIZE`-windowed batching SHOULD (per §7.1; recommended 16) + receiver-side frame-budget MUST as independent responsibilities. Cross-impl audit: Go non-conformant at `ext/content/handler.go:115-168`; Rust non-conformant at `extensions/content/src/handler.rs:73-85`; Python non-conformant (same shape). Impl fix ~30–80 LOC per impl bundled with §7.1 sender-side batching addition (~30 LOC). F5 already landed in v3.6 A6; workbench's fold-in note captured (no additional spec text needed). |
+| 3.6 Amendment 1 | — | **F8 spec touch landed** (paired with the content-materialization-first-class change, Amendment D). §6.2 + §4.2 frame-budget MUST clarified — implementations consult the connection's **configured** frame budget per V7 §1.6, not a hardcoded 16 MiB literal (per Rust's pin). New `system/content/frame-limit-respected` validate-peer behavioral check pinned at both surfaces (handler-mediated §4.2 + system content handler §6.2). §7.4 new "Transport-aware batching responsibility split" paragraph naming sender-side `GET_BATCH_SIZE`-windowed batching SHOULD (per §7.1; recommended 16) + receiver-side frame-budget MUST as independent responsibilities. Cross-impl audit: Go non-conformant at `ext/content/handler.go:115-168`; Rust non-conformant at `extensions/content/src/handler.rs:73-85`; Python non-conformant (same shape). Impl fix ~30–80 LOC per impl bundled with §7.1 sender-side batching addition (~30 LOC). F5 already landed in v3.6 A6; workbench's fold-in note captured (no additional spec text needed). |
 | 3.6 | — | **Six amendments landed** + two paired amendments in companion specs per `proposals/PROPOSAL-EXTENSION-CONTENT-V3.6.md`. **A1**: §6.4 restructured — two deployment topologies named (namespace-scoped = production default, MUST for multi-party; single-trust-domain = opt-in restricted-use, MUST NOT be production multi-party default); §6.4.2 Hash Tree Presence canonical for namespace-scoped (bind `{namespace}/{hex(H)}` in tree; `tree:get` is the O(1) lookup primitive); §6.4.3 cap-matrix (tree:get grant = listable index; system/content:get grant = probe-only; combination = full read; cross-product = privacy/discoverability spectrum); §6.4.4 alternative shapes (Tagging, Separate stores) demoted to informative; §6.4.5 index-sizing considerations. **A2**: §3.5 chunk default 4 MiB → 1 MiB per industry CDC centroid (Borg/restic/casync). §3.6.2 FastCDC parameter table updated for 1 MiB target. Existing 4 MiB deployments remain conformant per migration note; **paired DOMAIN-LOCAL-FILES v1.3 Amendment 3 (§5.5 circuit-breaker chunk_size fix) is hard prerequisite for cutover safety**; sibling lock-step coordination SHOULD per §3.5 migration note. **A3**: §1.3 + §3.6 strengthened normative convergence language — diverging from canonical FastCDC parameters drops the implementation out of the cross-peer dedup system explicitly. **A4**: §7.1 + §7.2 streaming wire ingest + streaming reassembly SHOULD ≥64 MiB (companion to DOMAIN-LOCAL-FILES v1.3 L4 promotion; `GET_BATCH_SIZE=16` initial; bounded receiver memory). **A5**: §6.2 spec-literal arrays for `found`/`missing` reaffirmed + envelope-`Included` entity-delivery contract pinned (per V7 §3.3 v7.51 envelope-`included` preservation; F4 three-way cross-impl audit: 2-of-3 spec-literal-arrays + Python pushback on Go hybrid; Go fixes ~10–15 LOC). **A6**: §6.2 default-namespace cross-reference (`system/content` for default-handler dispatches; F5 SDK-author clarity). §3.4 architectural-note updated to point at §6.4 as the substrate-side answer for `system/content` cap discipline. **PAIRED:** DOMAIN-LOCAL-FILES v1.3 Amendment 3 (§5.5 circuit-breaker recompute MUST use incoming blob's `chunk_size`); GUIDE-EXTENSION-DEVELOPMENT §9.1 convergence-angle-diversity meta-note. v3 reframe per user direction: default-permissions-to-everything-as-default is a security defect, not a topology option. |
 | 3.5 | — | **Nine amendments landed.** **A1**: new `system/content/descriptor` entity type (§2.4) + dual-level invariant-pointer path convention (§5.3) with MUST integrity check. **A2**: §1.2 / §2.3 / §6 / §6.5 updated naming the descriptor as the public-content interpretation surface; §6.5 also gains descriptor-publication-quota and `media_type`-drift deployment guidance (Go O4/Q2). **A3**: new §3.7 algorithm classification table per V7 §7. **A4**: new §3.6.5 conformance vector surfaces — high-level naming only; vectors a Stage-4 byproduct. **A5**: path-as-resource for hash-addressed ops `get` / `ingest` (§6.2 / §6.3 normative; namespace path is the cap-scope resource; missing resource MUST return `path_required`); §6.3 carries the explicit v3.4 → v3.5 behavior-change callout. **A6**: op-naming discipline pass on `get-request` (§4.2) — full handler URI in normative prose. **A7**: §4.3 small-content inline-included threshold pinned at 64 KiB (= `MIN_CHUNK_SIZE`); pseudocode predicate updated. **A8**: new §6.6 blob/chunk lifecycle on revision/deletion — deferred to EXTENSION-GC; persistence-by-default interim guidance. **A9** (companion): `GUIDE-EXTENSION-DEVELOPMENT.md` new §3.5 "Paths are convention; the entity graph is coherence" — landed in the same round; CONTENT v3.5 §5.3 and TYPE v1.1 §1.4/§1.5 are the worked examples. Paper-team feedback on the content descriptor and the Go review of the CONTENT/TYPE proposals were both absorbed. |
 | 3.4 | — | `system/content/ingest-result` carries the original `envelope.root` entity inline in envelope mode (new optional `root` field; MUST when `system/content:ingest` is supported). Enables continuation chains over wrapped-envelope responses (e.g., `revision/fetch → content:ingest → revision/merge`) without per-handler `source_envelope` proliferation. Additive on the wire — existing callers reading only `root_hash`/`ingested_count` are unaffected. Per `proposals/implemented/PROPOSAL-CONTENT-INGEST-PASS-THROUGH.md` (C1). |
