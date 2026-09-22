@@ -52,6 +52,29 @@ observes (don't back-sync to meta). You + this session are the architecture team
 make the spec/op-set/host-type calls; the only external handoff is to the
 implementation cohort for cross-impl review + build.
 
+### ⭐ The public surface — what this repo promises to keep `[2026-09-20]`
+
+> **The public surface is `specs/` and `guides/`: the normative extension, SDK, bridge-extension
+> and application-convention text, and the implementer guides that teach it — each document
+> versioned by its own header, which is the authority for that document.**
+>
+> **OUT, and the exclusions are the load-bearing half:**
+> **① Everything under `docs/`.** The proposal and exploration corpus *publishes* — it is the
+> design record, and this repo's own authoring rule sends every spec's rationale there — but a
+> design document is dated, is superseded as the corpus moves, and travels between `active/`,
+> `implemented/`, `superseded/` and `deferred/` as the ordinary lifecycle. **Its path is not
+> promised.** Cite the spec; a proposal is rationale, never authority (`L21` consumer axis).
+> **② `ENTITY-CORE-PROTOCOL`**, which is published from `entity-core-protocol` on its own number
+> and is upstream of everything here. **③ The repo-level release number**, which is not any
+> spec's version and never has been — `L14`.
+
+**So "breaking" here means one of exactly two things:** a published `specs/` or `guides/` address
+stops answering, or a normative obligation inside that text moved under an implementation already
+built against it. **Versioning is undefined without a declared surface, and this repo did not have
+one until 2026-09-20** — so every release argument made about it before that date was an opinion,
+including the well-reasoned ones, and including any made on this team's behalf. Nobody else can
+write this line; it is not delegable.
+
 ## This team's repos — three, not one
 
 **`AGENTS-STANDARD.md`'s "stay in your tree" is about not reaching into *another team's*
@@ -164,7 +187,7 @@ not when it is routed. The row is what makes the packet writable later; the cade
 governs *when* it goes.
 
 ⚠ **Their half was worse and they landed it first**, which is why this is not a lecture: their own
-`tools/oracle-pin.env` had carried `guide_conformance = <sha256>` since `v0.8.2`, and
+`tools/oracle-pin.env` had carried `guide_conformance = <sha256>` since the 0.8.2 cut, and
 `grep -rn guide_conformance tools/ Makefile` returned **exactly one line — the one that declares
 it.** **A pin nobody reads is a comment.**
 
@@ -1077,7 +1100,7 @@ reconstruction pass.
   python3 <arch-tools>/spec-tool/cli.py pins --root . --gate     # 0 clean · 1 findings · 2 could-not-look
   ```
 
-  **Scope is the `CANONICAL-DOCS.toml` keep-list, not the tree** — `canon-filter` drops every doc not
+  **Scope is the `CANONICAL-DOCS.toml` keep-list, not the tree** — the release filter drops every doc not
   declared there, so a `dev` hash in a scratch note is not a defect and is not flagged. **It resolves
   cross-repo and says which repo holds the commit**, because a keystone doc citing an
   `entity-core-go` SHA is not a keystone defect — resolving it against the citing repo alone is how

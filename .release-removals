@@ -1,9 +1,8 @@
 # .release-removals — deliberate deletions against the PUBLISHED tree.
 #
-# One path or path-prefix per line; `#` comments allowed. The `[6/6] public-regress` gate
-# blocks any release that removes a file already on public `master` unless it is declared
-# here. A deletion is not forbidden — it must be intended, and this file is the reviewed
-# record that it was. Read by dev-pipeline/promote/promote.sh.
+# One path or path-prefix per line; `#` comments allowed. A release that removes a file
+# already on public `master` is blocked unless it is declared here. A deletion is not
+# forbidden — it must be intended, and this file is the reviewed record that it was.
 #
 # A comment-only or blank file is NOT an allow-all; it declares nothing.
 
@@ -40,3 +39,73 @@
 # CHANGELOG.md "what changed", the specs and guides are the product, and docs/STATUS.md
 # "where does it stand" — all declared canonical and written for that reader.
 docs/status
+
+# ── 2026-09-19 — the 0.8.2 cut, measured by RUNNING the filter, not by reading the config ──
+#
+# Everything below was found by exporting HEAD to a throwaway tree, running the real
+# release filter over it, and diffing the survivors against public
+# `master`. That diff is 22 paths that are public today and are not in the filtered
+# tree, and NOT ONE of them was declared — so the public-regression gate was going to
+# fail closed on this cut. It is fail-closed by design and it was right.
+#
+# Four of the 22 are genuine withdrawals and 18 are lifecycle moves. They are declared
+# separately below because they are different claims, and collapsing them would hide
+# the four behind the eighteen.
+
+# ── Genuine withdrawals — each one intended, each with the commit that did it ──
+#
+# `specs/applications/CHARTER.md` — FOLDED into `guides/GUIDE-APPLICATION-DEVELOPMENT.md`
+# v2.0 at `f22dc8f` (the Z1/Z2 two-level tier ruling, 2026-09-09). The word "charter"
+# left the published surface deliberately: it named a genus with one member. This is the
+# one removal a public reader can actually feel — it is a live page changing address, not
+# a broken citation in anyone's source. Filed at the time of the move as COHORT-OPEN-ITEMS
+# `N-5`, with the instruction "raise it with the next publish rather than opening a
+# packet." This is that publish, and this line is the raise. Measured then: no
+# implementation cites it; `entity-browser-rust` renders 45 generated site pages under
+# `dist-entity-church-foundation/` that carry the old path, which the pipeline owns and
+# arch does not edit ([ADR-0031]).
+specs/applications/CHARTER.md
+#
+# `specs/ENTITY-SYSTEM-REFERENCE.md` — RETIRED to `docs/archive/` at `364c018`. A condensed
+# working reference that restated the specs; a restatement with no declared authority is
+# the `pointers`/`sdksync` defect class as a whole document, and the specs it condensed are
+# all published.
+specs/ENTITY-SYSTEM-REFERENCE.md
+#
+# `specs/domains/` — the directory is gone; `DOMAIN-LOCAL-FILES.md` MOVED to
+# `specs/bridge-extensions/DOMAIN-LOCAL-FILES.md` at `057974b`, which publishes. A prefix
+# rather than the one file because the directory itself is what was retired.
+specs/domains
+#
+# `docs/DISCIPLINE-CHARTER.md` — UNDECLARED 2026-09-08 and still committed at that path.
+# It stays the authoritative home of the discipline set and is still gated by `spec
+# charter`; it stopped being addressed to a stranger. The operator's test was "someone
+# pulled the repo and started working — would they want or need this?" — no: it is a
+# rulebook about how this team works, and its contributor-facing half is already its own
+# published document, `CONTRIBUTING.md`. `canonical` and `authoritative` are not the same
+# claim; treating them as one is what kept it declared.
+docs/DISCIPLINE-CHARTER.md
+
+# ── The 18 are the proposal lifecycle, not withdrawals ──
+#
+# Every one is a proposal that FOLDED and moved `active/` → `implemented/`, which is the
+# L3 discipline working: a partial fold stays active, a complete one moves. Against the
+# published tree a move is a deletion plus an addition and `public-regress` sees only the
+# deletion, so all 18 read as vanishing. All 18 were verified present under
+# `docs/proposals/implemented/` before this line was written — 18 moved, 0 absent — and
+# `docs/proposals` is a `[[keep_tree]]`, so both halves publish and the reader loses
+# nothing.
+#
+# A PREFIX and not 18 filenames, for the reason `canon.go` already gives against per-file
+# declarations: a proposal folds most weeks, and a list that needs an edit at every fold is
+# a permanent public-surface commitment made to work around a lifecycle. The prefix says
+# "a document may leave `active/`", which is the only way a document ever leaves `active/`.
+#
+# ⚠ STATED RESIDUE, because a prefix is a real loosening: this would also wave through a
+# proposal DELETED from `active/` rather than moved. Nothing gates the counterpart add —
+# `spec ledger`'s `proposal-state-mismatch` runs the other direction (folded work left
+# sitting in `active/`). So the check is the one run by hand above, and it is one command:
+#   comm -23 <(git ls-tree -r --name-only <public> | sort) <(filtered tree | sort)
+# then confirm each removed `active/` path exists under `implemented/`. Re-run it at each
+# cut; it is the whole audit and it took under a minute.
+docs/proposals/active

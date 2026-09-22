@@ -963,7 +963,7 @@ cohort.
 > | Generator + emit + cross-bless | `entity-core-go/cmd/internal/compute-corpus/` — `gen.go`, `evaluate.go`, `crossbless.go`, `guards.go`, `peeremit.go`, and a **portable `prng.go`** |
 > | Pin | **`seed 20260716` · SplitMix64 · corpus-SHA `d0fdd757`** — the exact `(seed, generator-version, SHA)` triple §7c.4(6) asks for |
 > | Result | **330/330 byte-identical, three-way** (`EXTENSION-COMPUTE` v3.21 header) |
-> | Corroboration in each seat | go `docs/validation/reports/2026-07-22-compute-corpus-first-crossimpl-run.md` · rust `ROUTING-2026-07-23-compute-corpus-f1-q1-rust.md` · py `HANDOFF-2026-07-23-compute-corpus-f3-included-resolution-python.md` — **one per impl, each recording its own F-finding** (F-1 rust cast-to-uint, F-2 the §9.1 out-of-range index, F-3 py tier-1 `included`) |
+> | Corroboration in each implementation | each of the three recorded its first cross-implementation run in its own repository — **one per implementation, each recording its own F-finding** (F-1 rust cast-to-uint, F-2 the §9.1 out-of-range index, F-3 py tier-1 `included`) |
 >
 > **F-2 is why this mattered rather than being filing hygiene.** That ruling — *an out-of-bounds magnitude
 > is `index_out_of_range`, not `type_mismatch`* — came **out of this corpus's first cross-impl run**, and
@@ -1067,7 +1067,7 @@ locked.**
 
 **Gates:** AE-1 admission (fast interpreter *and* compiled handler), the lowering-toolkit vectors (first
 tranche), W-BUDGET preemption determinism (BP-1), W-HOSTING transferable compute. Highest-leverage cohort
-build (`ROUTING-2026-07-21` Wave 0→1). **`budget_exhausted` is a gated, cross-impl-deterministic outcome** —
+build (cross-team sequencing, Wave 0→1). **`budget_exhausted` is a gated, cross-impl-deterministic outcome** —
 the observable `operations` ceiling charges `evaluate()` steps only (`EXTENSION-COMPUTE §4.2`, ruled from this
 corpus's first run), so budget-edge vectors (a workload deliberately partway through its budget) **stay in the
 equality gate**: two conformant impls given the same `(IR, inputs, budget)` MUST reach `budget_exhausted` at
@@ -1284,4 +1284,4 @@ The single place "what's not finalized" is tracked, so nothing is lost while it 
 - **`proposals/implemented/PROPOSAL-MULTISIG-CORE-PRIMITIVE.md`** — multisig, landed V7 v7.60; `validate-peer multisig` category is its conformance pin.
 - **`proposals/implemented/PROPOSAL-V7-CAPABILITY-HANDLER-AMENDMENT.md`** — the capability-handler amendment, **landed V7 v7.62**. The §9 register's D-DEL + D-VOC items resolve here; the validate-peer test vector update + Rust/Python `is_revoked` + `capability_path_for` impls are the follow-on work.
 - The advisory on Python peer-id binding — the independent Python identity-binding security fix (the §4.6 step-3 gap; fixed impl-side).
-- **`docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md`** (AE-1) — the admission contract §7c is the conformance artifact for; **`PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md §5`** — the worked-lowering vectors that seed the compute corpus; **`ROUTING-2026-07-21-cross-team-sequencing.md`** — where the corpus sits on the cross-team clock (the critical path). Grounding survey: `entity-workbench-go/entitysdk/axis1_equivalence_test.go` + `entity-workbench-go/docs/architecture/reviews/COMPUTE-AXIS1-ORACLE-GAPS-2026-07-16.md`.
+- **`docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md`** (AE-1) — the admission contract §7c is the conformance artifact for; **`PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md §5`** — the worked-lowering vectors that seed the compute corpus. The grounding survey is the workbench SDK's own axis-1 equivalence tests and its oracle-gap review, in that repository.

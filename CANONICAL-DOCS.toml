@@ -42,12 +42,12 @@ group = "Overview"
 
 # ── Community health ──────────────────────────────────────────────────────────
 # K1, routed by meta 2026-08-24 and applied here. These five are ON public `master`
-# already and were declared NOWHERE, so a cut proposed to delete them: `canon-filter`
+# already and were declared NOWHERE, so a cut proposed to delete them: this manifest
 # is a keep-list and drops any prose it is not told to keep. They survived v0.8.0
-# because that cut ran the old release-builder path, where the overlay INJECTED them;
-# the promote path selects instead, and nothing carried the declaration across.
+# because that cut ran an earlier release path, where the overlay INJECTED them;
+# the current path selects instead, and nothing carried the declaration across.
 #
-# Declared rather than waived, deliberately. The fast way past a `[6/6] public-regress`
+# Declared rather than waived, deliberately. The fast way past a public-regression
 # abort is to widen `.release-removals`, and that path ends with SECURITY.md — the
 # vulnerability-reporting address — deleted from a public repo, and the Code of Conduct
 # going quiet on a project whose Code of Conduct the operator wrote. Declare the files,
@@ -94,7 +94,7 @@ group = "Community health"
 # ── Product trees ─────────────────────────────────────────────────────────────
 # `[[keep_tree]]` declares a DIRECTORY as product rather than dev history
 # (built in the release tooling on this repo's ask). Everything prose under
-# it survives `canon-filter` without a per-file entry.
+# it survives the release filter without a per-file entry.
 #
 # Why arch needs it and most repos do not: for a code repo, `docs/` really is dev
 # history and the filter's default is right. Here the output IS prose. Most of it
@@ -121,10 +121,77 @@ why  = "the design record — the ratifiable unit, and where this repo's rules s
 path = "docs/research/explorations"
 why  = "the design-space studies the specs are ruled inside of; L11 makes reading them a precondition of ruling"
 
-# The index and the lifecycle README sit ONE LEVEL ABOVE that keep_tree, so they were
-# stripped while the 35 documents they describe published — caught by meta at the cut,
-# 2026-08-24. Declared individually rather than widening the keep_tree to `docs/research`,
-# which would drag in `reviews/` (22 files we drop on purpose).
+# ── The product itself: `specs/` and `guides/` ────────────────────────────────
+# ⭐ CONVERTED FROM 78 PER-FILE `[[doc]]` ENTRIES, 2026-09-20, AND THE REASON IS A
+# MEASUREMENT RATHER THAN A PREFERENCE. Those 78 entries did not control what
+# shipped. They never had.
+#
+# The filter only drops prose that is UNDER A DOC ROOT (`docs/`, `research/`,
+# `status/`, `validation/`, ...) or LOOSE AT THE TOP LEVEL. `specs/` and `guides/`
+# are neither: `canon.go`'s own safety rule protects prose nested under code/spec
+# directories, naming `specs/` and `guides/` explicitly, because dropping a module
+# README or the spec itself would break the published repo. So every file under
+# them shipped whether or not this manifest mentioned it.
+#
+# MEASURED, by running the real filter from a source build over an export of
+# HEAD, twice — once with all 78 entries and once with none:
+#   · both runs dropped 495 files
+#   · the two filtered trees are byte-for-byte IDENTICAL
+#   · `spec pins` scope went 322 → 324 declared docs — it GREW
+#
+# The +2 is the cost of the old mechanism, and it is why this is a fix and not a
+# tidy-up. `APP-CONVENTION-FEED.md` (v0.3.1, binding) and `APP-CONVENTION-REFERENCE.md`
+# (v0.1, binding) landed 2026-09-08/09 and NOBODY ADDED THEM. They were published the
+# whole time — the filter protects them — but they were invisible to every gate scoped
+# to the keep-list, and they are cited 8 and 5 times respectively from files that ARE
+# declared, including 12 times from APP-CONVENTION-SEMANTIC-CONTENT-SITE.
+#
+# ⚠ SO THE HAZARD THIS REMOVES IS NOT A PUBLICATION HAZARD — IT IS A FALSE CONTROL.
+# An enumeration that reads like a publication decision and is in fact decoration is
+# worse than no list, because people reason from it. Nothing about dropping a WIP
+# draft into `specs/` got riskier here: it published before this change and it
+# publishes after. What changed is that the manifest no longer claims otherwise, and
+# that `check-declared-trees` now watches these two directories for composition drift,
+# which is a real control where the list was not.
+[[keep_tree]]
+path = "specs"
+why  = "the normative specification surface — the extension family, the SDK specs, the L5 application conventions and the authoring standards. This repo's product"
+
+[[keep_tree]]
+path = "guides"
+why  = "the implementer guides — the other half of the product, and the surface an extension author copies from"
+
+# Two rulings that were attached to per-file entries removed above, kept because the
+# decision is still live and this is now its only home in this file:
+#
+# `specs/domains/` — RETIRED 2026-09-14. Bridge extensions (an extension that reaches OUT
+# of the entity system onto a foreign technology, one document per technology) now live at
+# `specs/bridge-extensions/`. The word "domain" was defined once and circularly, and the
+# study that produced the family framing rejected it outright. See SYSTEM-ARCHITECTURE
+# §13.1. `.release-removals` carries the deletion half.
+#
+# `specs/ENTITY-SYSTEM-REFERENCE.md` — RETIRED 2026-09-08 and moved to `docs/archive/`.
+# A condensed restatement is the class `SPECIFICATION-FORMAT.md` §8.4.3 forbids authoring,
+# and it was never a citation target. Do not re-declare it; do not author a successor.
+
+# `docs/research/reviews/` — dated peer reviews, absorbed into the design record and never
+# published. The comment below already said we drop them on purpose; this says it in a form
+# the release filter can read. **It records what is already true rather than deciding
+# anything**: measured against the live public tree, zero files under this path have ever
+# been published, and this declaration keeps it that way.
+#
+# Without it the six dated filenames here are prose BELOW the top-level doc roots, which is
+# invisible to the release filter — so the failure mode is publication, not omission, and it
+# leaves no diff to notice.
+[[area]]
+path      = "docs/research/reviews"
+kind      = "status"
+publishes = false
+
+# The index and the lifecycle README sit ONE LEVEL ABOVE the explorations keep_tree, so
+# they were stripped while the 35 documents they describe published — caught by meta at the
+# cut, 2026-08-24. Declared individually rather than widening the keep_tree to
+# `docs/research`, which would drag in `reviews/` (22 files we drop on purpose).
 #
 # It is worth naming what this defect was: a reader would have received a flat directory
 # of 35 explorations and nothing saying what they are. That is `entity-core-keystone`'s
@@ -166,500 +233,15 @@ group = "Working here"
 # — which is defensible and is also exactly how the leak stayed invisible. The
 # scope tracks the publication declaration, so an undeclared file is out of scope
 # by the rule rather than by an exception. Keep the two in step.
-#
-# The proposal and exploration corpora are a different problem and are
-# deliberately NOT solved this way — 117 hand-written entries is not a mechanism,
-# it is a mechanism's absence written out longhand. See docs/STATUS.md.
 [[doc]]
 path  = "docs/DOCTRINE-COHORT-STATE-TRACKING.md"
 title = "Doctrine — tracking cohort build state without asserting it stale"
 blurb = "How a claim about what another implementation has built is made, dated and re-verified. Written after the same defect recurred: a measurement true when taken, plausible forever after, and invisible to review."
 group = "Working here"
 
-# ── Extensions ────────────────────────────────────────────────────────────────
-[[doc]]
-path  = "specs/extensions/EXTENSION-ATTESTATION.md"
-title = "Attestation Extension — Normative Specification"
-blurb = "The attestation primitive — \"Peer A asserts that B has property X\" — is the edge type in the system's signed graph."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-CLOCK.md"
-title = "Clock Extension — Normative Specification"
-blurb = "The clock extension provides a unified timing mechanism for the entity system."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-COMPUTE.md"
-title = "Compute Extension — Normative Specification"
-blurb = "The compute extension defines a minimal expression language embedded in the entity type system."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-CONTENT.md"
-title = "Content Extension — Normative Specification"
-blurb = "The content extension defines a universal pattern for storing and transferring binary content within the entity system."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-CONTINUATION.md"
-title = "Continuation Extension — Normative Specification"
-blurb = "The continuation extension enables execution chaining — determining what happens when a result arrives at a path."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-DISCOVERY.md"
-title = "EXTENSION-DISCOVERY"
-blurb = "REGISTRY (sibling extension EXTENSION-REGISTRY.md) answers \"given a name, where is this peer?\" (lookup, name→peer)."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-DURABILITY.md"
-title = "Durability Extension — Exploratory Reference Specification"
-blurb = "A receiver MAY expose the durability levels it supports and the zone characteristics under which it provides them (e.g."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-ENCRYPTION.md"
-title = "EXTENSION-ENCRYPTION"
-blurb = "The original conceptual core (entity-level framing, three-mode split, don't-reuse-identity-key, encryption-as-defense-in-depth-with-capabilities) is preserved v"
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-GROUP.md"
-title = "Group Extension — Normative Specification"
-blurb = "A group is an identity that represents multiple individuals collectively."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-HISTORY.md"
-title = "System History Extension"
-blurb = "This extension provides path-level transition recording for the entity tree."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-IDENTITY.md"
-title = "Identity Extension — Normative Specification"
-blurb = "The identity extension provides multi-peer identity management on top of V7."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-INBOX.md"
-title = "Inbox Extension — Normative Specification"
-blurb = "The inbox extension enables asynchronous result delivery."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-NETWORK.md"
-title = "Network Extension — Normative Specification"
-blurb = "The network extension manages persistent peer relationships: maintaining connections, detecting failures, reconnecting, restoring subscriptions, and draining pe"
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-QUERY.md"
-title = "Query Extension — Normative Specification"
-blurb = "The query extension adds secondary indexes and a compositional query mechanism to the entity system."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-QUORUM.md"
-title = "Quorum Extension — Normative Specification"
-blurb = "K-of-N consensus over an entity is a primitive authorization pattern, not an identity-specific feature."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-REGISTRY.md"
-title = "EXTENSION-REGISTRY"
-blurb = "A registry is a function: name → (peerid, bootstrapendpoints, attestations, trustanchor, ttl)."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-RELAY.md"
-title = "EXTENSION-RELAY"
-blurb = "A relay is an intermediary that carries opaque, signed, capability-bearing envelopes between two endpoints."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-REVISION.md"
-title = "System Revision Extension"
-blurb = "This extension provides versioning, merge, and peer-to-peer synchronization for entity trees."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-ROLE.md"
-title = "Role Extension — Normative Specification"
-blurb = "The role extension provides named grant bundles and context-scoped peer authorization."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-ROUTE.md"
-title = "EXTENSION-ROUTE"
-blurb = "EXTENSION-ROUTE is a storage plane: it holds a peer's routing table — a set of"
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-SIGNALING.md"
-title = "Signaling Extension — Normative Specification"
-blurb = "Two peers both behind NAT cannot dial each other, and there is no public party holding a socket to either. This extension provides the mutually reachable third party that carries an opaque exchange between them."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-SUBSCRIPTION.md"
-title = "Subscription Extension — Normative Specification"
-blurb = "The subscription extension enables peers to receive notifications when entity tree paths change."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-SUBSTITUTE.md"
-title = "EXTENSION-SUBSTITUTE"
-blurb = "A peer that misses on a local system/content:get SHOULD be able to consult an ordered chain of substitute sources before returning the terminal miss."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-TRANSACTION.md"
-title = "Transaction Extension — Normative Specification"
-blurb = "The transaction extension provides multi-path atomic operations — grouping multiple tree bindings into a single logical unit."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-TREE.md"
-title = "System Tree Extension"
-blurb = "This extension builds on the entity tree defined in ENTITY-CORE-PROTOCOL.md §1.7 and §6.3."
-group = "Extensions"
-
-[[doc]]
-path  = "specs/extensions/EXTENSION-TYPE.md"
-title = "Type Extension — Normative Specification"
-blurb = "The type extension adds value-level constraint validation and type analysis operations to the entity type system."
-group = "Extensions"
-
-# ── SDK specs ─────────────────────────────────────────────────────────────────
-[[doc]]
-path  = "specs/sdk/SDK-EXTENSION-OPERATIONS.md"
-title = "SDK Extension Operations — Draft"
-blurb = "Every extension operation is an execute() call to the extension's handler."
-group = "SDK specs"
-
-[[doc]]
-path  = "specs/sdk/SDK-IDENTITY-INFRASTRUCTURE.md"
-title = "SDK Identity Infrastructure — Specification"
-blurb = "This document specifies the SDK surface for the identity stack — the set of operations, helpers, and on-disk conventions that SDK implementations expose so appl"
-group = "SDK specs"
-
-[[doc]]
-path  = "specs/sdk/SDK-OPERATIONS.md"
-title = "SDK Operations — Normative Specification"
-blurb = "The SDK manages one or more local peers."
-group = "SDK specs"
-
-# ── Applications ──────────────────────────────────────────────────────────────
-[[doc]]
-path  = "specs/applications/APP-CONVENTION-EMBED.md"
-title = "APP-CONVENTION-EMBED — the generic rich-content typed node — v0.2.3 DRAFT"
-blurb = "This convention defines format: the Embed input entity (§3), the EmbedOutput structured value (§4 — the"
-group = "Applications"
-
-[[doc]]
-path  = "specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md"
-title = "APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5 DRAFT"
-blurb = "CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always"
-group = "Applications"
-
-[[doc]]
-path  = "specs/applications/APP-CONVENTION-SHARE.md"
-title = "APP-CONVENTION-SHARE — the share record and its audience binding — v0.1 DRAFT"
-blurb = "The share record and how its audience binds. Third member of the applications domain; charter class FORMAT-only. v0.1 DRAFT — the audience question is still open, so read the version header before building on it."
-group = "Applications"
-
-[[doc]]
-path  = "guides/GUIDE-APPLICATION-DEVELOPMENT.md"
-title = "Application development — what an L5 application convention must be"
-blurb = "The applications tier standard: what makes a cross-impl, application-layer convention a convention rather than a dumping ground, and which corpus-wide rules bind one."
-group = "Applications"
-
-# ── Bridge extensions ─────────────────────────────────────────────────────────
-# Extensions that reach OUT of the entity system onto a foreign technology, one
-# document per technology. `specs/domains/` was the earlier home; its name was
-# defined once and circularly, and the study that produced the family framing
-# rejected the word outright. Retired 2026-09-14 — see SYSTEM-ARCHITECTURE §13.1.
-[[doc]]
-path  = "specs/bridge-extensions/DOMAIN-LOCAL-FILES.md"
-title = "Local Files — Normative Specification"
-blurb = "The local files bridge maps a host filesystem subtree into the entity tree, making filesystem content accessible through the entity protocol."
-group = "Bridge extensions"
-
-[[doc]]
-path  = "guides/GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md"
-title = "Bridge extension development — reaching a technology that is not the entity system"
-blurb = "The cross-family discipline every bridge extension answers: the three-layer separation, the direction-mode axis, the seven questions a bridge specification must answer, and the hazards that recur at every foreign boundary."
-group = "Bridge extensions"
-
-# ── System & architecture ─────────────────────────────────────────────────────
-[[doc]]
-path  = "specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md"
-title = "Architecture: Identity, Authority, and Deployment Infrastructure"
-blurb = "The architecture-side work on identity, authority, and deployment patterns has produced a substantial body of artifacts — multiple specs across the layered stac"
-group = "System & architecture"
-
-# `specs/ENTITY-SYSTEM-REFERENCE.md` was declared here until 2026-09-08. RETIRED and moved to
-# `docs/archive/`: a condensed restatement is the class `SPECIFICATION-FORMAT.md` §8.4.3 forbids
-# authoring, and it was never a citation target. Do not re-declare it; do not author a successor.
-
-[[doc]]
-path  = "specs/SYSTEM-ARCHITECTURE.md"
-title = "Entity System — Architecture Overview"
-blurb = "This is the navigable map of the entity system's architecture."
-group = "System & architecture"
-
-[[doc]]
-path  = "specs/SYSTEM-COMPOSITION.md"
-title = "System Composition Guide"
-blurb = "This document describes cross-extension emergent properties — the behaviors that arise when multiple system extensions compose through the emit pathway."
-group = "System & architecture"
-
-[[doc]]
-path  = "specs/SYSTEM-DATA-EXCHANGE.md"
-title = "System Data Exchange"
-blurb = "What a peer obtains from other peers it may publish, and the result is the same kind of object it was built from — the closure property, its two preconditions, and the four rules a republishing peer follows."
-group = "System & architecture"
-
-[[doc]]
-path  = "specs/SYSTEM-IDENTITY-COMPOSITION.md"
-title = "System Identity Composition — Navigation Doc"
-blurb = "The identity layer is composed of three extensions (per the landed proposal stack):"
-group = "System & architecture"
-
-# ── Guides ────────────────────────────────────────────────────────────────────
-[[doc]]
-path  = "guides/GUIDE-ATTESTATION.md"
-title = "Attestation: User Guide"
-blurb = "An attestation is \"Peer A asserts that B has property X.\" It's the edge type in the system's signed graph: hash-addressable entities are nodes; signed claims ar"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-CAPABILITIES.md"
-title = "Capabilities: User Guide"
-blurb = "A capability is a signed entity (system/capability/token) that authorizes an EXECUTE to run."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-COMPUTE-PROGRAMMING.md"
-title = "Compute: Programming Guide"
-blurb = "You write expressions (entities of type compute/literal, compute/lookup/, compute/apply, etc.) and you ask the compute handler to do one of two things with them"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-COMPUTE.md"
-title = "Compute Extension: User Guide"
-blurb = "The compute extension embeds an expression language in the entity type system."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-CONFORMANCE.md"
-title = "GUIDE-CONFORMANCE — How conformance is verified across implementations"
-blurb = "The conformance gate exists because two impl-time encoder bugs (Rust receive-side re-encode 2026-05; Python's cbor2 float16 minimization 2026-05) made it throug"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-CORE-COMPUTATIONAL-ARCHITECTURE.md"
-title = "Core Computational Architecture"
-blurb = "Everything in the compute arc is a facet of this single sentence."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-PEER-COMPOSITIONS.md"
-title = "Peer Compositions and Topologies"
-blurb = "Wiring several peers together: a peer is a configuration, a composition is a family, and the catalog of seven needs no protocol change."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-CROSS-PEER-MESSAGING.md"
-title = "GUIDE: Cross-Peer Messaging (Delivery, Durability, Tracking)"
-blurb = "Synchronous request-response does not survive a slow, busy, or disconnected receiver, and a request you wanted preserved can vanish silently if the receiver doe"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-EMIT-PIPELINE-IMPLEMENTATION.md"
-title = "Emit Pipeline Implementation Guide"
-blurb = "Cross-impl conversations have been confused by the same words meaning different things to spec, implementation, and operations audiences."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-ENTITY-WORKBENCH-APP.md"
-title = "Guide: Entity Workbench App"
-blurb = "This is a general-purpose application namespace convention built around app/{app-id}/...."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-EXTENSION-BUILDER.md"
-title = "Guide: Building an Extension — When, Why, and How"
-blurb = "An extension is a coherent surface — types, handlers, conventions, conformance — that composes onto the entity core protocol (ENTITY-CORE-PROTOCOL.md) withou"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-EXTENSION-DEVELOPMENT.md"
-title = "Guide: Extension Development"
-blurb = "Before writing or proposing an extension, read ENTITY-CORE-PROTOCOL.md end to end."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-GC.md"
-title = "GUIDE-GC — Storage cleanup in entity-core"
-blurb = "GC posture per §10."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-GROUP.md"
-title = "Groups: User Guide"
-blurb = "Two terms recur."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-IDENTITY-SDK.md"
-title = "Guide: Identity SDK"
-blurb = "How to use the identity-stack SDK surface from application code."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-IDENTITY.md"
-title = "Identity: User Guide"
-blurb = "V7 alone gives you per-peer authorization: each peer is its own root, signs caps for its own resources, and every cap chain bottoms out at a peer-identity entit"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-IMPL-DISCIPLINE.md"
-title = "Guide: Implementation Discipline"
-blurb = "Implementation disciplines that apply across implementation teams (not just SDK consumers)."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-INSPECTABILITY.md"
-title = "GUIDE-INSPECTABILITY — Observing what flows through an entity-core peer"
-blurb = "A peer can be wire-conformant with zero inspection ergonomics — accept dispatches, store entities, emit responses."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-MULTISIG.md"
-title = "Multi-Signature Capabilities: User Guide"
-blurb = "A multi-signature capability is a root cap whose granter field names a group of K-of-N peers instead of a single peer."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-NETWORKING-MODEL.md"
-title = "GUIDE: The networking model — how information travels & how to deploy"
-blurb = "This is the map."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-OPERATIONAL-STATE.md"
-title = "Operational State: User Guide"
-blurb = "The design choice that distinguishes operational state from how most systems model the same information: everything is entities written to the tree through the"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-PEER-COMPOSITIONS.md"
-title = "GUIDE: Peer Compositions and Topologies"
-blurb = "A peer is not a role."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-PEER-CONCERNS-AND-NAMESPACES.md"
-title = "Guide: Peer Concerns and Namespace Conventions"
-blurb = "How to think about what a peer is, what defines it, and how to organize its tree."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-PERSISTENCE.md"
-title = "Guide: Persistence"
-blurb = "How peers persist on disk."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-QUORUM.md"
-title = "Quorum: User Guide"
-blurb = "A system/quorum is the K-of-N node primitive — a special node in the signed graph whose \"signature\" is K signatures from N constituent peers, rather than a sing"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-RESOLUTION.md"
-title = "GUIDE-RESOLUTION — how a name becomes bytes"
-blurb = "Both normative (V7 §1.4, §1.7; PRIMER):"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-RESTART-AND-PERSISTENCE.md"
-title = "Guide: Restart and Persistence"
-blurb = "The protocol takes a simple position: the tree is the state."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-REVISION-AUTO-VERSION.md"
-title = "Revision Extension: Auto-Version User Guide (Exploratory)"
-blurb = "The revision extension turns a tree subtree into a content-addressed version DAG — a git-like history of structural states."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-REVISION.md"
-title = "Revision Extension: User Guide"
-blurb = "The revision extension turns a subtree of the entity tree into a content-addressed version DAG."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-ROLE.md"
-title = "Roles: User Guide"
-blurb = "The core protocol gives you per-peer authorization: each peer is a root authority, each peer signs caps, every cap chain bottoms out at a peer-identity entity."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-REFERENCE-DEPLOYMENT.md"
-title = "GUIDE — reference deployment: standing up efficient, scalable managed infrastructure"
-blurb = "Operator runbook for the managed-infrastructure pattern. Per-role maturity flags mark what ships today versus what rides the connectivity track."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-SDK-PATTERNS.md"
-title = "Guide: SDK Patterns"
-blurb = "Patterns for building applications on the entity system SDK."
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-SERVING-MODE.md"
-title = "GUIDE — Serving mode (a live peer as its own CDN origin)"
-blurb = "A live peer additionally exposes http-poll routes (GET /content/{hex33(H)}, GET {tree-prefix}/{path}) from its own store, on the same HTTP listener as its http"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-SHELL-FRAMING.md"
-title = "Guide: Shell Framing"
-blurb = "The shell is a named layer above the SDK that exposes the entity system's coordination primitives — tree operations, handler dispatch, capability and identity m"
-group = "Guides"
-
-[[doc]]
-path  = "guides/GUIDE-TRANSACTION.md"
-title = "Transaction Extension: Developer Guide (Exploratory)"
-blurb = "The entity system's tree provides per-path atomic writes."
-group = "Guides"
-
-[[doc]]
-path  = "guides/RUNBOOK-CDN-BROWSER-DEPLOYMENT.md"
-title = "RUNBOOK — CDN + browser deployment"
-blurb = "Deployment headers and caching discipline for the static-HTTP CDN path. A v1 deliverable because the browser is the headline consumer of that path and its headers cannot be a forward reference."
-group = "Guides"
-
-# ── Authoring standards ───────────────────────────────────────────────────────
-[[doc]]
-path  = "specs/SPECIFICATION-FORMAT.md"
-title = "Entity System — Normative Specification Format"
-blurb = "This document defines the format for normative specifications in the entity system."
-group = "Authoring standards"
-
-[[doc]]
-path  = "specs/STYLE-NAMING-CONVENTIONS.md"
-title = "Entity System — Identifier Naming Conventions"
-blurb = "These names are part of the wire contract."
-group = "Authoring standards"
-
 # ── Roadmap ───────────────────────────────────────────────────────────────────
+# Root-level prose, so — unlike `specs/` and `guides/` — these declarations ARE
+# load-bearing: the filter drops loose top-level prose that is not declared.
 [[doc]]
 path  = "ROADMAP-APPLICATIONS.md"
 title = "Applications (L5) — Domain Roadmap (canonical, living)"
@@ -697,7 +279,6 @@ group = "Roadmap"
 # ON the published surface and inside `spec pins`' scope. That is the P-3 sweep
 # growing, not a new defect — and it is the honest accounting, since those pins
 # were always going to be read by someone.
-
 [[doc]]
 path  = "AGENTS.md"
 title = "Agent guide (this repo)"
@@ -715,3 +296,63 @@ path  = "METHODOLOGY.md"
 title = "Methodology"
 blurb = "Disciplines, doctrines, the ratchet, and the promotion ladder (ADR-0028)."
 group = "Working here"
+
+# ── The internal record: durable, committed, never published ──────────────────
+# ⭐ DECLARED 2026-09-20, DURING RELEASE PREP, AND THE DECLARATION IS THE POINT.
+# The pre-cut omission advisory names five prose files that sit under `docs/` —
+# a path prefix the filter reads — and are in no keep-list, so they are dropped
+# and reach no reader. That is the RIGHT outcome for all five, and until now it
+# was the right outcome BY ACCIDENT: a file nobody declared and a file
+# deliberately withheld are the same silence from outside, and the next session
+# had no way to tell which it was looking at.
+#
+# `[[living]] internal = true` is the standard's word for exactly this — durable,
+# edited in place, and never published. It is NOT the keep-list, so declaring
+# these changes what ships by nothing at all; `spec pins` scope is unaffected and
+# none of their commit citations joins the published-pin backlog.
+#
+# Why each is internal, by the operator's own test — *someone pulled the repo and
+# started working: would they want or need this?*
+#
+#   · DISCIPLINE-CHARTER     already ruled internal 2026-09-08; the reasoning is
+#                            above, under "Working here". This is that ruling
+#                            finally written as a declaration rather than as an
+#                            absence.
+#   · ANTI-PATTERN-CASEBOOK  the incident behind each lifecycle rule — seat names,
+#                            dates, what each mistake cost us. A rulebook's
+#                            worked cases, addressed to us.
+#   · COHORT-OPEN-ITEMS      the cohort ledger: who owes what, routing state, gate
+#                            names, build-state measurements. Every row expires;
+#                            none of it is addressed to a stranger.
+#   · DESIGN-REGISTER        a POINTER index, never an authority — and its own §0
+#                            opens on an operator quote and names sibling seats
+#                            throughout. The documents it points AT publish; the
+#                            index of how we found them does not.
+#   · LEGACY-ARCHIVE-INDEX   the title index of the 1,068-document pre-split
+#                            archive, which is not in this repo. Published text
+#                            says "the pre-split archive" and never an internal
+#                            path (L24) — this file IS the internal path.
+#
+# ⚠ The advisory is path-based and keeps printing after this: it lists prose that
+# is not in the payload, whatever the manifest says. It is meant to be read and
+# triaged, not silenced, and the answer for these five is now on the record here
+# instead of in a session's head.
+[[living]]
+path     = "docs/DISCIPLINE-CHARTER.md"
+internal = true
+
+[[living]]
+path     = "docs/ANTI-PATTERN-CASEBOOK.md"
+internal = true
+
+[[living]]
+path     = "docs/COHORT-OPEN-ITEMS.md"
+internal = true
+
+[[living]]
+path     = "docs/DESIGN-REGISTER.md"
+internal = true
+
+[[living]]
+path     = "docs/LEGACY-ARCHIVE-INDEX.md"
+internal = true

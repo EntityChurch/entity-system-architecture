@@ -10,7 +10,7 @@
       "impl-team-ref",
       "proposal-citation"
     ],
-    "total": 470
+    "total": 467
   },
   "categories": {
     "specs/SYSTEM-COMPOSITION.md": "core-model-spec",
@@ -68,7 +68,7 @@
     "specs/applications/APP-CONVENTION-SHARE.md": {
       "document-history-section": 1
     },
-    "specs/domains/DOMAIN-LOCAL-FILES.md": {
+    "specs/bridge-extensions/DOMAIN-LOCAL-FILES.md": {
       "amendment-provenance": 1,
       "date-in-body": 2,
       "document-history-section": 1,
@@ -173,7 +173,7 @@
       "proposal-citation": 4
     },
     "specs/extensions/EXTENSION-SIGNALING.md": {
-      "date-in-body": 21,
+      "date-in-body": 19,
       "document-history-section": 1,
       "impl-team-ref": 16,
       "proposal-citation": 4
@@ -211,7 +211,7 @@
     },
     "specs/sdk/SDK-OPERATIONS.md": {
       "amendment-provenance": 2,
-      "date-in-body": 9,
+      "date-in-body": 8,
       "document-history-section": 1,
       "impl-team-ref": 7,
       "proposal-citation": 8

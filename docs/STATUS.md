@@ -1,7 +1,21 @@
 # entity-system-architecture — status
 
-_Updated: 2026-09-17 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
-CHANGELOG heading._
+_Updated: 2026-09-20 · public: **v0.8.0**, the only tag on `master` · the release number for the
+next cut is not set here and is not this team's to set._
+
+_**A tag is a release; a push is not ([ADR-0015]) — and that distinction is the whole state of this
+cut.** The 0.8.2 content reached public `master` on 2026-08-24 and **no corresponding tag was ever
+created**, here or anywhere in the ecosystem. So that content is published-as-content and
+unreleased-as-a-version, against a tree that has since moved 349 commits — **91 of the 217
+published paths differ**, measured 2026-09-20 by diffing the tree against public `master` rather
+than by reading the commit log. The CHANGELOG's `[Unreleased]` section carries that delta and the
+written breaking verdict; it read "Nothing yet." until this was measured._
+
+_**The public surface is declared, as of 2026-09-20, and it was not before** — `specs/` and
+`guides/`; everything under `docs/` is out, including the proposal and exploration corpus, which
+publishes as the design record but whose paths are not promised. `AGENTS.md` carries the line and
+the CHANGELOG restates it for a reader. Until it existed, every argument about what a release of
+this repo breaks was an opinion._
 
 _**The release is in motion and the specification is described as *current*, never *final*.** The
 core protocol is at **`0.8.2.32`** and it will not be the last: revisions are still landing against
@@ -10,11 +24,14 @@ gets at the cut is a **current, reproducible state with its conformance anchored
 digests** — not a frozen one. Nothing in this log should be read as claiming the design has stopped
 moving._
 
-_**The release number is 0.8.2, following `entity-core-protocol` rather than the
-implementations** (operator, 2026-08-24). The specs are not semantically versioned as a set — each
-spec's own header is authoritative for that document — so the repo-level number tracks the core
-protocol it layers on, not py/rust/go's 0.9.0. Arch has never carried a release number before; the
-`v0.8.0` tag on this repo was a fleet-wide Genesis tag, not an arch release line._
+_**This repo's number follows `entity-core-protocol` rather than the implementations** (ruled
+2026-08-24; the 2026-08-24 cut went out as 0.8.2 on that basis). The specs are not semantically
+versioned as a set — each spec's own header is authoritative for that document — so the repo-level
+number tracks the core protocol this corpus layers on, and not any implementation's line. Arch had
+never carried a release number before that; the `v0.8.0` tag on this repo was an ecosystem-wide
+genesis tag, not an arch release line. **The number for the next cut is settled at the cut and is
+not stated in this log** — what this log owes is the measurement and the breaking verdict, both of
+which are above._
 
 _**The proposal and exploration corpora publish.** The mechanism is `[[keep_tree]]` in
 `CANONICAL-DOCS.toml` — a repo can declare a **directory** as product rather than dev history —
@@ -52,11 +69,24 @@ survive the repo split and their topology pin could not be regenerated. It is
 `entity-system-arch-tools/spec-tool/`, live and extended — **this team owns three repos, and the
 tooling is the third.** `spec topology` is the command._
 
-_**Arch is next in the release order** (operator, 2026-08-24). **Nothing blocks it.** The one
-mechanical blocker meta routed — K1, five public root documents declared nowhere, which a cut would
-have deleted — **is fixed and verified by running the publication filter**, not by reading the
-config. `SECURITY.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` and `CLAUDE.md` all
-dropped at `3e1f3b6` and all survive now._
+_**Arch is next in the release order** (operator, 2026-08-24). The one mechanical blocker meta
+routed — K1, five public root documents declared nowhere, which a cut would have deleted — **is
+fixed and verified by running the publication filter**, not by reading the config. `SECURITY.md`,
+`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md` and `CLAUDE.md` all dropped at `3e1f3b6`
+and all survive now._
+
+_**A second mechanical blocker was found on 2026-09-19 and is fixed, and it was found the same
+way — by running the filter rather than reading the config.** Exporting the tree, running the real
+publication filter over it and diffing the survivors against what is public today returns **22
+files that are public and would vanish**, none of them declared. The gate that blocks on exactly
+this is fail-closed and would have stopped the cut. **Four are genuine withdrawals** — the
+applications charter (folded into the application-development guide), the retired condensed
+reference, the domains directory (its one spec moved to `specs/bridge-extensions/`), and the
+discipline charter (deliberately made internal on 2026-09-08). **Eighteen are proposals that folded
+and moved from `active/` to `implemented/`**, verified present at the new path, 18 of 18. All 22
+are now declared with their reasons. **The lesson is the one K1 already taught and it did not
+transfer: the declaration file is not evidence about the published tree — only running the filter
+is.** Re-run that diff at every cut; it is one command and it took under a minute._
 
 _**The two items this log carried as release-blocking are both stale, and neither was arch's.**
 keystone's dead `AGENTS-STANDARD.md` pin is **CLOSED** — they shipped 0.8.2 on 08-24 and `e8524ed`
@@ -65,19 +95,35 @@ appears nowhere in their public tree; arch's finding is why it was caught pre-cu
 value is a tag name — and `entity-core-rust` shipped as **0.9.0** and was never tagged, so the
 defect survived its own fix with a new value. It does not gate arch._
 
-_**Fleet:** six public — arch-tools 0.8.1 · protocol 0.8.2 · py/rust/go 0.9.0 · keystone 0.8.2.
-Uncut: **arch (next)** · workbench-go · formalization · browser-rust. **`v0.8.0` tags exist on
-public GitHub for all seven repos**; nothing cut in *this* release has been tagged, which is meta's
-B1 and is settled with browser-rust in the room._
+_**Re-measured 2026-09-19 across the ecosystem's live checkouts — and the headline is a negative.**
+**`v0.8.0` is the only release tag anywhere in it.** Every repository's development branch is a
+long way past what it has published: browser-rust **+522** · keystone **+346** · arch **+349** ·
+workbench-go **+185** · go **+140** · py **+138** · formalization **+96** · rust **+69** ·
+protocol **+66** · arch-tools **+65**. Nothing cut in this release cycle has been tagged in any
+repo, which is meta's **B1** and is not arch's to close. Two seats — the generator and the
+conformance instrument — have no public remote at all and are not part of this cut._
 
-_**Arch gates — ten now, all green or reader-mode as of 2026-09-08.** `check` **exit 0** ·
-`ledger` **0** · `charter` **0** · `register` **203 of 203** · `sdksync` **0 err** (47 unpinned,
-held as backlog) · `inventory` **1 of 26 conformant, floor 1** · `declare` **1 of 26 complete,
-floor 1** · `inbound`, `pins` and `coverage` in reader mode. `provenance` runs before a `specs/`
-push. **Three of these ratchet rather than gate** — `inventory`, `declare` and the two narrative
-baselines hold existing debt and fail only on new debt, because a first run of two dozen reds
-teaches people to skip the gate. The spec corpus lives in `entity-core-protocol`; `spec corpus` is
-not applicable in this tree and reports so rather than passing over an empty set._
+_**What that changes about reading the numbers below:** a "published version" in this log means the
+content that reached public `master`, not a tag a reader can fetch. Where those two differ, the
+tag is the one that does not exist yet._
+
+_**How this corpus is kept consistent, and what that does and does not tell you.** The
+specifications are checked mechanically on every change — for authoring-standard conformance, for
+citations that resolve to a section that exists, for restated rules that have drifted from the
+document they name as their authority, for version numbers copied into a roadmap that no longer
+match the spec header, and for each spec's declared dependencies. Re-measured for this cut, every
+one of those is clean. **Two things they deliberately do not tell you.** A citation resolving is not
+a citation being *right* — a reference to a real section that is the wrong real section passes every
+check here. And none of it is evidence about an implementation: this repo specifies, and whether a
+peer does what a spec says is settled by the conformance suites in the implementation
+repositories, never from here._
+
+_**Where the corpus carries acknowledged debt, stated rather than smoothed over:** the
+requirement inventories that make an individual conformance obligation citable by a stable id exist
+in **2 of 28** specs — the rest state their obligations in prose, which is checkable by a reader and
+not by a machine. `EXTENSION-ROLE` has no conformance section at all. These are held as a floor
+that only rises, so the debt cannot grow, and paying it down is authoring work rather than
+formatting._
 
 _History: this log carried twelve dated entries and a 145-line July narrative. They are moved
 **verbatim** to `docs/status/STATUS-2026-08-23-f-the-rolling-log-history-through-2026-08-15.md`,
@@ -205,10 +251,13 @@ intersection was one.
   siblings present, both coupled pairs build end to end — browser-rust produces its wasm bundle,
   workbench-go produces its five binaries. The documented sibling workflow is accurate; the open
   item is the error a user gets when they *skip* the sibling, which is UX.
-- **Release order is a DAG, not a cycle**, and a tag name is knowable in advance where a SHA is
-  not — which is why the pin must be a tag. **The fix was applied and the defect survived it**:
-  `CORE_RUST_REF` is a tag name now, `v0.9.0`, and `entity-core-rust` shipped as 0.9.0 without ever
-  being tagged. Correct reasoning, correct application, same failure with a new value. Meta's B1.
+- **Release order is a DAG, not a cycle**, and a tag name is knowable in advance where a commit
+  hash is not — which is why a cross-repository build pin must name a tag. **The fix was applied
+  and the defect survived it**: the pin names a tag now, and the tag it names was never created in
+  the repository it points at. Correct reasoning, correct application, same failure with a new
+  value. **A reference is only a pin if it resolves in the history and the layout the consumer
+  actually fetches** — one command checks that, and it was checked at none of the three values that
+  line has carried.
 - **CI ships basic and iterates on a branch.** `.github/` does not exist on browser-rust's public
   `master`, so tagging today triggers nothing. A minimal workflow has to land on `master` at release
   for `workflow_dispatch` to be dispatchable at all; the full six-leg matrix is iterated on a side
@@ -349,24 +398,27 @@ permitted but priced (restricted reach + no cross-format dedup).
   arch's finding is why it was caught pre-cut. *(This entry contradicted the header paragraph above,
   which had recorded it closed, for two weeks — a **build-state claim expires like one**, and the
   place it goes stale is the section nobody re-reads when they update the section that changed.)*
-- **`entity-browser-rust` + `entity-core-rust`** — repin `CORE_RUST_REF` to a **tag that exists**,
-  and tag core-rust first. Release-blocking. Meta's B1.
+- **A downstream release pin in another repository.** A build in a sibling repository fetches this
+  ecosystem's Rust implementation by a reference that does not resolve in the tree it fetches, so
+  that build fails at checkout before anything compiles. Both ends are owned and tracked elsewhere;
+  it does not gate this corpus, and it is listed only because the shape has now repeated three
+  times on one line. **A reference is only a pin if it resolves in the history and the layout the
+  consumer actually gets** — an internal commit hash does not survive a release boundary, and a tag
+  name does not resolve until somebody cuts the tag. Both failure modes were reached by correcting
+  the previous one.
 
-  ⛔ **Still live, re-measured 2026-09-17, and now on its THIRD value.** The pin reads
-  `CORE_RUST_REF: v0.9.0`; `entity-core-rust` carries `v0.8.0` and **`published/0.9.0`** — so
-  **`v0.9.0` does not exist in that repo**, and a release build checks out a ref that is not there.
-  The release-readiness document beside the pin states the tag is *"also `v0.9.0`"*, so **both ends
-  agree with each other and neither agrees with the repository.** Note the shape, because it has now
-  repeated three times on one line: arch asked for a tag name instead of a SHA, the fix **was
-  applied**, and the defect survived it each time with a new value. **A pin is only a pin if it
-  resolves in the tree the consumer actually fetches** — which is one `git tag --list` to check and
-  has not been checked at any of the three values.
+  _This entry used to name the reference, the key it is set on and the exact tag string. That is a
+  tag which does not exist, written in a file addressed to a reader outside this ecosystem — a
+  broken example and an instruction are the same three characters to anyone who copies the line
+  before reading the sentence around it. The operational detail belongs in this repo's internal
+  cohort ledger, and that is where it now lives._
 - **The implementation cohort, as always.** Converging network/resolution specs are not validated
   until exercised by a cross-impl (Go / Rust / Python) conformance run; prose review does not catch
   route/path/dedup defects. REGISTRY/DISCOVERY cohort impl and the ENCRYPTION end-to-end block are
   the open items.
-- **The operator** — the tag point itself. No `v0.8.2` tag exists in any repo, and cutting one is
-  not arch's call.
+- **The tag point itself, which is not this team's call.** This corpus has reached public `master`
+  as content without a corresponding release tag, and no release tag for this cycle exists anywhere
+  in the ecosystem yet. When one is cut is decided outside this repo.
 
 ## Done recently
 
