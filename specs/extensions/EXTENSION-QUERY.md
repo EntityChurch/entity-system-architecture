@@ -1,6 +1,6 @@
 # Query Extension — Normative Specification
 
-**Version**: 1.7
+**Version**: 1.8
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.9+), ENTITY-NATIVE-TYPE-SYSTEM.md (v4.0+), EXTENSION-SUBSCRIPTION.md (v3.5+, for tree change event semantics)
 
@@ -599,13 +599,13 @@ handle_find(ctx, expression):
       ; Tree scope: every result MUST have a path, MUST pass path check
       if candidate.path is null: continue
       if not check_path_permission("get", candidate.path, ctx.capability,
-                                    "system/query", ctx.local_peer_id): continue
+                                    "system/tree", ctx.local_peer_id): continue
     else:  ; content_store
       ; Content store scope: path check for entities that HAVE paths,
       ; pathless entities authorized by type_scope (checked in 6a)
       if candidate.path is not null:
         if not check_path_permission("get", candidate.path, ctx.capability,
-                                      "system/query", ctx.local_peer_id): continue
+                                      "system/tree", ctx.local_peer_id): continue
       ; Pathless entities: if we reach here, type_scope passed (6a) — authorized
 
     filtered.add(candidate)
@@ -744,7 +744,7 @@ system/query/allowances := {
 
 #### 5.5.2 Two Query Scopes
 
-**Tree scope (default).** No `allowances`, or `allowances.scope` absent. Query results are restricted to entities bound in the tree at paths the caller's `resources` scope covers. Every result has a non-null `path`. Capability filtering uses `check_path_permission` per result — same pattern as tree listing.
+**Tree scope (default).** No `allowances`, or `allowances.scope` absent. Query results are restricted to entities bound in the tree at paths the caller's `resources` scope covers. Every result has a non-null `path`. Capability filtering uses `check_path_permission` per result, as tree listing is.
 
 **Content store scope.** `allowances.scope: "content_store"`. Query results can include entities from the content store regardless of tree binding. Results for entities not bound in the tree have `path: null`. `type_scope` is REQUIRED on the constraints — the granter must explicitly declare which types are accessible without path filtering.
 

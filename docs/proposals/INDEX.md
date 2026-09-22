@@ -150,6 +150,7 @@ from *"nobody has looked at this one."*
 
 | Proposal | What it settles | State | In register |
 |---|---|---|---|
+| `PROPOSAL-THE-LOCATOR-TABLE-IS-A-REGISTRY-BACKEND-PLUS-A-SUBSTITUTE-DELTA-AND-NOTHING-ELSE-IS-NEW` | ⭐⭐⭐ **The content lookup assembled: a registry backend keyed on a hash instead of a name, consumed through the substituter's existing miss path, carried as ordinary published data, merged by the reader.** **Four of five layers need NOTHING new** — the table is an ordinary signed entity, aggregation is `SYSTEM-DATA-EXCHANGE` §1.1's closure (*the fixed point is `gathered → gathered`*), currency is the copy-current loop, and `EXTENSION-REGISTRY` §1 already reserves the backend slot. ⭐⭐ **The structural reason so little is new: the table is CONTENT, named by the TREE, moved by the DATA LAYER, resolved by the REGISTRY and consumed by the SUBSTITUTER** — the system pointed at a question about its own bytes, with the recursion terminating because a table is fetched **by coordinate, never by bare hash**. ⭐⭐⭐ **The join is exact and the spec names it: `EXTENSION-SUBSTITUTE` §3 step 3 returns 404 on a bare hash and §4 says *"No wildcards in v1… out of scope"* — a locator lookup SUPPLIES the `claimed_source_peer_id` step 3 requires, and the entire rest of the chain applies unchanged.** **Tier 2b and OPTIONAL BY REQUIREMENT** (scale-invariance is the survey's best survival predictor; one peer must stay a working system). ⛔ **The deliverable of revision 1 is SIX SEAMS, four of them collisions with landed text** — headed by **§4's *"Peer B serving peer A's content without A's signature is invalid"*, which forbids the one property the mechanism exists for, while §1 position 2 two sections earlier says the bytes are trustworthy *regardless of who served them***; the resolution is that §4's rule is written as a trust rule but protects against wasted work, not bad bytes ⇒ **a third-party claim is admissible but UNPRIVILEGED, ranked last, volume-bounded per issuer, expiring.** Plus: the referral versus §4's *no transitive following*; resolution cardinality against §4.1.1's single-binding rule; the derived key for `content` subjects; and the abuse bound, whose **shape is now known — bound PER ISSUER, never per key** — with thresholds unnumbered. **Explicitly NOT ratifiable and NOT routable** | **PROVISIONAL** | ✓ |
 | `CLOCK-ADDRESSABLE-TICK-AND-DEADLINE` | Addressable ticks + a wall-deadline coordinate (the clock gains a scheduler surface, no new mechanism) | DRAFT | ✓ |
 | `COMPUTE-BUDGET-PREEMPTION` | compute budget: de-confound the reduction budget from the cost ceiling; preempt instead of only failing | DRAFT | ✓ |
 | `COMPUTE-ERROR-MATERIALIZATION-DETERMINISM` | the materialized `compute/error` entity is content-hashed over `code` alone | DRAFT | ✓ |
@@ -551,7 +552,7 @@ prefix rename **is** the fold)* · `MATURITY-MODEL-AND-ROADMAP-COMMUNICATION`
 several are deliberately parked — but it is not visible anywhere else, which is why it is stated
 here.
 
-## 2. Implemented — 82 (moved this cycle)
+## 2. Implemented — 83 (moved this cycle)
 
 **`A-CONVENTION-STATES-WHAT-A-CHECK-MUST-DISCRIMINATE-AND-SHIPS-NO-ARTIFACT` — FOLDED 2026-09-09**,
 `specs/applications/CHARTER.md` **v1.1**. A correction, not a design: discipline **#5** said each

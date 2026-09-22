@@ -1,6 +1,6 @@
 # System Revision Extension
 
-**Version**: 3.13
+**Version**: 3.14
 **v3.13:** `pull` against a remote with no versions at the prefix is a `200` with `merge-result.status = "remote_empty"`, not a `500`. Nothing failed internally, and the declared result type carries the outcome.
 
 **Status**: Active
@@ -3963,7 +3963,7 @@ Revision operations produce tree writes in two authorization modes. Writes to th
 | cherry-pick (bindings) | `{prefix}/{path}` per applied binding | Caller capability | Caller capability |
 | revert (bindings) | `{prefix}/{path}` per reverted binding | Caller capability | Caller capability |
 
-**Caller-authorized writes** (binding writes to data namespace): The handler MUST verify the caller's capability covers each write path using `check_path_permission("put", path, capability)`. If any path is denied, the entire operation MUST fail — no partial writes (§4.4).
+**Caller-authorized writes** (binding writes to data namespace): The handler MUST verify the caller's capability covers each write path using `check_path_permission("put", path, capability, "system/tree", local_peer_id)`. If any path is denied, the entire operation MUST fail — no partial writes (§4.4).
 
 **Handler-authorized writes** (revision metadata at `system/revision/*`): The handler's own grant covers its managed namespace. These writes cannot fail authorization — the handler grant is issued at registration with scope covering `system/revision/*`.
 

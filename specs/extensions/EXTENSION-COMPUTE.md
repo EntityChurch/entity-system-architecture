@@ -1,6 +1,6 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.31
+**Version**: 3.32
 **v3.31 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 **Status**: Active
 **v3.29 — the builtin override prohibition stands on its own** (§4, override prohibition). The rule previously described itself as *"a subset of"* the core `system/*` reservation and told implementers that enforcing that reservation needed *"no separate compute-specific guard."* **That reservation has been withdrawn from the core protocol entirely** (`ENTITY-CORE-PROTOCOL` 0.8.2.13), so the subset claim named a rule that no longer exists — and before the withdrawal it was already false in the direction that opens a hole. The prohibition now states its own basis: it binds every installation path because it is a **cross-peer determinism requirement**, not a namespace policy. Two peers disagreeing about what `"add"` means is an interop failure, which is why this is a MUST while local install policy is not. *(v3.28 stated the same conclusion by reference to the core rule's scope and is superseded.)*
@@ -255,7 +255,7 @@ The `resource` field carries the resource target for the dispatched EXECUTE, mir
 
 > **Why rejection, and not "ignore them as harmless."** The dual-check can only ever **narrow** — a provided capability is honored *and* `ctx.capability` must still cover the target. So a caller supplying one is asking for the operation to be **more** constrained than ambient authority. **Silently dropping that request grants a wider operation than the caller asked for**, and the builtin it matters for is `store` — the one impure builtin (§6.2), writing to a caller-specified path. Ignoring is therefore the one disposition that fails quietly in the dangerous direction.
 >
-> **Nothing legitimate is lost.** §6.2 already fixes the authority for `store`: the caller's capability on the explicit-eval path, or the installation grant on the reactive path, checked with `check_path_permission("put", path, capability)` — **never a field on the expression.** A caller wanting an attenuated `store` attenuates the capability it evaluates under. And rejecting keeps §3.5's alias result **hash-identical to the inline form** for every legal builtin apply, which falling back to handler dispatch would not.
+> **Nothing legitimate is lost.** §6.2 already fixes the authority for `store`: the caller's capability on the explicit-eval path, or the installation grant on the reactive path, checked with `check_path_permission("put", path, capability, "system/tree", local_peer_id)` — **never a field on the expression.** A caller wanting an attenuated `store` attenuates the capability it evaluates under. And rejecting keeps §3.5's alias result **hash-identical to the inline form** for every legal builtin apply, which falling back to handler dispatch would not.
 >
 > **The rejection is a SHAPE check and runs before any field is resolved or evaluated `[MUST]`.** It depends only on `path` and on the **presence** of the fields, never on their values. Rejecting after evaluation would make the outcome depend on a value the expression is not allowed to carry: an error-valued `resource` would short-circuit to **that** error instead of `invalid_expression`, so two conformant implementations would answer one malformed expression with different codes. It would also perform tree reads on the strength of an expression already known to be invalid.
 >
@@ -809,7 +809,7 @@ handle_install(ctx, params):
 
   ; Phase 2: Verify caller's capability covers all impure operations
   for path in impure_ops.read_paths:
-    if not check_path_permission("get", path, ctx.caller_capability):
+    if not check_path_permission("get", path, ctx.caller_capability, "system/tree", ctx.local_peer_id):
       return error(403, "permission_denied",
         "Caller capability does not cover read: " + path)
   for target in impure_ops.handler_targets:
@@ -824,11 +824,11 @@ handle_install(ctx, params):
       return error(403, "permission_denied",
         "Caller capability does not cover handler: " + target.path + "." + target.operation)
   result_path = params.result_path or root_path + "/result"
-  if not check_path_permission("put", result_path, ctx.caller_capability):
+  if not check_path_permission("put", result_path, ctx.caller_capability, "system/tree", ctx.local_peer_id):
     return error(403, "permission_denied",
       "Caller capability does not cover result write: " + result_path)
   for path in impure_ops.write_paths:
-    if not check_path_permission("put", path, ctx.caller_capability):
+    if not check_path_permission("put", path, ctx.caller_capability, "system/tree", ctx.local_peer_id):
       return error(403, "permission_denied",
         "Caller capability does not cover write: " + path)
 
@@ -2175,7 +2175,7 @@ The compute handler **MUST** reject impure operations when the caller's capabili
 
 The compute handler MUST NOT hold a wildcard resource grant. All writes outside `system/compute/processes/*` (including reactive result writes to user-specified `result_path` locations and store builtin writes to arbitrary paths) MUST be authorized by the installation grant or caller capability per §6.3, NOT by the handler's own grant. The no-silent-escalation principle (ENTITY-CORE-PROTOCOL.md §6.8) forbids the handler from substituting its own grant for impure operations targeting caller-owned paths.
 
-**`store` builtin and no-silent-escalation.** The `store` builtin writes to a tree path specified by the compute expression. The compute handler MUST verify the caller's capability (EXECUTE path) or installation grant (reactive path) covers the write path using `check_path_permission("put", path, capability)`. The compute handler MUST NOT substitute its own grant to authorize a `store` write. This follows the no-silent-escalation principle (ENTITY-CORE-PROTOCOL.md §6.8).
+**`store` builtin and no-silent-escalation.** The `store` builtin writes to a tree path specified by the compute expression. The compute handler MUST verify the caller's capability (EXECUTE path) or installation grant (reactive path) covers the write path using `check_path_permission("put", path, capability, "system/tree", local_peer_id)`. The compute handler MUST NOT substitute its own grant to authorize a `store` write. This follows the no-silent-escalation principle (ENTITY-CORE-PROTOCOL.md §6.8).
 
 If the capability does not cover the write path, the `store` operation MUST return a `compute/error` with code `permission_denied`.
 
@@ -2193,7 +2193,7 @@ Compute operations produce tree writes in multiple authorization modes. The comp
 | reactive result write | `subgraph.result_path` | Installation grant | Installation grant |
 | reactive handler dispatch | Target handler's writes | Installation grant | Installation grant |
 
-**Caller-authorized writes** (store builtin): The compute handler MUST verify the caller's capability covers the write path using `check_path_permission("put", path, capability)`. The handler MUST NOT substitute its own grant (no-silent-escalation principle, ENTITY-CORE-PROTOCOL.md §6.8).
+**Caller-authorized writes** (store builtin): The compute handler MUST verify the caller's capability covers the write path using `check_path_permission("put", path, capability, "system/tree", local_peer_id)`. The handler MUST NOT substitute its own grant (no-silent-escalation principle, ENTITY-CORE-PROTOCOL.md §6.8).
 
 **Handler-authorized writes** (subgraph metadata at `system/compute/*`): The handler's own grant covers its managed namespace.
 

@@ -1,6 +1,6 @@
 # PROPOSAL — the handler frame is the owning handler, and the corpus states it three ways in thirteen places
 
-**Status:** DRAFT 2026-09-13 *(census corrected after cross-implementation review, same day)*
+**Status:** **RATIFIED and FOLDED 2026-09-13** — `EXTENSION-QUERY` v1.8, `EXTENSION-COMPUTE` v3.32, `EXTENSION-TRANSACTION` v0.2, `EXTENSION-REVISION` v3.14, against core revision `0.8.2.23`. *(Census corrected after cross-implementation review before the fold; 10 edits across 4 documents, and all 19 call sites in the corpus now name a frame.)*
 **Proposes:** corrections to the `check_path_permission` call sites in `EXTENSION-QUERY`,
 `EXTENSION-COMPUTE`, `EXTENSION-TRANSACTION` and `EXTENSION-REVISION`, folding the `handler_pattern`
 rule stated in `ENTITY-CORE-PROTOCOL` §6.3.

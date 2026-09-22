@@ -49,13 +49,13 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 | `EXTENSION-TREE` | 4.9 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
 | `EXTENSION-CONTENT` | 3.7 | content-hash address space, closure materialization, partial-sync |
 | `EXTENSION-TYPE` | 1.3 | runtime type registration |
-| `EXTENSION-REVISION` | 3.13 | revision chains, diff/merge-config, deletion markers |
+| `EXTENSION-REVISION` | 3.14 | revision chains, diff/merge-config, deletion markers |
 | `EXTENSION-SUBSCRIPTION` | 3.19 | reactive subscriptions, cross-peer mirror |
 | `EXTENSION-CONTINUATION` | 1.25 | forward continuations, structural-transform chains |
 | `EXTENSION-INBOX` | 5.9 | message inbox, delivery |
 | `EXTENSION-HISTORY` | 1.10 | parent-ref history walk |
-| `EXTENSION-QUERY` | 1.7 | entity query / path-prefix |
-| `EXTENSION-COMPUTE` | 3.31 | expression evaluation, the lowering toolkit |
+| `EXTENSION-QUERY` | 1.8 | entity query / path-prefix |
+| `EXTENSION-COMPUTE` | 3.32 | expression evaluation, the lowering toolkit |
 | `EXTENSION-GROUP` | 1.4 | group membership |
 | `EXTENSION-IDENTITY` | 3.10 | identity convention over the attestation substrate |
 | `EXTENSION-ATTESTATION` | 1.3 | generic attestation edge substrate |
@@ -133,7 +133,7 @@ entity-chat-on-the-async-floor.** #2/#3 are parallel/deferred; #4 is opt-in.
 
 | extension | ver | state |
 |---|---|---|
-| `EXTENSION-TRANSACTION` | 0.1 | initial design, pre-review |
+| `EXTENSION-TRANSACTION` | 0.2 | initial design, pre-review |
 | `EXTENSION-DURABILITY` | 0.1 | exploratory, extracted from INBOX §10; optional, not active |
 
 ## Stage D — Proposed, not landed (M0–M1): design intent in `proposals/`

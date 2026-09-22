@@ -1,6 +1,6 @@
 # Transaction Extension — Normative Specification
 
-**Version**: 0.1
+**Version**: 0.2
 **Status**: Draft
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+)
 **Optional**: EXTENSION-REVISION.md (v2.5+) — continuation-pipeline versioning (see §7)
@@ -321,7 +321,7 @@ handle_execute(ctx, intent):
 
   ; V1: Capability check on all paths
   for binding in intent.bindings:
-    if not check_path_permission("put", binding.path, ctx.capability):
+    if not check_path_permission("put", binding.path, ctx.capability, "system/tree", ctx.local_peer_id):
       return error(403, "transaction/capability-denied", {
         path: binding.path
       })
