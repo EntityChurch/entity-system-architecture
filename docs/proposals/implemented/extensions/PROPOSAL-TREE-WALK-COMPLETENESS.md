@@ -1,7 +1,28 @@
 # PROPOSAL — the absence of a node is never an answer
 
-**Status:** DRAFT
-**Tier:** extensions — `EXTENSION-TREE` §3.5, §6.2; `EXTENSION-REGISTRY` §6a.3a, §6a.6, §11.1
+**Status:** IMPLEMENTED 2026-09-08 — folded at `EXTENSION-TREE` v4.6 + `EXTENSION-REGISTRY` v1.25.
+**Tier:** extensions — `EXTENSION-TREE` §3.8 (new), §4.3, §6.2, §12.1, Appendix A; `EXTENSION-REGISTRY` §6a.3a, §6a.6
+
+> **Fold record, 2026-09-08.** D1–D8 and D11 landed; D9 and D10 had landed previously (TREE 4.2, REGISTRY 1.8).
+> **The rules were consolidated into one new normative section rather than scattered across the sites that use
+> them** — `EXTENSION-TREE` §3.8, *the walk contract* — because R1 governs enumeration, lookup, diff, extract and
+> a registry browse alike, and stating it per-site is how one rule ends up with five normative homes. The
+> proposal's R1/R2/R3/R4/R7 are §3.8's R1/R2/R3/R4/R5, renumbered contiguously now that R5/R6 are withdrawn and
+> live at §3.3a; §4.3's collectors, §6.2's completeness property and the deleted v3.x sentence, Appendix A's
+> `incomplete_walk` row, and §12.1's six vectors are the rest.
+>
+> **Two corrections made during the fold, both to this document rather than to the spec:**
+> **(1) §5's delta table pointed at `EXTENSION-TREE` §3.5 for the walk and §11 for vectors. Neither is right** —
+> §3.5 is *Prefix Nesting*, the walk pseudocode is in §4.3, and §11 is *Capability Requirements* while
+> conformance is §12. The deltas landed at the sections that actually own the surface, found by reading the
+> document rather than by trusting the table. **(2) D7 asked to "apply R1 to the revocation lookup",
+> which would have been wrong as stated:** R1 bites only where a declaring parent exists, so it upgrades the
+> signed-root *walk* and cannot upgrade a bare keyed fetch, which has no declaring node. §6a.6 now says which
+> path gets the guarantee and why the other does not — the useful half, and narrower than the ask.
+>
+> **What is owed and is not arch's:** §12.1's six vectors are **commissioning a first measurement, not describing
+> behaviour** — no implementation held R1 when this was written, so a conformance run against them is
+> expected to go red before it goes green, and that is the point. The engine-side worklist is §6.
 **Origin:** `entity-browser-rust` `a0145a7` (F8), measured. Root cause is in our text, not theirs.
 **Read at:** arch `639b6b3` · browser-rust `a0145a7` · core-rust `ed993bb` · core-go `88615f6` ·
 core-py `79f38a9` — every claim re-derived from those trees, not from the filing seat's report.

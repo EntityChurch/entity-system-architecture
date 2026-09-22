@@ -1,4 +1,4 @@
-# PROPOSAL — §3.3 names a default code for three statuses and leaves three bare, and the cohort minted a synonym in one of the gaps
+# PROPOSAL — §3.3 names a default code for three statuses and leaves three bare, and implementations minted a synonym in one of the gaps
 
 **Status:** **FOLDED 2026-09-03** — D1–D4 landed and verified: `ENTITY-CORE-PROTOCOL` **0.8.2.6** (§3.3 404/500/501 default codes; §6.2 generalized) and `DOMAIN-LOCAL-FILES` §937. The ~66-site cohort sweep is routed, not owed by this document.
 

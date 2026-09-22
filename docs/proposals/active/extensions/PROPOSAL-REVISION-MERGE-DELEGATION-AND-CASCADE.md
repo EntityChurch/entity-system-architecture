@@ -1,6 +1,6 @@
 # PROPOSAL — REVISION custom-merge delegation + the strategy cascade
 
-**Status:** **DRAFT — partially folded ahead of this document. See §0.** Items R1–R3, R11–R13 are already in
+**Status:** **DRAFT 2026-08-24 — partially folded ahead of this document. See §0.** Items R1–R3, R11–R13 are already in
 `specs/extensions/EXTENSION-REVISION.md` (**v3.9 → v3.11**), and **R14–R15** landed at **v3.12**
 (§13–§15, added 2026-08-18); R4–R10 are proposed and unfolded.
 **Target:** `EXTENSION-REVISION.md` — §2.3, §4.4.18, §5.1, §5.3. No V7/wire change, no new entity type, no new

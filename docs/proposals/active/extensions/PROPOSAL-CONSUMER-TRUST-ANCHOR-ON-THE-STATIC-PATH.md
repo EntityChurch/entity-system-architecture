@@ -1,6 +1,6 @@
 # PROPOSAL — a path→hash answer from a host is an authority claim, and the route that serves one says otherwise
 
-**Status:** DRAFT
+**Status:** DRAFT 2026-08-24
 **Tier:** extensions — `EXTENSION-NETWORK` §6.5.3.1 / §6.5.5; `EXTENSION-REGISTRY` §5.1;
 `EXTENSION-TREE` §3.3a (cross-reference only)
 **Origin:** derived from the corpus while verifying `entity-browser-rust`

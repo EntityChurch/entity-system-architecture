@@ -143,23 +143,33 @@ blurb = "How work moves through this repo: an exploration maps a design space, a
 group = "Working here"
 
 # ── Working here ──────────────────────────────────────────────────────────────
-# Declared because PUBLISHED documents already cite them, and a keep-list that
+# Declared because PUBLISHED documents already cite it, and a keep-list that
 # drops a cited target ships broken links on the public surface:
-#   DISCIPLINE-CHARTER              <- specs/SYSTEM-ARCHITECTURE.md, AGENTS.md, METHODOLOGY.md
 #   DOCTRINE-COHORT-STATE-TRACKING  <- EXTENSION-NETWORK, EXTENSION-SIGNALING, METHODOLOGY.md
-# The charter also declares itself "Canonical, undated, edited in place" and is the
-# companion to AGENTS.md, which publishes by operator ruling as of 2026-08-23.
 #
-# These two are declared individually because they ARE two files. The proposal and
-# exploration corpora are a different problem and are deliberately NOT solved this
-# way — 117 hand-written entries is not a mechanism, it is a mechanism's absence
-# written out longhand. See docs/STATUS.md for where that stands.
-[[doc]]
-path  = "docs/DISCIPLINE-CHARTER.md"
-title = "Discipline Charter — the assembled rule set and anti-pattern catalog"
-blurb = "This repo's lifecycle disciplines, the anti-pattern catalog, and the doctrines it runs, at the AUTHORING tier. Rules are earned on evidence: one incident makes a candidate, a second in a different shape ratifies it, and a discipline with no enforcement point is theater."
-group = "Working here"
-
+# DISCIPLINE-CHARTER was declared here on the same grounds and is UNDECLARED as of
+# 2026-09-08, by the operator's own test: *someone pulled the repo and started
+# working — is it something they would want or need?* They would not. It is a
+# rulebook about how THIS TEAM works — the L-numbering rationale, our own two
+# guidance files drifting from each other four times, seat names, incident
+# narrative — addressed to us and to nobody else. **What an outside contributor
+# actually needs is already its own published document, CONTRIBUTING.md**: small
+# fixes versus substantive changes, the proposal process, DCO. So there was
+# nothing to split out; the publishable half was never in the charter.
+#
+# It stays committed at docs/DISCIPLINE-CHARTER.md, still the canonical home of
+# the rule SET, still gated against AGENTS.md by `spec charter`, now sitting
+# beside docs/ANTI-PATTERN-CASEBOOK.md where the incidents already live.
+#
+# This also makes its narrative-gate exclusion honest instead of convenient. It
+# was excluded on rulebook grounds — *a rulebook quotes its own counter-examples*
+# — which is defensible and is also exactly how the leak stayed invisible. The
+# scope tracks the publication declaration, so an undeclared file is out of scope
+# by the rule rather than by an exception. Keep the two in step.
+#
+# The proposal and exploration corpora are a different problem and are
+# deliberately NOT solved this way — 117 hand-written entries is not a mechanism,
+# it is a mechanism's absence written out longhand. See docs/STATUS.md.
 [[doc]]
 path  = "docs/DOCTRINE-COHORT-STATE-TRACKING.md"
 title = "Doctrine — tracking cohort build state without asserting it stale"

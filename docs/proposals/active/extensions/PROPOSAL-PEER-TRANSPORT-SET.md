@@ -1,6 +1,6 @@
 # PROPOSAL — a peer's statement of where it is: signed by the peer, servable by anyone
 
-**Status:** DRAFT — **fourth pass, refined on `entity-browser-rust`'s answers (`8cd3010`).**
+**Status:** DRAFT 2026-08-24 — **fourth pass, refined on `entity-browser-rust`'s answers (`8cd3010`).**
 Stress-tested, measured, then **corrected by the operator on the third pass's central premise**, then
 **corrected again by browser-rust on T11's reason.** All five open questions stand as decided; **R4 is
 restored**; and T11 generalizes — **one gap, three substrates**, which reframes what this record is

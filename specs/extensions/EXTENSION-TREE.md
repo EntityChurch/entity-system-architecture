@@ -1,6 +1,7 @@
 # System Tree Extension
 
-**Version**: 4.5
+**Version**: 4.6
+**v4.6:** §3.8 — the walk contract, new. *The absence of a node is never an answer*: a declared node that does not resolve is `incomplete_walk` (502, terminal, carrying the cut point) and never a shorter result, children are derived structurally rather than by byte-scan, and a partial walk is opt-in and never presented as complete. §4.3's collectors gain the branch they never had and thread the declaring node's hash. §6.2 **deletes** the "unfiltered subtree nodes MAY be omitted" sentence — v3.x path-navigation residue that contradicted the rebuild directly above it — and states the property that is true: an extract is complete against its own root, filtered or not, because publishing a subset is **re-rooting, not filtering**. Six vectors, and the control case is required so that a walk which always fails cannot score green.
 **v4.5:** Appendix A's `put` rows get the predicate they were missing. *"Does not decode"* is now stated — the submitted value is admitted as a `core/entity` (all three fields required) **before** its hash is compared, so a submission that is both malformed and mis-hashed is the structural row; the `unsupported_content_hash_format` arm is restated from `ENTITY-CORE-PROTOCOL` §4.7 row 5 because `put` is one of its ingest surfaces; and **`set` is dropped from the rows** — `ENTITY-CORE-PROTOCOL` §6.3 and §2.2 below both define exactly two index operations, and `set` was never one of them.
 **v4.4:** Appendix A gains the `put` / `set` rows. The two core data operations the protocol runs on had no error-code row in the only table their extension has: a non-decoding entity is `400 invalid_request` (§3.3's generic case), a content-hash mismatch is `400 hash_mismatch` (`EXTENSION-CONTENT` §923's code for the same failure), and the CAS race that shares that token is tabulated beside it at 409 so the two are not collapsed.
 
@@ -598,6 +599,68 @@ The one cryptographic property genuinely lost in the v4.0 fork: the original sna
 
 All four paths open. The v4.0 fork is not painting the system into a corner.
 
+### 3.8 The walk contract — the absence of a node is never an answer
+
+A trie fetched from a counterparty is a structure whose nodes arrive one at a time from a party that
+chooses what to serve. Every operation that walks one — enumeration, lookup, diff, extract, a
+registry browse — depends on the rule below. **It is one rule, not a mode set.**
+
+**R1 — a node that did not resolve is a failure, never an answer `[MUST]`.** Every trie operation
+MUST distinguish two outcomes and MUST NOT return the first when it observed the second:
+
+- **(a)** a node that **resolved** and did not contain the sought key → `not_found`, *an answer*;
+- **(b)** a node the walk needed and **could not resolve** → **`incomplete_walk`**, *a failure*.
+
+This covers the seam at both depths. At **enumeration** depth a withheld interior node stops
+silently shortening the result. At **lookup** depth — including a revocation check keyed by hash —
+*"no such key"* and *"that key's node was not served"* stop being the same value.
+
+**The reason it is a MUST and not an implementation concern:** the two cases are byte-identical at
+the consumer, so an origin that omits a node produces a **correct, complete, shorter** answer that
+verifies. The signature still checks out, because it commits to the root hash and the root hash is
+intact; every binding returned is genuine. Nothing distinguishes an honest short answer from a
+hostile one except this rule.
+
+**R2 — completeness is structural, never heuristic `[MUST]`.** A walk MUST derive a node's children
+by decoding the node (§3.1) and reading its declared entries — every bucket tuple's `value_hash` and
+every link. It MUST NOT derive them by scanning node bytes for hash-shaped windows, and it MUST NOT
+enqueue a child conditionally on that child already being present. **A byte scan cannot tell *not
+declared* from *declared and withheld*, which is the entire distinction R1 rests on** — and a walk
+that enqueues only children it can already load makes the missing set unreachable by construction,
+so a guard written against R1 can never fire.
+
+**R3 — the error names the parent, not only the child `[MUST]`.** `incomplete_walk` MUST carry both
+the unresolvable child hash (`missing_hash`) and the hash of the node that declared it
+(`declared_by`). The declaring node is the **cut point**, and the cut point is what bounds which keys
+are unaccounted for; a consumer holding only the child hash cannot locate the cut, and so cannot say
+what it failed to see.
+
+**R4 — a partial walk is opt-in and MUST NOT be presented as complete `[MUST]`.** The tolerant
+behaviour stays reachable for the case it is correct for: a walk over a store **the walker itself
+populated** — a partial local store, a peer mid-sync, the `included` semantics of §6.2. Such a walk
+is requested explicitly, returns a subset, and MUST NOT be reported as a complete enumeration.
+**The discriminator is the trust boundary, not a flag:** a walk over bytes a counterparty chose to
+serve has no partial mode.
+
+**R5 — an incomplete walk is terminal, not retryable `[MUST]`.** `incomplete_walk` is the origin
+failing to produce what its own signed root declares; retrying grants a withholding origin unbounded
+attempts and turns it into a hang. A **transport** failure while fetching is a different condition
+and is separately retryable. The discriminator: *the node resolved and its declared child did not
+exist* is terminal; *the fetch itself failed* is retryable.
+
+**What R1 asks of a consumer is reachable with what it already holds.** The walk needs the node bytes
+it is already fetching — and their absence *is* the signal, observed locally — and the declaring
+parent's hash, which the consumer holds because it just decoded that parent to learn the child
+existed. No new index, no second request, no key material, and no cooperation from the origin.
+
+**Scope — what this does not claim.** It does not prevent withholding; it makes withholding
+**visible** where it was a silent short answer, which is strictly better and is not the same thing.
+It does not make a full walk cheap: O(N) fetches against a remote origin is not a first-paint
+primitive, and a served listing remains the right first-paint artifact (`EXTENSION-REGISTRY` §6a.3a).
+And it does not close the key-space question — §3.3a's negative-scoping MUST is still the operative
+rule for *"the publisher does not bind K."* **R1 is about nodes the root declares; §3.3a is about
+keys it never carried.**
+
 ---
 
 ## 4. Diff
@@ -785,19 +848,27 @@ diff_buckets(bucket_a, bucket_b):
     elif keys_a[k] != keys_b[k]: changes.append(changed(k, keys_a[k], keys_b[k]))
   return changes
 
-walk_entry_collect(kind, entry):
-  ; Walk an entry (bucket or link) and emit `kind` for every (key, value_hash) reachable
+walk_entry_collect(kind, entry, declaring_node_hash):
+  ; Walk an entry (bucket or link) and emit `kind` for every (key, value_hash) reachable.
+  ; §3.8 R1/R2/R3: children come from the node's DECLARED entries, and a declared child
+  ; that does not resolve is a failure carrying its cut point — never a shorter answer.
   changes = []
   if is_bucket(entry):
     for tuple in entry:
       changes.append({kind: kind, key: tuple.key, hash: tuple.value_hash})
   else:  ; link
     sub_node = content_store.get(entry.hash)
+    if sub_node is null:
+      return error("incomplete_walk", {
+        missing_hash: entry.hash,
+        declared_by:  declaring_node_hash
+      })
     for p in iterate_set_bits(sub_node.map):
-      changes.append_all(walk_entry_collect(kind, entry_at_position(sub_node, p)))
+      changes.append_all(
+        walk_entry_collect(kind, entry_at_position(sub_node, p), entry.hash))
   return changes
 
-count_leaf_bindings(node):
+count_leaf_bindings(node, node_hash):
   ; Count all entity bindings in the trie (for unchanged count computation)
   count = 0
   for p in iterate_set_bits(node.map):
@@ -805,9 +876,19 @@ count_leaf_bindings(node):
     if is_bucket(entry):
       count += len(entry)
     else:  ; link
-      count += count_leaf_bindings(content_store.get(entry.hash))
+      child = content_store.get(entry.hash)
+      if child is null:
+        return error("incomplete_walk", {
+          missing_hash: entry.hash, declared_by: node_hash
+        })
+      count += count_leaf_bindings(child, entry.hash)
   return count
 ```
+
+**The `null` branches above are the whole of §3.8 R1 in the diff path, and they are what three
+engines each omitted.** A `continue`, an absent `else`, or an empty-node fallback at these sites
+turns a withheld node into a shorter diff that reports success. The recursion also threads the
+**declaring** node's hash rather than only the missing child's, because R3's cut point is the parent.
 
 **Output ordering (MUST).** The diff output's `added`, `removed`, and `changed` arrays MUST be sorted lex by `key` (UTF-8 lexicographic) at output time, regardless of the trie's internal hash-keyed traversal order. The trie traversal visits positions in hash-bit order (effectively random with respect to keys); the output is explicitly re-sorted before return. This makes diff outputs comparable across peers regardless of internal traversal implementation.
 
@@ -1117,9 +1198,34 @@ If a data entity referenced by a leaf binding is not in the local content store,
 - All trie node entities reachable from the snapshot root.
 - All data entities referenced by leaf bindings in the trie.
 
-When the `paths` filter is specified, the envelope includes only the trie nodes along the paths from the filtered paths to the root, plus the data entities at the filtered paths. Unfiltered subtree nodes MAY be omitted.
+**An extract's envelope is complete against its own root `[MUST, v4.6]`.** This holds for a filtered
+extract exactly as for a full one, and it is a property of the algorithm above rather than an extra
+obligation: `root_hash = build_trie(bindings)` is built over **precisely the selected bindings**, and
+`include_trie_nodes` then bundles every node reachable from that new root. A `paths` filter therefore
+produces a **smaller trie**, not a partial view of a larger one — so there are no "unfiltered subtree
+nodes" for it to leave out. **Walking the returned root MUST NOT reach an entity outside `included`.**
 
-This means a full extract includes the complete trie plus all data entities. A filtered extract includes only the relevant trie branches.
+> **A sentence licensing the opposite stood here until v4.6 and is deleted.** It read *"unfiltered
+> subtree nodes MAY be omitted"*, which describes navigating the original trie by path — the v3.x
+> path-keyed model §13 records as replaced. Under hash-keyed routing paths do not navigate the trie
+> and the algorithm four lines above **rebuilds**, so at best the sentence was vacuous. **At worst it
+> licensed building `extract` as a view rather than a rebuild**, letting two conformant peers emit
+> envelopes that disagree — the cross-peer `MAY` divergence this corpus pins rather than leaves. **It
+> is also the sentence that made a tolerant walk look defensible:** if incompleteness can be
+> legitimate, tolerating it is reasonable. It cannot be, so it is not (§3.8).
+
+**Publishing a subset is re-rooting, not filtering `[v4.6]`.** The same property is what a publisher
+relies on, and it is worth stating where a publisher will read it: a publisher serving part of its
+tree does **not** serve a filtered view of one large trie. It builds a trie over exactly what it
+publishes, with keys relative to the tracked prefix (§3.4) and that root signed and tracked per
+§3.3a. **So there is no such thing as legitimate incompleteness *within* a published root** — which
+is why §3.8 admits no tolerance at a trust boundary — while what the publisher chose to *put* in that
+root remains unconstrained, per §3.3a's negative-scoping MUST.
+
+A **partial walk** over a store the walker itself populated is the one tolerant case, and it is §3.8
+R4: opt-in, returning a subset, and never presented as a complete enumeration.
+
+This means a full extract includes the complete trie plus all data entities. A filtered extract includes a complete smaller trie.
 
 ---
 
@@ -1519,6 +1625,15 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 - **Published-root `prefix` (§3.3a)** — a published root MUST carry `prefix`; consumers MUST use it (never a default or an inference) to reconstruct paths and to determine the published extent.
 - **Key-form assertion (§3.3a / §3.3)** — the conformance oracle MUST take an absolute path known to be bound in the published subtree, derive `relative_key` from the publisher's **declared `prefix`**, and assert the trie resolves *that* key. **A trie-rebuild equality check does not satisfy this**: a rebuild takes its keys from the trie and is therefore self-consistent by construction on key *form*, so an implementation keying by absolute path rebuilds to its own root and passes. Equality proves the routing algorithm; only this assertion proves the key convention. *(This distinction is why a three-way-green `published_root` category coexisted with a three-way key divergence for months — `entity-core-go`, 2026-08-08.)*
 - **Reconstruction round-trip (§3.3)** — `absolute_prefix + relative_key` MUST reproduce the absolute path the publisher bound.
+- **The walk contract (§3.8)** — R1 a declared node that does not resolve is `incomplete_walk`, never a shorter answer; R2 children are derived by decoding declared entries, never by byte-scanning and never conditionally on the child already being present; R3 the error carries `missing_hash` **and** `declared_by`; R4 a partial walk is opt-in and MUST NOT be presented as complete; R5 `incomplete_walk` is terminal.
+- **Extract completeness (§6.2)** — an extract envelope is complete against its own root, filtered or not; walking the returned root MUST NOT reach an entity outside `included`.
+- **Walk-contract vectors (§3.8)** — an implementation MUST exercise all six. **The assertion is the error, not the count**: asserting `len(keys) == N` also passes on an implementation that returns N by luck of which branch was cut.
+  - `TREE-WALK-WITHHELD-1` — a root committing to N keys, every node served but one **interior** node; the walk MUST fail with `incomplete_walk`.
+  - `TREE-WALK-CONTROL-1` — the same trie **fully** served MUST return exactly N keys and no error. **Without this a walk that always fails scores green on the vector above.**
+  - `TREE-WALK-PARENT-1` — the error's `declared_by` equals the hash of the node holding the dangling link (R3).
+  - `TREE-WALK-VALUE-1` — a withheld **bucket value** entity, not a link, also fails. **Cut the other half and an implementation that only checks links reports clean.**
+  - `TREE-EXTRACT-COMPLETE-1` — a `paths`-filtered extract's envelope is complete against its own root: walking the returned root touches no entity outside `included`.
+  - `TREE-WALK-PARTIAL-1` — an explicitly-requested partial walk returns the short list and no error, pinning that R4's opt-in exists and is reachable.
 - Error codes as specified (Appendix A)
 - ECF deterministic encoding for snapshot content hashing
 - Handler-level capability checks using `get` and `put` grants (§11)
@@ -1583,6 +1698,7 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 | `destroy` | `tree_not_found` | 404 | No tree with this tree_id |
 | `destroy` | `default_tree` | 400 | Cannot destroy the default tree |
 | (any) | `view_tree_invalid` | 403 | View tree's capability has been revoked or is expired |
+| (any walk) | `incomplete_walk` | 502 | **A node the walk needed did not resolve, and the root declares it** (§3.8 R1). Carries `missing_hash` (the unresolvable child) and `declared_by` (the hash of the node that declared it — the cut point, R3). **502 because the failure is the origin's, not the caller's**: the request was well-formed and the answer is unobtainable from the party asked. **Terminal, never retried** (R5) — a transport failure while fetching is a different condition and is separately retryable. **Distinct from `not_found`**, which is the answer a node that *did* resolve gives *(v4.6)* |
 
 ---
 

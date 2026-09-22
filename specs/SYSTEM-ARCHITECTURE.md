@@ -215,7 +215,7 @@ docs/                                    ← workspace + archive; NOT published,
 │   └── INDEX.md                                 ← gated by `spec ledger`
 ├── status/                                  ← dated handoffs / status; ephemeral
 ├── archive/                                 ← closed docs, with an INDEX.md breadcrumb
-└── DISCIPLINE-CHARTER.md                    ← the discipline set + anti-pattern catalog
+└── DISCIPLINE-CHARTER.md                    ← internal: how this team works, not part of the spec
 ```
 
 **The upstream core spec is a sibling repo.** `ENTITY-CORE-PROTOCOL.md`,

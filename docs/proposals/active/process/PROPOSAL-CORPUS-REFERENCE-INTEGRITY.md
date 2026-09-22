@@ -1,6 +1,6 @@
 # PROPOSAL: Corpus reference integrity — a reference nothing can follow is not a citation
 
-**Status**: DRAFT
+**Status**: DRAFT 2026-08-24
 **Targets**: `entity-system-arch-tools` (`spec standards` rules) · `docs/proposals/` layout ·
 `SPECIFICATION-FORMAT.md` §11 · two owed conformance seeds
 **Depends**: nothing landed blocks this; §5 sequences behind `PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS`

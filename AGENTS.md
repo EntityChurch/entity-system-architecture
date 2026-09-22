@@ -147,10 +147,23 @@ What binds today:
   runs the ecosystem's best enforcement rung: `.spec-baseline.json`, a ratcheted baseline that
   only ever lowers.
 
-**The discipline set is assembled and ratified — `docs/DISCIPLINE-CHARTER.md` is the canonical
+**The discipline set is assembled and ratified — `docs/DISCIPLINE-CHARTER.md` is the authoritative
 home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-22), the honest
-enforcement table, and the doctrines this repo adopts **by reference**. The sections below stay as
-the working detail; **the charter is the set.**
+enforcement table, and the doctrines this repo adopts **by reference**. **The charter is the set.**
+
+> **It is INTERNAL and does not publish `[2026-09-08, operator's test]`.** It was declared canonical
+> until then; the test that settled it is *someone pulled the repo and started working — would they
+> want or need this?* **No** — it is a rulebook about how this team works, whose most prominent
+> passages are notes about our own two guidance files drifting. **The contributor-facing half is
+> already its own published document, `CONTRIBUTING.md`**, so there was nothing to split out.
+> **`canonical` and `authoritative` are not the same claim**, and treating them as one is what kept
+> it declared: it is still the authority for the set, still gated, just no longer addressed to a
+> stranger. Write it frankly, for the next session.
+
+**Three homes, and knowing which is which is the difference between a two-minute lookup and a
+lost session.** The line below is the always-in-context restatement — the *what*, checked against
+the charter by `spec charter`, which exists because the two drifted four times. The charter is
+authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
 
 - **L1** no normative spec edit without a proposal · **L2** read the filing seat's own document ·
   **L3** a partial fold does not get a completeness marker — a version bump **or** a move to
@@ -170,10 +183,13 @@ the working detail; **the charter is the set.**
   **L14** `ENTITY-CORE-PROTOCOL` is not ours to version — extension versions are ordinary work
   *(**ratified** 2026-08-18 — operator ruling)* · **L15** a ruling goes back to the seat that filed it
   before it goes to anyone else *(candidate)* · **L16** before ruling a cross-impl semantic, search
-  **every** tier for a seat that already implements it — **and before claiming our own corpus is
-  silent, search every `specs/` extension, not the layer the question sounds like** *(**ratified**
+  **every** tier for a seat that already implements it — **and before claiming this project has not
+  studied something, search BOTH regions of the search path below: every `specs/` extension, not the
+  layer the question sounds like, AND the 1,068-document pre-split archive via
+  `docs/LEGACY-ARCHIVE-INDEX.md`. Name the regions searched in the claim** *(**ratified**
   2026-08-19 — second instance the next day, running the opposite direction; **corpus axis added
-  2026-09-04**)* · **L17** a normative MUST that names a value **or a
+  2026-09-04**; **archive axis added 2026-09-07** — the same rule fired false twice in two days
+  because its named region was one repo)* · **L17** a normative MUST that names a value **or a
   capability** does not land without a declared site a peer can carry and a conformance check
   *(**ratified** 2026-08-20 — second shape)* · **L18** a cohort
   implementation is not evidence that a cohort ruling is right — **and a citation labelled
@@ -208,2037 +224,79 @@ the working detail; **the charter is the set.**
   arch's failure mode is not folding what they built, so do not write a constraint telling seats to
   hold off *(**ratified** 2026-09-02 — operator correction)*.
 
-- **L8's fifteenth form — the spec's own pseudocode, read as a conclusion about the implementations.
-  It is the artifact class an arch session trusts without checking, because we wrote it.**
-  `[2026-08-21 — self-found, chasing a retraction; it then produced the session's best finding]`
-  `PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE` §3.2 ruled `concat-args`' shape and
-  led with a **correctness** argument: *"§7.1's `walk` descends only on scalar `system/hash` fields, so
-  under the declared array-of-hashes shape **every `compute/lookup/tree` inside every `concat`
-  sub-collection goes unregistered** — a reactive `concat` silently never re-fires."* It also asserted
-  *"`concat-args` is the only array-of-hashes in the entire expression grammar."*
-  **Both false, and each in its own way.** *(a)* **No implementation has that defect** — go `c1b0708`
-  (`walkDepValue`), rust `2ee6bf7` (`walk_hash_fields`), py `f09ae70` (`_walk_deps`) all descend into
-  containers, because all three implement §7.1's **prose** rule (*"all `compute/lookup/tree` paths
-  reachable in the expression graph are registered"*) rather than the pseudocode eleven lines above it.
-  *(b)* `compute/apply.args` is `{map_of: system/hash}` and `compute/let.bindings` is an array of
-  `{name, value: system/hash}` — both in §2.1, both older than `concat`, both far more common. **The
-  "only" was a grep for `array_of` published as a claim about a grammar**, which is `AGENTS-STANDARD`'s
-  *prove a negative* rule and L8's thirteenth form arriving on a different noun.
-  **Why it is a new form and not another tally.** Every prior L8 instance reads *someone else's*
-  artifact — a peer's filename, a sibling's `cfg` line, a third seat's routing prose. **This one reads
-  our own normative text**, which is the artifact an arch session is least likely to check and most
-  entitled to trust. And the inference crossed a category: **pseudocode is a description of required
-  behaviour; a claim about what a reactive expression *does* is a claim about three programs.** The
-  spec cannot be evidence for the implementations even when the spec is right — and here it was not,
-  which is the second half.
-  **The cost had it shipped:** a routing packet telling three seats their reactive dependency
-  registration was broken. **The ruling would still have been correct** — `concat`'s shape is settled
-  on uniformity and arity — which is the trap: *a conclusion that survives its own justification being
-  wrong is the hardest kind to notice, because nothing downstream breaks.* Same trap as L8's
-  fourteenth form, one layer up.
-  **What redeemed it, and it is why the rule is *chase the retraction*, not just *check the tree*.**
-  Re-deriving the false claim found the real defect: **§7.1 contradicts itself** — its prose states
-  *all reachable paths are registered* and its pseudocode registers nothing inside any function
-  argument or any `let` binding, which is most of every non-trivial expression. Further, the three
-  walkers are **not equivalent**: go and rust recurse unbounded; **py's is hand-rolled and not
-  recursive**, keyed in one branch on the literal field name `"value"` — correct today **by
-  enumeration of the current grammar, not by rule**, and invisible to every boundary-hash vector
-  because dependency registration produces no boundary. **A false derivation sat directly on top of a
-  true defect**, and the true one is bigger.
-  ***Enforcement point:*** **a normative claim about what an implementation *does* is checked in that
-  implementation's tree, at a named commit — spec text, including our own pseudocode, is never the
-  evidence.** Mechanically: a proposal sentence in the present tense about runtime behaviour (*"goes
-  unregistered," "never re-fires," "silently drops"*) with no `(repo, symbol, commit)` beside it is the
-  violation. **And when a derivation is retracted, re-derive rather than delete** — the reason a wrong
-  argument was reachable is usually a real defect standing where the argument was pointing.
 
-- **L24 — an identifier is only a pin if it resolves for the audience the claim is published to.**
-  `[candidate, 2026-08-23 — operator-raised, and the failure had already fired twice unnoticed]`
-  **The mechanism.** [ADR-0027] makes every published commit **authored fresh at the boundary**, so
-  public `master` is a *different history* from `dev`. A `dev` SHA therefore **has never resolved
-  publicly and never will** — it is not degraded by the release, it was never valid for the reader we
-  hand it to. Measured: `entity-core-protocol` `106834c` (our own release-cut commit, cited in the
-  published CHANGELOG) is on `dev`, not on `master`; go's `dev` is **514 commits** ahead of `master`.
-  **It has already fired, in public, on the flagship claim.** The `CONFORMANCE-MATRIX.md` on
-  published `master` reads `665·0F @ e8524ed`. Arch resolved `e8524ed` — and `33f35fd`, `b30a589`,
-  `75c532e` — against **all nine repos**: they exist **nowhere**. [ADR-0012] calls reproducible
-  oracle-pinned conformance *"our single strongest credibility artifact"*; on the published surface
-  it is currently unverifiable by an outsider **and by us**.
-  **Why nobody caught it, and this is the transferable half: two rules, each correct alone, jointly
-  unsatisfiable.** ADR-0012 says *"keep oracle-commit pinning — every published count is
-  `N·0F @ <oracle-commit>`."* ADR-0027 guarantees that identifier cannot exist for the public reader.
-  ADR-0027 even lists ADR-0012 among the constraints it *"works within"* — **and never noticed it had
-  invalidated ADR-0012's central identifier.** Neither document is wrong in its own frame. This is
-  **L23 on the ADR axis**: L23 is *a rule has every normative home it is stated in*; L24's cause is
-  *a rule has every other rule that constrains it*, and a conflict between two documents is visible
-  from neither.
-  **The fix existed for six weeks and never reached the rule — which is exactly what the ratchet is
-  for.** `entity-core-keystone` hit this on **2026-07-10** when go's public mirror rewrote history,
-  diagnosed it exactly, and built `core_gate_fingerprint` — the *normalized category set + type
-  floor*, comment- and format-invariant — stating the principle in their own tooling: *identical to
-  what the cohort converged against, **no matter the commit hash***, a property they named
-  **mirror-stable**. Their `oracle-pin.env` carries the proof outright:
-  `retired_ref_4 = e8524ed (unreproducible after mirror history rewrite; **same fingerprint**)` —
-  the commit died and the fingerprint carried the verdict across its death. **All of that is a local
-  practice in one seat. The ecosystem rule still says pin the commit**, so when the pin later
-  regressed from `cc1970f` (on public `master`) to `c1b0708` (dev-only), nothing objected — ADR-0012
-  asks for *a commit*, and it is one.
-  ***Enforcement point:*** **before a claim ships in a canonical doc, every identifier in it resolves
-  for the reader who will receive it** — for the public surface that means reachable from `master`, a
-  release tag, or a **content digest** (sha256 of the artifact, `core_gate_fingerprint`,
-  `check_set_digest`), never a `dev` commit. **BUILT, not filed — `spec pins`** (arch-tools
-  `b8a06be`): scoped to the `CANONICAL-DOCS.toml` keep-list because that *is* the published surface,
-  resolving every token **cross-repo** and attributing each finding to the repo that holds the commit,
-  never flagging 64-hex content hashes. **Measured: 808 unreachable across the ecosystem** —
-  `entity-core-rust` 242 · arch 153 · keystone 152 · workbench-go 103 · py 71 · go 68 · browser-rust
-  18 · arch-tools 1 · **`entity-core-protocol` 0**. That zero is the point: it got there by doing the
-  sweep once, so this is finishable, not a permanent red. Reader by default; `--gate` when the backlog
-  is down. **Content hashes are immune and are the model** (~4,000 across the ecosystem); the corpus
-  work this same week landed the identical lesson one noun over — *a corpus is its name and its
-  artifact's sha256, never a version stamp.*
-  **The gate's own worst bug was the one this session made twice by hand**, so it is tested: resolving
-  a sibling's SHA against the citing repo reports a false clean, and against only the home repo a
-  false failure. *"Does not resolve in repo B" is not a finding unless the citation was to repo B.*
-  ~~**Candidate: one incident family, two firings.**~~ **Ratified 2026-08-23 on the second shape
-  below** — the build surface. The enforcement point is the broadened one stated there.
+### The worked cases live in `docs/ANTI-PATTERN-CASEBOOK.md` — open it by trigger, not on cold start
+
+**The rules above are the set. The casebook holds the incident behind each one** — what it cost,
+why it is worded that way, and the tell that makes the failure recognizable. It is internal
+(committed, not canonical, never published) and it is **2,024 lines**, which is why it is no
+longer here: it lived in this file until 2026-09-07 and made up **78% of it**, loaded in full at
+the start of every session.
+
+**Open it when you are about to do the thing, not before:**
+
+| About to… | Read |
+|---|---|
+| claim an implementation does / does not do something | **L8** — twenty forms, the most-fired rule we have |
+| claim this project has not studied something | **L16** corpus axis · **L4** — and see the search path below |
+| rewrite or retire a normative rule | **L23** — four shapes |
+| fold a change into the corpus | **L21** — five shapes; a fold is a delivery to everyone |
+| recommend or gate on a tool | **L8's seventeenth form** — validate it in both directions |
+| quote another party's sentence as evidence | **L22** |
+| file something against ourselves | **L13's fourth axis** |
+| land a `[MUST]` naming a value or capability | **L17** — three shapes |
+| publish a count or a census | **L8's twentieth form** · **L7's standing rule** |
+
+**The ratchet still binds, with one correction this split encodes: prose is not the
+deliverable.** An incident earns, in order of preference — **a widened scope** on a gate, index
+or search path · **a mechanical enforcement point** · a new shape under an existing rule · a new
+rule, rarest. **A case that produces only prose has not landed**, and that is the measured
+failure of the record so far: twenty-six rules, nineteen worked forms of L8 alone, and not one
+of them widened a search scope.
+
+---
+
+## The search path — WHERE TO LOOK, before you claim we have not
+
+**Read this before writing any sentence of the form *"we have not studied X"*, *"the corpus is
+silent"*, *"nothing describes"*, *"this is new"*, or *"no seat implements"*.** Three of those
+were published false in two days in September 2026, all from the same cause: **every instrument
+was scoped to one repository, and each reported clean while being narrow.**
+
+**There are two regions and you need both.**
+
+| Region | What is in it | How to search |
+|---|---|---|
+| **This corpus** | the folded result — `specs/` · `guides/` · and the workspace `docs/proposals/` (99) · `docs/research/` (97) | `spec coverage` first; then grep. `docs/DESIGN-REGISTER.md` answers *"is there an ANSWER"* — but it cites **9 of 99 proposals**, so a miss there means nothing |
+| **The pre-split archive** | **1,068 documents**, core revisions v0.01 → v7.0 — the *reasoning* that produced this design. The split moved conclusions here and left derivations there. Frozen; last commit 2026-06-23 | **`docs/LEGACY-ARCHIVE-INDEX.md`** — internal title index of all 1,068, by revision. Grep it, then grep the archive full-text |
+
+```bash
+grep -i "<noun>" docs/LEGACY-ARCHIVE-INDEX.md          # is there a document about it?
+L=<path to the archived pre-V8 architecture repository>/docs/architecture
+grep -rliE "<term>" specs guides docs "$L"             # is it discussed anywhere?
+```
+
+**A title index is not the whole search, measured.** Of five gaps a 2026-09-06 audit ranked
+`[ZERO]`, the index finds two by title and misses three discussed *inside* documents titled for
+something else. **Grep the index to find a document; grep the archive to prove an absence; open
+the document to say anything about what it contains** (L4 — a grep never reads).
+
+**And name the region in the claim.** *"Not in `specs/`, `guides/` or the archive's
+`v7.0-core-revision/`"* is reviewable. *"We have never studied this"* is not, which is exactly
+why it survives — **a negative cites nothing, so nothing can contradict it.**
+
+**Do not scatter archive paths through the corpus.** `docs/LEGACY-ARCHIVE-INDEX.md` is the one
+place that names the location. Published documents refer to *"the pre-split archive"* and never
+to an internal path — a path that resolves only in our layout is not a reference (L24).
 
-  > **Second shape — a relative path in a build manifest, resolving against a LAYOUT the audience
-  > does not have. Same property, different substrate, and the docs axis had a gate while this one
-  > had nothing.** `[2026-08-23 — operator-raised: "do the build files reference each other with
-  > commit shots? we sign off, devops rewrites the commits, and every build breaks"]`
-  > **The feared failure does not exist, and establishing that is half the value.** Swept every
-  > manifest in the ecosystem: **zero git submodules · zero Cargo `git = … rev = …` deps · zero
-  > `source = "git+…"` lock entries · zero Go pseudo-versions pinning our own repos** (all 128 are
-  > third-party upstream). **No build file names a commit, so a boundary rewrite cannot break one.**
-  > **What is broken is layout coupling.** `entity-browser-rust` carries **23** path deps on
-  > `../entity-core-rust/…` plus **8** in `src-tauri/`; `entity-workbench-go` `replace`s to
-  > `../../entity-core-go/{core,ext}` in **18 of 18** modules. Cloned alone: browser-rust
-  > `cargo metadata` **EXIT 101** at manifest load, workbench-go `make build` **EXIT 2** at the first
-  > target. Verified clean standalone: rust, py, protocol, arch, arch-tools, formalization, and
-  > core-go via its declared `make` interface.
-  > **Why it is L24 and not a new letter.** L24's property is *a reference resolves for the audience
-  > that receives it.* A `dev` SHA fails against a **history** the reader does not have; a sibling
-  > path fails against a **layout** they do not have. Identical shape, and both are invisible
-  > internally for the identical reason — **we only ever read from, and build in, the environment
-  > where the reference happens to resolve.** Minting L25 here would be the *"adding a rule is not
-  > doing the work"* move L0 rule 4 forbids.
-  > **The false green is the transferable half.** Arch's first isolation run reported workbench-go
-  > `make build` **EXIT 0** — the scratch directory still had `entity-core-go` copied in beside it.
-  > **A build that passes in the development layout is not evidence about the published one**, and
-  > six weeks of green sign-offs were never going to catch this. *When testing whether an artifact
-  > stands alone, prove the isolation before trusting the result — `ls` the parent directory.*
-  > **Two things this session got wrong in the other direction, both corrected by opening a file.**
-  > *(1)* Arch was about to route *"please document the sibling requirement"* to both app-tier seats.
-  > **Both READMEs already document it** — workbench-go's Requirements table states *"Without it the
-  > build dies at module resolution"* verbatim, and they ship `make doctor`. Assigning finished work
-  > is the L2/L8 failure, and one `grep` prevented it. *(2)* `[internal]` placeholders were filed as a
-  > devops redaction leak on the strength of the published artifact; grepping `dev` showed the literal
-  > is **committed in source**, 11 files across 4 seats. **Reading a failure as a conclusion about the
-  > user's experience is the same error as reading a success as a conclusion about the published
-  > tree** — L8, twice in one session, in both directions.
-  > **The artifacts nearly misled the whole finding.** The devops release/output directories are
-  > gitignored scratch dated **2026-06-23** against a manifest since edited — a rehearsal, not the
-  > pipeline. Two first-pass claims (a stub README replacing the source one; `Cargo.lock` dropped)
-  > **do not survive that** and were re-filed as verification items. The path coupling is unaffected
-  > because it lives in the *source* trees. *Date the artifact before generalizing from it.*
-  > ***Enforcement point, now binding and broadened beyond documents:*** **before a tree is
-  > published, every reference in it — commit, path, module, sibling — resolves in the history *and
-  > the layout* the receiving audience actually gets.** Docs surface: `spec pins`. **Build surface:
-  > clone each assembled output tree ALONE into a scratch directory and run its declared `make
-  > build`** — filed as **B-3** with DevOps, and it is the only check that would have caught any of
-  > this, because everything passes in a tree that has siblings. Where a coupling is deliberate and
-  > deferred (it is, for this release), the requirement is that **the first failure a user sees names
-  > the cause and the fix** — a preflight, not a README alone, since the user who hits it is by
-  > definition the one who did not read the README.
 
-- **L8's sixteenth form + L7's eighth instance — a vendor audit that checks NAMES is not a vendor
-  audit. And two true halves in two documents are not a finding until someone writes the sentence
-  that joins them.** `[2026-08-23 — self-found, during the release sign-off. No new letter: this is
-  the two ratified rules firing together, and minting a third would be the "adding a rule is not
-  doing the work" move L0 rule 4 already forbids.]`
-  **The finding:** `entity-core-rust` and `entity-core-py` both vendor the **69-vector pre-F29/F30
-  ECF corpus**; canonical has been **71** since 2026-07-12. The two missing vectors are `nested.5`
-  and `nested.6` — CBOR **head-length boundaries**, on the path of every encode. rust holds a `.cbor`
-  with no `.diag`, py a `.diag` with no `.cbor`, so **neither can run §5.1b's source-produces-artifact
-  gate at all**, and py's test *pins* the gap with `assert len(corpus) == 69`.
-  **Why six weeks passed, and neither half is a mistake.** The 2026-08-13 version-stamp audit
-  **named both files** (§4b: *"rust `conformance/vectors-v1.cbor` · py `test-vectors/v1/`"*) — under
-  the heading **corpus artifact `-v1` stamps**. It asked what they were *called*. The same day, a
-  *different* status doc measured ECF `69 → 71, F29 added nested.5/nested.6` — as an observation
-  about **arch's own** corpus history. **Both sentences are true, both are arch's, both were written
-  within hours of each other, and the conjunction was never formed**, so there is no ledger row and
-  no packet. This is L13's shape with a new suppressor: not filed-where-found, but **split across two
-  documents such that each half looks complete in its own frame**.
-  **The L7 half is the cheap one and the one that should sting.** `spec corpus --vendor` exists, is
-  read-only, takes an explicit path, checks **bytes** across trees, and is built for exactly this. It
-  had never been pointed at rust or py. **The failing rung is not "the tool did not exist" — it is
-  "the tool existed and was run on the wrong question."** One flag, six weeks.
-  **It found more than the count when it was finally run:** keystone's vendored agility `.diag` still
-  carries the **F16 width defect** (58-byte Ed448 seeds, 63-byte `0xAA` pubkeys) that *keystone
-  reported, arch routed on 08-13, and both records mark RESOLVED* — resolved in the `.cbor`, never in
-  the `.diag`, under a MANIFEST calling the `.diag` the *"human source-of-truth."*
-  **The aggravating detail, because it is the reason a name-audit feels sufficient:** the vendored
-  files are named `agility-vectors-v1.*` against a source now named `agility-vectors.*`, so the gate
-  reports **`vendor-unmatched` — could-not-look, not a pass** — and refuses to guess a mapping. The
-  staleness was ultimately caught by comparing sha256 **by hand**. *A rename does not just make a
-  vendor stale; it makes the vendor gate blind, and the blindness reports as a warning next to
-  errors.*
-  ***Enforcement point:*** **when a corpus, fixture set, or schema is renamed or rebuilt, run
-  `spec corpus --vendor` against every tree that vendors it, in the same session, and record the
-  `(seat, path, sha256, count)` for each.** A vendor row citing a *filename* is not evidence; a row
-  citing bytes is. And where the gate reports `vendor-unmatched`, that is **not** a clean result —
-  it is the could-not-look, and it must be discharged by hand before the sweep is called done.
-  **Corollary, general beyond corpora:** when two findings from one session live in two documents,
-  ask once at close-out whether either is a *premise* of the other. Here *"these files are
-  version-stamped"* and *"this corpus grew by two vectors"* compose into *"two impls are two vectors
-  short," and neither document could have said it alone.*
-
-- **L8's seventeenth form — a build tool's own statement of what it enforces, read as a conclusion
-  about what it enforces. And it was carried in ARCH'S OWN RECOMMENDATION to another seat.**
-  `[2026-08-31 — corrected by `entity-core-formalization`, who built the gate arch asked for and
-  discovered arch had asked for a false green]`
-  Arch found that `lake build EntityCoreProofs` is called *"the proof check"* in five keystone sites
-  and **invoked by no Makefile, script or workflow** (true, verified exhaustively twice), and filed
-  the recommendation: *give that gate to formalization.* The keystone lakefile states its own
-  contract — *"a `sorry` or failed proof fails the build."* **Arch read that sentence as a
-  description of the build's behaviour. It is a claim about the build, and it is false.**
-  formalization tested it by **building each failure case** rather than reading the file
-  (`entity-core-formalization` `tools/lean-proof.py` + `make leanproof`/`leanproof-neg`, with the
-  runs recorded in `docs/LEAN-SEAM.md` §7): a **`sorry` in a cited theorem prints `Build completed
-  successfully` and exits 0** — a warning, not an error — and a **custom `axiom` standing in for a
-  proof also exits 0**, distinguishable only by `#print axioms`. Only a genuinely broken proof exits
-  1. **Exit status catches one failure mode in three, and the two it misses are the two by which a
-  proof silently stops being a proof.**
-  **Why it is the worst-placed form since the thirteenth.** Had the recommendation been routed as
-  written — *"run `lake build EntityCoreProofs` in CI"* — it would have produced a **green board
-  asserting ten ledger rows' proofs hold, satisfied by a file full of `sorry`.** A gate that reports
-  clean because it cannot see is the exact failure this toolkit was built against, and arch would
-  have installed one on the strength of a comment in someone else's build file.
-  **The aggravating detail:** the absence-claim half was proven properly — exhaustive search, five
-  sites named, negative established per `AGENTS-STANDARD`. **Rigour on "does this run?" and none at
-  all on "what does it check?"** The two are different questions and only the first was asked.
-  ***Enforcement point:*** **before recommending, adopting, or gating on a tool, run it against a
-  deliberately failing input and confirm it fails.** A tool's own README, lakefile comment, help text
-  or contract block is an artifact (L8) and never evidence of what it catches. Mechanically: a
-  proposal or packet that assigns a gate MUST cite the negative control — *"we broke X and it went
-  red"* — not the tool's description of itself. **This is the discipline `entity-core-keystone`
-  already runs on probes** (their §4.7 probe was wrong three times, each time failing *toward* the
-  expected answer, all three caught by controls) and that `entity-core-go` runs as mutation-verified
-  tests. **Arch had it for probes and not for gates.**
-
-  > **Second shape, 2026-08-31 — the polarity is reversed, and it is the half the first shape does not
-  > cover: a gate whose PASS CONDITION encodes the wrong answer. It was green in three trees for two
-  > weeks and the green WAS the bug.** `[self-found, taking the PD-1c measurement]`
-  > `entity-core-go`'s `authz_peers_target_from_uri` (`cmd/internal/validate/authz.go:724`) scores
-  > `allow1 && !allow2 && !allow3` → **PASS**. P-1 is an inbound EXECUTE naming a **foreign**
-  > namespace, and the probe **requires it be ALLOWED**. Under `ENTITY-CORE-PROTOCOL` §1.4 that input
-  > MUST be refused `400 invalid_request` before resolution. **So every peer that does the specified
-  > thing scores WARN** — *"the foreign-scoped control also denied … investigate P-1 before scoring"* —
-  > **and every peer that does the wrong thing scores PASS.** keystone's 40 conformant generated peers
-  > sat in WARN for two weeks labelled *"inconclusive by design"*; `entity-core-{go,rust,py}` sat in
-  > PASS with a live foreign-namespace privilege escalation.
-  > **Why the first shape's enforcement point would not have caught it.** It says *run the gate against
-  > a deliberately failing input and confirm it fails.* Do that here and the gate **works** — feed it a
-  > peer that allows P-2/P-3 and it correctly FAILs. The gate is not broken at detecting what it thinks
-  > it is detecting. **What is wrong is the reference answer**, and a negative control cannot find that,
-  > because a negative control tests the gate against the gate's own notion of failure. **The complement
-  > is the missing half: run it against an input you believe is CORRECT and confirm it passes.** Forty
-  > peers were the correct input and the signal was there the whole time, wearing a WARN.
-  > **The subject was right and the path was wrong, which is what made it invisible.** Dimension 4 is
-  > real and worth driving — but it lives on §1.4's *internal-dispatch* class, and the probe drives it
-  > over the *inbound wire*, the one path where the ruling makes it unreachable. **A probe can be
-  > correct about what it tests and wrong about where it tests it**, and the second error reads as the
-  > first being satisfied.
-  > **The aggravating detail:** arch had already filed exactly this against *keystone's* copy of the
-  > probe (PD-1e, *"it probes the inbound path for a dimension that lives on the sub-dispatch path"*)
-  > **one packet earlier — and never asked whether go's harness had the same probe.** It does, with the
-  > same defect. Filing a probe defect against one seat without grepping the other harnesses for the
-  > same probe is **L16 on the instrument axis**.
-  > ***Enforcement point, broadening the first shape:*** **a gate is validated in BOTH directions — a
-  > known-bad input must go red AND a known-good input must go green** — and a gate's *reference
-  > answer* is a normative claim that gets derived from the spec section owning the surface, never from
-  > what the peers under test happen to do. Mechanically: **a check whose PASS condition asserts a
-  > behaviour, where no `(spec, §)` is cited for that behaviour, is unvalidated** — and a population
-  > where the *majority* scores WARN/inconclusive is the tell, not a peer-quality finding. **When a
-  > probe defect is found in one harness, grep every other harness for that probe by name in the same
-  > session.**
-
-- **L8's eighteenth form — TWO MECHANISMS, ONE OBSERVABLE. The measurement was real, correctly taken,
-  and credited to the gate that did not fire. And the corpus already carried the refutation.**
-  `[2026-09-01 — self-found, reviewing a sign-off; the finding underneath it is PD-2]`
-  Arch signed off the Edit E withdrawal with *"the network bound is carried entirely by `peers` —
-  omitted, **still checked, measured on the wire in all three trees**."* **The wire run was real and it
-  measured a different gate.** Post-PD-1h a foreign-namespace EXECUTE is refused at **canonicalization**
-  (§6.5 step 3), so the `400` that came back was the routing gate, not §5.2 Dimension 4 — and
-  **`ENTITY-CORE-PROTOCOL` §1.4 says so in terms**, in text arch had folded eight days earlier: *"the
-  check is not redundant here; it is **unreachable** here."* Measured properly, by source read at named
-  commits, **no ground-up tree runs the check at all**: go `50f2140` `local.go:316` returns twenty-one
-  lines above its ceiling check, rust `b754508` `connection.rs:2969` returns and **documents** the
-  exemption, py `bac0244` `peer.py:4648` returns above the line that computes `target_peer`.
-  **Why it is not the twelfth form.** That one is *a line of code is an artifact; what a path does is a
-  claim* — the guards **before** a site. This is the inverse and it has no site to read: **two
-  independent gates on one path produce a byte-identical observable, and a black-box measurement cannot
-  attribute it.** A green probe is evidence that *something* refused. Nothing more.
-  **The tell that was available and unused:** the same session had already written that PD-1h's gate
-  runs *before* `check_permission`. **Arch held both sentences and never asked whether the second
-  invalidated the first measurement** — the same conjunction failure as L8's sixteenth form, one
-  session tight instead of two documents apart.
-  **The cost had it stood:** a normative rationale in §6.2 (*"is still checked … consequently
-  **cannot** dispatch at a foreign peer"*) resting on a measurement of the wrong gate, while three
-  seats ship a live gap — and `entity-core-keystone` had been told their *"the dimension is a no-op"*
-  premise was false, when it was **true of every implementation** and they could not have seen why from
-  the wire.
-  ***Enforcement point:*** **when two mechanisms on one path can produce the same observable, cite the
-  line that fired, not the status code** — and the measurement is evidence for neither until the other
-  is disabled, the paths distinguished, or the refusal attributed in the peer's own logs. Mechanically
-  checkable in review: **a claim naming a specific check, evidenced only by a response status, where
-  another gate on the same path returns the same status, is the violation.** This is
-  `entity-core-go`'s positive-control discipline pointed at **attribution** rather than polarity — a
-  negative control proves a gate *can* fire, and neither control proves it is the gate that *did*.
-  **And the general half, which is the older lesson arriving on a new noun:** *a spec claim about what
-  an implementation does is checked in that implementation's tree* (L8's fifteenth form) — **including
-  when arch has a green probe in hand.** A passing measurement is the most persuasive form the
-  unchecked claim takes, because it looks like the tree was opened.
-
-- **L8's nineteenth form — a generated cohort's uniform absence of a property is a fact about the
-  GENERATOR'S INPUT SET, not about the specification. The artifact read here is 46 peers, and it is
-  the largest one the ecosystem has.**
-  `[2026-09-01 — self-found, auditing keystone to open the `entity-system-generator` track]`
-  The inference that was one step from being published: *46 peers were generated from the spec; none of
-  them exposes a way to install a handler; therefore the protocol has no extension seam and the new repo
-  must design one.* **Every clause of the premise is true and the conclusion is false.**
-  `SDK-OPERATIONS` §11.6 specifies the seam in full — `register_handler(spec, body) → Handle`, four
-  ordered mutations, tree-before-index with compensation, 409 on collision, handle lifecycle, and an
-  explicit V1→V2 authorization progression. It has simply never been in
-  `entity-core-keystone/protocol-generator/shared/spec-data/`, which holds **three files** — the whole
-  of `entity-core-protocol/specs/` — and has only ever held those. **The generator's boundary is the
-  repo boundary**, so its output scope was decided by its input scope, and the peers are evidence about
-  the snapshot rather than about the corpus.
-  **Why it is L8 and not a new letter.** L8 is *an artifact is not a conclusion about the thing it
-  names.* Its prior forms read a filename, a `cfg` line, a doc comment, an SDK module, a repo name, our
-  own pseudocode, a tool's contract block. This one reads **an entire generated cohort**, and the
-  inference crosses the same category boundary: *what a generator produced* is a claim about its inputs
-  and its phase contracts; *what the protocol specifies* is a claim about the corpus. Minting L26 here
-  would be the *"adding a rule is not doing the work"* move L0 rule 4 forbids.
-  **The aggravating half, and it is what makes the form worth recording: the absence is not even
-  uniform.** By source read of five peers — `csharp` (`Peer.RegisterHandler`) and `typescript`
-  (`Peer.registerHandler`) expose a public bind-a-body registration API; `go`'s `Peer` exports exactly
-  `Listen`/`Identity`/`Store`/`LocalPeer`; `rust`'s and `haskell`'s `register_handler` is the §6.13(a)
-  **wire** operation, not an install seam. So *"no generated peer can host an extension"* would have
-  been wrong twice over — **wrong about the spec, and wrong about the cohort** — and both errors come
-  from the same shortcut of reading output instead of input. **A cohort is a sample until someone counts
-  it**, and this one had never been counted on this axis because no gate asks.
-  ***Enforcement point:*** **before concluding that a generated artifact lacks a property, read the
-  generator's input manifest and its phase contracts, and name the one that omits the property.** For a
-  pinned-snapshot generator the manifest is a file you can `ls`. Mechanically checkable in review: **a
-  sentence of the form "the generated peers do not X" with no citation to the input snapshot or to the
-  phase contract that excludes X is the violation.** The constructive half: **a generator's input scope
-  IS its output scope, so extending the output means extending the snapshot first** — which is exactly
-  what makes `entity-system-generator` a different repo rather than a keystone phase.
-  **The corollary underneath the rule, and it is the finding the form was extracted from.** Keystone
-  publishes a **capability** claim in four places — *"the community installs those atop a generated
-  peer"* — and the whole conformance apparatus around it measures **behaviour under refusal**. *A gate
-  that scores what a peer refuses cannot see what a peer cannot be extended with.* That is keystone's
-  own vacuous-green family (§4.8, *"the oracle passes a peer that doesn't do the thing"*) with the
-  polarity turned outward, and the cheap habit it earns is one question at publication time: ***which
-  sentence in this document is a claim about what someone else can do with our artifact, and what
-  measures it?*** **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-- **L25 — read the section for its EXAMPLES, not only for the clause you came for. And a tightening
-  that closes no hole is not conservative.**
-  `[candidate, 2026-08-31 — `entity-core-go` refuted a ruling by building it, same day it was folded]`
-  Edit E pinned the default per-handler self-grant's `resources` to `["/{local_peer_id}/*"]`. go
-  implemented the rest of PD-1, **declined that clause**, and filed a measured receipt: mutated to that
-  shape, a default-scope handler's sub-dispatch to a foreign-namespace path **in its own store** returns
-  `403`, want `200` — breaking follow-mirrors. Their **control** proved the store holds the namespace,
-  so the `403` was the authorization encoding and not a store refusal. rust and go had each already hit
-  and fixed this; **the ruling re-introduced a regression two seats had paid for.** Withdrawn at
-  `0.8.2.3`.
-  **The text arch needed was in the section arch derived the ruling from.** §6.3 *Peers vs resources* —
-  quoted in the Q2 derivation for its orthogonality clause — continues: *"a grant with `peers` absent …
-  **may include resource paths like `/{remote_peer_id}/data/*` for cached copies**."* **Arch satisfied
-  the sentence it came for and forbade the example three lines later, in the same fold.** A worked
-  example is normative context showing the clause's intended reach; **a ruling that satisfies a
-  section's sentence while forbidding its example has misread the section.** This is **L11** on a
-  smaller object — L11 is *read the study that produced the design space*; L25 is *read the rest of the
-  paragraph you are already quoting.*
-  **The second half generalizes further and is the one to carry.** The network bound here was carried
-  **entirely** by `peers` — omitted → `{include: [local_peer_id]}`, still checked, measured on the wire
-  in all three trees — so a default-scope handler already could not dispatch at a foreign peer.
-  **Narrowing `resources` closed no hole that `peers` did not already close, and cost a legitimate
-  capability.** *A tightening that removes a capability without closing a hole is not a conservative
-  choice; it is a wrong one that looks careful* — and it is the hardest kind to argue against in
-  review, because caution reads as rigour.
-  **It also mis-applied an operator ruling by widening it.** The operator said a default *"doesn't
-  tighten anything because we don't force anyone to implement the default."* **True for handlers that
-  declare a scope.** But the handler grant is the §5.2 Dimension 3 **ceiling** on the in-process path,
-  so for a handler declaring nothing the default **is** its ceiling. **The silent case is not the
-  harmless case when the silent value is a ceiling** — go's sentence, sharper than arch's, and now in
-  §6.2. *An operator ruling is scoped to the case they were shown; widening it is arch's inference, not
-  their instruction.*
-  ***Enforcement point:*** **when a ruling narrows a field, (i) grep the owning section for a concrete
-  instance of that field and confirm the ruling still permits it, and (ii) name the hole the narrowing
-  closes and the dimension that would otherwise leave it open.** If another dimension already closes it,
-  the narrowing is pure cost and does not land. Mechanically checkable in review: a narrowing whose
-  rationale cites no hole, or whose hole is closed by a different dimension in the same grant, is the
-  violation.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-- **L23 — a rule has every normative home it is stated in, not the one the proposal names.**
-  `[candidate, 2026-08-22 — self-found, executing our own nine-day-old proposal]`
-  `PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS` retired the corpus-version rule. Its §3 scoped the
-  normative delta to **`GUIDE-CONFORMANCE` §5.1** and rewrote it in full. **`ENTITY-CBOR-ENCODING`
-  Appendix E states the same rule, normatively, in a different repo's core spec** — *"Conformance
-  reports MUST cite the version of `conformance-vectors-v{N}.cbor`"*, plus three further `v{N}`
-  references — and the proposal never mentions it. Had the ECF half shipped as §7 recommended, the
-  corpus would have been renamed out from under a live core-protocol `[MUST]` that still demanded the
-  old form. Caught only because executing the rename meant grepping for consumers of the filename.
-  **Why the proposal could not see it, and it is not carelessness.** §3 asked *"where is this rule
-  written?"* and answered from where the rule was **found** — the guide it was being read out of.
-  That is the same substitution L13 makes with routing (*file it where it was found*) and L8 makes
-  with artifacts (*the artifact names the thing, so it is the thing*). **A rule is not a location.**
-  A normative statement can be restated in any number of documents, each independently binding, and
-  the one you happened to be reading has no privileged status among them.
-  **The aggravating fact, because the proposal came within one layer of catching itself.** Its **§4b**
-  found that *two live conformance checks cite `GUIDE-CONFORMANCE §5.1`* — mechanically, from a
-  generated register — and correctly routed that delta. **So it did ask "who else depends on this
-  rule?" and asked it of code.** It never asked it of the corpus. Searching the implementations for
-  dependents and not searching the specs for **co-authors of the same rule** is a half-sweep that
-  reads like a whole one.
-  **This is L16 on the document axis.** L16: before ruling a cross-impl semantic, grep **every seat**
-  — tier membership predicts neither who owns a question nor who has answered it. L23: before
-  rewriting a rule, grep **every spec** — the document you found it in predicts neither where else it
-  binds nor how many places must move together. Both are `AGENTS-STANDARD`'s *prove a negative*
-  applied to an implicit "this is the only one," which is exactly a negative and was never searched.
-  ***Enforcement point:*** a proposal that **rewrites or retires** a normative rule MUST enumerate
-  every document stating it, by path, before the delta is written — and the §7-delta table names all
-  of them or the fold is partial by construction. Mechanically checkable and cheap: grep the corpus
-  for the rule's distinctive tokens (here `conformance-vectors-v{N}`, `corpus version`) across
-  **`specs/` and `guides/` in both repos**, not just the file being edited. `spec address` already
-  resolves which documents cite a changed section; **what it does not do is find documents that
-  restate a rule without citing it**, and that is the gap this rule covers by hand until a gate does.
-  ~~**Candidate: one incident.**~~ **Ratified 2026-08-30 on the second shape below.**
-
-  > **Second shape — the missed homes were in the SAME DOCUMENT, and the one that mattered shares
-  > none of the rule's vocabulary. That is what breaks the token grep the first shape prescribed.**
-  > `[2026-08-30 — found reviewing `entity-core-formalization`'s FM-1 proposal; ledger §1o]`
-  > Their proposal enumerated **five** normative sites for the pre-hello `authenticate` rule and
-  > rewrote `ENTITY-CORE-PROTOCOL` §4.7 row 10 on that basis. There are **eight**. The three missed:
-  > **§4.2** (*"The connection handler MUST enforce ordering: `hello` before `authenticate`"*),
-  > **§9.1**'s conformance MUST list, and **`ENTITY-CORE-MACHINE-SPEC` §6.4** — a second, stale,
-  > **declared-canonical** copy of the whole error table.
-  > **Why the first shape's enforcement point would not have caught it.** L23 as written says *grep
-  > the corpus for the rule's distinctive tokens*. §4.2 contains **neither** `invalid_nonce` **nor**
-  > `connection_sequence_error` — it states the same rule in the vocabulary of *ordering*. A token
-  > grep finds the rows that already agree and misses the site that created the disagreement. **The
-  > enumeration axis is the rule's SUBJECT — the input or behaviour it governs — and the tokens are
-  > only one of its spellings.**
-  > **And the missed site was the load-bearing one**, which is why this is a shape and not a tally.
-  > §4.2 is the likely *origin* of the contested reading: it states an ordering MUST with **no status
-  > and no code**, and §4.7's "out-of-order operation" row is a near-verbatim lexical match for it. Six
-  > cohort peers reached the wrong status by following two normative sentences correctly. Narrowing the
-  > row without touching §4.2 would have left a MUST with no emittable consequence — **L17** — so the
-  > missed home did not merely add work, it would have made the fix wrong.
-  > **The aggravating half, and it is the first shape's exact tell:** the proposal's own framing
-  > (*"the contradiction is internal to §4.7's table… the remedy is four words"*) was **true and
-  > complete about the table**, which is what made stopping there feel like rigour. A correctly
-  > localized defect is not evidence that the rule is localized.
-  > ***Enforcement point, now binding and broadened:*** a proposal that rewrites or retires a normative
-  > rule enumerates every home **by the rule's subject**, not only by its tokens — for each, ask *which
-  > sections state an obligation about this input or behaviour, in any vocabulary* — and the sweep
-  > covers **every `specs/` file in both repos plus every conformance/MUST list**, not just the
-  > document being edited. **A home that states the rule without naming its codes is the one most
-  > likely to be load-bearing and least likely to be found**, because it is where the obligation was
-  > created rather than where it was tabulated.
-
-  > **Third shape, 2026-08-31 — and it fired on the proposal that CITES L23, one day after
-  > ratification. The rule was correct and simply was not executed; what let that happen is
-  > SECTION-SCOPING.** `[self-found, folding FM-1]`
-  > `PROPOSAL-CONNECT-ERROR-CODE-RECONCILIATION` §1.2 reasons explicitly that a rule has homes
-  > beyond the one it was found in, invokes L23 by name, enumerates **eight** sites across two
-  > documents, and adds three that the filing seat missed. **There are nine.** The ninth is
-  > `ENTITY-CORE-MACHINE-SPEC` **§6.2** — *"`hello` before `authenticate` (enforced)"* — §4.2's
-  > defect reproduced verbatim, no status and no code, **four lines above the §6.4 table the
-  > proposal's own item E rebuilds.** Found only by opening the file to execute E.
-  > **The ratified enforcement point would have caught it.** It says enumerate *by the rule's
-  > subject, not only by its tokens*, across *every `specs/` file in both repos*. MACHINE-SPEC is a
-  > `specs/` file and was in scope. **So this is not a gap in L23; it is L23 not being run** — which
-  > is the more useful finding, because it has a cause.
-  > **The cause is that item E scoped MACHINE-SPEC to a section.** Once the proposal wrote *"§6.4 is
-  > an eighth site"*, MACHINE-SPEC was **on the list**, and being on the list is what a
-  > home-enumeration sweep is looking for. The document never came up again as *unsearched* — it came
-  > up as *handled*. **A document entered into the enumeration at section granularity silently exempts
-  > the rest of itself**, and it does so while making the sweep look complete, because the tally says
-  > the document was considered.
-  > **The same blind spot produced a second, older find in the same four lines:** *"All other paths
-  > without auth → reject 403"* — **F32's blanket 403**, corrected in `ENTITY-CORE-PROTOCOL` §4.2 at
-  > **0.8.1** and still live in MACHINE-SPEC two releases later. Nobody had looked. **Two for two in
-  > the only region of that document anyone has ever examined**, which is now the evidence for the
-  > full re-sync audit (FM-1j).
-  > ***Enforcement point, sharpening the ratified one:*** **a document enters a home-enumeration
-  > whole, never by section.** The moment any section of a document is named as a home for the rule
-  > being rewritten, that document is searched **end to end for the rule's subject** — a
-  > second statement of the rule is *more* likely in a document already known to restate it, not
-  > less. And **a document whose stated purpose is to mechanize another document** — a machine spec, a
-  > generator input, an SDK restatement — **is a home for every rule in its source**, by construction,
-  > whatever its section headings suggest.
-
-  > **Fourth shape, 2026-08-31 — the stale homes were RESTATEMENTS of a table, and the authority is
-  > the document MISSING the row. Nobody could have found it from the document that names itself the
-  > authority.** `[self-found, ruling `entity-browser-rust`'s window-index proposal]`
-  > They asked arch to mint a slot for the live window set. Searching first (**L7**) found
-  > **`app/state/layout` already declared** — in `GUIDE-PEER-CONCERNS-AND-NAMESPACES` §5.1 and
-  > `GUIDE-SDK-PATTERNS` §2, both canonical, both **published** — with no schema, no prose and no
-  > consumer anywhere in the corpus, and **absent from `GUIDE-ENTITY-WORKBENCH-APP` §4.2, the table
-  > §4.1.1 names outright as the authority** (*"the slot table (§4.2) enumerates the current
-  > cross-impl canonical types"*). §4.2's three-impl consensus had assigned arrangement to
-  > *"renderer-specific decoration … per-impl, not portable"* — **retiring the layout slot — and the
-  > two copies were never swept.** The corpus has been publishing a canonical type name its own
-  > authority decided against.
-  > **Why the prior shapes' enforcement points do not reach it.** All three say *enumerate the homes
-  > before rewriting the rule.* That is an instruction to the session doing the rewrite — and the
-  > rewrite here was §4.2's consensus, sessions ago, by someone else. **The defect is not in the
-  > enumeration; it is that nothing in the two copies says it is a copy.** A reader of either table
-  > sees a flat list of canonical type names with no pointer, so there is no signal to follow and no
-  > reason to suspect one. **The filing seat read the authority correctly and could not have found
-  > this**, which is the test: a divergence invisible from the authoritative document is not a
-  > reading failure, it is a structural one.
-  > **This is the preventive half the rule has been missing.** L23 so far is entirely a *sweep*
-  > discipline — do the search, and do it by subject. Sweeps are expensive, run once, and go stale
-  > the next time anyone edits the source. **A restatement that names its source makes the next
-  > sweep a grep instead of a search, and makes a reader of the copy self-correcting.**
-  > ***Enforcement point, additive to the sweep:*** **a document restating another's canonical table,
-  > schema, or enumeration names the authority in the restatement** — *"§X of DOC is the authority
-  > for this set; the rows here are the common ones, not the whole table"* — so a copy is readable as
-  > a copy. Mechanically checkable and cheap: a table of canonical names in a non-authoritative
-  > document with no pointer to its source is the violation. **And when a ruling retires or adds a
-  > row to an enumeration, grep the corpus for the enumeration's OTHER MEMBERS**, not for the row
-  > being changed — the sibling copies are found by what they still agree on, never by the token that
-  > is moving.
-
-- **L22 — a borrowed sentence is re-verified by the borrower, not the author.**
-  `[candidate, 2026-08-20 — the C-7 assignment; the filing seat offered to take the blame and arch
-  declined it]`
-  Arch assigned the multi-host cross-impl leg to `entity-core-go` and scoped it with
-  `entity-browser-rust`'s sentence: *"whenever anyone builds a second publisher, it drops in as an origin
-  plus a peer-id with no change to the rig."* **That sentence was true.** It was true of a **federation**
-  publisher — one emitting a registry, bindings and `transports` — because their rig's entry point is a
-  **registry pin** (`E2E_FED_REGISTRY`).
-  **Arch carried it onto a different subject.** go built exactly what the packet asked for: a
-  deterministic `http-poll` published-root fixture. It emits three blog entries, **no registry, no
-  binding, no `transports`** — so §1b's *"resolving name → binding → `transports` → fetch"* clause had
-  **no input at all**, and nobody noticed until the consumer was pointed at it.
-  **The offer arch declined, because accepting it would have put the rule in the wrong place.**
-  browser-rust wrote *"that is our sentence and we should have qualified it when we wrote it."* **No.**
-  An author qualifies a claim for the subject they are describing; they cannot qualify it for every
-  subject someone might later apply it to. **The verification obligation travels with the move, not with
-  the authorship** — and the party that moved it is the only one who knows the new subject. Letting the
-  filer take it would teach every seat to hedge every sentence against unknown future reuse, which makes
-  their reports worse, not better.
-  **Why it is not L8 and not L10.** L8 is *an artifact is not a conclusion about the thing it names* —
-  here the artifact was read correctly. L10 is *check the framing of a routed finding* — here the framing
-  was correct **for its own subject**. **This is the third position: a correct claim, correctly framed,
-  correctly read, and then re-pointed.** The failure has no tell in the source packet at all, because the
-  packet is not wrong; the error is created entirely at the moment of transplant.
-  **The aggravating detail:** the same fixture's own comment says *"the trie-walk closure root_hash →
-  leaves is **NOT** asserted by this fixture."* **The artifact announced its own scope, in the file, and
-  the assignment that adopted it never re-read the four clauses against it.** An honest artifact plus an
-  unchecked transplant still produces a mis-scoped assignment.
-  ***Enforcement point:*** **when a routing packet reuses a peer's sentence to scope work for a different
-  seat or a different artifact, re-derive it against the new subject and say so at the point of reuse** —
-  name what the sentence was originally true of. Mechanically checkable in review: a quoted claim in an
-  assignment whose subject differs from the subject in the source packet is the violation. And where the
-  assignment carries a multi-clause acceptance test, **read every clause against the proposed artifact
-  before assigning it**, which is the check that would have caught this one for free.
-  ~~**Candidate: one incident.**~~ **Ratified 2026-08-31 on the second shape below** — a different
-  mover, a different distance, and the enforcement point is the broadened one stated there.
-
-  > **Second shape — the mover was the FILING SEAT, not arch, and the transplant crossed one slot
-  > inside one file rather than one seat to another. Same property, and it shows the rule is not
-  > about arch.** `[2026-08-31 — the window-index ruling; arch caught it only by opening the tree,
-  > having already carried the sentence into the ruling draft]`
-  > `entity-browser-rust`'s proposal argued the `{window_id}` gap is portable rather than one impl's
-  > experience, and evidenced it with `entity-workbench-go`'s own comment: *"today the slot is
-  > write-only; future 'restore last session' … features read from it"* — filed as *"the same defect
-  > not yet triggered."* **The comment is on `SaveAlias`**, the shell-alias slot at
-  > `workspace/shells/aliases/{alias}`, **keyed by a user-chosen alias name.** An alias name is
-  > durable, so that slot has none of the defect. True sentence, wrong subject, one slot over in the
-  > same file.
-  > **The correction found something better, which is the half worth carrying.** Opening the tree
-  > for the *window* slot produced live evidence that is stronger than the borrowed sentence:
-  > `log_model.go:143` reads per-window state keyed on a session ordinal, into `updateWindowState`'s
-  > read-modify-write merge. So the seat is **not** *"not yet triggered"* — it is the same defect,
-  > live, on a read path. ***A borrowed sentence is usually standing where a real measurement would
-  > have gone, and the measurement is usually better than the quote*** — the same lesson L8's
-  > fifteenth form records for retractions, arriving on the transplant axis.
-  > **Why this ratifies rather than tallying.** The first shape was arch moving an app-tier sentence
-  > onto a different *seat's* artifact, and it was tempting to read the rule as *arch must be careful
-  > when relaying*. It is not about arch and it is not about distance: the failure is created at the
-  > moment of transplant, by whoever transplants, **and one slot away in one file is far enough.**
-  > Arch then reproduced it by carrying the quote into a ruling draft unchecked, which is the second
-  > mover on the same sentence.
-  > ***Enforcement point, now binding and broadened beyond routing packets:*** **any document that
-  > quotes another party's claim as evidence for a different subject — a packet, a proposal, a
-  > ruling, a status doc — re-derives it against the new subject at the point of reuse and names what
-  > the sentence was originally true of.** Mechanically checkable in review: a quotation whose subject
-  > differs from the subject in the source is the violation, whatever the two subjects' distance.
-  > **And where the source is a tree you can open, prefer the measurement to the quote** — the quote
-  > is a shortcut past the evidence, and the evidence is right there.
-
-- **L21 — folding is routing, to everyone, whether or not that was the intent.**
-  `[candidate, 2026-08-20 — `EXTENSION-COMPUTE` v3.24, caught by `entity-core-go` doing exactly the right
-  thing]`
-  T5 (COMPUTE) was **deferred by operator decision** on 2026-08-20 — sequenced behind the release, not
-  blocked. The decision was routed to `entity-workbench-go` as the track's **driver**, and to nobody else.
-  Arch then **folded `EXTENSION-COMPUTE` 3.23 → 3.24 into the published corpus the same day.**
-  `entity-core-go` reads the corpus directly, correctly applies *"go leads on new features,"* measures the
-  primitives absent everywhere, and ships all four — inside a deferral week, against a §3.5 carrying three
-  under-specifications and one clause that **contradicted a cross-impl ruling this corpus had already paid
-  to reach** (§2.2's `index_out_of_range`, F-2 — that seat had been ruled wrong on the exact question and
-  fixed it, and v3.24 told them to do it again one operation over).
-  **Nothing that seat did was wrong.** The work is green, gated, and its ambiguities were routed rather
-  than assumed. **The defect is that arch published a work order into a track it had just paused.**
-  **Why the deferral did not travel, and it is structural rather than an oversight.** A deferral is a fact
-  about a **track**, and tracks live on `WORKSTREAMS.md`, which peers do not read. **The corpus carries no
-  track state** — no sentence in `EXTENSION-COMPUTE` says "this extension is sequenced behind the
-  release," and there is nowhere good to put one, because a spec is written for an implementer who has
-  never heard of this cohort and the *spec text is not our log* rule correctly forbids it. So the only
-  signal the cohort could read was **the version bump**, and a version bump says the opposite of "paused."
-  **This is L13 with the roles swapped, which is why it is its own rule and not another instance.** L13:
-  *a record that a seat owes something is not a delivery to that seat* — filing **under**-delivers.
-  **L21: a fold **over**-delivers.** It reaches every seat that reads the corpus, unaddressed, carrying no
-  sequencing, and it is the one arch action that **cannot** be scoped to an audience. The two look nothing
-  alike from inside: L13's failure is silence, L21's is a broadcast nobody chose to send.
-  **The aggravating fact:** T5's own deferral note said lever 1 was *"RULED … FOLDED 2026-08-20"* **and**
-  *"the builtin is implemented nowhere."* Both true. Read by the seat that leads new features, that pair is
-  not a status — **it is an assignment** — and it was published where they would find it while the
-  decision to wait was published where they would not.
-  ***Enforcement point:*** **before folding into a track that is HELD or DEFERRED, route the sequencing to
-  every seat that could reasonably act on the fold — not only the track's driver.** The driver is who the
-  track waits *on*; the actor is whoever reads the corpus and owns that class of work, and for a new
-  primitive that is whichever seat leads new features. Mechanically checkable: a fold whose spec belongs to
-  a non-ACTIVE track, with no same-session routing to the tier that implements it, is the violation. The
-  cheap habit is one question at fold time — ***who will read this version bump as an instruction?***
-  ~~**Candidate: one incident.**~~ **Ratified 2026-09-01 on the second shape below** — a guide, and a
-  consumer relationship no arch process looks for. The enforcement point is the broadened one there.
-
-  > **Second shape — the fold was a GUIDE, the consumer was a PIN, and the seat found it themselves
-  > because their manifest hash stopped matching. Arch never knew it had shipped into someone's
-  > build.** `[2026-09-01 — `entity-core-keystone`, during the sweep arch had just authorized]`
-  > The de-versioning fold rewrote **`GUIDE-CONFORMANCE` §5.1** — a `[MUST]` retiring integer corpus
-  > versions for `(spec-version, corpus-name, artifact sha256)` — plus a new §5.1a. The document moved
-  > `7d59fee6… → f7d4191d…`. **`entity-core-keystone` pins arch documents by hash in
-  > `spec-data/v0.8.2/MANIFEST.md`**, and that manifest still pinned the old one. Their sentence is
-  > the finding: *"that MUST governs how this repo vendors its test corpora, so it is a change to **our
-  > inputs**, not to arch's prose — a pinned input that moves silently is the defect the pin exists to
-  > prevent."*
-  > **Why the first shape's enforcement point does not reach it.** L21 as written asks, at fold time,
-  > *who will read this version bump as an instruction* — a question about **spec** changes and the
-  > seats that **implement** them. **This fold changed a guide, and guides read as arch's own
-  > documentation**: no version bump, no implementers, nothing that looks like a work order. The
-  > delivery still happened, silently, into a build.
-  > **The generalizable half is the consumer relationship, not the document class.** A seat can consume
-  > an arch document three ways — **implement** it, **cite** it, or **pin/vendor** it — and only the
-  > first is visible from arch's side. **A pin is a consumer relationship that is invisible to the
-  > party being pinned**, by construction, and it is the one that breaks silently: an implementer who
-  > misses a change is merely behind, while a pinner who misses one has a manifest asserting a
-  > verification it no longer performed.
-  > **What makes this ratify rather than tally:** the first shape is arch **over**-delivering (a fold
-  > reaching a paused track), this is arch **under**-delivering to a seat it did not know was
-  > downstream — and both come from the same missing question. The fold asked *who implements this*
-  > and never *who consumes this*.
-  > ***Enforcement point, now binding and broadened past specs:*** **before folding a change to any
-  > canonical document — spec, guide, schema, corpus — grep the cohort for seats that PIN or VENDOR
-  > it, not only seats that implement it, and route to them in the same session.** Mechanically
-  > checkable and cheap: **the pins are declared** — `grep -rl <doc-name>` across the cohort's
-  > `MANIFEST`/`spec-data`/vendor directories names every seat holding a hash of the file being
-  > edited. A guide with a `[MUST]` in it is a build input to whoever pinned it, whatever the folder
-  > it lives in says.
-
-  > **Third shape, 2026-09-02 — ENFORCING A DORMANT FIELD IS A FLAG DAY, and the ruling has to say so
-  > because only arch can see it coming.** `[self-found, folding FM-2; the partition is recorded in
-  > `entity-core-py`'s own source comment]`
-  > **Corrected the same day by the operator, and the correction is the more important half — see the
-  > note below this entry. The original wrote the lesson as "the seats should not have implemented
-  > ahead of the fold." That is wrong, and it inverted the actual failure.**
-  > FM-2 §2 ruled `ENTITY-CORE-PROTOCOL` §4.7 row 1 — *"not aspirational; §4.5 already pins
-  > `protocols` as intersection-must-be-non-empty, so this is a conformance gap, and **the row needs
-  > no spec change.**"* Correct on every clause. What it did not say is that the field **had been read
-  > by nothing**, so the moment the first seat enforced it, every seat still advertising a wrong value
-  > became unreachable. `entity-core-py` had advertised `entity-core/7.0` since Genesis — invisible
-  > for the life of the project — and **the day `entity-core-go` landed the check, py could no longer
-  > dial a go peer.** Same-day fix, and the break is what surfaced the Genesis defect, so the outcome
-  > was good. **The outcome was not the sequencing.**
-  > **Why it is L21 and not a new letter.** L21's property is that arch cannot scope who a corpus
-  > change reaches. The first shape is a fold reaching a seat that should have waited; the second is a
-  > fold reaching a seat through a pin nobody knew existed. **This is the same blindness on the time
-  > axis: not *who* the fold reaches but *in what order*, and what is broken in between.** A ruling
-  > that changes what peers **accept from each other** has a cost that exists only during adoption and
-  > is invisible in both the before state and the after state — which is exactly why no review catches
-  > it.
-  > **The tell is mechanical and cheap: was the field previously read by anything?** A field that
-  > nothing enforces cannot hold a wrong value *visibly*, so wrong values accumulate in it silently and
-  > **the first enforcement is a discovery event, not a no-op.** *"This is a conformance gap, not a
-  > spec change"* is precisely the sentence that makes a flag day sound free — it is true, and it
-  > describes the destination while saying nothing about the transition.
-  > **The other half, and it is L16 again.** Both seats recommended a cohort ruling on the adjacent
-  > arm (`protocols` absent/empty) having searched **only the three ground-up trees**; the generated
-  > tier already implemented the opposite, and passes conformance doing it. **Two seats agreeing about
-  > a dormant arm is not a cohort position** — and `entity-core-py` said so themselves, in the filing,
-  > while still recommending it: *"two seats declining to widen an unruled divergence, not
-  > convergence."* When a seat writes that sentence, it is the finding, not a caveat on it.
-  > ***Enforcement point:*** **a ruling that makes a previously-unenforced field or check load-bearing
-  > names its DIVERGENCE UNIT — what refuses what, between the first seat landing it and the last.**
-  > Mechanically: for any ruling that changes what a peer **accepts** (rather than what it emits), ask
-  > *what breaks during adoption*, and if the answer is "connections," say so in the fold text. **The
-  > information is arch's to supply and the sequencing is the seats' to choose** — they are the ones
-  > who know what is deployed against what. What is forbidden is arch knowing a ruling is a flag day
-  > and not saying it, so the seat that gets refused is the one who finds out.
-  >
-  > > **Same shape on the ROW axis, 2026-09-06 — and it fired on a fold whose §7 said *"not a flag day,
-  > > no divergence unit"* and whose §8 said *"no open items from this fold."* Both were wrong, and the
-  > > second was wrong the moment anyone implemented the first.** `[self-found, ruling the packet that
-  > > implementing it produced]` `EXTENSION-TREE` **v4.4** tabulated `put`'s error codes — for an
-  > > operation that, on any seat, **had never been driven by a conformance check.** Implementing it
-  > > returned five under-specifications, one row naming an operation the protocol does not define, and
-  > > a live cohort break in which **no rust or py SDK can `put` to a go peer at all** (each seat's
-  > > lenient peer and hash-stripping SDK sit in the *same tree*, so both round-trips work and neither
-  > > seat's suite can see it — the defect is observable only across a seat boundary).
-  > > **The tell is mechanical and it is about the fold, not the rule.** *"Is there an existing
-  > > conformance check for this operation?"* If no, **the fold is not describing behaviour — it is
-  > > commissioning a first measurement**, and the first measurement of anything finds something. A
-  > > dormant *field* going load-bearing is the third shape; a dormant *row* is the same event with the
-  > > divergence hiding in the inputs the row's own vector does not carry, which is why a per-row author
-  > > cannot see it either.
-  > > ***Enforcement point, additive:*** **a fold that adds conformance rows for a surface no check
-  > > currently drives MUST NOT close with "no open items."** State instead what the first run is
-  > > expected to surface and who takes it. Mechanically checkable at fold time: a proposal whose delta
-  > > adds normative rows, where `spec census`'s `unobserved-must` covers that surface, and whose open
-  > > items are empty, is the violation.
-
-  > **Fourth shape, 2026-09-02 — the relay scoped the fold by WHAT THE SEAT HAD SHIPPED instead of by
-  > the fold's DIFF, and the sentence that did the damage was the reassuring one.**
-  > `[caught by `entity-core-rust`, whose rule this is]`
-  > `0.8.2.4` split §4.7 row 10 and, in the same edit, **moved the state half's status 400 → 409.**
-  > Everyone landed the unknown-**name** half. **Nobody was told about the status move** — not by
-  > arch's packet, not by go's. Arch's relay section said *"rows 1 and 10 as you built them are
-  > conformant; nothing you shipped moves."* **Both clauses true. Neither is a statement about a row
-  > the seat had never shipped**, and rust was answering an out-of-order input with `400
-  > handshake_failed` and a second `hello` with `400 authentication_failed` — **pairs that appear in
-  > no row of §4.7 at all.**
-  > **Why this is not L22 and not the third shape.** L22 is a *borrowed* sentence re-pointed at a new
-  > subject; this sentence is arch's own and about the right subject. The third shape is about what
-  > breaks *during* adoption. **This is a scoping failure at the moment of relay: the worklist was
-  > derived from the recipient's current state rather than from the change**, so every row the seat
-  > had already implemented was checked and every row it had *not* was invisible. **A fold's audience
-  > is defined by the diff, and a seat's existing behaviour is exactly the wrong index for it.**
-  > **The tell is the genre of the sentence.** *"Nothing you shipped moves"* is a **reassurance**, and
-  > reassurances are not audited the way instructions are — nobody re-derives a sentence whose
-  > function is to let the reader stop reading. It is the same property that makes *"filed, not
-  > yours"* (L13's second shape) worse than silence: **a packet that tells a seat where not to look
-  > produces confident wrong work.**
-  > ***Enforcement point, and it is rust's, adopted verbatim:*** **before scoping a relay, read the
-  > fold commit's own diff and its §9.1 conformance block, and report the items the relay did not
-  > name.** A relay that cites a spec **version** has a boundary — *the version's diff* — and the
-  > recipient's worklist is that diff minus what they already do, **computed in that order**. Never
-  > write a clean bill of health for a fold without having read the fold.
-
-  > **Fifth shape, 2026-09-03 — the fourth shape recurred on the APP TIER, sixteen days after it was
-  > ratified, because its enforcement point is written in core-spec vocabulary and an
-  > `APP-CONVENTION-*` fold has none of the nouns it names.** `[self-found, taking app-tier bearings]`
-  > `APP-CONVENTION-SHARE` v0.1 landed 2026-08-18 (`bb86cd1`) pinning **three** type tags —
-  > `app/share/record` · `audience-entry` · `follow`. The 08-17 Q2 ruling that preceded it announced
-  > only the **prefix** (`app/share/*`) and said the convention *would* specify a vocabulary.
-  > `entity-browser-rust` shipped `98f8855` on 08-24 emitting **`app/share/manifest`** — built from
-  > the ruling, six days after the fold, and **no packet naming the tags was ever addressed to that
-  > seat.** Measured 2026-09-03: their tree has **zero occurrences of any of the three**;
-  > `entity-workbench-go` emits all three; **the intersection in product code is empty.**
-  > **Why the fourth shape's enforcement point did not fire.** It says *read the fold commit's own
-  > diff **and its §9.1 conformance block**, and report the items the relay did not name* — every
-  > noun of which is a **core-spec** noun. An application convention has no §9.1, no `0.8.2.x` fourth
-  > component, and no version bump the cohort watches. **So the rule reads as not applying, and the
-  > fold went out with no relay at all** rather than with a badly scoped one. That is the more
-  > dangerous variant: the fourth shape produces a *wrong* worklist, this produces *no* worklist, and
-  > a seat that was never written to has nothing to notice.
-  > **The aggravating half is that the seat was waiting.** Their own board still lists
-  > *"`APP-CONVENTION-SHARE` §2 authored — **the one thing blocking us**"* as open. **The thing they
-  > were blocked on landed and the fold told nobody**, so a correct blocker row aged into a wrong one
-  > while the seat did the work anyway, from the last text it had.
-  > **And this divergence class is the one the cohort cannot self-correct.** L26's standing comfort is
-  > that seats discover divergence by intercommunicating. **That is true of byte-level mismatches and
-  > false of naming**: a `type_filter` query over the wrong tag returns a correct, complete, empty
-  > answer, so both seats stay green forever and neither ever holds the other's entity. **A naming
-  > divergence has no discovery path except someone reading both trees.**
-  > ***Enforcement point, generalizing the fourth shape past the core spec:*** **every canonical
-  > document has a fold audience, and for a document that pins a VOCABULARY — type tags, slot names,
-  > operation names, enum values — that audience is every seat that emits or reads one of those
-  > names.** Mechanically checkable and cheap: **on folding a vocabulary, `grep` the cohort for the
-  > names being pinned AND for the names they replace**, and route to every seat that hits either.
-  > The seats are found by what they *currently* emit, never by what the fold says they should — which
-  > is the fourth shape's *"scope by the diff, not by what the seat shipped"* pointed at a document
-  > class that has no diff a peer can read.
-
-- **L26 — the cohort discovers by building. ARCH'S failure mode is not folding what they built, and
-  a rule that tells them to wait is a rule pointed at the wrong party.**
-  `[**RATIFIED** 2026-09-02 — operator correction, on a constraint arch had written into two proposals
-  and three packets in two days]`
-  Arch wrote ***"no seat implements ahead of the fold"*** into FM-2 §7 and PD-2 §8, routed it three
-  times, and then — when all three seats built anyway and one adoption briefly partitioned the cohort
-  — recorded the partition as *the constraint was right and they ignored it.* **The operator's
-  correction:** draft to implementation to feedback to folding is practically the normal way of
-  working here, and discovery happens through implementation a lot. The failure on this side is
-  the opposite one: not folding something that has been adopted and implemented, and leaving it
-  in a proposal instead.
-  **The lifecycle is not proposal-then-build. It is proposal → build → feedback → fold**, and the
-  build is where the proposal gets tested. Every strong finding in this record arrived that way: go
-  refuted Edit E **by building it**; go found PD-2's check constructible **by tracing a driver arch
-  had not imagined**; py found the §4.5 vocabulary gap **by implementing row 1**; rust corrected a
-  probe **by running it**. A rule forbidding that would have suppressed all four.
-  **Where the bad rule came from, and it is worth knowing because the impulse recurs.** It was
-  reverse-engineered from a real cost — staggered adoption partitioned the cohort for a few hours —
-  and arch reached for the remedy that constrains *the other party*. **The same cost has a remedy on
-  arch's side** (name the divergence unit, above) which costs the cohort nothing and removes no
-  discovery. *When a failure has a remedy that restricts peers and a remedy that adds information,
-  the second one is nearly always the right one, and the first is nearly always the one arch reaches
-  for* — because arch writes the rules and peers do not.
-  **The real failure is the mirror image and it is arch's.** A proposal whose deltas the cohort has
-  already implemented and confirmed, left sitting in DRAFT, makes the corpus a **trailing indicator
-  of its own cohort** — the seats are conformant to something the spec does not say yet, new seats
-  read the stale text, and the proposal accumulates the corrections that should have been folded.
-  **Measured 2026-09-02: nine proposals sat in `active/` whose own status header said the edit had
-  landed**, some for weeks — the `spec ledger` `proposal-state-mismatch` rule had been reporting
-  exactly this and the count had never been burned down. All nine verified against the specs and
-  moved the same session; the ledger gate went to **0 errors for the first time.**
-  **This is L13's fourth axis** — *an arch-owned item whose remaining work is an EXECUTION rather
-  than a decision is done in the session that decides it* — arriving on the fold. The question that
-  axis asks (*what would I have to learn before doing this?*) answered **nothing** for all nine.
-  ***Enforcement point:*** **when a ruling has been implemented and confirmed by the seats it
-  addresses, folding it is the same session's work, not a backlog row.** A proposal may stay DRAFT
-  only while something is genuinely unknown — and *"waiting for the seats to confirm"* stops being
-  unknown the moment they report. Mechanically checkable and already built: **`spec ledger`'s
-  `proposal-state-mismatch` count is the fold debt, and it ratchets to zero.** Corollary for the
-  drafting side: **do not write a constraint into a proposal that tells seats to hold off building.**
-  State what is unknown and what would resolve it; the seats decide whether to build against a draft,
-  and their answer is usually yes, and that is the point.
-
-- **L20 — an example set cannot falsify a rule it does not span.**
-  `[candidate, 2026-08-19 — caught by `entity-browser-rust`; third instance of one shape]`
-  Auditing their `is_broad` classifier, arch checked it against **§4.1a's six default rows**, found one
-  error (`a.b` classed broad — the direction that refuses a valid config), and published that as the
-  finding. **`*.lab` classed NARROW and was missed** — the direction that *accepts a leaking chain*.
-  Any fixed trailing literal satisfied their test, so **every unreviewed namespace was narrow by
-  default**, which is precisely the inference §4.1b.1 forbids. `*.lab → did-web` passed their validator.
-  **The six rows were structurally incapable of finding it:** none of them contains an *unenumerated*
-  suffix, because they are the rows the spec blesses. **A test set drawn from the blessed cases cannot
-  surface the unblessed one**, and treating a pass over it as an audit is the error.
-  **Third instance of one shape, which is why it is worth a rule rather than a note.** Row 3 of the
-  name-constraints check transplanted rows from a sibling vector without checking the input domain;
-  ceiling row (d) named `pinned` without checking reachability; this checked six examples and concluded
-  about a rule. **Each time the example set was the artifact and the rule was the thing** — L8 one level
-  up, where the artifact is a set of cases rather than a file.
-  ***Enforcement point:*** when auditing a classifier, matcher, or predicate, **enumerate the input
-  space by the rule's own structure, not by the examples the spec ships** — for each clause of the
-  definition, construct one input that satisfies it and one that does not, including the cases the spec
-  never mentions. And **check both failure directions separately**: over-accept and over-refuse are
-  different bugs with different costs, and finding one says nothing about the other.
-  **The corollary, which is theirs and is better than the rule:** their doc comment claimed the
-  classifier was *"deliberately conservative… calling a broad pattern narrow is what leaks"* while the
-  code did exactly that. **A comment asserting a safety direction is a claim to test**, not context to
-  read past — and it is the highest-value line in a file to write a test against, because it is where
-  the author has told you what they believe.
-  **Candidate: one incident, third shape.** Honor it; do not claim it generalizes.
-
-- **L18 — a cohort implementation is not evidence that a cohort ruling is right.**
-  `[candidate, 2026-08-19 — operator correction: "we don't take any of our own work as our own
-  self-validation"]`
-  `EXTENSION-REGISTRY` §4.1 step 2's kind-scoped-vs-chain-scoped question was ruled, and the ruling led
-  with *"it is what the only built implementation does"* — `entity-browser-rust`'s `validate_rules`
-  taking no `resolver_chain`. **That is circular.** browser-rust is our own cohort, the code is a
-  proof-of-concept written under delivery pressure, and **the question was never posed to them** — they
-  wrote a function and it happened to take one parameter list. Ratifying it as an argument is ratifying
-  our own guess and calling the echo a second opinion.
-  **It is `AGENTS-STANDARD`'s "cohort-consistent, not independent convergence" one layer up**, and that
-  standard already forbids it for conformance numbers. The same objection kills the *"three seats
-  converged"* form: three seats agreeing is three seats agreeing, and in this instance **all three
-  converged on a rationale that the spec's own neighbouring paragraph refutes** (the "silent arming"
-  argument — §4.1 already binds the configuration as a whole, so the arming edit is itself a checked
-  write). **Agreement is not derivation, and unanimous agreement on a wrong reason is the failure mode
-  that looks most like validation.**
-  **What a shipping implementation is legitimately good for:** evidence a reading is **implementable**,
-  that it is cheap, and that a practitioner under real constraints reached for it unprompted. That is a
-  sanity check on a conclusion reached elsewhere — never the conclusion, and never the lead.
-  ***Enforcement point:*** a ruling states its **derivation first** — from the spec's own text, the
-  obligated party, and the failure costs — and cites cohort implementations **last, labelled as
-  corroboration.** The operative test: *if every seat had implemented the other reading, would the
-  argument change?* If yes, it is not an argument. L0 already says reason from first principles and not
-  from what a peer produced; this is that rule pointed at **our own peers' code**, which is the case it
-  did not obviously cover.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-  > **A save, not a second incident — recorded because it is the cleanest evidence this rule will
-  > ever get, and it arrived in twenty-four hours.** `[2026-08-31 — FM-1]`
-  > `entity-core-formalization`'s draft led with **"four sites against one"** and a source-read census
-  > of 29 / 6 / 11. Arch ruled the same direction but **replaced the vote with a derivation** — §4.6
-  > step 1's own replay rationale, RT-6's adjacent ruling, §4.6's status ladder — and applied L18's
-  > operative test explicitly in §6 Q1 point 5: *if every seat had implemented the other reading,
-  > would the argument change?*
-  > **The next day `entity-core-keystone` measured it on the wire and the count moved: 38 / 6 / 1.**
-  > More importantly their **control run** — the same `authenticate` *after* a valid `hello` — showed
-  > **39 of 45 peers answer identically either way.** They never model the case; they fall through to
-  > the nonce check and find nothing. **So the 38–6 majority is 6 considered decisions and 38
-  > fall-throughs**, and read as a vote it *inverts*: the only peers that reasoned about connection
-  > sequence chose the other answer.
-  > **Arch withdrew its own corroboration clause and the ruling did not move**, because nothing was
-  > standing on it. Had the ruling shipped in the filed draft's framing, the correct response to
-  > keystone's measurement would have been to **reopen a settled cross-impl semantic** after three
-  > seats had already built against it.
-  > **Two transferable halves.** *(1)* **A vote is not just weak evidence; it is evidence that
-  > expires**, and it expires on someone else's schedule. A derivation from the spec's own text has
-  > no such clock. *(2)* **A cohort majority can be an artifact of which answer is cheaper to reach.**
-  > Row 6 is what a peer emits by *not* implementing the case. Before citing cohort weight, ask
-  > whether the majority position is one a peer arrives at by **deciding** or by **falling through** —
-  > and note that a source read cannot tell the difference, which is why keystone's control existed
-  > and why it is the thing to ask a measuring seat for.
-
-  > **Second shape, 2026-09-02 — and it ratifies. The citation was labelled CORROBORATION, which is
-  > exactly why nobody checked it, and it was false about both peers it named.**
-  > `[caught by `entity-core-go`, who read the source; arch had not opened either file]`
-  > `ROUTING-2026-09-02-d` §3 grounded the FM-2e ruling on **L16**: *"keystone's csharp
-  > (`ConnectHandler.cs:70`) and typescript (`connect-handler.ts:80`) already require the field and pass
-  > conformance."* Both peers do the **opposite** — `Ecf.Require` throws a generic handler error on an
-  > absent field, and an **empty** array falls to `!protocols.Contains(version)` → **`incompatible_protocol`**,
-  > which is the reading `0.8.2.4` forecloses in its own sentence. Arch cited the anchor as evidence for
-  > reading 2 while the anchor implements reading 3.
-  > **Why it is a distinct shape and not another tally.** The first incident is **circular** — our own
-  > cohort's code offered as validation of our own ruling. This one is **false**: the corroboration was
-  > not weak evidence, it was a claim about two files nobody had opened, published to the cohort with a
-  > `file:line` attached. **A `(path, line)` in a corroboration clause reads as a source read and is
-  > indistinguishable from one.**
-  > **The mechanism, and it is the transferable half: a supporting citation gets LESS scrutiny than the
-  > argument it supports, while carrying the same factual weight.** Review effort tracks what a sentence
-  > is load-bearing *for*, not whether it is *true* — so labelling a clause "corroboration, cited last
-  > per L18" **lowers its scrutiny without lowering its cost if wrong.** The rule that was supposed to
-  > demote cohort evidence had, in practice, created a class of claim that is published unchecked. That
-  > is L18 being obeyed in form and defeated in substance.
-  > **The ruling did not move, which is the trap and the reason it nearly stood.** FM-2e derives from
-  > §4.5 plus §4.7's own `invalid_request` class list (*"a missing or empty required negotiation field
-  > (§4.5)"*) — landed text, both legs, no cohort behaviour anywhere in it. **A false clause under a
-  > correct conclusion breaks nothing downstream**, so only a seat that opens the file finds it — the
-  > same property recorded in L8's fourteenth and fifteenth forms, now on the corroboration axis.
-  > **And it had a live consequence the derivation did not:** because the anchor implements reading 3,
-  > `entity-core-go`'s `connect_absent_protocols` **FAILs every generated peer** — correctly. Had the
-  > false clause stood, the obvious response to that red run would have been *"the check is wrong,"*
-  > since arch had published that these peers already conform.
-  > ***Enforcement point, and it is the cheap one:*** **a corroboration citation is verified in the tree
-  > at a named commit exactly like a load-bearing one — or it is deleted.** Deleting is usually right:
-  > a ruling that still stands without it never needed it, and a ruling that needs it was not derived
-  > (which is L18's first shape). Mechanically checkable in review: **a cohort `(repo, path, line)` in a
-  > clause marked *corroboration*, *supporting*, *cited last*, or *for what it is worth*, with no
-  > commit beside it, is the violation.** The habit is one question before publishing a supporting
-  > clause — ***if this sentence were false, would I want to know?*** If yes, check it. If no, cut it.
-
-- **L19 — say which kind of "vector," and check the corpus before inventing the taxonomy.**
-  **`[RATIFIED 2026-08-20 — second shape: a class declared, from the right table, wrong row, without
-  opening the section that owns it]`**
-
-  **Second shape, and it earned ratification by firing on the packet that invoked the rule.**
-  `PROPOSAL-COMPUTE-V324-CORNERS` §5 declared four owed vectors as **"fixture-corpus vectors (static
-  `.diag` + canonical `.cbor`, arch-authored),"* citing `GUIDE-CONFORMANCE` §7.0 — and **cited it while
-  invoking L19 by name.** §7.0's *fixture corpus* row is byte-level data **for ECF / crypto-agility**,
-  homed in `entity-core-protocol/specs/test-vectors/`. **An evaluator-behaviour check is not that**, and
-  no amount of `.diag` would have made it one. The real home is **§7c** — the compute differential
-  corpus, shape `(IR, root bindings, budget) → { boundary-hash | error{code} }`, ownership split
-  arch-guides / cohort-builds — and **`EXTENSION-COMPUTE` §11.6 points at it by name**, in the spec being
-  folded.
-  **Why the second shape is worse than the first and not merely another tally.** Shape one *omitted* a
-  class, and an omission is visible — a reader asks *"which kind?"* **Shape two names a class from the
-  correct table.** It reads as compliance, survives review, and routes work to the wrong authoring split
-  with a citation attached. **Declaring a class is not the discipline; opening the section that owns it
-  is** — and the first version of this rule said *"check the corpus,"* which was satisfied in letter by
-  reading one table.
-  **The cost had it shipped:** four vectors routed to the wrong seat's authoring split, into a directory
-  built for crypto agility, **against a corpus that already existed and would have absorbed them for
-  free** — and whose own first run produced **F-2**, the ruling this very session was restoring.
-  ***Enforcement point, now binding and broadened:*** naming a class from §7.0's table is **not
-  sufficient** — **open the section that owns the surface under test and confirm the class from there**,
-  because §7.0 is an index and the owning section is the authority. For anything evaluator-, IR- or
-  compute-shaped that is **§7c**; for wire/encoding it is §§1–6; for behavioral-over-the-wire it is the
-  `validate-peer` register. **And state the ownership split with the class** — who authors the case, who
-  emits the boundary, who cross-blesses — since that split is the thing a wrong class silently corrupts.
-
-  **The first instance — no class declared at all.**
-  `[candidate, 2026-08-19 — operator correction; and L7's sixth instance]`
-  Two behavioral checks were pinned into `EXTENSION-REGISTRY` as bare **"vectors."**
-  **`GUIDE-CONFORMANCE` §7.0 is titled *"Three different things are called a 'vector' — say which
-  one"*** and carries the table: a **`validate-peer` check** (behavioral, over the wire, oracle-authored),
-  a **fixture-corpus vector** (static `.diag` + canonical `.cbor`, arch-authored), an **impl-internal
-  unit/property/fuzz test**. It also carries the routing rule for who authors each. **The rule existed,
-  in this repo, in a guide this team maintains, and it was not opened** — L7 again, sixth instance.
-  **Why the word matters and it is not filing hygiene.** The three have different authors, different
-  homes, and costs that differ by orders of magnitude. **A pure-function check any seat satisfies in-tree
-  with no harness, and a behavioral check needing harness capability nobody has built, both report as
-  "3-way green"** — one level of assurance claimed, two delivered. An undeclared item also routes work to
-  a seat that does not author it, which §7.0 records happening three times.
-  **The compounding half:** `GUIDE-CONFORMANCE` §5.2b.1 further requires that **before a check is pinned
-  MUST, the state it requires be shown constructible by a conformance client**, with the satisfaction
-  mode stated at the point of the MUST. `REG-TTL-CEILING-REREAD-1` was pinned while *knowing* no harness
-  could reach it — recorded in a parenthetical instead of the declared vocabulary. **Chasing the real
-  cause found the actual defect:** `system/capability/registry-configure` was declared as a bare
-  **tree-write** with **no operation defined**, so there was nothing to drive, nothing to refuse at, and
-  nowhere to carry the operator override — the identical *"this capability named an act the corpus never
-  defined"* hole §6a.9.2 already records for issuer-policy. **The unconstructible check was a symptom of
-  a missing operation, not a harness gap**, and only §5.2b.1's question surfaced it.
-  ***Enforcement point:*** every conformance item a spec pins **declares its class** per
-  `GUIDE-CONFORMANCE` §7.0 and its **satisfaction mode** per §5.2b.1. Landed as a `[MUST]` in
-  `SPECIFICATION-FORMAT` §8.5, so it is an authoring standard the linter can grow a rule against rather
-  than a habit. **And when a check turns out unconstructible, look for the missing surface before
-  declaring an exclusion** — an exclusion records the gap, and the gap is often a spec defect.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-- **L17 — a `[MUST]` that names a value needs a place to put it and a check that reads it.**
-  `[**RATIFIED** 2026-08-20 — second shape: a MUST naming a **capability**, with no encoding a grant
-  can carry]`
-
-  **Second shape, and it is what earned ratification.** The first instance was a MUST naming a
-  **value** (`max_ttl`) with no declared config site — four seats, three keys. The second is
-  `EXTENSION-REGISTRY` §4.3's pin-delta `[MUST, v1.19]`: *"a write that changes `pinned_bindings`
-  additionally requires `system/capability/registry-pin`."* **The behavior is unambiguous and all
-  three core seats implemented it correctly. What the spec never said is how a capability *expresses*
-  pin authority** — and V7 scopes a grant on exactly two axes, `path-scope` resources and `id-scope`
-  operations, of which **the path axis is explicitly non-portable** (*"peers that diverge remain
-  conformant"*). §4.3 made `registry-pin` and `registry-configure` name **the same operation**, so no
-  conformant grant can tell them apart, **so a portable conformance vector cannot mint one without the
-  other** — and a harness minting one seat's encoding against another seat's peer fails a *conformant*
-  peer. Same disease, different organ: **the rule was right, and there was nowhere for the agreement
-  to live.**
-  **The aggravating fact, and it is the reason this ratifies rather than tallying:** §4.3's own
-  paragraph **diagnoses the defect it then reproduces.** It says a bare tree-write *"cannot refuse
-  selectively, cannot carry a qualifier, and **cannot be distinguished from any other write to the
-  same entity**,"* then fixes the first two and leaves the third. And §5's maintained rule — *"a new
-  row is not landable without naming the operation the check runs at"* — **was satisfied in letter and
-  not in substance**: `registry-pin`'s column names *a condition on another row's operation*, which
-  reads as compliance and is not. **A rule written at the width of its first incident (there, "a bare
-  tree-write") passes the case it was not written for**, which is L14's lesson arriving on a different
-  rule.
-  ***Enforcement point, now binding and broadened:*** before a normative `[MUST]` naming a **value, a
-  capability, a config key, or any other named authority** lands, confirm **(i)** the thing has a
-  **declared site a peer can carry** — a schema key for a value, an **operation name** for a
-  capability, never a runtime condition or an opaque `hints`-shaped bag — and **(ii)** a conformance
-  vector that **reads it**. Absent either, the ruling is not landable and that gap is the finding.
-  **The mechanical check for the capability axis:** a capability table row whose operations column
-  does not contain a string a grant's `id-scope` could literally match is a defect, and it is a grep.
-
-  **The first instance — a MUST naming a value.**
-  `[candidate, 2026-08-19 — named by `entity-core-py`, measured by `entity-core-go`, confirmed by arch
-  across four trees]`
-  `EXTENSION-REGISTRY` §6a.9.1 made the resolver-side TTL ceiling a `[MUST when present]` and called it
-  **"the actual security property … the load-bearing one."** §4's `resolver-config` schema declared **no
-  field for it**, and §11's vectors tested only the *issuer* side. So every seat invented a site:
-  `entity-core-py` and `entity-core-rust` independently chose `resolver_chain[].hints.max_ttl`,
-  `entity-core-go` put it in a Go builder option, and `entity-browser-rust` carried
-  `name_resolver_max_ttl_ms` in a deployment document. **Four seats, three keys, all four "conformant" —
-  and an operator editing the one artifact the spec names sets the ceiling on none of them.**
-  **py's framing is the rule and it is exact:** *a `[MUST when present]` with no declared config site and
-  no conformance vector is a rule two conformant peers cannot both implement.* The MUST is not weak or
-  ambiguous — every seat read it correctly and implemented it faithfully. **There was simply nowhere for
-  the agreement to live**, so faithful implementation produced divergence. That is the failure mode prose
-  review cannot catch: there is no contradictory sentence to find.
-  **Why the vector half is the same ask and not a second one.** The issuer-side ceiling *had* vectors
-  (`REG-TTL-CEILING-1`, `REG-TTL-CLAMP-1`) and converged. The resolver-side ceiling had none and split
-  four ways — same subsection, same value, and **the spec's own text says the untested half is the
-  load-bearing one.** As close to a controlled experiment as this corpus gets.
-  **The aggravating fact:** three of the four seats had written the *same* undeclared refinement into
-  their source — `max_ttl: 0` is dropped rather than honored, with near-identical diagnostic reasoning —
-  and none of it was in the spec. **Convergence was happening in the comments, where no gate could reach
-  it**, and it would have decayed the moment one seat refactored.
-  ***Enforcement point:*** before a normative `[MUST]` naming a value lands, confirm **(i)** the value has
-  a **declared config site** in a schema block — not `hints`-shaped opacity but a pinned key — and
-  **(ii)** a conformance vector that **reads it**. Absent either, the ruling is not landable and that gap
-  is the finding. This is L12 one level up: L12 asks whether the actor can reach the operation's *input*;
-  L17 asks whether the operator can reach the rule's *value*. Mechanically checkable — a MUST naming a
-  field is a grep against the schema block in the same spec — so this is a **gate** ask; **filed, not
-  built**, and recorded as owed in `docs/COHORT-OPEN-ITEMS.md` §2.
-  ~~**Candidate: one incident family, four seats.**~~ **Ratified 2026-08-20 on the second shape
-  above** — the capability-encoding axis. The enforcement point is the broadened one stated there.
-
-  > **Third shape, 2026-09-01 — the site was declared, the check was declared, and the MUST was still
-  > unimplementable: nobody declared the UNIT. It fired on a fold that was one day old and had passed
-  > both of L17's existing tests.** `[filed by `entity-core-go`, spec-issue `2026-09-01-a`]`
-  > `EXTENSION-RELAY` §8.2 (v1.3): *"when accepting a `:put` would exceed the relay's advertised
-  > `limits.max_storage_bytes`, the relay MUST refuse with `storage_full`/507."* §4.1 declares the
-  > site — `max_storage_bytes: u64` — and §8 declares the satisfaction mode, in a note that correctly
-  > flags the bound as an operator knob no wire input can reach. **Both of L17's boxes ticked.** The
-  > MUST turns on a **byte count of the stored entry**, and nothing anywhere says **which bytes**:
-  > inner payload only · store-entry + inner envelope · full on-wire encoded size · relay-wide vs
-  > per-namespace. All four defensible, all different, and the §8 storage-full check *"fills a peer's
-  > store past its advertised `max_storage_bytes`"* — **so how many bytes is past depends on the
-  > metric**, and a check authored to one implementation's reading mis-fills every other relay,
-  > reporting a false FAIL or never reaching the bound at all.
-  > **`u64` is a type. A type is not a unit.** That is the whole rule, and it is why the existing
-  > enforcement point could not see it: *"does the value have a declared site"* is a question about
-  > **where the number lives**, and it is satisfied by a schema line that fixes the number's width and
-  > says nothing about what it measures. **A declared site with a declared type reads as fully
-  > specified** — which is precisely the state that makes a defect survive review.
-  > **The tell is available and mechanical:** the value is a **count of something**. Any MUST whose
-  > threshold is a quantity — bytes, entries, milliseconds, depth, rate — has a unit *and* a
-  > population *and* a scope, and the type declaration carries none of the three. Here the misses
-  > were unit (which bytes), population (deduped or not — the store is content-addressed, so a
-  > hash-equal re-put must cost nothing), and scope (relay-wide or per-namespace).
-  > ***Enforcement point, extending L17's:*** a normative `[MUST]` whose condition compares against a
-  > **numeric threshold** does not land until, beside the declared site and the check, the spec states
-  > **(iii) what the number measures, over what population, at what scope** — and, where the metric can
-  > differ between conformant peers by a constant, **that the check crosses the threshold by a margin
-  > rather than asserting the exact point of refusal.** The last clause is what actually makes the
-  > vector portable, and it was the sentence the filing was really asking for. Mechanically checkable:
-  > *a MUST citing a `u64`/`u32`/integer field with no prose sentence defining its unit is the
-  > violation*, and it is a grep from the schema block to the MUST.
-
-- **L16 — before ruling a cross-impl semantic, search EVERY tier for a seat that already implements it.**
-  `[**RATIFIED** 2026-08-19 — second instance the next day, running the opposite direction]`
-
-  **Second instance, and it is what earned ratification.** The v1.16 resolver-ceiling ruling was scoped to
-  the three engine seats, because a resolver ceiling reads as an engine concern. `entity-browser-rust`
-  carried a **fourth** key — `name_resolver_max_ttl_ms`, with the only named test in the cohort for the
-  `0`-is-dropped rule. **The first instance was the app tier holding the answer; the second is the app
-  tier holding a divergence nobody counted.** Opposite directions, one distinction: **tier membership
-  predicts neither who owns a question nor who has answered it** — so the search space for a
-  cross-impl-observable semantic is *every* seat in `INDEX.md` §0's tier table, always, and the cost is
-  one `grep`. Ratified on a second incident in a different shape, per the ladder; the enforcement point
-  below is unchanged and now binds.
-  `EXTENSION-REGISTRY` §4.1 step 2's dispatch filter was ruled after `entity-core-{go,rust,py}` reached
-  three different behaviours from one contradictory paragraph. **`entity-browser-rust` already had the
-  answer, in code, and nobody asked them.** `src/content_site/name_dispatch.rs` at `2940a8f` carries
-  `eligible_backends` — the pure union, no per-backend default, no fallback — and `validate_rules`/`is_broad`,
-  which binds the privacy MUST to *any* pattern matching an unscoped name rather than to the catch-all row.
-  **That is the ruling, both halves, derived independently and landed before the question was asked.**
-  `entity-workbench-go` had independently re-keyed the same check from *remoteness* to *name transmission*,
-  which the spec's own conformance vector had not yet done.
-  **Why it happened, and it is not "we forgot to look."** The contested section is one the **engines**
-  implement, so the question read as an engine question and the search space was set to the engine repos.
-  **Implementing a section and having solved the question being ruled are different things** — the same
-  category error L15 records, running the other way: L15 is *don't send an app-tier finding to the engines*,
-  L16 is *don't rule an engine question without checking the app tier*. The pair is one distinction —
-  **tier membership predicts neither who owns a question nor who has answered it.**
-  **The cost is not just the wasted cycle.** A ruling written without the existing implementation is a
-  ruling written without its best test. Here it happened to converge; had it not, arch would have shipped
-  a normative rule that a shipping seat already contradicted, and found out from a conformance FAIL.
-  ***Enforcement point:*** before a ruling on a cross-impl-observable semantic is written, **grep every
-  repo in `INDEX.md` §0's tier table for the field, symbol, or config key under dispute**, and record the
-  commit each tree was searched at. It is the same seat list L8's thirteenth form already made canonical,
-  and the same discipline `AGENTS-STANDARD` already demands for proving a negative — applied to *"nobody
-  has solved this"* which is exactly a negative. Cheap, mechanical, and it would have cost one `grep`.
-  **Ratified 2026-08-19 on the second instance** (the resolver-ceiling ruling, above) — the search space
-  is every seat in the tier table, and it does not narrow because a question *sounds* like one tier's.
-
-  > **The tier table is `specs/SYSTEM-ARCHITECTURE.md` §7.3. `INDEX.md` §0 DOES NOT EXIST in this repo
-  > — every citation above is to a path with no file behind it, and the list at the real path is
-  > missing three repos.** `[corrected 2026-09-04 — self-found, one day after publishing a negative
-  > that the missing region refutes]`
-  > **The three:** **`entity-system-hosting`** · **`entity-system-generator`** — both **internal-origin
-  > only, unpublished**; run `git remote -v` before naming either in anything canonical — and
-  > **`entity-system-content`** (public). None appears anywhere in the corpus.
-  > **The cost, and it was immediate.** `EXPLORATION-THE-CONVERGENCE-THESIS` §6 published *"the hosted
-  > tier … is currently specified nowhere"* on 2026-09-03. `entity-system-hosting` holds
-  > **`docs/CONTRACT-EDGE.md` — E1–E5, provider-neutral, with a probe that measures all five** and a
-  > post-publish byte-comparison of every key at the edge against the tree that was meant to be
-  > published. **The narrow claim survives** — *publish-proxying*, a third party publishing on a
-  > tenant's behalf, really is specified nowhere — **and the headline was false about a repo one
-  > directory over**, in a document that publishes.
-  > **Why it is L16 and not a new letter.** L16's content is *the search space for a negative is every
-  > seat, and it does not narrow because the question sounds like one tier's.* A hosting toolkit sounds
-  > like operations, so it was never in the space — **and the enforcement point named a document that
-  > does not exist, so the space was never enumerable at all.** An enforcement point pointing at an
-  > absent path is the `absent-doc` class L3 already records, firing on our own rule set: the rule read
-  > as satisfiable and was not.
-  > ***Enforcement point, unchanged in content and now resolvable:*** the seat list is
-  > `specs/SYSTEM-ARCHITECTURE.md` §7.3 **plus the three names above**, and a negative about "the
-  > ecosystem" or "anywhere" is not proven until every one of them is searched. **The fix is the list,
-  > not another rule** — and **adding the two unpublished repos to §7.3 is the operator's call, not
-  > arch's**, because a published architecture document naming an unpublished repo is a disclosure.
-
-  > **The corpus axis, 2026-09-04 — the same property, and this time the search space was narrowed by a
-  > LAYER rather than a tier. Self-found, one day after the correction above.**
-  > A checkpoint published *"multi-device publishing is undesigned — two devices sharing one key,
-  > advancing one signed root sequence, is a race **nothing in the corpus describes**"* and carried it
-  > across two sessions and a commit message as *"arguably the most important gap this arc found."*
-  > **`EXTENSION-IDENTITY` §§11.3/11.5/11.6 is a landed multi-device model** — three-key default,
-  > per-device agent keys with **their own peer-IDs**, and §11.6 verbatim: *"concurrent
-  > multi-controller… used for desktop + phone deployments where each device holds its own
-  > controller."* **`EXTENSION-REVISION` v3.13 is a landed multi-writer merge framework** with a
-  > version DAG, a per-path merge framework and conflicts stored as entities. Both in `specs/`.
-  > **One `grep` for `multi-device` returns `EXTENSION-IDENTITY` in the first three hits.**
-  > **Why it felt safe, and it is the transferable half: the question sounded like a social-layer
-  > question, and the answer lives in the identity and tree extensions.** L16's ratified content is
-  > that *tier membership predicts neither who owns a question nor who has answered it*; this is the
-  > identical property one axis over — **layer membership predicts neither either.** A negative about
-  > our own corpus is still a negative, and `AGENTS-STANDARD`'s *prove a negative* rule does not exempt
-  > the tree we wrote.
-  > **The aggravating detail:** the same session ran an exhaustive primary-source sweep of four
-  > *foreign* systems and cited every one. **Rigour on the outside world and none on our own `specs/`
-  > directory** — the shortcut gets taken where familiarity is highest, which is L8's twelfth form's
-  > tell arriving on a corpus instead of a code path.
-  > **What the correction bought, and it is why the rule is *re-derive* rather than merely *retract*.**
-  > The search did not just delete a claim; it replaced a vague *"undesigned consensus problem"* with a
-  > specific checkable **seam** — `FEED` §1.1 requires an entry's author to equal its namespace and
-  > §2.4's follow targets one namespace, while the identity model makes *"the same Alice"* N peer-IDs,
-  > **so a cross-namespace merge produces entries a conformant reader must reject.** The real item is
-  > smaller, is vocabulary rather than consensus, and was **invisible from the wrong framing.**
-  > ***Enforcement point, extending the seat list to the corpus:*** **a claim that this corpus does not
-  > describe something is discharged by naming the region searched — `specs/`, `specs/extensions/`,
-  > `guides/`, `docs/proposals/` — never by the absence of a memory.** Mechanically: **`grep` the
-  > corpus for the plain-language noun of the capability** (`multi-device`, `merge`, `conflict`) before
-  > the sentence is written, and cite what was searched. **`spec coverage` is the instrument for *"do we
-  > already have X?"* and this file already says start there** — it was not run.
-  >
-  > > **AMENDED 2026-09-05, THE DAY AFTER, BECAUSE THIS ENFORCEMENT POINT LICENSED THE NEXT FAILURE.**
-  > > As written above it says *`grep` the corpus … and cite what was searched*, and the session that
-  > > wrote it did exactly that — then **reasoned about what the two documents SAY from the grep
-  > > output**, and got both wrong in the confident direction (see L4 below). **A `grep` discharges an
-  > > existence question and nothing else.** The moment the answer stops being *"does the corpus
-  > > mention X"* and becomes *"what does the corpus say about X"*, the instrument is **reading**, and
-  > > the region to read is the section that owns the surface — which is L19's rule arriving on our own
-  > > documents. **So: grep to find the document; open the document to say anything about it.**
-
-- **L4 — a claim about a document is checked by opening it. `grep` FINDS a document; it never READS
-  one — and a §10 disclaimer admitting you only skimmed does not make the claims safe.**
-  `[2026-09-05 — operator challenge: the published claims did not correspond to anything he
-  recognised. Two claims, both wrong, both about specs in our own tree.]`
-  **The two claims.** *(1)* `EXTENSION-REVISION` *"can host merge strategies and cannot host a CRDT,
-  despite naming one"* — derived from the single sentence *"no persistent CRDT metadata"* in the
-  overview, checked against a **2018 CRDT survey**. **§5.4 is titled *CRDT as Merge Strategy* and names
-  the principle it follows — Eg-walker: *CRDT is a computational artifact during merge, not a storage
-  format*. The causal record IS the version DAG's parent pointers**, replayed at merge; the survey
-  predates the result. **§7.2 then argues convergence outright** and names its one exception
-  (asymmetric strategies under caller-perspective ordering) with a remedy (`deterministic` ordering)
-  and a backstop (oscillation detection). *(2)* C-2 "reframed" as *"Alice is N peer-IDs, so following
-  her is N follows"* — **`EXTENSION-IDENTITY` §6: *"the controller's pubkey IS the user's published
-  handle. Contacts cache it."*** Agents are per-device daemon keys acting **on behalf of** one
-  identity. **Alice publishes under one peer-id, which is what "stable cross-peer recognition" means.**
-  **The measurement that makes it inexcusable: `EXTENSION-REVISION` is ~3,800 lines and 130 were
-  opened.** §5.4, §7.2 and §8.1 — the three sections that answer the objection — sit ~3,000 lines below
-  the one that prompted it.
-  **Why the guard did not fire, and this is the transferable half.** The document **did** state the
-  limit: its own §10 read *"only the spec's opening sections were opened… that check is owed before
-  this becomes a proposal."* **Stating a limit and then reasoning past it is not caution, it is a
-  disclaimer attached to unfinished work** — and it reads as rigour, which is why review does not catch
-  it. **A limit you are willing to publish a conclusion on top of is not a limit.** Same asymmetry L25
-  records for tightenings and L13's second axis records for *"filed, not yours"*: the sentence whose
-  function is to lower scrutiny is the one that should raise it.
-  **And it was the CORRECTION that was wrong, not just the first claim** — the session found the two
-  extensions by grep (fixing an L16 failure), then reasoned about their *content* from the same grep.
-  **The enforcement point it had written hours earlier said *grep the corpus and cite what was
-  searched*, and that is precisely what it did.** A rule that names the wrong instrument is worse than
-  no rule, because it certifies the shortcut; amended in place above.
-  **What the operator supplied that the corpus could have:** *"our revision is already a CRDT with the
-  auto merge and the deterministic ordering… the settings are a bit specific to get that right."* Every
-  clause checkable in §5.4/§7.2, in under five minutes of reading.
-  ***Enforcement point:*** **a sentence about what a document says cites the section it says it in, and
-  that section was opened in this session.** Mechanically checkable in review: *a claim about spec X's
-  behaviour whose only citation is X's overview, title, or a matched line, where the spec has a section
-  owning that surface, is the violation.* **For a spec over ~500 lines, read its section list first and
-  open the ones that own the surface** — `grep -n "^#"` costs one call and would have surfaced *CRDT as
-  Merge Strategy*, *Convergence* and *Concurrent Commits* by name, before any of this was written.
-
-- **L14 — `ENTITY-CORE-PROTOCOL` is not ours to version. Extension versions are ordinary work.**
-  `[RATIFIED 2026-08-18 — operator ruling, then corrected by the operator the same hour]`
-  Five version headers were cut in one session and pushed. **Only one of them mattered:**
-  `ENTITY-CORE-PROTOCOL` 0.8.0→0.8.2 — **an invented release number on the operator's own spec.** The fix is
-  not abstinence: arch bumps a **fourth** component (`0.8.0.1`) so the cohort can see core text moved, and the
-  operator owns `MAJOR.MINOR.PATCH` and strips the fourth at release.
-  The four extension bumps (`NETWORK`, `TREE`, `REGISTRY`, `REVISION`) were **not** the problem — extension
-  versioning is ordinary authoring work and needs no permission.
-  **The correction is the instructive half.** The first version of this rule read *"no agent edits any
-  `**Version**:` header"* — derived from one incident, generalized across every document in the corpus,
-  and **wrong about four of the five cases it was written from.** It forbade routine work and buried the
-  one real boundary inside a blanket prohibition. *A rule written at the width of the incident is not
-  narrower for being cautious; it is just wrong in a different direction, and the over-broad version is
-  harder to notice because it never fires on the case that would refute it.*
-  ***Enforcement point:*** `specs/ENTITY-CORE-PROTOCOL.md` line 3 is off-limits. Nothing else here is.
-
-  > **AMENDED 2026-08-21 — arch manages `entity-core-protocol`, including line 3, and the operator
-  > sets the release number.** `[operator, 2026-08-21, paraphrased: arch can manage core protocol — just be deliberate
-  > about it. We go out with 0.8.2, and that is where we reset post-release.]`
-  > **What changed is the authority, not the discipline.** The rule was written from one incident —
-  > an agent inventing `0.8.2` on the operator's spec — and its enforcement point was drawn at the
-  > *line*, which is exactly the over-literal shape L13's correction warns about: it fixed the
-  > mechanism at the width of the incident instead of stating the property. **The property is: arch
-  > does not invent a release number.** Arch may now cut one the operator has named, and did — `0.8.2`
-  > at `entity-core-protocol` `106834c`, with the fourth component stripped as designed.
-  > **The fourth component survives and is still the right tool between releases.** `0.8.0.1` did its
-  > whole job: it told the cohort core text had moved without claiming a release, and it was stripped
-  > at the cut. Keep using it; it is not a workaround, it is the mechanism.
-  > **And the direction of a claim about a version is worth checking twice.** The three
-  > `(normative, 0.8.2)` tags in §5.2 were reported as *residue from a reverted cut* and routed to
-  > keystone as a caveat. They were the opposite — text written **ahead** of the version, correct the
-  > moment the release landed. **A stale-looking tag can be early rather than late**, and the check is
-  > the same one either way: read the commit that introduced it.
-
-
-- **L15 — a ruling goes back to the seat that filed it BEFORE it goes to anyone else.**
-  `[candidate, 2026-08-18 — operator directive, paraphrased: do not send a ruling to the peers and
-  to browser-rust at once while browser-rust is working on that very thing]`
-  `EXTENSION-TREE` §3.3a's completeness MUST came from **one** `entity-browser-rust` finding. It was ruled,
-  and in the **same cycle** it was (a) assigned to browser-rust as a restructure and (b) put on all three
-  engine seats' owed lists in `ROUTING-2026-08-18-m` §4. browser-rust went to implement it and **refuted it
-  on four independent grounds** — it was unsatisfiable by construction. By then `entity-core-go` had already
-  reported the rule *"already satisfied."*
-  **Three costs, and the third is the one that compounds.** *(1)* Four seats did work on a rule that had to
-  be withdrawn. *(2)* A seat reported conformance to a rule nobody can fail, which is worse than a failure
-  because it reads as evidence. *(3)* **The refutation had to travel back through every seat that had been
-  told**, so one retraction became a cohort-wide packet — and the engines now have an assign/unassign pair
-  in their record for something that was never theirs.
-  **The filing seat is the fastest refutation path and broadcasting skips it.** They hold the artifact that
-  produced the finding; they are the only seat that will *try to build it* against that artifact. Sending a
-  ruling to N seats before the one seat that can refute it converts one open question into N seats' work and
-  buys nothing — no engine could have found the fixed-point argument, because none of them was trying to
-  restructure a publisher.
-  **The narrower sin is a category error about tiers.** A finding from an **app-tier** seat about a
-  **publisher** surface is not automatically engine work. It became an engine item because the spec section
-  is one the engines implement — but *implementing a section* and *owning the question being ruled* are
-  different things, and only the second earns a packet.
-  ***Enforcement point:*** **a ruling derived from a single seat's finding is routed to that seat alone
-  until it is built or confirmed there.** Other seats are told when it lands, not when it is decided. The
-  exception is a ruling that changes text they have **already shipped against** — that is a correction, not
-  an assignment, and it says so. Mechanically checkable: a `ROUTING-*` addressed to seat X carrying a ruling
-  whose source finding is seat Y's, where Y has not yet confirmed, is the violation.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-- **L13 — filing is not routing. A cohort table row is a record, not a delivery.**
-  `[RATIFIED 2026-08-18 — second shape, same day. The first shape was a finding filed where it was found;
-  the second is a finding filed under a heading that told its owners it was not theirs.]`
-
-  **Second shape — "Arch-owed, filed, not yours."** `ROUTING-2026-08-18-i` §5 carried that heading and put
-  three items under it. Two were genuinely arch-only. The third was **`EXTENSION-TYPE` §4.6 folding to
-  §5.4's `matches_pattern`** — a definition site with **three implementations bound to it**, whose
-  behaviour it inverts (`system/capability/*` now matches `system/capability/path-scope/foo`; it did not
-  before). The same packet's §6 then asked each seat to acknowledge *"any doublestar dependency removed."*
-  **All three acknowledged. All three still had one, in `type_pattern`** — go's `globMatchSegments`, rust's
-  `type-system/src/glob.rs`, py's `_glob_to_re2`, all still segment-scoped `*` plus `**`.
-  **The heading was about provenance and was read as ownership, which is the correct reading of it.** The
-  defect *was* ours to fix and *was* fixed; what does not follow is that the follow-on work is ours. Every
-  sentence in that section was true and the section was false.
-  **Why this is worse than the first shape and not merely another instance.** Shape one under-delivers — a
-  seat is never told. **Shape two actively mis-delivers: it tells the seat where not to look**, and then
-  collects an acknowledgement that reads as coverage. `entity-core-go` filed a spec-issue asking arch to
-  rule on §4.6 *two commits after it was ruled*, reasoning correctly from the pre-fold text — and pinned
-  the arch commit that already contained the correction. **A packet that suppresses attention produces
-  confident wrong work, where a packet that omits produces no work.**
-  ***Enforcement point:*** **a packet has exactly one section that means "no action," and a normative
-  change to a definition site never appears in it.** Before a fold is described as arch-only, grep the
-  corpus for other specs binding the changed text and ask whether any implementation implements it; if one
-  does, it belongs in the per-seat owed list **even when the defect was ours**. Mechanically checkable —
-  `spec address` already resolves which documents cite a changed section — so this is a **gate** ask;
-  **filed, not built.** **`entity-core-rust` sat at one commit while six items accumulated against it,
-  and not one packet was ever addressed to that seat.** Every item was filed correctly — and filed *where it
-  was found*: two conformance FAILs inside a report addressed to `entity-core-go` (the seat that **found**
-  them), D1/D3 inside a proposal's §8 cohort table, the §6a.6 scan-vs-index finding inside a ruling addressed
-  to `entity-browser-rust`, two read-and-reports inside a packet addressed to `entity-core-py`.
-  **Individually every one of those placements was right. Collectively the seat was never told.**
-  **Why it is not merely an oversight.** The `§8 Cohort impact` table is the artifact that *looks* like
-  routing — it names the seat, names the delta, and reads as an assignment — so producing it feels like
-  discharging the obligation. **It is a record of who owes what, and a peer who does not open our proposals
-  never sees it.** The failure is invisible from our side for the same reason a stale build-state claim is:
-  the board says the item is assigned, and the board is telling the truth about the assignment.
-  **The aggravating fact:** two of the six are **conformance FAILs with both siblings passing** — the single
-  class the cohort process exists to surface fastest — and they sat inside a document addressed to the seat
-  that reported them. A packet addressed to the finder is the one place the finding cannot act.
-  ***Enforcement point (corrected 2026-08-19 — see below):*** when a session produces a finding, ruling,
-  or spec delta that names a seat as owing something, **that item reaches that seat's owner in the same
-  session, by the path in "The cohort routing model," or it is not routed** — and it lands as a row on
-  `docs/COHORT-OPEN-ITEMS.md` either way. For a core-tier item that means a **section inside the packet
-  to `entity-core-go`**, written to be relayed. The cheap habit: before closing a session, list the seats
-  named in anything written and diff that against the ledger.
-
-  > **Third axis, 2026-08-21 — the item was filed correctly and a *severity label* suppressed the
-  > routing.** `[found by `entity-workbench-go`, by building a consumer]` **R-24 was on the ledger**:
-  > `binding.transports` prose-typed as an endpoint, already leaning `system/hash`, with the delta
-  > drafted. It was filed **`OPEN — v2, hygiene`** and never routed to a seat. It is a **total decode
-  > failure against the only live federation in the ecosystem**, on the path of **every** resolution —
-  > `entity-core-go`'s backend cannot read a single `entity-browser-rust` binding.
-  > **Why "hygiene" was chosen, and it is the generalizable part: the *edit* is one line.** Replacing
-  > `[<endpoint per NETWORK §6.5>]` with `system/hash` is genuinely tiny, and the label was set by the
-  > size of the fix. **The size of the fix is not the size of the defect** — a one-line prose type sits
-  > on a hot path or it does not, and that is a fact about the protocol, not about the diff.
-  > **This is L13's shape with a new suppressor.** Shape one under-delivers (never filed to the owner);
-  > shape two mis-delivers (filed under a heading that says "not yours"); **shape three files it
-  > honestly and then attaches a label that tells the reader it can wait.** All three leave a true row
-  > on the board and a seat that never hears.
-  > **The aggravating half:** R-24's premise — *"a hash array in **every** implementation"* — was
-  > measured in **two** trees and published as a claim about all. rust is `Vec<Value>`, browser-rust
-  > emits inline. That is L8's thirteenth form and `AGENTS-STANDARD`'s *prove a negative* rule, on a
-  > row whose severity call then rested on the unsearched claim: *"everyone already agrees"* is what
-  > makes a divergence look like hygiene.
-  > ***Enforcement point:*** **severity for a spec-text defect is set by where the field sits, not by
-  > how large the edit is.** Before labelling a corpus finding `hygiene` or deferring it to a later
-  > release, answer two questions in the row: **is the field on a path that executes on every
-  > operation of its kind**, and **has any seat been measured emitting a different shape for it?**
-  > An unanswered second question is not a `hygiene` label, it is an **unsearched** one — and
-  > `[<prose type>]` naming a term the corpus defines three ways is never hygiene, because the
-  > divergence is already latent in the text.
-
-  > **The correction, because the first version of this enforcement point caused its own incident.**
-  > `[operator, 2026-08-19]` It originally read *"that seat gets a packet addressed to it in the same
-  > session."* Applied literally to one registry fold, it produced **five routing packets** — go, rust,
-  > py, browser-rust, workbench-go — in reply to a packet whose entire virtue was that
-  > `entity-core-go` had **consolidated the cohort's open set into one document.** Arch answered
-  > consolidation with fragmentation.
-  > **L13's content is "an item must reach its owner." It never said arch is the courier**, and I read a
-  > delivery topology out of a rule about delivery *happening*. **Being named in a ruling makes a seat an
-  > owner; it does not make it arch's correspondent.** The two are one word apart and the difference is
-  > four documents.
-  > **This is the same failure shape L14 already recorded, in the other direction.** L14's first draft was
-  > *over-broad* — a rule written at the width of one incident that forbade routine work. This one was
-  > *over-literal* — a rule whose mechanism was fixed at the width of one incident, so it kept firing
-  > correctly and delivering wrongly. **Both come from writing the enforcement point as the specific act
-  > that would have fixed the original case**, rather than as the property that has to hold. State the
-  > property; let the topology be a fact recorded once, where it can be changed without touching a rule.
-  > **Fourth axis, 2026-08-31 — the item was routed correctly, to ARCH, and arch is the seat that
-  > never acted. A decision on a board is not an execution.** `[operator-raised: "I thought we
-  > stopped tracking machine spec — all it does is drift"]`
-  > **Retiring `ENTITY-CORE-MACHINE-SPEC` was decided 2026-08-02.** Its single blocking precondition
-  > — relocate §1.8 to `ENTITY-CBOR-ENCODING` §5.4 — was met **2026-08-10**. The retirement was then
-  > **not done for four weeks**, and on 2026-08-31 it was executed in about twenty minutes with no
-  > new information required. Nothing was blocked. Nobody disagreed.
-  > **It was tracked the whole time, and being tracked did nothing.** The 08-13 proposal audit logged
-  > it verbatim: *"`NAMESPACE-CLEANUP`: `ENTITY-CORE-MACHINE-SPEC.md` not yet retired | **holds** |
-  > still present."* True, correctly filed, re-measured — **and a status row is not a hand that moves
-  > a file.**
-  > **The cost was paid by a later session from the outside.** FM-1 spent review effort discovering
-  > that §6.4 had no `invalid_nonce` row and §6.2 still carried F32's blanket 403 — **two defects in a
-  > document already under sentence**, found by reading it as though it were live, and one of them was
-  > then written into a routing packet and a precedence sentence that had to be unwound the same week.
-  > **Why it is L13's shape and not laziness.** L13's content is *an item must reach its owner*. Every
-  > prior axis is about a **peer** not being reached — by omission, by a "not yours" heading, by a
-  > severity label. **This axis is arch not reaching itself**, and it has a specific suppressor: an
-  > item on arch's own board has already been *delivered* by construction, so the one signal the rule
-  > watches for — *did it get to the owner?* — reads green forever while nothing happens. **We route to
-  > peers with a session deadline and to ourselves with none.**
-  > ***Enforcement point:*** **an arch-owned item whose remaining work is an EXECUTION rather than a
-  > decision does not go on the ledger as an open row — it is done in the session that decides it, or
-  > the row records what it is waiting on and that blocker is checkable.** *"Not yet done"* is not a
-  > state; it is the absence of one. Mechanically: a ledger row owned by **arch** whose text contains
-  > no blocker, no owner outside arch, and no named unblocking event is the violation — and the cheap
-  > habit is one question when filing against ourselves: ***what would I have to learn before doing
-  > this?*** If the answer is *nothing*, it is not a backlog item, it is an unfinished task.
-  >
-  > **Fifth axis, 2026-08-31 — the item reached its owner FOUR TIMES, and that is the defect. Two arch
-  > sessions ran in parallel, each routed correctly, and neither knew the other existed.**
-  > `[operator-raised: "let's converge with the other architecture team and make sure we're all on the
-  > same track"]` **Nine packets went out on one day** — `-a` … `-i` — **four to `entity-core-go`,
-  > three to `entity-core-keystone`.** The routing model forbids exactly this and its own note says
-  > *consolidation is the thing that worked; do not undo it in the reply.*
-  > **The suppressor is new and it is the reason the 2026-08-19 fix did not cover it.** That incident
-  > was **one** session fanning out to five seats, and the correction — *route by the topology table,
-  > not per-seat* — was obeyed here: every one of the nine was correctly addressed, correctly scoped,
-  > and went to the right seat by the right path. **The fragmentation is invisible from inside any
-  > single session and only exists in aggregate.** A rule about how one session routes cannot see it.
-  > **And it produced a live wrong instruction, not just noise.** `ROUTING-2026-08-30-c` asked keystone
-  > to **hold** their regeneration so the cohort sweeps once. `-b` then told them *"the spec landed,
-  > regenerate, it sweeps once"* — **true when written.** `0.8.2.2` landed hours later from the *other*
-  > session with a change touching **all 46 peers**. Acting on `-b` would have produced the exact
-  > double sweep `-c` existed to prevent. Caught only because keystone had not moved yet (`1ed013c`,
-  > measured), so it was **their caution, not our sequencing.**
-  > **The generalizable half: *"regenerate now" / "rebuild against X" / "you are unblocked" is a
-  > BUILD-STATE INSTRUCTION and expires like a build-state claim (L9) — except the clock is arch's own
-  > fold queue.** A packet telling a seat to act on a landed version is void the moment arch lands
-  > another, and **only arch can know that, which makes it the one expiry a peer cannot defend
-  > against.** The seat has no way to ask *"is anything else folding today?"*
-  > ***Enforcement point:*** **an "act now" instruction to a seat is sent at the END of the arch day,
-  > not at the end of the finding that produced it** — and before it goes, arch checks what else landed
-  > in the corpus since that session started (`git log` on the spec repos, not memory). Where two arch
-  > sessions are live, **the last one to finish consolidates**: one packet per seat, superseding the
-  > fragments by name. Mechanically checkable and cheap: **more than one `ROUTING-*` addressed to the
-  > same seat with the same date is the violation**, and it is a `ls docs/status/`.
-  >
-  > **A save on the fourth axis, one day later — and it turns the axis into a rule about ASSIGNMENTS,
-  > not just backlog rows.** `[2026-08-31, PD-1c]` The PD-1 fold was gated on measuring three
-  > ground-up trees, and arch had routed that to `entity-core-go` with the words *"the measurement is
-  > yours to take, not arch's to infer."* **That sentence was correct about inference and wrong about
-  > the work.** Asking the fourth axis's question — *what would I have to learn before doing this?* —
-  > the answer was **nothing**: the instrument was `entity-core-go`'s own `authz_peers_target_from_uri`
-  > plus `cmd/peer-manager`, both sitting in a tree arch reads routinely, and the whole measurement
-  > took one session. Arch took it, and the result **inverted the proposal's cost model** and found the
-  > probe-polarity defect above — neither of which would have surfaced from waiting.
-  > **The generalization: the axis fires on anything arch is WAITING for, not only on rows arch owns.**
-  > A blocker assigned to a peer reads as *delivered* for exactly the same reason an arch-owned row
-  > does — the board says someone has it — and an assignment is the more dangerous form, because it
-  > also looks like correct routing. **L13's content is that an item must reach its owner; it never
-  > said arch may not be the owner**, and defaulting a mechanical measurement to the seat that happens
-  > to own the code is how a fold sits for a week.
-  > **The distinction that keeps this from eating L18 and the read-the-worktree rule:** what arch may
-  > take is a **measurement** — running an existing instrument and reporting numbers. What arch still
-  > may not do is **infer** a build state from a grep (L8's twelfth form), or treat a cohort
-  > implementation as evidence for a ruling (L18). Arch measuring is not arch guessing, and the packet
-  > says plainly that the assignment was reversed and why.
-  > ***Enforcement point, extending the fourth axis:*** **before a fold is held on a peer's
-  > measurement, ask whether arch can take it with an instrument that already exists** — `ls` the
-  > seat's harness directory and read its `--help` (**L7**). If yes, arch takes it in the same session
-  > and tells the seat it was taken. A fold gate whose remaining work is *running something* is an
-  > unfinished task wearing an assignment.
-  >
-  > **Second instance of the fourth axis, 2026-09-01 — and it moves the axis from MEASUREMENTS arch
-  > can take to DESIGN arch can do. The deliverable was a list of blockers, and a list of blockers
-  > reads as rigour.** `[operator-raised, and unambiguously: a list of what cannot be done is
-  > infinite, and it is not the deliverable. The answer is the design that fixes it, the amount
-  > of work that takes, and what it needs to look like.]`
-  > The T1 audit measured keystone correctly and closed on four seams, three filed **OPEN** and owned
-  > by a repo that does not exist yet. Ask the fourth axis's question — ***what would I have to learn
-  > before doing this?*** — and the answer was **nothing**: `SDK-OPERATIONS` §11.6 was on disk, the 46
-  > peers were on disk, their `CONFORMANCE-REPORT.json`s were on disk. One session produced the entire
-  > normative delta (D1–D9), the gate design, the per-peer sizing and the extension sequence.
-  > **Everything filed as blocking was authorable the same day by the seat that filed it.**
-  > **And the audit was wrong in the direction the stopping caused.** Re-deriving instead of filing
-  > found that §11.6.1's first three mutations are **built and gated** (eleven `core_register_*`
-  > checks, all 46 peers), that the native/entity-native dispatch fork **already exists**
-  > (`go/src/peer/peer.go:413–420`), and that the real blocker was not the one filed — it is that
-  > §6.2 reserves `system/*` against *"user-installed"* handlers while §9.1 says *"user"* and §11.6.7
-  > says *"application-owned"*, and **none of the three names the party that installs an extension.**
-  > That defect is invisible from the blocker framing, because a blocker list asks *what stops us* and
-  > never *why is this the shape of the obstacle*.
-  > **Why a blocker list is the hardest thing to catch in review.** Each row is measured, cited and
-  > true. Nothing in it is refutable. It passes every check the toolkit runs — and it is still not the
-  > work, because **an obstacle correctly described is an input to a design, not an output of one.**
-  > This is the same asymmetry L25 records for tightenings (*caution reads as rigour*), arriving on
-  > the shape of a deliverable rather than the content of a ruling.
-  > ***Enforcement point, extending the fourth axis to design:*** **an audit does not close on an
-  > obstacle. Every blocker it names carries, in the same session, the fix, the owner, and the size —
-  > or the reason the fix is not yet derivable, stated as something learnable.** *"Blocked on a
-  > proposal nobody has written"* is not a state when arch writes the proposals. Mechanically
-  > checkable at close-out: **a finding owned by arch whose disposition is `OPEN` with no named
-  > blocker outside arch is an unfinished task, whatever its evidence quality** — and the cheap habit
-  > is one question per row: ***if this were the only thing I had to do today, could I finish it?***
-  > If yes, it is not a row.
-  >
-  > **The entry above was written mid-session and is the smallest thing that went wrong that day.
-  > Four more claims were published and withdrawn after it, and NO NEW RULE IS BEING WRITTEN FOR
-  > THEM.** The full accounting is
-  > `docs/status/HANDOFF-2026-09-01-b-what-went-wrong-opening-the-generator-track-and-what-to-audit.md`,
-  > and an audit of that session is owed. In summary: an install seam was called *"unbuilt and
-  > unmeasured"* without opening the conformance reports that gate it in all 46 peers; a
-  > `register_consumer` primitive was proposed for a mechanism `entity-core-go` has shipped since
-  > before the session (`core/store/notifying.go:105`); `SYSTEM-COMPOSITION.md` — 859 normative lines,
-  > the spec for the exact subject — was not opened until the fourth turn; and an extension *ordering*
-  > was prescribed twice off a measurement that said the extensions are independent.
-  > **Three of those are L8 and D12 and read-the-live-worktree, already recorded, already carrying
-  > nineteen worked forms. They did not fire.** The catalog was in context from the first token.
-  > **So the finding is not a twentieth form; it is that the catalog did not function**, and a
-  > twentieth form written by the session that missed the first nineteen is worth nothing. **That
-  > question is the audit's, and this note exists to hand it over, not to discharge it** — which is
-  > L0 rule 4, and this session already broke it once by minting an authoring standard (D10) to close
-  > out a correction.
-  **Candidate: one incident, enforcement point corrected once, fourth axis added and then broadened to design, two saves recorded.** Honor it; do not claim it generalizes.
-
-- **L3 — a partial fold does not get a completeness marker, and `implemented/` is one.**
-  `[RATIFIED 2026-08-17 — second incident, a different marker]` v3.11 was the version-bump shape.
-  The second is `PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH`: **six of its seven §7 deltas landed,
-  D4 did not, and the proposal was filed under `implemented/` anyway.** D4 was *"replace the
-  `(planned)` pointer to `PROPOSAL-PEER-MANIFEST-STATIC-HANDSHAKE`."*
-  **That proposal has never existed — in any repo.** Searched by filename and by content across the
-  whole checkout. Three normative sentences in `EXTENSION-NETWORK` hand it obligations, including the
-  `MANIFEST_GET` body MUST's revocation primitive and the Amendment-10 signed-root closure.
-  **Both app-tier seats built a static publishing surface against it** and reached two incompatible
-  shapes: `entity-browser-rust` asked arch whether their reading matched; `entity-workbench-go`
-  shipped a `MANIFEST_GET` serving a **transport-profile** entity where §6.5.3.1 requires a signed
-  root, while advertising `signed_pointer`.
-  **Why the second marker is the instructive part.** A version bump is on the artifact *consumers*
-  read; `implemented/` is on the artifact only **we** read — so this residue was invisible to the
-  cohort *and* to us, and surfaced only when a downstream seat built on it. **A pointer at a phantom
-  is indistinguishable from a pointer at a document you have not opened** (AP-18), so L4 does not
-  save you: it says open the document, and there was nothing to open.
-  ***Enforcement point:*** a completeness marker — bump **or** `implemented/` move — requires every
-  §7 delta row verified against the tree. Mechanically checkable (the tables already name file +
-  section, the same shape `sdksync` solved), so this is a **gate** ask; **filed, not built.** What is
-  built is narrower and covers the symptom: arch-tools `46c6e50` gives `spec address` an
-  `absent-doc` class for a document *named* in normative text that exists nowhere, and implements
-  `SPECIFICATION-FORMAT` §11.4's second clause so `(planned)` no longer excuses a forward reference
-  **inside a MUST** — the analyzer had implemented only the marker half.
-
-- **L12 — a ruling names a mechanism; check that the actor can reach its *input*.**
-  `[candidate, 2026-08-17 — found by `entity-browser-rust` (A2), in a ruling of mine they had already
-  built on]` Q7 ruled that group-as-audience is *"per-member minted tokens, **revoked on leave**"*, citing
-  `system/capability:revoke`, the marker path, and the §5.2-step-4 MUST that honors it. **Every one of
-  those citations was correct.** The ruling was still unusable: `revoke` is keyed by **token hash**, and in
-  the flow the ruling itself describes, the granter authors a *policy*, the **member** calls `request`, and
-  the handler returns the token **to the requester**. **The granter never holds the hash** — *on that
-  path.* §6.2's *"`request` … return tokens inline — no tree writes"* means no index can be built from
-  the mint either, so there is no recovery path — and §5.1's reverse index is `hash → path`, which needs
-  as **input** the thing that is missing.
-  **The correction had the same defect, one path over, and that is the part worth remembering.**
-  `[2026-08-17 — `entity-core-rust`, validated by `entity-core-go`]` *"The granter never holds the hash"*
-  was published unqualified. It is true of `request` and **false of the §4.4 handshake path**, where the
-  delivered capability *is* written to a per-peer session record keyed by the grantee — the
-  grantee-keyed index the ruling said did not exist, sitting one path over. So `revoke` **is** available
-  there, immediately. **The fix for an over-broad ruling was itself over-broad**, and it was published
-  in the packet that announced the first correction. *When scoping a claim to the case that broke it,
-  enumerate the sibling paths and say which are in scope — a correction inherits none of the original's
-  verification.*
-  **The shape, because it is not L4 and not L8.** Nothing here was unread or inferred from an artifact.
-  The mechanism exists, the MUST is real, the section numbers resolve. **What was never asked is whether
-  the party the ruling hands the verb to can supply the noun.** A ruling is an instruction to an actor;
-  verifying the mechanism is only half of verifying the instruction.
-  **Two aggravating facts worth keeping.** *(1)* The seat **accepted the ruling and built toward it** —
-  their withdrawal path shipped believing withdrawal ends access. It ends *new* access. **A ruling that is
-  wrong in this shape is adopted before it is tested, because it cites real text.** *(2)* Verifying their
-  finding turned up a second defect underneath it — §6.2 bounds a minted token's `grants` and **nothing
-  bounds its lifetime**, not the policy entry's `ttl_ms`, not the caller's own expiry (§5.6 does not reach
-  it: a `request`-minted token has `parent: null`). So the fallback answer — *"withdrawal is bounded by
-  TTL"* — **was itself unbounded until this session.** *When a ruling degrades to "bounded by X," verify
-  that something enforces X before publishing the bound.*
-  ***Enforcement point:*** a ruling that assigns an operation to an actor MUST name **(i)** the
-  operation's required inputs and **(ii)** the path by which that actor obtains each one — or record that
-  it cannot, which is the finding. Mechanically checkable against a CDDL for any op whose input type is
-  declared, so this is a **gate** ask, not only a habit.
-  **Candidate: one incident.** Honor it; do not claim it generalizes.
-
-- **L11 — a design space is not a defect list, and you may not rule inside one you have not read.**
-  `[RATIFIED 2026-08-17 — operator correction; L7's fourth instance in three days]`
-  **Three separate arguments were published about `EXTENSION-RELAY`'s mode set — one RULED, one
-  downgraded, one written into an exploration — before a single one of the eleven prior-art documents
-  the handoff named was opened.** The handoff said *"start here"* on the study that **produced** the
-  four-mode model. It was not opened until the operator demanded it.
-  **Reading it inverted the conclusion.** The study's frame is *"relay is the universal intermediary
-  primitive… every form — active forward, passive store-and-poll, aggregator, NAT-circuit, federation
-  server — is one configuration of this primitive. **One mechanism; many modes**"*, and it names that
-  unification as **the extension's genuinely-new contribution versus every surveyed system**. It was
-  written under an explicit standing pin — ***relay modes are design-space; flag trade-offs; don't pick
-  a single canonical.*** The ruling picked, and picked eviction: it would have dismantled the design
-  contribution the document exists to record.
-  **The coherence argument the ruling rested on was also simply wrong on the text** — §9 says *"there
-  are two envelopes; only one is decoded"* and the MUST NOT is scoped to the **inner**, with
-  `aggregate` deliberately in the list. One section, unopened, four feet from the ones being quoted.
-  **Three failure shapes to recognise, because they compound:**
-  **(1) A decomposition argument is not a landscape analysis.** Showing a thing is expressible another
-  way says nothing about what the system needs or how the field solves it. **(2) An enumeration that
-  looks over-broad is usually a design space, and pruning it is the expensive direction of a wrong
-  guess** — the surveyed systems *all* mix modes (ATProto S+A, Mastodon F+S, Nostr A+S, SMTP F+S,
-  NNTP S+A); not one implements a single mode. **(3) "It is not X, it is Y" displaces X.** Writing that
-  an aggregator *"is not an intermediary carrying opaque envelopes"* read as devaluing the core relay
-  function — encrypted store-and-forward, CDN-hosted encrypted messages, circuits for unreachable
-  peers — all of which are valid, needed, and on the roadmap.
-  ***Enforcement point:*** a proposal that rules on an enumeration, a mode set, a taxonomy or a scope
-  boundary MUST cite the exploration/landscape document that produced it, **read, by path** — and if no
-  such document is found, that absence is itself the finding and the ruling waits. **`docs/research/`
-  and the legacy corpus are the first read of any scope question, not the last.**
-
-- **L7 — check the toolkit before you build.** `[candidate, 2026-08-17]` A `citations` gate was
-  written, tested and landed in arch-tools to catch specs citing documents absent from the corpus.
-  **`spec address` had done it the whole time, more broadly** — its `dangling` class is documented as
-  *"a citation whose target is not a file in the corpus. Judgment: Forward / Stale / Leak"*, it flags
-  the same findings plus the `DOC.md §N.M` forms the new rule never read, and the legacy V8
-  publish-cleanup plan names it outright as *"the unpublished-doc-leak detector."* Reverted at
-  arch-tools `50fec87`. **The corpus was searched for the defect; the toolkit was never searched for
-  the instrument.** Two counters for one question is worse than either — Q7a already recorded three
-  plausible counts describing one corpus. *Before adding a rule: `ls` the analyzer directory, read the
-  `--help`, and run what is there. A gate that exists and is not run looks exactly like a gate that
-  does not exist.*
-
-  **Fifth instance, 2026-08-17, and it is the one that should change behaviour — the flag's help text
-  predicted the failure in the words that describe what happened.** `spec address` reported **585
-  dangling citations**, which became a handoff's headline finding and a *"do not bulk-import 727 legacy
-  documents"* work item. The run omitted `--namespace-root`. That flag's own `--help` reads: *"this
-  corpus spans two repos; without it, every citation to a sibling-repo document reports as dangling —
-  **which is could-not-look wearing a verdict's clothes**."* Supplied, the count is **51** (specs) /
-  **79** (specs + guides). **534 of the 585 were citations to `ENTITY-CORE-PROTOCOL.md` and its
-  siblings — a repo one directory over, which this team owns.** The real worklist is 38 documents, 32
-  recoverable from legacy: `docs/status/STATUS-2026-08-17-the-dangling-citation-worklist-is-38-…`.
-
-  ***Standing rule this earns — quote the invocation with the count.*** **A figure from an analyzer is
-  void unless the command that produced it is quoted beside it**, flags included. A count taken with a
-  resolver that could not reach half its namespace is not a high number; **it is not a measurement.**
-  This is L7 pointing inward: the toolkit was built, then run wrong, and the wrong run was published as
-  a finding three times.
-
-  **Seventh instance, 2026-08-20 — and the unsearched artifact was a *proposal*, not a tool.** The
-  transport-set's third pass concluded that a browser peer's reachability *"cannot be expressed"* and
-  filed a new v2 work item for it. **`PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` §6 open item #1 is that
-  exact question**, asked and leaned eighteen days earlier, in `docs/proposals/implemented/` in this
-  repo — and `EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE` sits beside it unopened (L11).
-  **`spec coverage` is the instrument** and `AGENTS.md` already names it *"start here on any 'do we
-  already have X?' question."* It was not run. **The habit that fails is searching `specs/` and
-  stopping** — the answer to a design question is at least as likely to be in a *folded proposal*,
-  where it reads as settled and is therefore never re-surfaced (**L9**, ratified the same day on this
-  incident). *Before filing a gap: `spec coverage`, then grep `docs/proposals/implemented/` and
-  `docs/research/explorations/` for the question, not just for the noun.*
-
-- **L9 — a deferral is a build-state claim, and expires like one.** `[**RATIFIED** 2026-08-20 — second
-  shape: a *resolved open item in a folded proposal*, voided by the filing seat's own build]`
-
-  **Second shape, and it is what earned ratification.** The first four instances were one spec's
-  deferral list (`EXTENSION-RELAY`, below) — cuts in *live* normative text. The fifth was somewhere
-  nothing looks: **`PROPOSAL-EXTENSION-WEBRTC-TRANSPORT` §6 open item #1**, in a **FOLDED** proposal.
-  It asked *"does a browser peer publish a `webrtc` profile?"*, leaned **no** on 2026-08-02, and rested
-  on exactly one argument — *"they can't meet at a rendezvous when the browser is offline (rendezvous
-  needs both present)."* `entity-browser-rust` then shipped the missing half: `bb27e64` (rendezvous
-  modes reach the app, **2026-08-13**) and **`c5e16ef` — *"the serving side attempts too, so a peer
-  that only serves is reachable"* (2026-08-16)**. The commit title is the refutation.
-  **Nobody re-opened it, and the reason is structural rather than careless: a folded proposal reads as
-  finished.** `implemented/` is a completeness marker (L3), so its residual open items are invisible
-  to the one signal we use for "is this still live" — and the lean had meanwhile been **copied into
-  normative text** (`EXTENSION-NETWORK` §6.5.2d's *"Who publishes it"* bullet), where it is re-read as
-  a rule. **A deferral that has been quoted into a spec has two homes and only one of them is ever
-  re-audited.**
-  **Three aggravating facts.** *(1)* It was voided **by the seat whose shipping code was the evidence
-  for it** — the party best placed to notice, who also did not, because their own module doc still
-  opens *"a browser has no listener"* and reasons forward from it in the file that disproves the
-  inference. *(2)* Arch cited the conclusion as a **design limit** four days later, withdrew a
-  requirement (R4) on it, and filed a **new v2 work item** (R-25) to solve a problem that was not
-  there. *(3)* Had it shipped, **every browser peer in the ecosystem would publish a signed statement
-  that it is not reachable while running the daemon that makes it reachable** — a false statement, at
-  scale, under our own signature.
-  ***Enforcement point (this is the ratified one):*** **a proposal's open items do not fold with the
-  proposal.** When a proposal moves to `implemented/`, every unresolved or *leaned* §6-class item is
-  carried onto `docs/COHORT-OPEN-ITEMS.md` as a row with the `(seat, commit)` its lean was measured
-  at — or it is closed outright. **And a lean quoted into normative text is a build-state claim in a
-  spec**, which the *"spec text is not our log"* rule already forbids: cite the item, never restate
-  its conclusion. Mechanically checkable — `implemented/*` files containing an open-items section with
-  no matching ledger row is a grep — so this is a **gate** ask; **filed, not built.**
-
-  > **Sixth instance, 2026-08-22 — the expiring claim was a proposal's own *sequencing note*, and
-  > the proposal it stalled was ours.** `PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS` §5 opened *"fold
-  > `hash-format-sha-384.2.rehash` first — verified live: `kind` is still `content_hash_under_format`,
-  > pin still `012e64bbde…`."* **True when written, and void the same day**: the inversion and both
-  > rebuilds landed 2026-08-13, hours later. The proposal then sat DRAFT for **nine days** while
-  > `v767/` stayed on disk, the gate stayed red at 4, and normative process rules landed in the
-  > working copy that the published copy never received.
-  > **Why it is a distinct shape rather than another tally.** The five prior instances are deferrals
-  > about **someone else's** substrate — a spec that does not exist yet, a primitive nobody has built.
-  > This one is a **self-blocking** claim: the proposal names a dependency *it also owns*, so there is
-  > no external event to notice and no peer whose commit refutes it. **A proposal parked on its own
-  > sequencing emits no signal when the sequencing clears** — the board reads `DRAFT` before and
-  > after, which is the truth and tells you nothing.
-  > ***Enforcement point:*** a proposal's sequencing step that blocks on a **landable** action states
-  > what makes it unblock in checkable terms, and **the session that lands that action re-opens the
-  > proposal or says on the ledger why not.** The cheap habit is one question at fold time — the
-  > mirror of L21's: ***what was waiting on this?*** Mechanically checkable in the same shape as the
-  > ratified rule above: a `docs/proposals/active/*` file whose §5-class blocker cites a state the
-  > tree no longer has is a grep.
-
-  **The four original instances, which are the first shape.** `[2026-08-17 — named by `entity-core-go`]`
-  **All three of `EXTENSION-RELAY`'s examined scope cuts voided on landed text**
-  — Mode A's substrate blocker, Mode C's *"until a driver materializes"*, and §7's signed-mutable-pointer
-  gate. Three of three is not coincidence: **a deferral list written against a snapshot and never
-  re-audited.** The shape is the one `AGENTS.md` already documents for build-state — *true when
-  written, plausible forever, invisible to review, caught only by re-opening the dependency tree* —
-  and a deferral is exactly a claim about what does not exist yet. **Proposed enforcement (theirs):**
-  a deferral MUST cite the `(spec, §, commit)` it blocks on and gets re-checked when that commit
-  moves. Mechanically checkable, so it is a **gate** ask — `spec address` already resolves citations
-  and a pinned deferral is the same shape. **Candidate: one incident family, one spec, enforcement
-  unbuilt. Honor it; do not claim it generalizes.**
-
-  **Fourth of four, 2026-08-17 — and this one was the load-bearing deferral, void on cross-impl-verified
-  text.** `EXTENSION-RELAY` §11.1a defers Mode A because *"cross-peer subscription initiation … does not
-  exist in current substrate — subscription engines … are local-tree-only."* `EXTENSION-SUBSCRIPTION`
-  carries a **top-level `## 6. Cross-Peer Delivery`**: §1.2 specifies A-subscribes-to-B with its
-  three-capability model, §6.1 does *third-party* delivery (A subscribes on B, B delivers to **C** —
-  more indirection than Mode A needs), and §6.3's convergent-mirror recipe states *"**verified
-  cross-impl (Go / Rust / Python, fresh peers per directional pair)**."* Not merely specified —
-  **verified, with a measured amplification bound.** **Four of four RELAY deferrals examined are void.**
-  That is no longer one incident family: it is one spec's entire deferral list, each cut written against
-  a snapshot, none re-checked, and **the largest was refuted by a section heading in a spec it names as
-  its own evidence.** L9 reached its second shape on 2026-08-20 (above) and is now **ratified**; the
-  enforcement point is still unbuilt, so honor it by hand — and **re-open a deferral's dependency
-  before citing it**, not after.
-
-  > **The cost, measured 2026-09-05, and it is the half the rule was missing: A FALSE SENTENCE LEFT IN
-  > A SPEC IS NOT A FILED FINDING, IT IS AN ARTIFACT THAT KEEPS TEACHING.**
-  > `[operator: "you should have made it so if we have bad data that you fixed it immediately. What
-  > does bad data do? It propagates and propagates, and the more it exists the more you regurgitate it
-  > back to me."]`
-  > The instance above was found on **2026-08-17**, written up as `PROPOSAL-RELAY-COMPLETE-THE-MODE-SET`
-  > §2 with a sharper diagnosis than the ledger's — *an engine firing on local mutations is true and
-  > universal; a subscription being initiable only locally does not follow, because who may initiate is
-  > a capability question* — and **landed in `AGENTS.md` as this very entry.** The spec text was never
-  > touched. **Nineteen days later the false sentence was still in `EXTENSION-RELAY` §11.1a, still
-  > inherited by `EXTENSION-REGISTRY` §8.2, and had spread to a THIRD home in `GUIDE-RESOLUTION` §7.**
-  > An operator-directed registry pass then **rediscovered the whole thing from scratch and reported
-  > registry federation blocked** — to the operator, as fact.
-  > **Why this is worse than an ordinary stale row and why filing does not discharge it.** A backlog row
-  > is inert: it costs the session that reads the board. **A false sentence in a normative document is
-  > *generative*** — every later reader derives from it, in good faith, and republishes the derivation.
-  > The cost is not linear in time; it is the number of sessions that opened the file, and each one may
-  > publish it onward. **Here it reached four documents and one operator briefing from a single
-  > uncorrected paragraph.**
-  > **This is not a new letter.** It is **L9** (a deferral expires) firing with **L13's fourth axis** (an
-  > arch-owned item whose remaining work is an *execution* is an unfinished task, not a backlog row);
-  > minting a third for the pair is the *"adding a rule is not doing the work"* move L0 rule 4 forbids.
-  > ***Enforcement point, and it is the one clause the earlier version lacked:*** **a sentence in a
-  > canonical document that is found to be FALSE is deleted in the session that finds it — writing it
-  > up is not an alternative to deleting it.** A proposal may carry the *design* that follows; **the
-  > false sentence itself does not wait for it.** Mechanically checkable at close-out: *did this session
-  > establish that a landed document states something untrue, and is that document still stating it?*
-  > **And when the false statement is corrected, grep the corpus for its other homes in the same
-  > session** — this one had three, in two specs and a guide, and only the first was known.
-
-- **L8 — an artifact is not a conclusion about the thing it names.** `[RATIFIED 2026-08-17 — five
-  instances in one session across two trees]` `entity-core-keystone` was put
-  in RELAY's coordination scope because `system_type_system_relay_advertise.bin` exists in its tree.
-  Keystone carries **no relay handler** — those files are the protocol-generator's reference typestore
-  for the whole type registry — and reading the bytes shows `modes` typed as
-  `array_of → primitive/string`, so the mode identifiers the proposal wanted to rename are **free
-  string values absent from every type definition**, and nothing regenerates. **This is L4's shape one
-  level down:** L4 says open the document rather than trust a summary; L8 says open the *artifact*
-  rather than trust its name. A path listing is evidence a file exists and nothing else.
-
-  **Ratified same-day, not held as a candidate, because the evidence arrived from a second tree.**
-  `entity-browser-rust` independently reached the identical rule and put it on their own ladder as
-  ratified, counting **five instances in one session** — *"a conclusion drawn from an artifact — a
-  constant name, a `cfg` line, a feature list, a doc comment, or now an SDK module — is not a
-  conclusion about the thing itself"* (`ROUTING-2026-08-17-comprehensive` §1). **Four of their five
-  were their own; one was ours** — the Mode A blocker, which inferred a substrate absence from what
-  subscription engines happened to do. Add this session's two here (a filename read as a build state,
-  a toolkit never opened) and the ladder's bar — *a second incident in a different shape* — is met
-  several times over, in two trees, on the same day. **Its concrete forms so far:** a filename · a
-  `cfg` line · a feature list · a doc comment · an SDK module · a constant name · an unopened
-  toolkit · **a path prefix** · **a placeholder name in a peer's own prose** · **a document's title,
-  read as its scope** · **absence from a tool's output, read as absence from its scope** · **an
-  assignment, read as a conclusion about the path that reaches it** · **a repo name, read as a
-  language** · **a capability, read as a conclusion about the call site that would use it** · **our own
-  normative pseudocode, read as a claim about three programs** · **a tool's contract block, read as
-  what the tool checks** · **a response status, read as which of two gates fired** · **a generated
-  cohort's uniform absence, read as a fact about the specification rather than about the generator's
-  input set** · **a count of one token, read as the distribution of the slot it sits in**.
-
-- **L8's twentieth form — A COUNT OF THE TOKEN YOU EXPECTED IS NOT A CENSUS OF THE SLOT. "Three
-  implementations converged on X" is a positive-sounding sentence whose truth condition is a negative,
-  which is why the *prove a negative* rule does not fire on it — it reads as measured, and it cites a
-  number.** `[2026-09-03 — caught by `entity-core-go`, who measured their own tree and refused to
-  assert the other two]`
-  `0.8.2.6` gave §3.3's 500 row a default code and justified it in **normative spec text**: *"three
-  implementations had independently converged on this spelling with nothing in the corpus saying it."*
-  The evidence was `grep -c internal_error` in three trees — **go 184 · rust 27 · py 18, published as
-  "229 sites, converged."** Censusing the **slot** — every `code` emitted at status 500 — go carries
-  **16 spellings** (183 `internal_error`, **58 bare `internal`**, 60 more across 14 others), rust 15,
-  py ~18. **`internal_error` is the plurality at every seat and the convention at none**, so the claim
-  is false about all three, not only about go — the half go could not have measured.
-  **Why it is a distinct form and not another tally.** Every prior form reads an artifact and infers
-  the thing. This one reads a **measurement** — the class of evidence that exists precisely to stop
-  that — and the inference crosses from *frequency of one value* to *composition of a population*. A
-  `grep -c X` is a fact about X. **It contains no information about what else occupies the same slot**,
-  and the sentence it was used to support is entirely about what else occupies the same slot.
-  **It compounded inside the same fold, which is the part that makes it worth a form.** The `0.8.2.6`
-  sweep retired `unknown_operation` from the **501** slot and reported the class closed. Censused after
-  go landed it: **`not_implemented` survives in all three ground-up trees and four generated peers**,
-  alongside `not_supported`, `unsupported_mode`, `not_available` and `domain_control_unsupported`.
-  **The sweep was scoped by the token and retired one of five.** Same error, one level down, in the
-  remedy for the first one — and a token-scoped sweep reports **done** while the slot stays divergent.
-  **Two smaller instances of the same shortcut in the same document.** The predecessor's cohort table
-  charged `entity-browser-rust` with one `unknown_operation` site; the token is **absent from that tree
-  on every branch searched** — an assignment to a seat that owed nothing, which is the false-defect
-  filing avoided against go two days earlier and then committed against browser-rust. And go's own
-  close-out reported the sweep *"grep-clean"* when it is **emit-clean**, with two correct harness
-  references remaining: true either way, and only one of the two sentences is checkable.
-  ***Enforcement point:*** **a claim about what a cohort does with a value is evidenced by a CENSUS OF
-  THE SLOT — group by the field at that site, publish the whole distribution — never by a count of the
-  spelling you expected.** Mechanically checkable in review: *a convergence or divergence claim whose
-  evidence is `grep -c <token>` rather than a grouped distribution is the violation*, and so is a
-  **sweep scoped by a token** where the rule is about a slot — the worklist is *every value at that
-  site that is not the ruled one*. This is **L7's standing rule** (*quote the invocation with the
-  count*) doing its job on a hand-run grep: had the command been printed beside the number, the defect
-  would have been visible in the sentence. **And a build-state claim of this kind does not belong in
-  spec text at all** — the *spec text is not our log* rule caught none of it, because the sentence was
-  offered as rationale rather than as a claim about a peer, which is the disguise this class travels in.
-
-  > **Second shape, 2026-09-03 — the slot has THREE axes and the census keyed on two. Found the next
-  > day, by the two seats the first shape was routed to, on three different axes at once.**
-  > `[entity-core-rust f0a399b + 91397d2, surfaced by entity-core-go's corrected harness c2ff3a2]`
-  > The first shape says *census the slot, not the token*. **The slot arch censused was
-  > `(status, spelling)`. A code is `(status, FIELD, spelling)`**, and all three axes failed
-  > separately within twenty-four hours:
-  > **(a) The FIELD.** `entity-core-rust`'s `extensions/type-system/{validate,constraint}.rs` each
-  > declared a local `error_entity` shadowing the canonical one and wrote the code under key **`type`**,
-  > not `code` — 14 emit sites decoding to `code = absent` at a conformant reader, violating
-  > `system/protocol/error`'s own descriptor, which declares `code` non-optional. **`4d888f8` had just
-  > landed the correct spelling at two of those sites, so its own fix was invisible on the wire and
-  > every census — arch's included — counted it closed.** Their in-tree test scanned for the
-  > **substring** `invalid_request`, present under `type` and `code` alike, and passed under both
-  > shapes through three revisions. Landed as a `[MUST]` in `GUIDE-CONFORMANCE` §5.2b.1's proxy family.
-  > **(b) The STATUS NAME.** Arch's 500 census put rust at **3** bare `internal`; the tree has **19**
-  > (21 generic-500 sites). The 16 invisible ones are in two crates declaring their own
-  > `const STATUS_INTERNAL: u32 = 500;` while arch's grep keyed on `STATUS_INTERNAL_ERROR`. **A census
-  > of a code slot keys on the status VALUE, never on one spelling of the constant that names it** —
-  > enumerate the aliases first, and treat every helper that fixes a status internally as its own emit
-  > shape. It matters beyond the number: **OP-3 was sized off that census.**
-  > **(c) The ABSENCE.** `PROPOSAL-TYPE-OPERATION-ERROR-TAXONOMY` §1 recorded that
-  > `entity-core-go` and `entity-core-py` *"have not built these handlers."* **go has dispatched all six
-  > type operations since `ae3311c`, the v0.8.0 initial public release — 650 lines, present at the exact
-  > commit §1 cites as searched** — and py dispatches all three. Arch then **adopted rust's independent
-  > version of the same false absence** (*"converge/adopt/reconcile exist in no tree"*) verbatim into a
-  > fold rationale, which is **L22** with arch as the borrower. Two wrong absences about one fact,
-  > reached independently, because both searched for **the vocabulary of the seat already read** —
-  > rust's `bad_request` and `extensions/type-system/` against a tree that spells it `decode_error` in
-  > `ext/type/`.
-  > **The unifying property, and it is why this is one shape and not three:** *a census keyed on a
-  > **name** for a thing is blind to every other name for that thing* — the field key, the status
-  > constant, the code spelling, the directory. The first shape widened token → slot; the slot itself
-  > has axes, and **the axis you did not vary is the one the divergence is hiding on.**
-  > ***Enforcement point, extending the first shape:*** **before publishing a cohort census, name the
-  > axes of the thing being counted and state which one the search varied.** For a code that is
-  > `(status, field, spelling)`; the search must key on the **value** at each axis, not a name for it —
-  > resolve status constants to their integer, decode the field rather than substring the body, and
-  > enumerate the target tree's **own** vocabulary before concluding absence. **An absence claim about
-  > another seat's tree is discharged by naming the bounded region searched** — the dispatch `switch`,
-  > the manifest, the handler directory — **never by a token grep**, and it is verified by the seat that
-  > owns the tree before it is published.
-
-  **Fourteenth form — a capability, read as a conclusion about the call site. It was the ground under
-  a release cut.** `[2026-08-20 — caught by `entity-browser-rust`; their rule, and it is better than
-  the finding]` `services` (§3b) and browse-as-a-MUST were cut from registry v1 on *"the shipping
-  application has the browse surface built and does not need `services` to ship."* **Their browse
-  surface has never walked a registry.** It is fed by `entity-deployment.json`'s origins map;
-  `resolve_name` has exactly one caller — a shell verb that prints ~160 bytes of preview — and the
-  Site Browser's fetch path names no signed root, no `published-root`, no `PinnedPublisher`. Re-run
-  in their tree at `7bc1ccf` before accepting it.
-  **The sentence was true and the inference was about a different code path.** *"The browse surface
-  is built"* and *"the browse surface walks a registry"* are different claims and **only the second
-  licenses the cut** — the first says nothing about an implementer who does use the registry to
-  browse. This is the second time in two days a claim about their tree was true of one of two paths
-  and the inference was drawn about the other.
-  **The cut was still right, which is the trap.** A conclusion that survives its own justification
-  being wrong is the hardest kind to notice, because nothing downstream breaks. What breaks is that
-  the release note says *"built"* — a false one — where *"unexercised"* is an honest zero and a
-  **stronger** argument for cutting. That is `GUIDE-CONFORMANCE` §5.2b.1's satisfaction-mode
-  distinction, applied to a release note instead of a scoreboard.
-  ***Enforcement point:*** **when a cut, a ruling, or a release call rests on what an application
-  does, name the call site — not the capability, the module, or the feature.** A grep for the
-  *function* is the evidence; a grep for the *symbol's definition* is not. Cheap and mechanical: for
-  the claim *"application X exercises Y"*, the artifact to cite is the caller of Y in X's tree, at a
-  commit.
-
-  **Tenth form — a document's title, read as its scope, and it steered two handoffs.**
-  `reviews/PLAN-EXTENSION-LANDSCAPE.md` was named in `HANDOFF-2026-08-17-relay-audit` §3a as *"the
-  overall extension architecture"* and ordered **first** by the next handoff, *"because it is the frame
-  for any which-extension-owns-this question, and Mode A is exactly that question."* **Opened, it is the
-  identity / authorization / coordination stack** — multisig, attestation, quorum, identity, role, group,
-  cluster — and its own §8 excludes *"subscription, content, continuation…"* by name. **RELAY, NETWORK,
-  ROUTE, SIGNALING, DISCOVERY and REGISTRY appear nowhere in it.** It cannot answer a question about the
-  network family. The title reads like the map of all extensions; it is the map of one stack. **Two
-  handoffs propagated it and a whole session's reading order was built on it. The check was one
-  `head -40`.**
-
-  **Eleventh form — absence from a tool's output, read as absence from its scope.** *"`guides/` is
-  scanned by no analyzer"* was recorded as a **verified** finding, evidenced by *"`spec check` output:
-  zero `guides/` references."* `spec style` had been scanning all 34 of them the whole time — its
-  `naming-surface` scope roots at `.` — and printed nothing because it **found nothing**. **A clean
-  scope and an unread scope produce byte-identical output.** *The scope config is the artifact to open;
-  a run's silence is not evidence about what it looked at.* (The narrower true finding was real and is
-  fixed: `address` analyzed `specs/` only, so guides were loaded as citation **targets** and graded as
-  **sources** by nothing.)
-
-  **Thirteenth form — a repo name, read as a language. An absence measured in one tree, published as a
-  claim about a seat that lives in another.** `[2026-08-17 — caught by the operator, in the packet that
-  corrected someone else's premise]` `ROUTING-2026-08-17-j` told the cohort *"`entity-core-go` has no SDK
-  wrapper layer"* and concluded **no Go seat was exposed** to the SA-2 subscription defect. The search was
-  real and its result was true: `entity-core-go` is the engine repo and correctly has no SDK. **The Go SDK
-  is `entity-workbench-go`'s `entitysdk`** — and it carries `SubscribeOpts.Events` as an unvalidated
-  passthrough at **two** call sites, exactly the exposure the packet said no Go seat had.
-  **Three things make it the worst-placed instance so far.** *(1)* `AGENTS-STANDARD` already says **prove
-  a negative before you claim it — run an exhaustive named search**; I ran a single-repo grep and
-  published a cohort-wide negative. *(2)* `INDEX.md` §0's tier table **names workbench-go and browser-rust
-  as the applications/SDK seats**, in this repo, in a document I had edited hours earlier — the answer was
-  in our own routing table, not just in their tree. *(3)* It was published **to** the cohort as a
-  reassurance, so the seat most able to refute it was the one being told it did not need to look.
-  **And the same packet corrected `entity-core-py`'s premise for a nearly identical error class.** A
-  correction does not immunise the document that carries it.
-  ***Enforcement point:*** **a claim about "go" / "rust" / "python" is a claim about every seat that
-  implements that language, and the seat list is `INDEX.md` §0's tier table — read it before writing the
-  claim.** Name the repo, never the language, and when the claim is an absence, name every tree searched
-  and the commit each was searched at.
-
-  > **Extended to spec-gap claims, 2026-09-02 — `entity-core-keystone`'s rule, adopted verbatim
-  > because it is better than arch's and it binds arch harder than it binds them.**
-  > `[F51 withdrawal, keystone `4736e69`]` They filed *"the spec answers this nowhere we can find"*
-  > about a MUST that was **in the snapshot their own finding header cited**, four lines from where
-  > they were reading. The search used the vocabulary of the **question** (`peers`, `target_peer`,
-  > `check_permission`, `extract_peer`); the rule is written in the vocabulary of **addressing** and
-  > contains none of those four terms.
-  > **Their diagnosis is the transferable half: a negative claim cites nothing, so nothing can
-  > contradict it.** A wrong *positive* claim about the spec is caught by the next person to read the
-  > cited line. *"The spec is silent"* names no line, is re-checked by nobody, and sat published across
-  > three of their documents for two days. `AGENTS-STANDARD` already says **prove a negative before you
-  > claim it** — it says to **do** the search and never to **show** it, and that gap is the whole
-  > failure.
-  > ***Enforcement point:*** **a claim that the corpus is silent on something records WHICH SECTIONS
-  > WERE READ, by number** — which converts an unfalsifiable negative into a reviewable one. **And
-  > grep for the DISPOSITION you would expect, not only the concept**: one `grep -c invalid_request`
-  > over the snapshot returns 1, and it is the answer. **This lands hardest on arch**, which is the
-  > ecosystem's heaviest publisher of negatives — *"the string appears in no ground-up tree," "it
-  > occurs in one place in the corpus," "no seat implements this."*
-
-  **Twelfth form — an assignment, read as a conclusion about the path that reaches it. It produced a
-  cohort-facing measurement that was backwards.** `[2026-08-17 — caught by `entity-core-rust`, both legs
-  validated by `entity-core-go`]` `PROPOSAL-CAPABILITY-MINT-TEMPORAL-CEILING` §3.1 measured three impls
-  and published a table. The `entity-core-rust` row read *"no clamp → mints the ten-year token"*,
-  evidenced by a **correct verbatim quotation** of the line that computes `expires_at`. **Control never
-  reached that line for the caller the claim was about**: fifteen lines above, `is_attenuated` ran
-  against the *real* caller cap with a probe built `expires_at: None`, so §5.6's null-child-under-finite-
-  parent rule **403'd every request from an expiring caller.** rust had the opposite defect — it
-  over-bound and rejected legitimate mints, while go under-bound and minted unbounded. **One surface,
-  two impls, opposite directions, and the row asserted they were the same.**
-  **Why it is L8 and not sloppiness:** the line was real, quoted accurately, and did exactly what the row
-  said it did. **A line of code is an artifact; what a *path* does is a claim about the thing.** The
-  guards between the entry point and the assignment are part of the behavior, and a quotation of the
-  assignment is evidence about neither.
-  **Two consequences worth keeping.** *(1)* **The wrong row shipped in a routing packet as an
-  instruction** — it told rust to add a clamp at the quoted line. rust landed the clamp *and* found the
-  probe defect while implementing, so the outcome was right; **a ruling that reaches the right
-  instruction by the wrong route is not validated by the outcome.** *(2)* It was the row for the impl
-  whose source had been read **twice already that session**. Familiarity is where the shortcut gets
-  taken, not where it is safest.
-  ***Enforcement point:*** a claim that an operation is unbounded, unchecked, or missing a guard MUST
-  cite **the guards it ruled out** on the path to the site, not only the site. *"No clamp at line N"* is
-  not a finding until lines 1..N are accounted for. **Where the claim is comparative — a cohort table —
-  the row that matches the hypothesis is the one to re-derive, not the one to stop at.**
-
-  **Ninth form, landed the same day as the eighth, in the packet that landed the rule.**
-  `PROPOSAL-SHARE-AS-GRANT` §2.1 item 3 ruled that charter #6 *"bites today"* against
-  `entity-browser-rust`'s `offers/{blob-hex}` and `target { blob | prefix }`. **Their code was already
-  self-describing** — `Hash::to_bytes` is `push_varint_u32(algorithm)` + digest, `share_entity` encodes
-  `ecf_bytes(h.to_bytes())` (exactly EMBED's `content-hash = bstr`), and decode derives length from the
-  format registry. `{blob-hex}` was a **placeholder in their routing document**, and I read it as a form
-  in their source. Withdrawn at the point of claim (not quietly dropped), verified at `67057be`.
-  **The lesson is narrower than "open the tree," which the eighth form already says, and it is this:
-  the rule I wrote for design claims did not transfer to code claims in the same packet.** A ratified
-  discipline binds every claim class in the document, not the class that produced it.
-
-- **L10 — check the *framing* of a finding, not only the finding.** `[candidate, 2026-08-17]`
-  `entity-browser-rust` filed a real spec contradiction (§6.2's two-form policy-key closure vs §6.9a.1's
-  dual form) framed as *"arch ruled from the older side; we write the form the newer side authorizes."*
-  **The precedence runs the other way** — the spec header reads `Version: 0.8.0`, so §6.2's `0.8.1` tag
-  is newer than §6.9a.1's `v7.64`/`v7.74`. Adopting the framing would have resolved a live cohort
-  conformance question backwards, in the filer's favour, on a fact one `head -20` refutes.
-  **The finding was right and the frame was wrong, and the frame is the part that carried the
-  consequence.** A correct finding arrives with an interpretation attached; the interpretation is the
-  filer's inference and inherits none of the finding's verification. *Enforcement point: when a routed
-  finding asserts precedence, recency, or "which text governs," resolve it from the document's own
-  version header before ruling — never from the tags quoted in the packet.* **Candidate: one incident.
-  Honor it; do not claim it generalizes.**
-
-  **Eighth form, and the worst-placed one — a path prefix, read as a peer's design decision, and
-  published back to that peer as a fact about their own work.** `ROUTING-2026-08-17-workbench-go-…`
-  §2.1 told `entity-workbench-go` *"you chose a system namespace [for a share]; browser-rust used an
-  app-local prefix, and your argument beat theirs."* **workbench-go has no share feature.** Searched
-  at `4b34418` across all files and all four branches: 65 hits for share/audience/catalog, every one
-  unrelated (viewport-share arithmetic, `Audience:` doc headers, a panel-kind catalog, the LICENSE).
-  The claim came from their **continuation delivery inboxes** — `system/inbox/treefollow/{peer}/…` —
-  which are under `system/inbox/` because that is the substrate's inbox namespace, and which decide
-  nothing about where an app-tier record lives.
-  **Three things make this the instructive instance, not just another tally mark:**
-  **(1) The tree was on this disk.** Not a peer report, not a transcript — an unopened checkout one
-  directory over. **(2) It inverted the seat hierarchy.** `AGENTS.md` already says *read the filing
-  seat's own document* (L2) and *a claim about a tree is checked by opening it* (L4); the filing seat
-  for "what workbench-go chose" is workbench-go, and we took browser-rust's summary of it instead.
-  **(3) We routed it back to them as their own decision.** A packet that tells a seat what they
-  decided is worse than one that asks — it can be adopted as true by the seat best placed to refute
-  it. **The standing rule this earns: before a routing packet asserts what another seat built, chose,
-  or prefers, open that seat's tree at a named commit and cite it.** A second seat's report of a
-  third seat is hearsay, and publishing it back to the third seat launders it into fact.
 - **Numbered `L`, not `A`** — `METHODOLOGY.md` §7.2's Audit Doctrine already owns A0–A12 and its
   own A1 is *"trace before you theorize."* `D` runtime · `A` audit step · `F` feature step ·
   **`L` lifecycle**.
 - **L6 is a candidate, not ratified** — one measured incident, and it is in a peer's tree. **Honor a
   candidate as you would a rule; do not claim it generalizes.** Ratifying all six because six were
   routed would have been the set's own first violation. *(L3 was in this note until 2026-08-17 and
-  earned its second shape; it is now ratified — see its entry above.)*
+  earned its second shape; it is now ratified — its case is in the casebook.)*
 - **L1 now has a gate — `spec provenance`** (arch-tools `718f0d5`, warn-level while the backlog
   burns down). **Run it before you push a `specs/` change:**
 
@@ -2328,11 +386,61 @@ reconstruction pass.
   > entire build/supply-chain case, the refresh loop, static-route audience control, and the reader cost
   > model — **and every one was sitting in `docs/proposals/`.** *(A seventh was caught mid-draft, and the
   > cost-model one had already been routed to a seat before the correction.)*
-  > ***Enforcement point, and it is a BUILD not a habit — filed, not built:*** **`spec register`** —
-  > every `docs/proposals/**/PROPOSAL-*.md` is either **cited by a `DESIGN-REGISTER` row** or carries an
-  > explicit `Design-Conclusions: none` marker; same shape as `spec ledger`, ratchets to zero. **Until
-  > it exists the sweep is by hand and it is owed for ~90 documents.** **Do not answer this with another
-  > rule** — the sweep is the work (L0 rule 4).
+  > ***Enforcement point — **BUILT** 2026-09-07: `spec register`.*** Every design document under
+  > `docs/proposals/` and `docs/research/` is either **cited by a `DESIGN-REGISTER` row** or carries an
+  > explicit `Design-Conclusions: none` marker. Same shape as `spec ledger`; **ratchets to zero.**
+  >
+  > ```bash
+  > python3 <arch-tools>/spec-tool/cli.py register          # reader, exits 0
+  > python3 <arch-tools>/spec-tool/cli.py register --owed    # the worklist, one path per line
+  > python3 <arch-tools>/spec-tool/cli.py register --gate    # 0 clean · 1 findings · 2 could-not-look
+  > ```
+  >
+  > **196 documents · 26 cited · 170 owed** on the first run. **The sweep is still the work** (L0 rule
+  > 4) — the gate makes it countable, it does not do it. **The marker is an explicit act on purpose:** a
+  > blank is indistinguishable from *"nobody has looked at this one yet"*, and that ambiguity is what
+  > let 99 proposals sit at 9 cited with nobody able to say how many of the other 90 mattered.
+  >
+  > **A cheap correction worth carrying: the first measurement of this said `0 of 97`.** It compared
+  > whole filenames, and the register cites `THE-REDUCTION` where the file is
+  > `EXPLORATION-THE-REDUCTION-MONOTONICITY-IS-THE-PATTERN`. **A count of one spelling is not a census
+  > of the thing** — the gate now matches a stem *or a leading clause of it*, and every credit was
+  > audited by hand before the number was published.
+  >
+  > **SWEPT TO ZERO 2026-09-08 — `196 of 196`, and `--gate` is green, so run it in enforcement mode.**
+  > All 45 remaining explorations and all 24 reviews are indexed. **The reviews were read, not marked:
+  > not one `Design-Conclusions: none` was used in the whole corpus**, because every review carries a
+  > verification outcome and several carry findings that *inverted under measurement* — the exact class
+  > the register exists to stop anyone re-running. **A marker is for a document with no conclusion, not
+  > for a document whose conclusion is inconvenient to write down.**
+  >
+  > ***And the "one spelling" defect above recurred three more times in the same run — this is the
+  > lesson, not the correction.*** `is_cited` required a citation to be a **prefix** of the filename,
+  > so everything this corpus's house style puts in *front* of a subject broke it: a leading article
+  > (`EXPLORATION-THE-P2P-COVERAGE-AUDIT` cited as `P2P-COVERAGE-AUDIT`), an ISO date
+  > (`REVIEW-2026-09-01-THE-KEYSTONE-AUDIT`), and the `ABSORPTION` class prefix, which was simply
+  > missing from the list. **13 of the 69 "owed" were false — a document reported owed with a register
+  > row already pointing at it.** Fixed in arch-tools with the prefix discipline intact and a test
+  > asserting it. **The transferable form: a matcher calibrated against the names the rule-writer
+  > expects is the same defect as a marker list calibrated that way** (`spec ledger` scored 6 where a
+  > hand count found 9, for the same reason) — **calibrate against the corpus's actual vocabulary, and
+  > when a gate reports a backlog, hand-audit a sample before publishing the number.**
+
+- **The index map — four questions, four surfaces, and knowing which one you are asking.** *"Have we
+  done this already?"* is really four questions, and asking the wrong surface is how a session
+  re-derives with a clean conscience:
+
+  | The question | The surface |
+  |---|---|
+  | *"Is there a document called…?"* | `docs/research/INDEX.md` · `docs/proposals/INDEX.md` · `docs/LEGACY-ARCHIVE-INDEX.md` |
+  | *"Where did we work on X?"* | `spec coverage` · `research/INDEX.md`'s §1–§9 subjects · the archive's **subject map** |
+  | *"What state is it in?"* | `spec ledger` · `docs/proposals/INDEX.md` §1–§4 |
+  | ***"Does this question already have an ANSWER?"*** | **`docs/DESIGN-REGISTER.md`, and only that** — `spec register` measures the gap |
+
+  **`docs/proposals/INDEX.md` §0b is the content roster** — all 99 proposals with the H1 line as the
+  answer, generated, plus an `In register` column that is the backlog made visible. It works because
+  this corpus's house style makes a title a conclusion in a sentence. **A title is a conclusion
+  *claim*, not the conclusion** — open the document before citing it (L4).
 - **`spec coverage` — start here on any "do we already have X?" question.** The reader that maps
   each spec to its **guide · proposal · design record**, and lists what is missing on each axis.
   It is **L7's second enforcement point**, beside `docs/research/INDEX.md`: the index answers
@@ -2475,9 +583,11 @@ reconstruction pass.
   measured through. What survives is 20, every one of them the RELAY rule landed the day before.
 
 - **`spec charter` — the discipline set, checked against itself. Run it whenever you touch a rule.**
-  The set lives in **two homes** — `docs/DISCIPLINE-CHARTER.md` (canonical) and this file's summary
-  line (always in context) — and **neither says it is a copy of the other**, so a divergence is
-  invisible from both. That is **L23's fourth shape pointed at the two documents that define L23**.
+  The set lives in **two homes** — `docs/DISCIPLINE-CHARTER.md` (authoritative, internal) and this
+  file's summary line (always in context) — and **neither says it is a copy of the other**, so a
+  divergence is invisible from both. That is **L23's fourth shape pointed at the two documents that
+  define L23**. *(The charter stopped publishing 2026-09-08; it did not stop being the authority, and
+  this gate is unaffected — it reads both files off disk, not off the keep-list.)*
 
   ```bash
   python3 <arch-tools>/spec-tool/cli.py charter    # 0 clean · 1 divergence · 2 could-not-look
@@ -2541,6 +651,42 @@ reconstruction pass.
   If your edit fails one of these, the fix is to move the sentence into the proposal, not
   to touch the baseline. `--update-baseline` only ever *lowers* a count and refuses to
   raise one, so re-baselining your way to green is not available.
+
+- **`spec standards --scope published-narrative` — THE OTHER PUBLISHED SURFACE. Run it
+  before you push anything under `docs/proposals/` or `docs/research/explorations/`.**
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py standards --scope published-narrative
+  python3 <arch-tools>/spec-tool/cli.py standards --scope published-narrative --no-baseline   # the worklist
+  ```
+
+  **Those two directories are declared `[[keep_tree]]`. They publish** — 169 documents,
+  read by someone outside this ecosystem — **and until 2026-09-07 no narrative rule had
+  ever read one of them.** Two mechanisms kept them out and each was defensible alone:
+  the scope excluded them by name *(the config's own words: "proposals and explorations
+  are drafts by definition"* — true when written, false the day the keep_trees were
+  declared*)*, and narrative scoring keyed on document **class**, which is a proxy for
+  *"will a stranger read this"* that the keep_tree declaration silently invalidated.
+
+  **It runs four rules, three of them new because most of what leaks had no rule at all:**
+  `impl-team-ref` (seat names) · `operator-quote` · `internal-path-ref` (internal repo
+  paths and agent-guidance files) · `discipline-letter-ref` (L6+; **L0–L5 are our
+  published *layer* names and are deliberately not matched**). It does **not** run
+  `date-in-body`, `proposal-citation`, `amendment-provenance` or `document-history-section`
+  — a proposal is a dated document that cites proposals and carries its own history, and
+  firing those would bury the signal.
+
+  **Its own baseline, `.spec-baseline-published-narrative.json`, ratchets like the other
+  one and shares nothing with it** — `--update-baseline` lowers every entry it does not
+  observe, so one file for two scopes would let a narrow run silently zero the wide one's
+  debt and call it a win. The debt is real and large; **burn it down, and never widen the
+  baseline to get green.**
+
+  **What this changes about writing.** Everything under those two directories is addressed
+  to an outside reader. Put the seat names, the operator's words, the discipline letters
+  and the internal paths in `docs/status/`, which publishes nothing — that is what it is
+  for, and this file's own rule already says to write those frankly and for the next
+  session.
 
 ## Spec text is not our log — the rule that keeps being broken
 

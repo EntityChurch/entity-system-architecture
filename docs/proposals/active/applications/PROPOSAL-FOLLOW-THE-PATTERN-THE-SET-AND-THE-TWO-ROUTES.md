@@ -1,6 +1,6 @@
 # PROPOSAL — follow: the pattern, the set, and the two routes
 
-**Status:** DRAFT — **first pass, and it is a stress test rather than a sign-off candidate.** The
+**Status:** DRAFT 2026-09-04 — **first pass, and it is a stress test rather than a sign-off candidate.** The
 purpose of writing it out is to find the gaps that a reduction could not; §6 is the substance and
 several of its results are unresolved on purpose. **Not ready to rule. Not ready to implement.**
 
