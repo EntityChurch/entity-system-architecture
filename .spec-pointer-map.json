@@ -1,8 +1,13 @@
 {
   "meta": {
-    "pins": 2
+    "pins": 3
   },
   "pins": {
+    "specs/SYSTEM-DATA-EXCHANGE.md::ENTITY-CORE-PROTOCOL\u00a71.4": {
+      "digest": "sha256:c6785bb5ecc440ec115ef82c5a44aa75",
+      "doc": "ENTITY-CORE-PROTOCOL",
+      "section": "1.4"
+    },
     "specs/extensions/EXTENSION-NETWORK.md::TREE\u00a73.3a": {
       "digest": "sha256:d7f1cc0b76cfaf0d7db52a3e1da56362",
       "doc": "TREE",

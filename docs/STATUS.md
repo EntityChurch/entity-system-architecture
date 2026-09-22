@@ -1,7 +1,14 @@
 # entity-system-architecture — status
 
-_Updated: 2026-09-08 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
+_Updated: 2026-09-17 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
 CHANGELOG heading._
+
+_**The release is in motion and the specification is described as *current*, never *final*.** The
+core protocol is at **`0.8.2.32`** and it will not be the last: revisions are still landing against
+text days old, and that is the corpus working rather than the corpus being unready. What a reader
+gets at the cut is a **current, reproducible state with its conformance anchored on content
+digests** — not a frozen one. Nothing in this log should be read as claiming the design has stopped
+moving._
 
 _**The release number is 0.8.2, following `entity-core-protocol` rather than the
 implementations** (operator, 2026-08-24). The specs are not semantically versioned as a set — each
@@ -110,17 +117,83 @@ A spec's own `Status:` header is **not** a reliable maturity signal (many conver
 still read "Draft"); the M-level in `ROADMAP-EXTENSIONS.md` is authoritative.
 
 **Convergence floor today.** The `--profile full` surface is 3-way converged across the Go, Rust,
-and Python reference implementations at **0-FAIL** and exercised by the keystone cohort (15
-generated peers all `--profile core` 0-FAIL). Maturity: **public research preview, v0.8.0** — the
-v1 extension set is mature; the network/resolution family is still converging.
+and Python reference implementations at **0-FAIL**, and the generated cohort stands at **46 peers,
+46 measured, all at one content-pinned check set, 46 of 46 at 0-FAIL**. Maturity: **public research
+preview, v0.8.0** — the v1 extension set is mature; the network/resolution family is still
+converging.
+
+> ⚠ **Read that cohort number for exactly what it claims.** Those peers share a generation lineage
+> and pass one author's vectors at one pinned check set: **cohort-consistent, not independent
+> convergence.** They are also measured against a **pinned specification snapshot that is behind the
+> current core revision**, deliberately and with the gap tracked in the cohort's own published
+> matrix — the check set is what gates the wire, and a snapshot reaching a peer is a regeneration
+> question on its own cadence. **A green row is evidence about the wire, not a proof about the
+> peer.**
 
 ## Where we left off
 
-**The release is a sequencing problem now, not a specification problem.** Nothing on the arch board
-blocks a cut. Arch is next in the order and the tree is ready; assembly, the oracles, the six gates
-and the fork push are meta's, per their release-curation runbook.
+**Nothing on the arch board blocks a cut, and that has been true for a while — what is still open is
+VALIDATION, which is not a specification problem and is not arch's to close.** The components of the
+release exist; no cross-seat exercise of the whole chain has been run. **A table of finished
+components is not a readiness claim**, and this log has previously read like one.
 
-**What the last cycle established, in order:**
+**The core protocol arc, `0.8.2.4` → `0.8.2.32`.** Twenty-nine revisions since the 0.8.2 cut, and
+the shape of the work is consistent enough to name: **almost none of it invented a rule.** It found
+the same rule stated in several places at several strengths, ruled which home is normative, and made
+the others say so. The recurring findings, in the order they cost the most:
+
+- **A rule that EXECUTES in a pseudocode block, while the prose table enumerating its class omits
+  it.** A reader consults the *right* home and it answers *wrongly* — which produces a confident
+  false absence rather than a visible gap. Landed at `0.8.2.28`, and its mirror (the homes dropping a
+  rule's bound rather than the rule) at `0.8.2.29`.
+- **A conformance-floor row that restates a rule and then does not follow it.** `0.8.2.31` found
+  §9.1 still publishing, positively, the authority discriminator `0.8.2.22` had corrected — for eight
+  revisions, in the MUST-implement list an implementer builds from. §9.1 now carries a standing
+  `[MUST]` that **a restating row names its normative home**, and `0.8.2.32` swept the other 26 rows
+  onto it. **A floor row is a bullet in a list, not a paragraph arguing a rule**, so neither a search
+  for the words nor a search by subject reaches it.
+- **A code slot that is divergent while a token-scoped sweep reports it closed** (`0.8.2.6`
+  through `0.8.2.9`). The unit is the **slot**, never a spelling.
+- **A scope sentinel that is fail-closed in one position and fail-OPEN in the other**
+  (`0.8.2.21`), and **a shared parameter whose meaning changed under readers listed nowhere**
+  (`0.8.2.19`). Both were live over-acceptances in shipped code, and both were found by
+  implementations building the previous revision.
+
+**The changelog now carries all of it.** `entity-core-protocol`'s `CHANGELOG.md` is declared
+canonical and had an entry for ten of the thirty-two `0.8.2.x` revisions, stopping at `.23`. All
+twenty-four missing entries are written, each saying what a conformant peer must do about the
+revision — including the ones that move nobody, and including the two that record a rule a later
+revision superseded, so a reader going top-down does not learn a withdrawn rule as current.
+
+**Instruments built this cycle, each for a defect that had no enforcement point.** `spec pointers`
+(does a declared restatement still say what its authority says — plus `--floor`, for the
+conformance-floor rows where an *undeclared* restatement is cheap to find) · `spec arms` (what a
+pseudocode block refuses, beside the prose enumerating that class) · `spec sections` (does a section
+number name exactly one section — three live duplicates, all created by inserting a section out of
+numeric order onto a number already taken) · `spec deps` (the declared dependency graph, which
+nothing read — one declared **cycle**, which makes the freeze sequencing derived from that graph
+undecidable for two nodes) · `spec expiry` (is a tracker row still asserting OPEN on evidence from a
+tree that has moved).
+
+> ⚠ **The transferable half of that list is not the tools.** Seven of them shipped with a scope or a
+> resolver root that had been set once, for a layout that later changed, and **a wrong scope produces
+> confident findings rather than an error.** Every one was caught by validating the new gate against
+> the incident that motivated it, in both directions, before publishing its first number — and
+> several of the worst defects were found by *writing the assertions* or by *reading the section the
+> worklist was for*, never by running the tool.
+
+**The routing channel was the other half of the cycle, and the finding is worth stating plainly: the
+inbox gate's scope was two assumptions, and the seat with the most open asks tripped both.** Packets
+were discovered by globbing one filename pattern in one directory. **Fifteen documents across three
+seats address this corpus in their own FILENAME**, are not routing packets, and were cited nowhere on
+the ledger — and naming a recipient in the filename is a *stronger* signal than the addressee field
+the gate was built to parse. Discovery is now by name across a peer's whole tree, with a **flow
+window** (`--since`) as the run to start a session with, because a lifetime count over a channel
+carrying ~30 packets a day answers a question nobody can act on. **Reciprocity is reported in both
+directions**: six seats keep a standing index aimed at this corpus, this corpus kept four, and the
+intersection was one.
+
+**What the earlier release-mechanics cycle established, still current:**
 
 - **A build input is not only a dependency manifest.** The fear going in was that commit pins in
   build files would break when the release boundary re-authors history. Swept every manifest in the
@@ -150,8 +223,10 @@ ADR names: **61 of 75 unique commit citations sat in accumulated history**, all 
 citations would have regenerated the problem the following week.
 
 **The residual pin backlog is arch-owed and is larger than this log said, because the published
-surface grew and nothing re-read the rule that governs it.** Re-measured 2026-09-08: **694 of 699
-short-SHA citations are unreachable to a reader of `master`**, and they are **not** concentrated in
+surface grew and nothing re-read the rule that governs it.** Re-measured 2026-09-17: **705 of 711
+short-SHA citations are unreachable to a reader of `master`** *(694 of 699 on 2026-09-08 — an
+unswept backlog grows with the corpus, so the delta is the cost of not having done it)*, and they
+are **not** concentrated in
 the durable documents this paragraph used to name — they are overwhelmingly in the proposal
 corpus, which was declared publishable as a whole directory. **The guidance in force at the time
 said proposals were internal and SHAs could be cited freely there**, which was true when written
@@ -275,9 +350,17 @@ permitted but priced (restricted reach + no cross-format dedup).
   which had recorded it closed, for two weeks — a **build-state claim expires like one**, and the
   place it goes stale is the section nobody re-reads when they update the section that changed.)*
 - **`entity-browser-rust` + `entity-core-rust`** — repin `CORE_RUST_REF` to a **tag that exists**,
-  and tag core-rust first. Release-blocking, and note the shape: the fix arch asked for **was
-  applied** — the value is a tag name now — and `entity-core-rust` then shipped as **0.9.0 without
-  ever being tagged**, so the defect survived its own fix with a new value. Meta's B1.
+  and tag core-rust first. Release-blocking. Meta's B1.
+
+  ⛔ **Still live, re-measured 2026-09-17, and now on its THIRD value.** The pin reads
+  `CORE_RUST_REF: v0.9.0`; `entity-core-rust` carries `v0.8.0` and **`published/0.9.0`** — so
+  **`v0.9.0` does not exist in that repo**, and a release build checks out a ref that is not there.
+  The release-readiness document beside the pin states the tag is *"also `v0.9.0`"*, so **both ends
+  agree with each other and neither agrees with the repository.** Note the shape, because it has now
+  repeated three times on one line: arch asked for a tag name instead of a SHA, the fix **was
+  applied**, and the defect survived it each time with a new value. **A pin is only a pin if it
+  resolves in the tree the consumer actually fetches** — which is one `git tag --list` to check and
+  has not been checked at any of the three values.
 - **The implementation cohort, as always.** Converging network/resolution specs are not validated
   until exercised by a cross-impl (Go / Rust / Python) conformance run; prose review does not catch
   route/path/dedup defects. REGISTRY/DISCOVERY cohort impl and the ENCRYPTION end-to-end block are
@@ -287,6 +370,40 @@ permitted but priced (restricted reach + no cross-format dedup).
 
 ## Done recently
 
+- **A core fold now discloses the conformance cells it crosses (2026-09-17).**
+  `GUIDE-CONFORMANCE` **§5.3a**, binding from `ENTITY-CORE-PROTOCOL` `0.8.2.32` forward: a proposal
+  folding a normative change into the core protocol names the cells of the conformance scope table
+  its deltas touch and, for each, whether a check has been driven against it. **An undriven cell does
+  not block the fold — an undisclosed one does.**
+  The stronger form of this rule, *cells driven green before a fold may land*, was adopted earlier
+  and is unmeetable while most cells carry no vector: it forbids every fold, so folds landed under it
+  and nothing noticed. **A condition that cannot be met is not a strict gate; it is an unenforced
+  one, and the two are indistinguishable from outside.** What the disclosure buys is not coverage —
+  it is that a change landing in a region no check can see leaves a record saying so.
+  It is gated, and the gate checks the shape only: whether a disclosed drive state is *true* is
+  verifiable by the party that runs the checks, which is not the party that writes the specification.
+  **The earlier revisions are not reconstructed** — a reconstructed disclosure is a table nobody
+  measured.
+- **The published core-protocol changelog reaches the current revision again (2026-09-17).** It
+  carried an entry for ten of the thirty-two `0.8.2.x` revisions and stopped at `.23`; all
+  twenty-four missing entries are written from the folds themselves. **It is a declared canonical
+  document**, so the gap was a public reader being handed a record that stops eight revisions short
+  of the specification beside it.
+- **Four authoring axes swept to their floor, re-measured 2026-09-17.** Every canonical spec now has
+  a guide **and** a design record (`spec coverage`: **0 and 0**, where it was 3 and 0). Every
+  extension spec carries a **complete** seven-field dependency header (`spec declare`: **26 of 26**,
+  where the first honest measurement was **1 of 26** — the two specs then credited carried six of
+  seven). Every design document is indexed by a register row (`spec register`: **253 of 253**,
+  gating). Every roster row agrees with the spec header it copies (`spec roster`: **64 rows, 0
+  findings**, across five roster documents — the fourth and worst of which was found two weeks after
+  the gate shipped, because pointing an existing gate at a new document is not the same as that gate
+  *matching* anything there).
+- **The inbox stopped being a filename convention (2026-09-17).** Packet discovery is by **name
+  across a peer's whole tree**, not by one glob in one directory; a **flow window** replaced a
+  lifetime count as the run to open a session with; and **tracker reciprocity** is reported in both
+  directions, which is the one blind spot no check starting from a file this corpus wrote can reach.
+  **0 owed** on the routing channel at the current measurement, in-window and overall — with fifteen
+  name-addressed documents newly visible and their reconciliation still owed.
 - **The corpus learned to answer "does this question already have an answer" (2026-09-07/08).**
   Every settled design conclusion now has a row in a single register, and a gate — `spec register`
   — asserts that **every** design document in the workspace is either cited by a row or explicitly
@@ -342,15 +459,30 @@ permitted but priced (restricted reach + no cross-format dedup).
 
 ## Next
 
-1. **Clear the two release blockers**, then cut in order: `entity-core-rust` `v0.8.2` → browser-rust
-   `CORE_RUST_REF` → dispatch dry run → tag browser-rust.
-2. **Sweep the residual commit citations** in the durable published documents (`AGENTS.md`,
-   `GUIDE-CONFORMANCE`, `EXTENSION-NETWORK` and the smaller instances), anchoring on content digests
-   or `master`-reachable refs. Once the backlog is down, run `spec pins --gate`.
-3. **Continue network/resolution family convergence** — route REGISTRY/DISCOVERY/ENCRYPTION changes
-   through a cohort conformance run before/at fold, and update `ROADMAP-EXTENSIONS.md` M-levels as
-   they land.
-4. **Pay down the `sdksync` unpinned backlog** (47 of 51 restated SDK blocks), re-reading each block
+**The mode has changed and this list reflects it.** The work is no longer *rule the next question* —
+it is *get the corpus into a state a stranger can pull, read and act on*, and hold the backlog for
+after the cut. New rulings are produced only for a party genuinely blocked now.
+
+1. **Keep the published surface honest and current.** The changelog reaches `0.8.2.32`; the
+   remaining surface obligation is the **pin sweep** — 705 of 711 short-SHA citations unreachable to
+   a reader of `master`, overwhelmingly in the proposal corpus that was declared publishable as a
+   whole directory. Anchor on content digests or `master`-reachable refs, then run
+   `spec pins --gate`. The core-protocol corpus sits at **0**, which is what proves it finishable.
+2. **Decide whether the process tier publishes at all.** `spec standards --scope
+   published-narrative` is red at **38 errors** and it is a **classification** question, not a prose
+   one: the rule's prescribed fix is *move this material to the internal directory*, which is
+   unavailable to a proposal, because a proposal is the ratifiable unit and has to live where
+   proposals live. Three of the four red files are documents whose *subject* is this project's own
+   process. **The baseline must not be widened to get green** — lowering it is the one move the
+   ratchet exists to prevent.
+3. **Reconcile the fifteen name-addressed documents** now visible on the routing channel, and the
+   standing asks behind them. This is the largest single block of unworked inbound and it is
+   **backlog, not release**.
+4. **Continue network/resolution family convergence** — route REGISTRY/DISCOVERY/ENCRYPTION changes
+   through a cohort conformance run before or at fold, and update `ROADMAP-EXTENSIONS.md` M-levels
+   as they land. **This is the work that continues past the cut**, and the release language says
+   *current*, never *final*, because of it.
+5. **Pay down the `sdksync` unpinned backlog** (47 of 51 restated SDK blocks), re-reading each block
    against its source before pinning — a pin is a claim that someone looked.
-5. **Run the header-label normalization pass** so published spec `Status:` headers match the
+6. **Run the header-label normalization pass** so published spec `Status:` headers match the
    maturity ladder.

@@ -516,6 +516,43 @@ Per Appendix E §E.5, two things trigger growth:
 
 Discretionary growth (covering corners we've thought of but haven't hit) is fine and encouraged; it's the conformance discipline that prevents the W2 pattern.
 
+### §5.3a A fold discloses the cells it touches `[MUST]`
+
+**A proposal folding a normative change into the core protocol MUST carry a CELL DISCLOSURE: the cells of the conformance scope table its deltas touch, and, for each one, whether a check has been DRIVEN against it.** The state vocabulary is closed — `driven` · `named-vector-not-driven` · `no vector`.
+
+**An undriven cell does NOT block the fold.** A fold may land over any number of them, and most will. **An undisclosed cell DOES block it:** a fold whose disclosure is absent, or which names fewer cells than its deltas touch, is not ready to land.
+
+**Why disclosure rather than permission, stated as the property it protects.** An executed check set can be insensitive to a defect that every peer in a cohort shares: the requirement is uncovered before the fold and uncovered after it, the suite is green on both sides, and **nothing in any artifact records that a normative change was made in a region no check can see.** That is §5.2b's unreachable surface arriving at the fold boundary instead of at a check. Requiring the cells to be *driven green* before a fold may land is the stronger rule and is not available: while most cells carry no vector, that rule forbids every fold, and a condition that cannot be met is not a strict gate — it is an unenforced one, and the two are indistinguishable from outside. **Disclosure converts an invisible omission into a countable one, which is the move available to a party that does not run the checks.**
+
+#### §5.3a.1 The required shape
+
+The disclosure is a section of the proposal, titled **`Cell disclosure`**, carrying:
+
+1. **The run it was read from** — a `Read from:` line naming the repository, the commit and the date of the scope-table summary the states were taken from. **A disclosure that cites no run is a guess with a table's formatting.**
+2. **One row per cell the fold touches**, each with a state from the closed vocabulary above.
+
+```
+## Cell disclosure
+
+**Read from:** `<repo>` `<commit>` `<date>` — scope-cell table summary
+
+| cell | state | note |
+|---|---|---|
+| `<cell id>` | `driven` | |
+| `<cell id>` | `no vector` | requirement on the check set |
+```
+
+#### §5.3a.2 Four rules that decide what the disclosure means
+
+- **The drive state is read from the anchor's table, never asserted from the spec side.** The party that authors the specification does not run the checks and cannot observe coverage; the scope table and its summary are the conformance anchor's artifact, and they are the source. Verification on the specification side stops at the shape — **that a disclosed state is TRUE is verifiable only by the party that owns the table**, and this rule says so rather than implying otherwise.
+- **The disclosure is taken over the FOLD, not accumulated over its deltas.** A per-delta disclosure measures each delta's own cells and asks nothing about whether the deltas covered the fold; the omission it misses is a cell no delta touched and the fold did. The control is a set difference against the fold's own normative surface.
+- **A cell disclosed `no vector` is a REQUIREMENT ON THE CHECK SET, created by the fold**, recorded against the check-set author at the moment of the fold. **It is not discharged by the fold landing.**
+- **A change to the scope table's summary output is a change to this rule's input.** The summary is a shared surface between implementations from the moment this rule binds, not an instrument internal to the project that maintains it.
+
+#### §5.3a.3 It binds forward
+
+`ENTITY-CORE-PROTOCOL` **0.8.2.32** is the last revision outside this rule; every revision folded after it carries a disclosure. **Earlier revisions are not reconstructed** — a reconstructed disclosure is a table nobody measured, which is the defect this rule exists to prevent, committed deliberately and with the authority of a landed record. Whether the earlier revisions are ever covered is a question for whoever next runs the scope table over the whole corpus, and it is answered by a census, not by back-filling proposals.
+
 ### §5.2c A flaky check is a surface reached *by accident* `[added 2026-08-12]`
 
 The fourth member of the family, and the one that disguises itself best. §5.2a is a rule with **no** observable surface; §5.2b is a surface the suite **cannot reach**; §2.4a is a surface the suite reaches and **scores backwards**. This is a surface the suite reaches **only sometimes, for reasons unrelated to the rule** — and the intermittency is the *only* thing that draws a human's attention to it.

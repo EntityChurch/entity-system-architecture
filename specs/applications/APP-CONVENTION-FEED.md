@@ -1,6 +1,6 @@
-# APP-CONVENTION-FEED — the entry, the index, the collection and the mirror — v0.3 DRAFT
+# APP-CONVENTION-FEED — the entry, the index, the collection and the mirror — v0.3.1 DRAFT
 
-**Version**: 0.3
+**Version**: 0.3.1
 **Status**: Draft
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §1.2 (content hash) · §1.4 (paths) · §1.5 (`PeerID`) · §3.5
@@ -145,7 +145,7 @@ implementations mutually invisible even with a perfect mirror between them.
 | `app/feed/collection` | the author's own **bounded, complete, authored-order** set — album, playlist, portfolio | its author |
 | `app/feed/mirror` | the **head** of a gathered view of other people's entries, claiming nothing | a reader |
 | `app/feed/mirror-page` | one **key-addressed**, sealed page of a gathered view, in **gather** order | a reader |
-| `app/feed/follow` | a reader's durable subscription to a peer's feed | the reader, privately |
+| `app/feed/follow` | a reader's durable, **private declaration of interest** in a peer's feed — never a registration at the publisher (§2.4) | the reader, privately |
 
 **Four content shapes, and it terminates.** The three collection-shaped types are not subject-matter
 categories — they are the three answers to *"who assembled this list, and what does it therefore
@@ -549,7 +549,24 @@ feed-mirror = {                      ; type = app/feed/mirror — the HEAD, at a
     gathered_by: peer-id             ; the key that assembled it
   }
 }
+```
 
+> **[MUST]** `gathered_at` **MUST** be derived from the gathered set — the highest `updated_at` among
+> the entries this view carries — and **MUST NOT** be read from a clock. Two gatherers with the same
+> inputs **MUST** produce the same value, and re-gathering an unchanged subject **MUST NOT** move the
+> head's hash.
+
+**Why a clock is the wrong source, and it is a cost rule rather than a tidiness one.** `EXTENSION-TREE`
+§3.2 determinism rule 3 already forbids a field whose content is a function of when the code ran — a
+second party cannot derive it from the same inputs. **The consequence here is concrete: a re-gather of
+an unchanged subject must be a no-op.** With a set-derived value it is; with a clock the head's hash
+moves every time a gatherer looks, which republishes the root, re-signs it, advances `seq`, and makes
+every downstream reader re-fetch a view carrying byte-for-byte the same information. **A field nobody
+reads would otherwise drive the cost of the whole leg**, and it would break §4.3's cross-run property
+by construction — a sealed page keeping its bytes across rounds is worth little under a head that
+cannot.
+
+```cddl
 feed-mirror-page = {                 ; type = app/feed/mirror-page
   type: "app/feed/mirror-page",      ; at app/feed/mirrors/{coordinate}/{page} — page is a decimal uint
   data: {
@@ -987,6 +1004,7 @@ carried unchanged from the design record so existing citations resolve.
 | `FEED-R30` | Emit a mirror as a bounded head plus key-addressed pages, `page` equal to its key | MUST | §6.0a |
 | `FEED-R31` | Renumber, merge or compact a mirror page, or chain pages by hash | MUST NOT | §6.0a |
 | `FEED-R32` | Rewrite a sealed mirror page to insert a later-discovered entry | MUST NOT | §6.0a |
+| `FEED-R33` | Derive `gathered_at` from the gathered set rather than a clock, so that two gatherers with the same inputs agree and re-gathering an unchanged subject does not move the head's hash | MUST | §6 |
 | `FEED-R33` | Derive a mirror's live coordinate by any function other than `prefix_hash`, at the ECFv1-SHA-256 floor | MUST NOT | §6.0.1 |
 | `FEED-R34` | Use as a timeline mirror's live subject a path other than the author's `app/feed/index` | MUST NOT | §6.0 |
 | `FEED-R35` | Publish a reader's cursor position in any record this convention defines | MUST NOT | §2.4, §4.4 |
@@ -1019,6 +1037,7 @@ implementations. **The convention is authored; it is validated when these have b
 | `FEED-10` | publish N entries across 3 pages, remove one from the oldest, republish: **(a)** the new root is byte-identical to a tree built without it · **(b)** the changed-node count is `O(log_K N)`, not proportional to the archive · **(c)** the other pages' bindings are untouched | `FEED-R10`, §7.2, §7.3 | **the one that fails loudest if the design drifts back toward a chain** |
 | `FEED-11` | a reader holding cursor `{page: 1, applied: H}` where **H was since deleted** | `FEED-R14` | a cursor that breaks on edit |
 | `FEED-13` | a mirror grown **past one page**, then extended again: **(a)** the head's encoded size does not change with the member count · **(b)** every sealed page is byte-identical before and after · **(c)** a second reader fetches the head and **one** page and stops | `FEED-R29`–`FEED-R32` | ⭐ **the leg §6.2 sells as the cheap one is the expensive one.** A single-page fixture passes against a flat list and measures nothing — **the anti-vacuity arm is asserting the view spans more than one page first** |
+| `FEED-14` | gather a subject, then **gather it again with nothing changed between rounds**: the second round carries **zero** entities and the mirror head's hash **MUST NOT** move | `FEED-R33`, §6 | ⭐ **a gatherer that republishes its own root every time it looks.** Nothing errors and nothing is wrong in the view — the cost lands on every downstream reader, who re-fetches a head carrying identical information. **The anti-vacuity arm is asserting the FIRST round carried something**: a no-op check over an empty gather passes trivially |
 | `FEED-12` | a **timeline** mirror — `subject` a live reference to the author's `app/feed/index` — assembled independently by two gatherers, **each carrying different `via` hints**: both derive the **same key** and each finds the other's mirror by computing it | `FEED-R25`, `FEED-R26`, `FEED-R27` | ⭐ **two gatherers of one author cannot find each other's mirror.** Nothing errors: each publishes a correct, verifiable view at an address the other does not compute, and the republished walk is unusable as a source leg |
 
 **`FEED-3`, `FEED-5`, `FEED-6` and `FEED-9` are the load-bearing four.** Three fail if an implementation
@@ -1069,6 +1088,14 @@ would resolve it.
 ---
 
 ## Document History
+
+**v0.3.1:** gives `gathered_at` the semantics §6's CDDL comment left open — **derived from the gathered
+set, never read from a clock** (`FEED-R33`, check `FEED-14`). Two conformant readings existed and two
+independent gatherers picked the same one and each asked whether it was right; it is, and the argument
+is a cost rather than a preference. A clock-sourced value moves the mirror head's hash every time a
+gatherer looks at an unchanged subject — republishing the root, re-signing it, advancing `seq` and
+making every downstream reader re-fetch identical information — and breaks §4.3's cross-run property,
+under which a sealed page keeps its bytes across rounds.
 
 **v0.3:** §6's mirror becomes a **bounded head plus key-addressed pages** — the shape §4.2 already
 defines for an author's index, applied to a gathered view. v0.2 widened `subject` to `any-reference` so

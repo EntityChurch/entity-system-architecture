@@ -374,6 +374,47 @@ as owed rather than claimed.
 
 ---
 
+## §6a `D32` — `gathered_at` is derived from the gathered set, never from a clock `[added 2026-09-17]`
+
+**Added after the fold, because two independent implementations converged on an answer §6 does not
+state and both of them routed it as a question.** §6's CDDL gives `gathered_at` one comment —
+*"when this gatherer last extended the view"* — and no prose. **Two readings are conformant against
+that: a wall clock at gather time, and the high-water mark of the set actually gathered.** Both
+implementations chose the second, deliberately, and each said so rather than letting a silent
+divergence cost a joint run an explanation.
+
+**They are right, and the argument is not aesthetic — it is a property one of them measured.**
+
+- **`EXTENSION-TREE` §3.2 determinism rule 3** binds the value: a field whose content is a function
+  of when the code ran is not derivable by a second party from the same inputs.
+- ⭐ **The measurable consequence, and it is the one that decides it: a re-gather of an unchanged
+  feed must be a no-op.** With a set-derived value it is — *second gather carries **0** entities and
+  the mirror head's hash does not move*, measured in a built gatherer. **With a wall clock the head's
+  hash moves on every gather of input that did not change**, which republishes the root, re-signs it,
+  advances `seq`, and makes every downstream reader re-fetch a view that is byte-for-byte the same
+  information. **A field nobody reads would silently drive the cost of the whole leg.**
+- It also breaks `FEED-R32`'s cross-run property by construction: a sealed page keeping its bytes
+  across rounds is not much use under a head that cannot.
+
+**Proposed text — `§6`, beneath the `feed-mirror` CDDL:**
+
+> **[MUST]** `gathered_at` **MUST** be derived from the gathered set — the highest `updated_at` among
+> the entries this view carries — and **MUST NOT** be read from a clock. Two gatherers with the same
+> inputs **MUST** produce the same value, and re-gathering an unchanged subject **MUST NOT** move the
+> head's hash.
+
+**`§11.2` gains one check:** gather a subject twice with no change between rounds; the second round
+**MUST** carry zero entities and the mirror head's hash **MUST NOT** move. **The anti-vacuity arm is
+that the first round carried something** — a no-op check over an empty gather passes trivially.
+
+`APP-CONVENTION-FEED` **v0.3 → v0.3.1**.
+
+> **What this does not do:** it does not give `updated_at` the same treatment on a mirror *page*.
+> The same argument plainly applies and the same two seats have matched on it; **it is not folded here
+> because no one has measured it**, and one measured field is worth more than two asserted ones.
+
+---
+
 ## §7 What this proposal does NOT do
 
 - **It does not touch §6.1's four republication rules or §6.2's purpose.** The mirror's *meaning* is

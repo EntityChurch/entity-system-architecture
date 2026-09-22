@@ -1,6 +1,6 @@
 # The cell table cannot gate a fold, and the thing it CAN do is stop a fold landing silently over an undriven cell
 
-**Status:** DRAFT `[2026-09-16]` → folds as `GUIDE-CONFORMANCE` **§5.3a**, **held pending `CD-2`** (whether it binds before or after the release — the operator's call, §7)
+**Status:** **RATIFIED and FOLDED — `GUIDE-CONFORMANCE` §5.3a, §5.3a.1, §5.3a.2, §5.3a.3.** `CD-2` is resolved: **it binds now**, forward from `ENTITY-CORE-PROTOCOL` `0.8.2.32`.
 **Author:** architecture team
 **Answers:** `KB-18` / `F73`'s gating half, asked by `entity-core-keystone` four times
 **Corrects:** this team's own `F73(a)` condition, ruled 2026-09-12
@@ -163,20 +163,21 @@ is pinned to `(repo, commit, date)` and expires (`spec expiry`).
 
 ---
 
-## 7. ⚠ The one thing that is not arch's to decide: whether this binds before or after the release
+## 7. When it binds — RESOLVED: now
 
-**This is a process ruling that adds a required section to every core-tier fold, in the week of a
-release.** Two dispositions, and the choice is the operator's:
+**It binds now**, forward from `ENTITY-CORE-PROTOCOL` `0.8.2.32`. Every core revision folded after
+that one carries a disclosure; the revisions at or below it are outside the rule and are not
+reconstructed (§4a).
 
-| | |
-|---|---|
-| **binds now** | the release's own folds carry disclosures; the release ships with the rule demonstrated rather than announced. Costs: one census read per remaining fold |
-| **binds after the release** | the release path is untouched; the rule lands with the first post-release fold and the four already-landed revisions are joined by however many more ship this week |
+The alternative was to start it after the release, leaving the release path untouched. It was not
+taken, and the reason is the one that decided it: **the release is the moment with the most folds
+and therefore the most cells being crossed silently**, the cost is one census read per fold, and a
+rule adopted after the release it was most relevant to is a rule announced rather than demonstrated.
 
-**Arch's recommendation is *binds now*, weakly held.** The cost is one read per fold, the release is the
-moment with the most folds and therefore the most cells being crossed silently, and *"we adopted it
-after the release it was most relevant to"* is a poor sentence. But the release-path argument is real
-and this is the operator's call, not ours.
+**What binding now actually costs, stated so it can be checked against later:** a section in each
+remaining fold's proposal, written at the fold, from a census read taken then. It adds no review
+round, no approval step and no dependency on another seat's schedule — an undriven cell does not
+block anything, which is the whole design.
 
 ---
 
@@ -195,7 +196,7 @@ and this is the operator's call, not ours.
 
 | # | item | owner |
 |---|---|---|
-| **CD-1** | Build the `spec` analyzer for §5.3a's disclosure shape | arch — `entity-system-arch-tools` |
-| **CD-2** | Whether §5.3a binds before or after the release | **operator** |
+| **CD-1** | ✅ **BUILT — `spec disclose`.** Checks that a core fold's proposal carries the disclosure, that it cites a run, and that every state is inside the closed vocabulary. It scopes a **landed** fold by the revision it landed as and a **pending** one by the fact that it lands past the binding line — the second half is the one a revision-only rule gets silently wrong, and two live core proposals are exactly that shape | arch — done |
+| **CD-2** | ✅ **RESOLVED — it binds now**, forward from `0.8.2.32` (§7) | closed |
 | **CD-3** | Whether the four landed revisions get reconstructed disclosures | whoever runs the next census; arch's position is **no** (§4a) |
 | **CD-4** | `KS-9d` tranche A — the thing that actually reduces the insensitivity | `entity-core-go`, open |

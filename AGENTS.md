@@ -93,6 +93,18 @@ delivered until it is on the remote. Do not end a session with *"want me to push
   `git remote get-url origin`.
 - **Never force-push**, anywhere. On a non-fast-forward, **stop and ask** — that is the one git
   situation worth interrupting for.
+- ⛔⭐⭐ **STAGE SPECIFIC PATHS. `git add -A` IS WRONG IN OUR OWN TREE TOO `[2026-09-17]`.**
+  `AGENTS-STANDARD.md` forbids it *"in a repo that is not your working directory"*, and that scoping
+  is what made it look safe here. **It is not: this working directory can have ANOTHER SESSION in
+  it.** Measured — a session that verified `git status` **clean** at start, worked for an hour in
+  `docs/status/` and `AGENTS.md`, ran `git add -A`, and committed **a concurrent session's
+  in-progress 291-line proposal and its 64-line `SYSTEM-DATA-EXCHANGE` fold** under its own message
+  and its own DCO sign-off. Pushed before the stray files were noticed — and **the tell was a gate,
+  not the diff**: `spec ledger` went red on a proposal count nobody in that session had touched.
+  ⇒ **`git status --short` immediately before every commit, account for EVERY line of it, and name
+  the paths on the `git add`.** A sign-off is a claim about work you did; sweeping the tree makes it
+  a claim about work you have not read. **History is not rewritten to fix this** — the commit
+  stands, the next one says what happened.
 - Push at natural stopping points, not only at session end. Everything else stays as above:
   separate commits per repo, tests green first, `-s` sign-off.
 
@@ -127,6 +139,34 @@ consistent, five places for a correction to have to travel, and it takes the swe
 that had just demonstrated it does it well — `entity-core-go` had consolidated the whole cohort's open
 set into one packet, and arch answered by fragmenting it again. **Consolidation is the thing that
 worked; do not undo it in the reply.**
+
+### ⭐ A GUIDE CHANGE IS A COHORT CHANGE — route it `[2026-09-17, `entity-core-keystone` `F88`]`
+
+**When a commit to `guides/` adds or moves a cohort obligation, say so in a packet.** You route
+`specs/` revisions reliably; the guides are not in that stream and nothing watches them.
+
+**Measured:** `GUIDE-CONFORMANCE.md` moved **17 times** between the conformance anchor's recorded
+pin and `a671a37` — `3deee05` → `a671a37`, **+485/−31** — and **three of those commits oblige the
+cohort**: §7a.2a's plural reentry carriers, `dispatch-outbound`'s narrow handler grant, §7a.1b's
+per-call `deadline_ms` `[MUST]`. **No packet said so.** That guide is where a generated peer gets
+its **entire §7a conformance scaffolding**; it is deliberately not in `spec-data/` — non-normative,
+arch-owned — which is correct and is exactly why nothing on either side watched it.
+
+⇒ **The receiving seat's sentence is the rule:** *"the difference between **not adopted** and **not
+delivered** reads identically from our side, and it has opposite owners."* This is **`L21`** — a
+fold is a delivery to everyone who consumes it — applied to a **non-`specs/` document**, which no
+enforcement point covers. **`spec census` reads `§` citations into `specs/`; a guide's consumers are
+invisible to it.**
+
+**What to do, concretely:** a guide commit that changes a scaffolding contract, a handler params
+shape, a refusal code, or a check's run discipline gets a `COHORT-OPEN-ITEMS` row **when it lands**,
+not when it is routed. The row is what makes the packet writable later; the cadence rule below still
+governs *when* it goes.
+
+⚠ **Their half was worse and they landed it first**, which is why this is not a lecture: their own
+`tools/oracle-pin.env` had carried `guide_conformance = <sha256>` since `v0.8.2`, and
+`grep -rn guide_conformance tools/ Makefile` returned **exactly one line — the one that declares
+it.** **A pin nobody reads is a comment.**
 
 ### Cadence — routing is not how a session ends `[operator direction, 2026-09-08]`
 
@@ -199,7 +239,18 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   record is **57 minutes** and it ran twice in one day: an owed item written at 10:09 was discharged by
   the same session at 11:06 with nobody updating the row, and a routing hold naming two conditions
   outlived both within the hour. **A hold names a CONDITION, and a hold nobody re-reads outlives it**)* · **L10** check the framing of a routed
-  finding, not only the finding *(candidate)* · **L11** read the study that produced a design space
+  finding, not only the finding — **and a routed claim that the corpus CANNOT EXPRESS something is an
+  absence claim about our own text, so it is checked against the landed foundational document before it
+  is carried anywhere, including to the operator** *(**ratified** 2026-09-17 — second shape: a measured,
+  correct finding arrived framed *"no road expresses this"*; the finding was real and the framing was
+  false, and **`ENTITY-CORE-PROTOCOL` §1.4's own cross-peer worked example IS the operation being asked
+  about.** Adopting the framing would have grown a tier a road qualifier, a second signature locator and
+  a second trust argument, to route around an addressing model that was working. ⭐ **The tell: the
+  question dissolved into three of the five load-bearing invariants this file already puts in
+  FOREGROUND** — universal address space, local-view authority, absolute paths at every layer. ⇒ **when
+  a packet says we cannot express something, the first move is to try to express it.** **Enforcement
+  point OWED and named:** `spec inbound` can flag inbound absence-claims about our corpus the way `L16`
+  governs our own — not built, lockdown)* · **L11** read the study that produced a design space
   before ruling inside it *(**ratified** 2026-08-17 — L7's fourth and most expensive instance)* ·
   **L12** a mechanism cited in a ruling must be reachable by the actor the ruling assigns it to — name
   its input and how that actor obtains it *(candidate)* · **L13** a record that a seat owes something is
@@ -726,6 +777,37 @@ reconstruction pass.
   incentive: declaring a pointer now buys enforcement**, and register row `EN-4` is the controlled
   measurement that naming the authority is also what keeps the restatement correct.
 
+  > ⭐ **`--floor` closes that residue in the one place it is cheap — RUN IT AFTER TOUCHING ANY
+  > CONFORMANCE FLOOR `[2026-09-17]`.** An undeclared restatement is indistinguishable from prose *in
+  > general*, and **not** in a floor: a floor row is a list an implementer **builds from**, so it
+  > carries a rule in short form by construction, and when the authority moves the row goes on
+  > publishing the superseded version **positively**.
+  >
+  > ```bash
+  > python3 <arch-tools>/spec-tool/cli.py pointers --floor    # the worklist; reader, always exits 0
+  > ```
+  >
+  > **It NEVER gates, on `arms`' reasoning:** whether a row RESTATES a rule or **is** its sole
+  > statement is decided by **opening the cited section**, and floor rows do both. The `0.8.2.32`
+  > sweep contained one candidate that was **not** a finding (the `system/*` withdrawal — the floor
+  > is its only home) and one that **inverted on reading the section** (§6.3's listing-filter
+  > *pseudocode* is Informative; the *paragraph* above it is normative and is the home). **A gate
+  > would have filed both.**
+  >
+  > ⚠ **It under-reported on its own first use, in the silent direction, and that is the lesson
+  > rather than the fix.** The first cut matched `emits?` and missed two §9.1 rows restating a rule
+  > in the passive or with another verb — *"the **emitted** code is the lowest-numbered failing
+  > step's"*, *"bind-to-marker **fires** `modified`, NOT `deleted`"*. **Both were found by reading
+  > the section the worklist was for**, which is the only way a silent miss is ever found. Widened;
+  > 31→36 asserting, and three of the four new rows were real. **For a reader nobody is obliged to
+  > act on, under-reporting is the expensive direction** — a candidate a human discards costs a
+  > lookup, a row that never appears is the defect going unfixed.
+  >
+  > ⭐ **And the gate fired on the fold's own edit, which is the whole point of the pair being
+  > watched:** editing §1.11 made `ENTITY-CBOR-ENCODING:857`'s pointer unreviewed. It had **not**
+  > drifted — it quotes §1.11 verbatim and the quoted sentence was untouched — **and it was re-read
+  > before `--update`, not after.**
+
   ⚠ **Its own build is the cautionary half, and three of its five defects were found by writing the
   assertions or running against the live corpus rather than by reading the code** — an adjacency bug
   that reported an authority in a document called `FETCHES`; an ERROR filed against correct text
@@ -787,7 +869,43 @@ reconstruction pass.
   python3 <arch-tools>/spec-tool/cli.py inbound --owed         # the worklist, one path per line
   python3 <arch-tools>/spec-tool/cli.py inbound --unaddressed  # packets nobody can route mechanically
   python3 <arch-tools>/spec-tool/cli.py inbound --gate         # 0 clean · 1 findings · 2 could-not-look
+  python3 <arch-tools>/spec-tool/cli.py inbound --since 7d     # ⭐ WHAT IS FLOWING NOW — start here
   ```
+
+  > ⭐ **`--since` is the run to start a session with, and the lifetime count is the one to distrust
+  > `[2026-09-17]`.** The estate carries **1,766 packets and writes ~30 a day**; a lifetime total
+  > answers *"has anything ever gone unread"*, which nobody can act on, and it buries the question
+  > that matters — **is what is flowing NOW being picked up.** A 7-day window over 2026-09-10…16
+  > reads: `browser-rust 42 · workbench-go 27 · core-go 26 · keystone 23 · generator 16 · rust 15 ·
+  > formalization 12 · conformance 11 · py 10`. **The window scopes the REPORT and never the scan**
+  > — ambiguity is a property of the whole corpus — and **what it excluded is printed every run**,
+  > because a silent cap reads as *covered everything*.
+  >
+  > ⛔⭐⭐ **THE GLOB AND THE DIRECTORY WERE BOTH ASSUMPTIONS, AND THE SEAT WITH THE MOST OPEN ASKS
+  > AGAINST ARCH TRIPPED BOTH `[2026-09-17]`.** `entity-core-keystone` files
+  > `HANDOFF-TO-ARCH-<date>-<slug>.md` into **`research/stewardship/`** — not `ROUTING-*`, not
+  > `docs/status/`. **Their own tracker names those files as the source for 14 of their 18 open asks
+  > against us**, and every one was invisible: wrong directory AND wrong filename, **either alone
+  > sufficient.** Estate-wide, **15 documents address arch in their own filename, are not routing
+  > packets, and were cited nowhere in our ledger** (keystone 10, `entity-core-go` 4 under
+  > `docs/validation/reports/`, `entity-browser-rust` 1). **Nobody was careless at the sending end:
+  > naming us in the FILENAME is a STRONGER addressee signal than the `**To:**` field the gate was
+  > built to parse.** Fixed in arch-tools `530d594` — discovery by name across the peer's whole tree,
+  > pruned, reported in its own class and **not gated**, because a gate red on introduction is one
+  > people switch off. ⇒ **Seventh scope-set-once in this toolkit. When a gate takes a SCOPE, ask
+  > what it was set to and when anyone last re-read it** — and note that `--peers` and `LEDGERS`,
+  > the two previous instances, were both on *this same gate*.
+  >
+  > ⭐ **RECIPROCITY — `ask which seats keep a tracker for YOU`, and it is the one blind spot no
+  > check starting from a file WE wrote can reach.** Filed by `entity-core-keystone`, who had it
+  > filed against them first by `entity-system-conformance`: **twelve asks that never arrived,
+  > because the receiving seat kept no tracker for the sending one.** *"A reconciliation keyed on
+  > the trackers you KEEP cannot see the counterpart you OMITTED — an absent row in an absent
+  > table."* **Measured here: six seats keep a standing index aimed at arch; arch kept four; the
+  > intersection was ONE.** Reported on every run now, both directions, **never gated** — whether a
+  > seat warrants a tracker is a judgement about traffic. `TRACKER-entity-core-keystone.md` opened
+  > 2026-09-17; **`entity-system-conformance`, `entity-workbench-go`, `entity-browser-rust` and
+  > `entity-core-formalization` are still owed one.**
 
   **Current: 297 packets · 156 addressed here · 21 on the ledger · 135 owed**, plus 28 that cc us
   and **55 that name no recipient any parser can read.** *(First run said `397 · 212 · 14 · 198`
@@ -1033,6 +1151,45 @@ reconstruction pass.
   > `used by`, and a whole-file grep credits it. ① under-reports and is visible; ② **reports a false
   > clean** and is not. **Scope the read to the region the rule is about, and require the field's
   > syntax, not its words.**
+
+- ⭐ **`spec disclose` — does a core fold say which conformance cells it crosses? RUN IT BEFORE
+  FOLDING ANY CORE REVISION, and pass BOTH roots.** The enforcement point for `GUIDE-CONFORMANCE`
+  **§5.3a**, folded 2026-09-17 and **binding now**, forward from `0.8.2.32`.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py disclose --root ../entity-core-protocol --peer-root .
+  python3 <arch-tools>/spec-tool/cli.py disclose --root ../entity-core-protocol --peer-root . --gate
+  ```
+
+  **The rule in one line: a core fold's proposal names the cells of the anchor's scope table its
+  deltas touch and each one's drive state — `driven` · `named-vector-not-driven` · `no vector`. An
+  undriven cell does NOT block the fold; an undisclosed one does.** The stronger form — *cells driven
+  green before a fold lands* — was adopted once, is unmeetable at 37 of 146, and **four folds landed
+  under it unnoticed**: a condition that cannot be met is not a strict gate, it is an unenforced one,
+  and from outside the two are the same. **Disclosure makes an invisible omission countable, which is
+  the only move available to a party that does not run the checks.**
+
+  ⛔ **Arch verifies the SHAPE and never the truth of a state.** The drive state is read from the
+  anchor's table, cited as `(repo, commit, date)`, and is verifiable only by the seat that owns it.
+  A disclosure citing no run is `disclosure-unsourced` — *a guess with a table's formatting*.
+
+  > ⭐ **SCOPE IS TWO RULES AND THE SECOND IS THE ONE A REVISION-ONLY GATE GETS SILENTLY WRONG.** A
+  > **landed** fold is scoped by the revision it landed as. A **pending** one is in scope whatever
+  > number its header writes — the binding line is the head of the spec, so anything still to land
+  > lands past it. **Two live core proposals name only the revision they CORRECT**, because the
+  > target reached the title and the `Proposes:` line and never the `Status:` line. So a red run here
+  > is **the folds about to land**, not a backlog, and the disclosure is written **at** the fold from
+  > a census read taken then — one written weeks early is a stale table, which is the defect the rule
+  > exists to prevent.
+  >
+  > ⚠ **Its first live run found a defect in the other direction and it was ours: 9 of 11 in-scope
+  > proposals had already FOLDED and still carried a DRAFT `Status:` line** — `.18`, `.19`, `.25`,
+  > `.26` ×2, `.27`, `.28`, `.31`, `.32`. **`spec ledger`'s `proposal-state-mismatch` cannot see
+  > them: it reads `docs/proposals/INDEX.md`, and `entity-core-protocol`'s proposal workspace has no
+  > INDEX and no state discipline at all.** Every one was verified against its named fold commit
+  > before the header was corrected. ⇒ **the core corpus's proposal ledger is unmeasured** — the
+  > eighth could-not-look in this toolkit, and the fourth of the form *we own three repos and default
+  > to grading one*.
 
 - **`spec census` — what does the cohort actually cite?** The instrument for the one question every
   other analyzer structurally cannot answer: *arch cannot observe build state directly, and every
@@ -1418,6 +1575,10 @@ So, concretely, before editing any `specs/` file:
   seats exchange the format, not before** — intercommunication is a better oracle than a set we invent
   in advance. Register rows `AP-6a` · `AP-6b`; authorities `GUIDE-EXTENSION-DEVELOPMENT` §7/§9,
   `GUIDE-CONFORMANCE` §1/§5.1a/§7.0/§7c.6, `guides/GUIDE-APPLICATION-DEVELOPMENT.md` §3.
+  ⭐ **And what arch owes at the fold itself is now written down and gated: `GUIDE-CONFORMANCE`
+  §5.3a — a core fold DISCLOSES the cells it crosses and each one's drive state, read from the
+  anchor's table and never asserted from here.** Binding now, forward from `0.8.2.32`; enforcement
+  point `spec disclose`. Register row `PR-1c`.
 - **ONE ORACLE CANNOT MEASURE ITSELF — a second implementation of the check set is the point, not a
   nicety.** *A single oracle cannot distinguish "the peer is wrong" from "the oracle is wrong": every
   check it runs is scored by the same judgement that wrote it, so its own errors are invisible by

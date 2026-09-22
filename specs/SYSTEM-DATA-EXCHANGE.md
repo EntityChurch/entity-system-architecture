@@ -1,6 +1,6 @@
 # System Data Exchange — closure, and what a peer may republish
 
-**Version**: 0.2
+**Version**: 0.3
 **Status**: DRAFT — the closure chapter and the growth rule. The subject, source, witness, position,
 intent and authority layers are specified but not yet folded; they arrive in later revisions of this
 document.
@@ -151,6 +151,37 @@ else. A signature at the invariant pointer travels with the entity: a canonical 
 to its public key, so such a signature verifies **with no key distribution and no second fetch**. That
 is why it survives being carried by a third party, and it is why closure can rest on it.
 
+#### 2.2.1 Where it is bound, and where a third party looks
+
+**Both rules below restate `ENTITY-CORE-PROTOCOL` §1.4 — the URI and path model, the local view, and
+its cross-peer worked example — at the tier that needs them. They are stated here, and named as
+restatements, because an implementation reading only this section derived the pointer under the wrong
+peer and concluded the corpus was silent.**
+`ENTITY-CORE-PROTOCOL.md` §1.4 is the normative home for both rules below.
+
+> **[MUST]** A republishing peer **MUST** bind the evidence at the pointer's own absolute path —
+> `/{signer_peer_id}/system/signature/{target_hash_hex}` — **in its own local view**, unchanged. The
+> path is rooted at the **signer**, never at the republisher: it is the same path the evidence
+> occupies on the author's own peer, and it is the same path on every peer that carries it.
+
+> **[MUST]** A reader obtaining a republished object from a third party **MUST** resolve that pointer
+> **against the peer serving the object**, by naming that peer's tree handler and the signer-rooted
+> path as the resource. A reader **MUST NOT** derive the pointer under the serving peer's identifier,
+> and an implementation **MUST NOT** re-qualify the already-absolute pointer to any other namespace.
+
+**Neither rule introduces an operation, a field or a route.** The peer being asked and the resource
+being asked about are already separate: the first is the handler URI of the request, the second is an
+absolute path rooted at the namespace it belongs to. Asking a peer what it holds under another peer's
+namespace is the ordinary read, and the answer is that peer's own view of it — authoritative only for
+the key holder, which is what the signature settles.
+
+**The re-qualification prohibition is not a new constraint either.** Re-qualifying a path that is
+already absolute is the prepend-local defect `ENTITY-CORE-PROTOCOL` §1.4 names as the most-recurring
+cross-implementation bug class, and it is guarded by the `universal_address_space` conformance
+category. It is restated here because a signature-locating helper is exactly the *"handler-internal
+function that takes a path"* that rule already covers, and because its two failures here — deriving
+under the peer being read from, and prepending the serving peer — look like two bugs and are one.
+
 ### 2.3 The four rules a republishing peer follows
 
 **Promoted from `APP-CONVENTION-FEED` §6.1, where they were application-scoped. The instrument they
@@ -159,8 +190,16 @@ depend on is corpus-wide; the obligation was not.**
 1. **[MUST]** **Republish the original bytes** — not a re-encoding, not a re-normalization, not a
    re-serialization through a local model (§2.1).
 2. **[MUST]** **A republished entry travels with its author's detached signature** (§2.2). A
-   republishing peer **MAY** carry one and **MUST NOT** supply one: it does not hold the author's key
-   and cannot author in the author's name.
+   republishing peer **MUST** carry one whenever the entry it republishes has one obtainable, and
+   **MUST NOT** supply one: it does not hold the author's key and cannot author in the author's name.
+
+   > **The two halves are not in tension — *carry what the author signed; never sign in their name*.**
+   > Carrying costs a republisher nothing it has not already done: it obtained the entry through a
+   > verifying consumer, so it resolved the signature in order to verify it, and binding it per §2.2.1
+   > is binding bytes already in hand. **The conditional is load-bearing and is not a softening** —
+   > rule 3 and the `DX-C5` check require an entry whose signature is genuinely unobtainable to be
+   > *carried and rendered unattributed*, never dropped, so an unconditional obligation here would
+   > oblige exactly the drop those forbid.
 3. **[MUST]** **Attribution follows the entry's own author field, verified against that signature,
    always.** A renderer that attributes a republished entry to the republishing peer is
    **non-conformant**. One holding an entry whose signature is absent **MUST** present it as
@@ -243,12 +282,14 @@ convention can state about itself.
 | `DX-R15` | Carry a participation-grown member collection as an unbounded collection in a single entity | MUST NOT | §2.5 |
 | `DX-R16` | Carry such a collection as a bounded head plus key-addressed pages, never renumbered, merged or compacted | MUST | §2.5 |
 | `DX-R17` | State which side of §2.5's test a member collection falls on | MUST | §2.5 |
+| `DX-R18` | Bind a republished entry's authorship evidence at the signer-rooted invariant pointer in the republisher's own local view, and carry it whenever it is obtainable | MUST | §2.2.1, §2.3 |
+| `DX-R19` | Derive or re-qualify that pointer under the serving peer's identifier rather than the signer's | MUST NOT | §2.2.1 |
 
 ### 3.2 Required checks — what an implementation must discriminate
 
 | id | The check | Drives | What fails without it |
 |---|---|---|---|
-| `DX-C1` | Publish at A → republish at B → consume at C. **Every entity hash byte-identical at both hops**, every entry attributed to **A**, and C's consumer is the same code path it uses for a direct read | `DX-R1`, `DX-R2`, `DX-R6`, `DX-R10`, `DX-R13` | closure is asserted and never run |
+| `DX-C1` | Publish at A → republish at B → consume at C. **Every entity hash byte-identical at both hops**, every entry attributed to **A**, and C's consumer is the same code path it uses for a direct read, **with C's reads directed at B — a check in which C can reach A does not measure this** | `DX-R1`, `DX-R2`, `DX-R6`, `DX-R10`, `DX-R13` | closure is asserted and never run |
 | `DX-C2` | The same path, with republication **re-encoding through a type that does not declare one of A's fields**. The hashes **MUST** move and the result **MUST NOT** render attributed | `DX-R6`, `DX-R7`, `DX-R8`, `DX-R11` | ⭐ **the naive republish ships silently** — a complete, verifiable publication in which nobody wrote anything |
 | `DX-C2a` | **Anti-vacuity guard on `DX-C2`:** assert the fixture is not what this encoder emits — normalizing it **moves the hash** — before asserting anything about republication | `DX-R9` | ⭐⭐ **`DX-C2` passes with byte preservation removed**, and is then worse than no check because it is counted |
 | `DX-C3` | B republishes B′, which republished A. Authorship survives **both** hops and B′'s output needed no new type at B | `DX-R3` | the fixed point — aggregating an aggregator |
@@ -256,11 +297,17 @@ convention can state about itself.
 | `DX-C5` | An entry whose detached signature is unobtainable is **carried** and rendered **unattributed** — not dropped, and not attributed to the republisher | `DX-R11`, `DX-R12` | **integrity without authorship**, which is invisible to every check that only compares hashes |
 | `DX-C6` | The gathering peer's tree is inspected: it holds **no binding presenting as the author's own set-layer object** over that author's content | `DX-R4` | a gatherer forging the author's index — and every byte of it verifies |
 | `DX-C7` | An object whose disposition withholds republication is obtained and **is not republished** | `DX-R5` | closure read as a permission |
+| `DX-C9` | The third hop of `DX-C1`, **with the consumer reading only from the serving peer and never contacting the author** — assert the serving peer *holds* the evidence at the signer-rooted path, and that the consumer *resolves it there*. Run a **control arm** reading the same entries directly from the author | `DX-R10`, `DX-R18`, `DX-R19` | ⭐⭐ **a mirror that carries integrity without authorship** — every hash matches, every reference is right, the view is addressable and complete, and nothing in it is attributable |
 | `DX-C8` | A republished view is grown **past one page** and read by a second party, which fetches the head and **one page** and stops. The head's size **MUST NOT** be a function of the member count, and a sealed page's bytes **MUST NOT** move when the view is extended | `DX-R15`, `DX-R16` | ⭐ **a view that is correct, verifiable and unreadable** — the cheap leg becomes the expensive one, and no single-publisher fixture can see it |
 
 ⚠ **`DX-C8` needs a view larger than one page, which is the whole difficulty** — a check built at the
 size its author tested passes against a flat list and measures nothing. **The anti-vacuity arm is the
 second page**: assert the view spans more than one before asserting anything about reading it.
+
+⚠ **`DX-C9`'s anti-vacuity arm is the control read, for the same reason `DX-C2a` is a row of its own.**
+A third-hop measurement with no direct-read arm is a statement about the harness rather than about
+mirrors. **A consumer that can still reach the author passes `DX-C1` while measuring nothing**, which
+is how a third hop goes unrun while the check is counted as covered.
 
 ⚠ **`DX-C2` is the check this document exists for, and it is the one most likely to be built wrong** —
 which is why `DX-C2a` is a separate row rather than a note inside it. It has a documented history of
@@ -284,6 +331,16 @@ anything.
 ---
 
 ## Document History
+
+**v0.3:** adds **§2.2.1** — where a republisher binds authorship evidence, and where a third party
+resolves it. Both rules restate the core protocol's URI and path model at this tier and name it as
+their authority; neither introduces an operation, a field or a route. §2.3 rule 2's `MAY carry`
+becomes `MUST carry when obtainable`, resolving a disagreement between that clause and the bolded
+obligation above it: a republisher declining to carry evidence it already resolved emits a view every
+reader is then obliged to render unattributed — complete, verifiable, and authored by nobody. Adds
+`DX-R18`, `DX-R19` and check `DX-C9`, and pins `DX-C1`'s third hop to a consumer that cannot reach the
+author, because a hop measured against a reachable author measures nothing. Additive: no landed
+requirement is renumbered.
 
 **v0.2:** adds **§2.5, the growth rule** — a republication format whose membership grows with
 participation carries its members as a bounded head plus key-addressed pages, never as one unbounded
