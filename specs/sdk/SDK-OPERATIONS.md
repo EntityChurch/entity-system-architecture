@@ -289,6 +289,8 @@ put(path: string, type: string, data: any) → hash
 
 Implementations **MAY** accept an already-constructed entity instead of separate type and data parameters.
 
+**The SDK constructs the entity; the peer does not (normative).** `put` takes an unhashed `(type, data)` and returns a hash, so **the SDK computes `content_hash` before anything reaches the wire** — that computation is what the return value is. The wire operation it dispatches to (`system/tree:put`, ENTITY-CORE-PROTOCOL.md §6.3) is a **receipt** path whose `entity` field is a `core/entity` with all three fields required; a peer MUST NOT author a missing hash on the submitter's behalf, and an SDK that forwards a two-key `{type, data}` map is emitting a request the peer is obliged to refuse **400 `invalid_request`**. This holds equally on the MAY branch above: an SDK handed an already-constructed entity forwards the hash it was given, and MUST NOT drop it while re-encoding the params.
+
 A put triggers the emit pathway (SYSTEM-COMPOSITION.md §1). The operation returns after all synchronous emit consumers have completed (Phase 1). Phase 2 async notifications fire after return.
 
 **Compare-and-swap.** The SDK **SHOULD** support conditional puts:

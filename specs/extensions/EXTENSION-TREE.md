@@ -1,6 +1,7 @@
 # System Tree Extension
 
-**Version**: 4.4
+**Version**: 4.5
+**v4.5:** Appendix A's `put` rows get the predicate they were missing. *"Does not decode"* is now stated — the submitted value is admitted as a `core/entity` (all three fields required) **before** its hash is compared, so a submission that is both malformed and mis-hashed is the structural row; the `unsupported_content_hash_format` arm is restated from `ENTITY-CORE-PROTOCOL` §4.7 row 5 because `put` is one of its ingest surfaces; and **`set` is dropped from the rows** — `ENTITY-CORE-PROTOCOL` §6.3 and §2.2 below both define exactly two index operations, and `set` was never one of them.
 **v4.4:** Appendix A gains the `put` / `set` rows. The two core data operations the protocol runs on had no error-code row in the only table their extension has: a non-decoding entity is `400 invalid_request` (§3.3's generic case), a content-hash mismatch is `400 hash_mismatch` (`EXTENSION-CONTENT` §923's code for the same failure), and the CAS race that shares that token is tabulated beside it at 409 so the two are not collapsed.
 
 **Status**: Active
@@ -78,7 +79,9 @@ These are defined in ENTITY-CORE-PROTOCOL.md §6.3 as system tree handler operat
 
 Everything this extension provides is composition of these primitives.
 
-`put` is a data-plane primitive. It writes a binding and fires the emit cascade (SYSTEM-COMPOSITION.md §1). It does not go through other handlers, does not validate against other extensions' entity types, and does not perform custom logic. Extensions that need validation, coordination, or any processing before a write lands SHOULD expose a named handler operation (e.g., `revision/config`, `compute/install`) and gate the underlying path via capability grants so callers route through the operation rather than calling `put` directly. See SYSTEM-COMPOSITION.md §2.9 for the rubric on when a named operation is appropriate vs direct `put`.
+`put` is a data-plane primitive. It writes a binding and fires the emit cascade (SYSTEM-COMPOSITION.md §1). It does not go through other handlers, does not validate against other extensions' entity types, and does not perform custom logic.
+
+**"Does not validate" is about *semantics*, never about *structure*.** `put` still admits its argument as a `core/entity` and checks the carried hash before it writes anything — ENTITY-CORE-PROTOCOL.md §6.3's two-step admission, and Appendix A's `put` rows are its codes. What `put` declines to do is ask whether `data` is a well-formed instance of the type `type` names. A peer that reads this paragraph as licence to store an unadmitted value writes an entity no typed peer can decode, under a hash nobody agreed to. Extensions that need validation, coordination, or any processing before a write lands SHOULD expose a named handler operation (e.g., `revision/config`, `compute/install`) and gate the underlying path via capability grants so callers route through the operation rather than calling `put` directly. See SYSTEM-COMPOSITION.md §2.9 for the rubric on when a named operation is appropriate vs direct `put`.
 
 ### 2.3 All Trees Are Trees
 
@@ -1562,9 +1565,10 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 
 | Operation | Error Code | Status | Description |
 |-----------|-----------|--------|-------------|
-| `put` / `set` | `invalid_request` | 400 | The submitted entity does not decode. The generic structurally-invalid case — `ENTITY-CORE-PROTOCOL` §3.3's 400 default, not a tree-specific code *(v4.4)* |
-| `put` / `set` | `hash_mismatch` | 400 | The submitted entity's content hash does not match the entity it addresses. **Distinct from the 409 below**, and the same code `EXTENSION-CONTENT` §923 uses for this failure *(v4.4)* |
-| `put` / `set` | `hash_mismatch` | 409 | A CAS `expected_hash` precondition lost a race — another writer committed first. **A different failure from the 400 row**: 400 says *this entity is not what it claims to be* and is a defect in the submission; 409 says *someone else wrote first*, is nobody's defect, and is retryable *(v4.4 — tabulated; the behaviour is `ENTITY-CORE-PROTOCOL` §3.6 and `EXTENSION-SUBSCRIPTION` §2.2)* |
+| `put` | `invalid_request` | 400 | **The submitted `entity` is not a `core/entity`** — the structural step of `ENTITY-CORE-PROTOCOL` §6.3's two-step admission. It is not an entity when it is not a map, or `type` is absent / empty / not a text string, or `data` is absent, or `content_hash` is absent or its length does not match its format code (§1.2). The generic structurally-invalid case — §3.3's 400 default, not a tree-specific code *(v4.4; predicate stated v4.5)* |
+| `put` | `hash_mismatch` | 400 | A structurally valid entity whose carried `content_hash` does not equal `content_hash({type, data})`. **Distinct from the 409 below**, and the same code `EXTENSION-CONTENT` Appendix A uses for this failure. **Reached only after the row above passes** — a submission that is both malformed and mis-hashed is the row above *(v4.4; ordering stated v4.5)* |
+| `put` | `hash_mismatch` | 409 | A CAS `expected_hash` precondition lost a race — another writer committed first. **A different failure from the 400 row**: 400 says *this entity is not what it claims to be* and is a defect in the submission; 409 says *someone else wrote first*, is nobody's defect, and is retryable *(v4.4 — tabulated; the behaviour is `ENTITY-CORE-PROTOCOL` §3.6 and `EXTENSION-SUBSCRIPTION` §2.2)* |
+| `put` | `unsupported_content_hash_format` | 400 | The submitted entity's `content_hash` is well-formed but names a format code this peer does not support. **Not the `invalid_request` row** — the value is a structurally valid hash and the peer simply cannot verify it. `ENTITY-CORE-PROTOCOL` **§4.7 row 5** is the authority for this code; the row is restated here because `put` is one of its ingest surfaces *(v4.5)* |
 | `snapshot` | `invalid_prefix` | 400 | Non-empty prefix doesn't end with `/` |
 | `snapshot` | `tree_not_found` | 404 | Referenced tree_id doesn't exist |
 | `diff` | `snapshot_not_found` | 404 | Referenced snapshot hash not in content store |

@@ -98,7 +98,7 @@ losing it in the split was silent.
 > words: *"we aligned on everything we just never followed up and got it all implemented; we all
 > got distracted."* **§4 is that matrix, and it is not rebuilt yet.**
 
-## 1. Active — 33 files (ext 18 · app 10 · process 4 · core 1)
+## 1. Active — 32 files (ext 18 · app 10 · process 4 · core 0)
 
 > **29, not 22, as of 2026-08-15** — seven **reference proposals** opened by the provenance
 > reconstruction (`docs/status/PLAN-2026-08-15-spec-provenance-reconstruction.md`). These are a
@@ -165,11 +165,13 @@ the strength of landed prose would be the exact mistake that rule exists to prev
 
 ### 1a. The active roster, by tier
 
-**`active/core/` — 1.**
+**`active/core/` — 0.**
+
+**Emptied again 2026-09-06** — `PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY` folded at `ENTITY-CORE-PROTOCOL` **0.8.2.10** / `ENTITY-CBOR-ENCODING` **v1.6** and moved to `implemented/core/`. **The fold-time L23 re-run its own §6.1 required found two homes the enumeration below missed** — `ENTITY-CBOR-ENCODING` §4.6 and §9.3's unknown-**format** SHOULDs, the rule's own subject on a different noun, in the same document as the canonical home — so the fold would otherwise have shipped one document carrying the field arm at MUST and the format arm at SHOULD. Kept below as the row it was, because the enumeration's honest limit is the reason the re-run happened.
 
 | Proposal | What it does |
 |---|---|
-| `PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY` `[DRAFT 2026-09-04]` | **Spec-text only — no wire change, no new field, no behaviour change for any conformant peer.** One rule (*a peer preserves content it did not model*) is stated in **thirteen places at two strengths**, and `ENTITY-CBOR-ENCODING` §5.4 — *which declares itself the canonical home of the entity-fidelity contract* — carries the **SHOULD**, while the correctness argument (*"a peer that strips unknown fields… breaks content addressing for all downstream peers"*) sits in `ENTITY-CORE-PROTOCOL` §2.10 under a **MUST**. §5.4 also disagrees with itself four lines apart, and §9.1's conformance floor lists the rule **twice, at both strengths**. Raises the two weak statements, collapses the duplicate §9.1 rows, corrects **two dangling `§2.7` cross-references** (that section is *Type Name Type*; open types are §2.10), and makes each restatement name its authority. **The L23 home enumeration is done and is in §2**, with its own honest limit. Found by the 2026-09-04 landscape read against Thrift's history of dropping unknown fields. **Already gated at MUST strength by `ENTITY-CBOR-ENCODING` Appendix E and by `FEED-6` — a convention gates at MUST what the core states at SHOULD, and this fixes the direction** |
+| `PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY` `[FOLDED 2026-09-06]` | **Spec-text only — no wire change, no new field, no behaviour change for any conformant peer.** One rule (*a peer preserves content it did not model*) is stated in **thirteen places at two strengths**, and `ENTITY-CBOR-ENCODING` §5.4 — *which declares itself the canonical home of the entity-fidelity contract* — carries the **SHOULD**, while the correctness argument (*"a peer that strips unknown fields… breaks content addressing for all downstream peers"*) sits in `ENTITY-CORE-PROTOCOL` §2.10 under a **MUST**. §5.4 also disagrees with itself four lines apart, and §9.1's conformance floor lists the rule **twice, at both strengths**. Raises the two weak statements, collapses the duplicate §9.1 rows, corrects **two dangling `§2.7` cross-references** (that section is *Type Name Type*; open types are §2.10), and makes each restatement name its authority. **The L23 home enumeration is done and is in §2**, with its own honest limit. Found by the 2026-09-04 landscape read against Thrift's history of dropping unknown fields. **Already gated at MUST strength by `ENTITY-CBOR-ENCODING` Appendix E and by `FEED-6` — a convention gates at MUST what the core states at SHOULD, and this fixes the direction** |
 
 *(Previously 0, and it emptied the same day it filled — 2026-08-17: three opened out of one cohort packet — `entity-browser-rust`'s `ROUTING-2026-08-17-c` A1/A2/A3 plus `entity-core-go`'s B — ruled, folded into `entity-core-protocol` `30ca731` as `0.8.1 CAP-1`…`CAP-7`, and moved to `implemented/core/` the same session: `CAPABILITY-EMPTY-GRANTS-AND-POLICY-WITHDRAWAL` · `CAPABILITY-MINT-TEMPORAL-CEILING-AND-THE-WITHDRAWAL-BOUND` · `POLICY-PATH-KEY-FORMS-6-2-VS-6-9A-1`, the last **re-tiered in from `process/`** on the way through.)* · *validated by go / rust / py; **conformance-validated by nobody yet** — `GUIDE-CONFORMANCE` §9 checks (r)–(v) are the validating half and are unbuilt, so this row means the text landed, not that the cohort agrees.*
 
@@ -328,7 +330,12 @@ prefix rename **is** the fold)* · `MATURITY-MODEL-AND-ROADMAP-COMMUNICATION`
 several are deliberately parked — but it is not visible anywhere else, which is why it is stated
 here.
 
-## 2. Implemented — 57 (moved this cycle)
+## 2. Implemented — 59 (moved this cycle)
+
+> **+1 on 2026-09-06: `THE-PUT-ADMISSION-PREDICATE-AND-THE-CONTENT-CODE-TABLES`, written and folded in
+> one session.** Answers `entity-core-go`'s `ROUTING-2026-09-06` — five sentences and a ruling, of
+> which four turned out to be one rule the corpus already carried in `core/entity`. Nothing was
+> unknown once the type was cited, so it did not sit in `active/` — **L26** again.
 
 > **+1 on 2026-09-03: `PIN-THE-PATH-REQUIRED-STATUS`, written and folded in one session.** Filed from
 > `entity-system-generator`'s first read of CONTENT for code emission: `path_required` is a MUST in

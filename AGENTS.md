@@ -185,9 +185,12 @@ the working detail; **the charter is the set.**
   route by who **consumes** it (implements, cites, **pins**), name the **divergence unit** when a
   dormant field goes load-bearing, scope a relay by the fold's **diff**, never by what the seat
   shipped, and when a fold pins a **vocabulary**, grep the cohort for the names being pinned **and the
-  names they replace** *(**ratified** 2026-09-01 — second shape, a guide consumed by a pin; third and
+  names they replace**, and a fold adding conformance rows for a surface **no check drives** does not
+  close with *"no open items"* — it is commissioning a first measurement *(**ratified** 2026-09-01 —
+  second shape, a guide consumed by a pin; third and
   fourth shapes 2026-09-02; **fifth shape 2026-09-03** — an app-tier convention, where the fourth
-  shape's enforcement point is written in core-spec nouns and so never fired)* · **L22** a peer's true
+  shape's enforcement point is written in core-spec nouns and so never fired; **row axis 2026-09-06**)*
+  · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
   party that moves it owns re-checking it, whoever they are and however short the move
   *(**ratified** 2026-08-31 — second shape: the filing seat as mover, one slot away in one file)* ·
@@ -891,6 +894,27 @@ the working detail; **the charter is the set.**
   > information is arch's to supply and the sequencing is the seats' to choose** — they are the ones
   > who know what is deployed against what. What is forbidden is arch knowing a ruling is a flag day
   > and not saying it, so the seat that gets refused is the one who finds out.
+  >
+  > > **Same shape on the ROW axis, 2026-09-06 — and it fired on a fold whose §7 said *"not a flag day,
+  > > no divergence unit"* and whose §8 said *"no open items from this fold."* Both were wrong, and the
+  > > second was wrong the moment anyone implemented the first.** `[self-found, ruling the packet that
+  > > implementing it produced]` `EXTENSION-TREE` **v4.4** tabulated `put`'s error codes — for an
+  > > operation that, on any seat, **had never been driven by a conformance check.** Implementing it
+  > > returned five under-specifications, one row naming an operation the protocol does not define, and
+  > > a live cohort break in which **no rust or py SDK can `put` to a go peer at all** (each seat's
+  > > lenient peer and hash-stripping SDK sit in the *same tree*, so both round-trips work and neither
+  > > seat's suite can see it — the defect is observable only across a seat boundary).
+  > > **The tell is mechanical and it is about the fold, not the rule.** *"Is there an existing
+  > > conformance check for this operation?"* If no, **the fold is not describing behaviour — it is
+  > > commissioning a first measurement**, and the first measurement of anything finds something. A
+  > > dormant *field* going load-bearing is the third shape; a dormant *row* is the same event with the
+  > > divergence hiding in the inputs the row's own vector does not carry, which is why a per-row author
+  > > cannot see it either.
+  > > ***Enforcement point, additive:*** **a fold that adds conformance rows for a surface no check
+  > > currently drives MUST NOT close with "no open items."** State instead what the first run is
+  > > expected to surface and who takes it. Mechanically checkable at fold time: a proposal whose delta
+  > > adds normative rows, where `spec census`'s `unobserved-must` covers that surface, and whose open
+  > > items are empty, is the violation.
 
   > **Fourth shape, 2026-09-02 — the relay scoped the fold by WHAT THE SEAT HAD SHIPPED instead of by
   > the fold's DIFF, and the sentence that did the damage was the reassuring one.**
@@ -2219,8 +2243,22 @@ the working detail; **the charter is the set.**
   burns down). **Run it before you push a `specs/` change:**
 
   ```bash
-  python3 <arch-tools>/spec-tool/cli.py provenance --since origin/dev
+  python3 <arch-tools>/spec-tool/cli.py provenance --since origin/dev          # in THIS repo
+  cd ../entity-core-protocol && python3 <arch-tools>/spec-tool/cli.py \
+      provenance --since origin/dev --root . \
+      --proposal-root ../entity-system-architecture                            # in the CORE repo
   ```
+
+  **`--proposal-root` is not optional for `entity-core-protocol`, and the invocation documented here
+  was blind without it for the whole `0.8.2.x` arc.** That corpus's folds are authored, ratified and
+  filed **here**, so resolving proposal stems against the inspected repo alone reported every
+  correctly-cited fold as uncited — **all four folds since `221d8c3` named their proposal and all
+  four came back `normative-edit-without-proposal`.** Could-not-look wearing a verdict's clothes,
+  which is the identical defect `address` had before `--namespace-root`, arriving one noun over on a
+  gate we run on every push. **Fixed in arch-tools `28738d1`** (flag, both-direction tests, and a
+  summary line that prints the roots searched) — and the standing rule it re-earns is L7's:
+  **quote the invocation with the count**, because a gate run against the wrong resolution scope is
+  not a lenient reading, it is not a measurement.
 
   Its trigger is **two-part** — version header changed **or** the file's normative-token count
   changed — because a version-header trigger alone would have been silent on both normative folds
@@ -2259,6 +2297,28 @@ reconstruction pass.
   nothing — never read it as either a pass or a lint failure. *(It reported both, for
   months, against a corpus root left behind by the repo split; fixed in arch-tools
   `7fd538f`.)*
+- **`docs/DESIGN-REGISTER.md` — READ IT BEFORE DERIVING ANYTHING.** The design-side answer to *"do we
+  already know this?"*, and the other half of `spec coverage`'s sentence below: **coverage answers
+  "is there a document," the register answers "is there an ANSWER."** One row per settled conclusion —
+  the question, a one-sentence answer, **the authority that owns it**, and a status
+  (`LANDED`/`RULED`/`DERIVED`/`MEASURED`).
+  **Why it exists, and the asymmetry is the point:** this repo gates *how we work* — 26 lifecycle rules
+  in `docs/DISCIPLINE-CHARTER.md`, checked by `spec charter` — and had **nothing** for *what we have
+  decided about the design*. 63 explorations are indexed **by document**, never by the question each
+  answers, so a fully-derived conclusion is findable only by someone who already knows which file to
+  open. **The process ratcheted and the design did not.** `[operator, 2026-09-06: sessions keep
+  re-deriving, several sessions apart, conclusions this project has already reached.]`
+  **It was created by a session that had just done exactly that** — re-deriving
+  `PROPOSAL-APP-CONVENTION-FEED` §1.1's per-entry-signature rule from scratch, with a weaker argument
+  than the original, when one `grep` of `docs/proposals/` would have returned it.
+  **A row is a POINTER and never an authority** — L23's fourth shape applied to the register itself, or
+  it becomes a competing home for every rule it indexes. Never cite it in a spec, proposal or packet;
+  cite the authority. **No build state in it** (that expires — L9); measurements go to
+  `docs/COHORT-OPEN-ITEMS.md` or a dated status doc.
+  ***Enforcement point:*** **every row's authority resolves — document exists, section exists** — which
+  is the check `spec address` already performs on citations, so the file is gradeable by shipped
+  machinery. **And a session that derives a conclusion adds the row in the same session, or it did not
+  land** — the ratchet, pointed at design instead of process.
 - **`spec coverage` — start here on any "do we already have X?" question.** The reader that maps
   each spec to its **guide · proposal · design record**, and lists what is missing on each axis.
   It is **L7's second enforcement point**, beside `docs/research/INDEX.md`: the index answers

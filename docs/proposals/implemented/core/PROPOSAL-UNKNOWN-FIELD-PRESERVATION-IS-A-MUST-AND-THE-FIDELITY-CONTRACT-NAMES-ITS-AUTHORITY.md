@@ -1,6 +1,9 @@
 # PROPOSAL — unknown-field preservation is a MUST, and the fidelity contract names its authority
 
-**Status:** DRAFT (2026-09-04)
+**Status:** IMPLEMENTED — folded at `ENTITY-CORE-PROTOCOL` **0.8.2.10** / `ENTITY-CBOR-ENCODING` **v1.6**.
+All of D0–D7 landed; the fold-time L23 re-run (§2.3) added D7 and three enumeration rows, and found a
+**fourth** stale `§2.7` citation the enumeration named two of. §6's open items 2 and 3 are **not**
+closed by this fold and are carried on the board rather than in this file.
 **Tier:** core — a normative delta to `entity-core-protocol`, arch's repo.
 **Target:** `specs/ENTITY-CORE-PROTOCOL.md` §1.8, §9.1 · `specs/ENTITY-CBOR-ENCODING.md` §5.4 ·
 `specs/ENTITY-NATIVE-TYPE-SYSTEM.md` §8-evolution, §9.10 — plus a `0.8.2.x` fourth-component bump.
@@ -142,6 +145,39 @@ restatement using none of *unknown / field / fidelity / open type / strip / pres
 been found, and L23's second shape is precisely that such a site exists and is load-bearing. **Whoever
 folds this should re-run the sweep and say so.**
 
+### §2.3 The re-run, at fold time — **three more sites, and two of them are L23's second shape exactly**
+
+**Run at `entity-core-protocol` `87e1218` on axes the first pass names as uncovered** — *MUST-ignore ·
+lossless · round-trip · verbatim · re-encode · unrecognized · normalize · discard · additional/extra
+field* — whole-document, both repos.
+
+| # | Site | Text | Why the first pass missed it | Action |
+|---|---|---|---|---|
+| **14** | `ENTITY-CBOR-ENCODING` **§4.6** *Format Evolution* | *"Unknown **formats** SHOULD be preserved when forwarding entities"* | **the noun is `format`, not `field`** | **SHOULD → MUST** (D7) |
+| **15** | `ENTITY-CBOR-ENCODING` **§9.3** *Format handling* | *"Unknown **format codes** SHOULD be preserved when forwarding"* | same | **SHOULD → MUST** (D7) |
+| **16** | `ENTITY-CBOR-ENCODING` **Appendix E** | *"Re-encode-and-compare implementations **MUST** additionally verify that round-tripping each `encode_equal` vector's `canonical` bytes … produces byte-identical output"* | discussed in §4 as the *gate*, never listed as a **home** | **unchanged** — already MUST; enumerated so the sweep is complete |
+
+**Sites 14 and 15 are the defect this proposal exists to fix, surviving the fix.** They state the
+rule's own subject — *what obligation exists about content a peer did not model, when forwarding* — at
+**SHOULD**, in the **same document** as the canonical home, 100 and 380 lines from it. Had the fold
+shipped as drafted, `ENTITY-CBOR-ENCODING` would carry the field arm at MUST and the format arm at
+SHOULD, and the next reader would find a fresh contradiction where this one was closed. **This is
+exactly L23's ratified enforcement point earning its keep: enumerate by the rule's SUBJECT, not by its
+tokens — the token here is a different noun for the same obligation.**
+
+**The correctness argument is the same one and is if anything sharper.** A `content_hash`'s format byte
+is what tells a consumer *how to hash*; §4.5's digest width *follows* it. A peer that normalizes an
+unknown format code on forward emits a reference that is unparseable or wrong, and — unlike a dropped
+field, which yields a valid entity with a different hash — **a rewritten format code yields a
+reference that resolves to nothing.** §5.4's precondition (b) already binds this at MUST for mechanism
+B (*"lossless at every nesting level"*), so sites 14 and 15 are **weaker restatements of a rule the
+canonical home already states more strongly** — which is precisely the D2/D5 shape, one noun over.
+
+**And the format axis is a live evolution surface by ruling**, not a hypothetical: `SPECIFICATION-FORMAT`
+§8.4.6 declines to make the floor mandatory for peers specifically so that *"`content_hash_format`
+negotiation"* remains *"a live wire surface."* **A live negotiation surface whose unknown values may be
+silently dropped on forward is not a negotiation surface.**
+
 ---
 
 ## §2a The case the spec does not name — and it is why a bare MUST would be wrong
@@ -234,8 +270,21 @@ schema-evolution site and the `delegation_caveats` site.
 
 **D5 — `ENTITY-NATIVE-TYPE-SYSTEM` §2.4.** Append the authority pointer to §2.10, same reason as D2.
 
+**D7 — `ENTITY-CBOR-ENCODING` §4.6 and §9.3 (added at fold time, per §2.3).** *"Unknown formats SHOULD
+be preserved when forwarding entities"* and *"Unknown format codes SHOULD be preserved when
+forwarding"* → **MUST**, each naming §5.4 as the authority, same reason as D2 and D5. **Scoped by D0
+identically:** the obligation is on the relay and re-encode acts; a transform authors a new entity
+under its own format and its own signature, and is not a fidelity violation.
+
 **D6 — version.** One **fourth-component** bump on `ENTITY-CORE-PROTOCOL` (`0.8.2.x`). The first
 three components are the operator's and are not touched (**L14**).
+
+> **Note on D7's blast radius, so the fold text can state it.** D7 does not widen the audience or
+> change the flag-day answer: `content_hash_format` negotiation already exists, the floor
+> (`ecfv1-sha256`, code `0x00`) is REQUIRED of every peer and is unaffected, and no cohort seat is
+> known to emit a non-floor format on the wire today. **What changes is what a conformant peer may do
+> with one when it meets it** — which is a rule about the future of the negotiation surface, and the
+> cheapest moment to state it is before anyone ships a second format.
 
 ---
 

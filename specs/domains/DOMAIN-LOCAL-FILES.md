@@ -1,6 +1,7 @@
 # Local Files Domain — Normative Specification
 
-**Version**: 1.3
+**Version**: 1.4
+**v1.4:** **Appendix A — the handler's error-code table**, which this domain never had, so every code it emits was undefined by construction of the corpus (`ENTITY-CORE-PROTOCOL` §3.3 admits a specific code only where a spec code set defines one). Two defects the census surfaced and the table closes: §3.2's presence rule carried its discriminator as a **label in the `message`** while the `code` stayed `invalid_params` — a caller cannot branch on an optional human-readable field, so it now emits **`ambiguous_input` / `missing_input`**, `EXTENSION-CONTENT` Appendix A's codes for the same condition; and the root-mapping 404 was spelled **two ways in one document** (`no_root_mapping` ×4, `root_mapping_not_found` ×1), now converged on the `{noun}_not_found` form the rest of the corpus uses.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.51+), EXTENSION-CONTENT.md (v3.5+), EXTENSION-TREE.md (v3.1+), EXTENSION-SUBSCRIPTION.md (v3.4+)
 **Optional**: EXTENSION-REVISION.md (v2.0+) — versioning and cross-peer sync
@@ -251,7 +252,9 @@ local/files/write-request := {
 }
 ```
 
-**Presence rule.** Exactly one of `bytes` / `content` MUST be present. Both-set returns error 400 `invalid_params` ("ambiguous_input"); neither-set returns error 400 `invalid_params` ("missing_input"). The shape parallels CONTENT v3.5 §6.3's envelope-or-entity input-mode discipline.
+**Presence rule.** Exactly one of `bytes` / `content` MUST be present. Both-set returns **400 `ambiguous_input`**; neither-set returns **400 `missing_input`** *(v1.4)*. The shape parallels CONTENT §6.3's envelope-or-entity input-mode discipline, and **`EXTENSION-CONTENT` Appendix A is the authority for these two codes** — the condition is the same one, so the spelling is the same one.
+
+> *(v1.4)* Through v1.3 this rule read *"400 `invalid_params` (\"ambiguous_input\")"* — the discriminator carried as a **label inside the message** while the `code` stayed generic. `message` is optional and human-readable (`ENTITY-CORE-PROTOCOL` §3.3), so a caller could not branch on it and a conformant peer could omit it. Two handlers stating one condition in two vocabularies is the `(status, field, spelling)` divergence §3.3's slot rule exists to close.
 
 **Bytes-mode size constraint.** Bytes-mode carries the full payload in `WriteRequestData.bytes` inside a single EXECUTE envelope. Per `ENTITY-CORE-PROTOCOL.md` §1.1.4, the transport layer applies a frame limit (default ~16 MiB on TCP, negotiable). Bytes-mode write is therefore bounded by the negotiated frame max — a payload exceeding it returns a transport-level error (typically `frame too large`). This is **not** a v1.3 capability ceiling; it is the manifestation of the wire-layer constraint at the local/files surface.
 
@@ -292,7 +295,7 @@ EXECUTE local/files  operation: "read"
 handle_read(ctx):
   tree_path = ctx.resource.targets[0]
   root      = find_root_mapping(tree_path)
-  if root is null: return error(404, "no_root_mapping")
+  if root is null: return error(404, "root_mapping_not_found")
 
   relative_path = strip_prefix(tree_path, root.prefix)
   fs_path       = root.filesystem_root + relative_path
@@ -360,7 +363,7 @@ EXECUTE local/files  operation: "list"
 handle_list(ctx):
   tree_path = ctx.resource.targets[0]
   root      = find_root_mapping(tree_path)
-  if root is null: return error(404, "no_root_mapping")
+  if root is null: return error(404, "root_mapping_not_found")
 
   relative_path = strip_prefix(tree_path, root.prefix)
   fs_path       = root.filesystem_root + relative_path
@@ -408,7 +411,7 @@ EXECUTE local/files  operation: "write"
 handle_write(ctx, params):
   tree_path     = ctx.resource.targets[0]
   root          = find_root_mapping(tree_path)
-  if root is null: return error(404, "no_root_mapping")
+  if root is null: return error(404, "root_mapping_not_found")
   if root.read_only: return error(403, "read_only_root")
 
   relative_path = strip_prefix(tree_path, root.prefix)
@@ -416,8 +419,10 @@ handle_write(ctx, params):
 
   has_bytes   = params.bytes is not null    ; presence, not non-emptiness
   has_content = params.content is not null
-  if has_bytes == has_content:
-    return error(400, "invalid_params", "exactly one of bytes / content must be set")
+  if has_bytes and has_content:
+    return error(400, "ambiguous_input", "specify bytes or content, not both")
+  if not has_bytes and not has_content:
+    return error(400, "missing_input", "specify bytes or content")
 
   ; NOTE: presence test is `params.bytes is not null`, NOT `len > 0`. A zero-byte
   ; write (empty file via bytes-mode) is a legitimate operation; the previous
@@ -488,7 +493,7 @@ EXECUTE local/files  operation: "delete"
 handle_delete(ctx):
   tree_path     = ctx.resource.targets[0]
   root          = find_root_mapping(tree_path)
-  if root is null: return error(404, "no_root_mapping")
+  if root is null: return error(404, "root_mapping_not_found")
   if root.read_only: return error(403, "read_only_root")
 
   relative_path = strip_prefix(tree_path, root.prefix)
@@ -1020,3 +1025,35 @@ The handler registers the following types at `system/type/`:
 Domain types are not bootstrap types — they are registered at handler installation time.
 
 The v1.1 type `local/files/content` is retired in v1.2. The CONTENT v3.5 substrate (`system/content/blob` + `system/content/chunk`) replaces the per-handler sidecar with substrate-level dedup that crosses handler boundaries.
+
+---
+
+## Appendix A: Error Codes
+
+The `local/files` handler's code set, per `ENTITY-CORE-PROTOCOL` §3.3's default-code force: a
+more-specific code is conformant only where a spec code set defines one, and this table is that set
+for this handler.
+
+| Operation | Error Code | Status | Description |
+|-----------|-----------|--------|-------------|
+| (any) | `root_mapping_not_found` | 404 | The target tree path resolves to no configured root mapping (§4) |
+| `read` | `file_not_found` | 404 | The mapped filesystem path does not exist (§4.1) |
+| `read` | `use_list_for_directories` | 400 | The mapped path is a directory; `read` addresses files (§4.1) |
+| `list` | `directory_not_found` | 404 | The mapped directory does not exist (§4.2) |
+| `write` | `read_only_root` | 403 | The root mapping is configured read-only (§4.3, §9) |
+| `write` | `ambiguous_input` | 400 | Both `bytes` and `content` were supplied (§3.2 states the rule, §4.3 the algorithm). **`EXTENSION-CONTENT` Appendix A is the authority for this code** |
+| `write` | `missing_input` | 400 | Neither `bytes` nor `content` was supplied (§3.2, §4.3). Authority as above |
+| `write` | `content_not_found` | 404 | Content-mode: the referenced blob hash is not in the content store (§4.3) |
+| `write` | `invalid_params` | 400 | A bytes-mode payload exceeding the negotiated frame budget, where the transport did not refuse it first (§10.5 V1). `ENTITY-CORE-PROTOCOL` §3.3 enumerates this code |
+| `delete` | `read_only_root` | 403 | The root mapping is configured read-only (§4.4) |
+| `watch` | `watcher_not_found` | 404 | `action: "stop"` named a watcher that is not running (§4.5) |
+| (any) | `path_traversal_rejected` | 403 | The resolved filesystem path escapes the root's `filesystem_root`. §8.3 pins this code as a MUST and names it the uniform wire surface across platform mechanisms |
+
+**404 code naming (v1.4).** Through v1.3 the root-mapping miss was spelled `no_root_mapping` at four
+sites and `root_mapping_not_found` at a fifth — one condition, one document, two codes, invisible to
+any check keyed on either spelling. The convergent form is `{noun}_not_found`, which is the corpus's
+house form for a 404 everywhere else it appears (`handler_not_found` §3.3, `tree_not_found` /
+`snapshot_not_found` / `capability_not_found` in `EXTENSION-TREE` Appendix A, `blob_not_found` in
+`EXTENSION-CONTENT` Appendix A). **New 404 codes in any extension follow it** — the point is that the
+name is derived from a stated rule rather than chosen per site, so the next one does not need a
+ruling.

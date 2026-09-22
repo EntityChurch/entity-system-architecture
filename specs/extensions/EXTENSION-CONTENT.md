@@ -1,7 +1,8 @@
 # Content Extension — Normative Specification
 
-**Version**: 3.6
-**Latest change:** §10 constants reconciled with the amendment prose they had drifted from — `DEFAULT_CHUNK_SIZE` is **1 MiB** (§3.5, A2) at every site, and `GET_BATCH_SIZE` is **16** (§7.1, A4). A2 and A4 landed in prose and in the §3.6.2 parameter table and never reached §10.1, §10.2, §11.2 or §2.1's convergence recommendation, so the document stated two defaults for the value §2.1 makes the deduplication identity. Also: §10.3 gains the `ingest` row it omitted, and §6.1's `get` gains its `output_type`. Behaviour is unchanged for the value that matters — `entity-core-{go,rust,py}` already emit 1 MiB. Prior: Amendment 4 naming normalization — the frame-limit check label / type-path renamed snake → kebab, now `system/content/frame-limit-respected`, per `STYLE-NAMING-CONVENTIONS.md`; Go renames the check label in lockstep, Rust/Py doc-comment-only for this one. (Version lineage: v3.6 + Amendments 1–3, then v3.6, v3.5, v3.4, v3.3 baselines — see the changelog table for per-version detail.)
+**Version**: 3.7
+**v3.7:** **Appendix A — the handler's error-code table**, which this extension never had. `ENTITY-CORE-PROTOCOL` §3.3 permits a more-specific code only where a spec code set defines one, so every code in this document was undefined by construction of the corpus. The table pins `ambiguous_input` / `missing_input` / `hash_mismatch` (400), `blob_not_found` (404), `blob_pending_sync` (**503** — the retryable arm, newly distinguished by status) and `capability_denied` (403); rules that **the token is the `code`, never a label in the `message`**; and records that `verify_content`'s three status-less pseudocode returns are an internal predicate rather than wire codes. §6.4's `403 forbidden` is corrected to **`capability_denied`**, §3.3's 403 default — `forbidden` was defined nowhere and is a fallback case, not a code.
+**Prior change:** §10 constants reconciled with the amendment prose they had drifted from — `DEFAULT_CHUNK_SIZE` is **1 MiB** (§3.5, A2) at every site, and `GET_BATCH_SIZE` is **16** (§7.1, A4). A2 and A4 landed in prose and in the §3.6.2 parameter table and never reached §10.1, §10.2, §11.2 or §2.1's convergence recommendation, so the document stated two defaults for the value §2.1 makes the deduplication identity. Also: §10.3 gains the `ingest` row it omitted, and §6.1's `get` gains its `output_type`. Behaviour is unchanged for the value that matters — `entity-core-{go,rust,py}` already emit 1 MiB. Prior: Amendment 4 naming normalization — the frame-limit check label / type-path renamed snake → kebab, now `system/content/frame-limit-respected`, per `STYLE-NAMING-CONVENTIONS.md`; Go renames the check label in lockstep, Rust/Py doc-comment-only for this one. (Version lineage: v3.6 + Amendments 1–3, then v3.6, v3.5, v3.4, v3.3 baselines — see the changelog table for per-version detail.)
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
 
@@ -1023,7 +1024,7 @@ handle_get(params, ctx, request_uri, capability):
 
   ; Path-scope check (handler-level)
   if not check_path_permission("get", request_uri_path, capability, "system/content", local_peer_id):
-    return error(403, "forbidden")
+    return error(403, "capability_denied")
 
   ; Proceed with hash lookups scoped to this namespace
   namespace = extract_namespace(request_uri)
@@ -1398,6 +1399,37 @@ This table enumerates the operations the `system/content` handler declares in it
 - Storage backend for chunks and blobs
 - Cache eviction policy for chunk entities
 - Re-chunking policy after transfer
+
+---
+
+## Appendix A: Error Codes
+
+The `system/content` handler's code set, per `ENTITY-CORE-PROTOCOL` §3.3's default-code force: a
+more-specific code is conformant only where one is **defined for the operation in a spec code set**,
+and this table is that set for this handler. An undefined spelling is non-conformant and falls back to
+the status's default.
+
+| Operation | Error Code | Status | Description |
+|-----------|-----------|--------|-------------|
+| `ingest` | `ambiguous_input` | 400 | Both `envelope` and `entity` were supplied; the input mode is not determined (§6.3) |
+| `ingest` | `missing_input` | 400 | Neither `envelope` nor `entity` was supplied (§6.3) |
+| `ingest` | `hash_mismatch` | 400 | An `included` entity's computed hash does not equal the map key that addresses it (§6.3). Same code, same failure, as `EXTENSION-TREE` Appendix A's 400 `put` row |
+| `get` | `blob_not_found` | 404 | The requested blob hash is not in the content store and could not be fetched (§3.4, §7.1). A domain 404 — the handler is registered and the operation ran; the addressed content is absent (`ENTITY-CORE-PROTOCOL` §3.3's 404 row) |
+| `get` | `blob_pending_sync` | 503 | The blob entity is present but one or more of its chunks has not yet arrived (§3.4). **Distinct from `blob_not_found`, and the distinction is the caller's remedy:** 404 says *this content is not here*, 503 says *not yet — retry*. The same 400-vs-409 split `EXTENSION-TREE` Appendix A draws for `hash_mismatch` |
+| (any) | `capability_denied` | 403 | The handler-level `check_path_permission` refused the request's namespace (§6.4) |
+
+**Three pseudocode returns in §3.3 are not wire codes.** `verify_content`'s `missing_chunk`,
+`empty_chunk` and `size_mismatch` are the return values of an **internal predicate** over locally
+stored state, not codes a handler emits; they are written without a status for that reason. Where such
+a failure does reach the wire it is a content-store read failure and carries **500 `storage_error`**
+(`ENTITY-CORE-PROTOCOL` §3.3's enumerated 500 specific), never one of those three spellings.
+
+**The token is the `code`, never a label in the `message`.** `message` is optional and
+human-readable (`ENTITY-CORE-PROTOCOL` §3.3); a discriminator a caller must branch on cannot live
+there, because a conformant peer may omit the field entirely. Where a condition genuinely names
+something a caller would branch on, §3.3's slot rule says the remedy is **a table row** — this one —
+and not a parenthetical in prose. `DOMAIN-LOCAL-FILES` §3.2 / §4.3 state the same two input-mode
+conditions and cite this section as their authority.
 
 ---
 
