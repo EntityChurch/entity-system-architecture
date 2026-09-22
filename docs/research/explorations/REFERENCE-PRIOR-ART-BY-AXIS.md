@@ -248,18 +248,37 @@ half-life.
 
 **Named so the next reader knows the edges rather than assuming coverage.**
 
-- **Matrix** is absent and should not be — it is the most-deployed federated system with *state
-  resolution* (a real distributed-consistency answer), and it is the closest prior art for
-  conflicting concurrent writes across instances.
-- **Diaspora, Scuttlebutt (SSB), Farcaster, Lens** unexamined. **SSB is the highest-value omission
-  on this list** — it is gossip-first, append-only-log-based, offline-first by design, and its
-  operational history is directly on point.
-- **BitTorrent's tracker→DHT→PEX progression** is the best-documented case of an addressed tier and
-  an unaddressed tier coexisting, and only the DHT half is covered here.
-- **Usenet/NNTP flood-fill** is the oldest working gossip deployment and the best source on
-  unaddressed spread at scale, including how it failed (spam, binaries, retention economics).
-- **Moderation and admission** are touched only in §5. For any social tier this is a first-class
-  axis and it has no section here.
+> **Four of the five system-shaped gaps below were closed on 2026-09-04** and their verdicts live in
+> **`EXPLORATION-THE-CONVERGENT-DESIGNS-WILLOW-SSB-USENET-MATRIX-AND-THE-FIVE-VERDICTS`**, which is
+> the authority for those four. **This file stays the eight-axis source library** — find a system
+> here, find its verdict there. The rows are kept rather than deleted because *what a gap was, and
+> that it predicted its own relevance four times before anyone read it,* is the more useful record.
+
+- ~~**Matrix**~~ **— READ.** State resolution v1 → v2 (2018) → **v2.1, room version 12, 2025**. The
+  finding is that it is *still* being repaired seven years on, and that we avoid all of it by never
+  making a shared object mutable.
+- ~~**Scuttlebutt (SSB)**~~ **— READ, and it was the highest-value omission as predicted.** The
+  mandatory append-only chain is a natural experiment with a published cost: onboarding friction,
+  impossible deletion, unresolved forks, and the ICN paper's own admission on immutability as a
+  harassment vector. **Diaspora, Farcaster and Lens remain unexamined.**
+- ~~**BitTorrent's tracker→DHT→PEX progression**~~ **— READ, and the framing here was wrong.** It is
+  **not a progression**; PEX structurally cannot bootstrap, and no layer won.
+- ~~**Usenet/NNTP flood-fill**~~ **— READ.** Flood-fill, `Message-ID` dedup, `ihave`/`sendme`, and the
+  retention-becomes-a-price verdict.
+- **`Willow` / Earthstar was not on this list and should have been** — it is the nearest living
+  neighbour to this design and the only surveyed system whose authors published a point-by-point
+  rationale against every other. **A gap list is only as good as the systems it knows to name**, and
+  this one missed the most important entry by not looking for systems designed *after* the ones it
+  already knew.
+- **Moderation and admission** are touched only in §5. **Still open.** For any social tier this is a
+  first-class axis and it has no section here.
+- **Xanadu, Hyper-G, Microcosm and the hypertext lineage** were never on this list at all — the file
+  is organized around *deployed federated systems* and therefore could not see the *undeployed* ones.
+  Read 2026-09-04; authority is
+  `EXPLORATION-THE-HYPERTEXT-LINEAGE-XANADU-HYPER-G-AND-WHAT-THE-WEB-DECLINED-TO-SOLVE`.
+- **Schema and vocabulary evolution has no axis here** and is a first-class interop concern —
+  Protobuf/Avro/Thrift, ATProto Lexicon, Nostr's kind registry, Matrix room versions. Read
+  2026-09-04; authority is `EXPLORATION-EVOLVABLE-SCHEMAS-AND-THE-VOCABULARY-PROBLEM`.
 - **2026 figures were not re-measured.** ATProto throughput numbers are April-2025 vintage
   (~600 events/sec typical, 2000/sec peaks) and are certainly low today.
 - **§7's ActivityPub `O(followers)` characterization** is this record's reading of the delivery

@@ -1304,6 +1304,32 @@ the working detail; **the charter is the set.**
   **Ratified 2026-08-19 on the second instance** (the resolver-ceiling ruling, above) — the search space
   is every seat in the tier table, and it does not narrow because a question *sounds* like one tier's.
 
+  > **The tier table is `specs/SYSTEM-ARCHITECTURE.md` §7.3. `INDEX.md` §0 DOES NOT EXIST in this repo
+  > — every citation above is to a path with no file behind it, and the list at the real path is
+  > missing three repos.** `[corrected 2026-09-04 — self-found, one day after publishing a negative
+  > that the missing region refutes]`
+  > **The three:** **`entity-system-hosting`** · **`entity-system-generator`** — both **internal-origin
+  > only, unpublished**; run `git remote -v` before naming either in anything canonical — and
+  > **`entity-system-content`** (public). None appears anywhere in the corpus.
+  > **The cost, and it was immediate.** `EXPLORATION-THE-CONVERGENCE-THESIS` §6 published *"the hosted
+  > tier … is currently specified nowhere"* on 2026-09-03. `entity-system-hosting` holds
+  > **`docs/CONTRACT-EDGE.md` — E1–E5, provider-neutral, with a probe that measures all five** and a
+  > post-publish byte-comparison of every key at the edge against the tree that was meant to be
+  > published. **The narrow claim survives** — *publish-proxying*, a third party publishing on a
+  > tenant's behalf, really is specified nowhere — **and the headline was false about a repo one
+  > directory over**, in a document that publishes.
+  > **Why it is L16 and not a new letter.** L16's content is *the search space for a negative is every
+  > seat, and it does not narrow because the question sounds like one tier's.* A hosting toolkit sounds
+  > like operations, so it was never in the space — **and the enforcement point named a document that
+  > does not exist, so the space was never enumerable at all.** An enforcement point pointing at an
+  > absent path is the `absent-doc` class L3 already records, firing on our own rule set: the rule read
+  > as satisfiable and was not.
+  > ***Enforcement point, unchanged in content and now resolvable:*** the seat list is
+  > `specs/SYSTEM-ARCHITECTURE.md` §7.3 **plus the three names above**, and a negative about "the
+  > ecosystem" or "anywhere" is not proven until every one of them is searched. **The fix is the list,
+  > not another rule** — and **adding the two unpublished repos to §7.3 is the operator's call, not
+  > arch's**, because a published architecture document naming an unpublished repo is a disclosure.
+
 - **L14 — `ENTITY-CORE-PROTOCOL` is not ours to version. Extension versions are ordinary work.**
   `[RATIFIED 2026-08-18 — operator ruling, then corrected by the operator the same hour]`
   Five version headers were cut in one session and pushed. **Only one of them mattered:**
@@ -2155,6 +2181,26 @@ reconstruction pass.
   ```bash
   python3 <arch-tools>/spec-tool/cli.py address --namespace-root ../entity-core-protocol
   ```
+
+  **`entity-core-protocol` is a corpus too, and nobody had pointed `address` AT it.** Every
+  invocation in `AGENTS.md`, every handoff and every status document makes it the
+  **`--namespace-root`** — a *target* namespace — so its own citations were graded by nothing while
+  ours were graded against it. Run from that tree it reports **145 deviations** (16 mechanical
+  nicknames, 129 `bare-internal`), measured 2026-09-04 at `221d8c3`:
+
+  ```bash
+  cd ../entity-core-protocol && python3 <arch-tools>/spec-tool/cli.py address . \
+      --namespace-root ../entity-system-architecture
+  ```
+
+  **This is L7 plus L8's eleventh form** — the instrument existed, was run, and its *scope* was never
+  read; a clean output about one repo says nothing about the other. **Unmeasured is the honest word,
+  not unrun** — the negative proved here is only that no such invocation appears in any document.
+  **And it would not have caught the defect that prompted the check:** `ENTITY-NATIVE-TYPE-SYSTEM`
+  cites `ENTITY-CORE-PROTOCOL.md §2.7` twice for open types, where §2.7 is *Type Name Type* and open
+  types are §2.10. `stale-section` fires on a section that **does not exist**; §2.7 exists.
+  **A citation that resolves to the wrong real section is invisible to every gate we have**, and that
+  is a limit to know rather than a defect to fix.
 
 - **`spec sdksync` — the SDK tier's restatements against the spans they copied.** The three `SDK-*`
   specs restate extension schemas so an SDK author has one document to read; **51 blocks do, and 4 are
