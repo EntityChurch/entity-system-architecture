@@ -1,6 +1,7 @@
 # Local Files Domain — Normative Specification
 
-**Version**: 1.4
+**Version**: 1.5
+**v1.5:** **§4.0 Resource resolution**, binding every operation in §4. The four operation blocks read `ctx.resource.targets[0]` with no guard of any kind — no arity check, no pattern check, no selection rule — which is the sharpest instance in the corpus of a composition where a caller names a target, excludes the same target, clears dispatch-level authorization vacuously and is acted upon anyway. Every operation now resolves through `effective_targets` (`ENTITY-CORE-PROTOCOL.md` §5.2) and answers arity per §3.3's 400 row.
 **v1.4:** **Appendix A — the handler's error-code table**, which this domain never had, so every code it emits was undefined by construction of the corpus (`ENTITY-CORE-PROTOCOL` §3.3 admits a specific code only where a spec code set defines one). Two defects the census surfaced and the table closes: §3.2's presence rule carried its discriminator as a **label in the `message`** while the `code` stayed `invalid_params` — a caller cannot branch on an optional human-readable field, so it now emits **`ambiguous_input` / `missing_input`**, `EXTENSION-CONTENT` Appendix A's codes for the same condition; and the root-mapping 404 was spelled **two ways in one document** (`no_root_mapping` ×4, `root_mapping_not_found` ×1), now converged on the `{noun}_not_found` form the rest of the corpus uses.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.51+), EXTENSION-CONTENT.md (v3.5+), EXTENSION-TREE.md (v3.1+), EXTENSION-SUBSCRIPTION.md (v3.4+)
@@ -281,6 +282,49 @@ local/files/watch-request := {
 
 ## 4. Operations
 
+### 4.0 Resource resolution — normative, and it binds every operation below (v1.5)
+
+**Every operation in this section resolves its target through `effective_targets(ctx.resource,
+ctx.local_peer_id)` (`ENTITY-CORE-PROTOCOL.md` §5.2) and acts on `effective[0]`. A handler MUST NOT
+read `ctx.resource.targets[0]` `[MUST]`.**
+
+`effective_targets` is the targets a request actually names, after the caller's **own** exclusions. It
+exists because the dispatch-level authorizer and the handler were deriving that set separately: the
+authorizer skips every target the caller excluded, every handler indexed `targets[0]`, and **which
+targets differed was the caller's to choose** — so a caller could name the path it wanted, exclude the
+same path, clear authorization vacuously and be acted upon (`ENTITY-CORE-PROTOCOL` `0.8.2.20`).
+
+**The arity answers per `ENTITY-CORE-PROTOCOL.md` §3.3's 400 row, counted on the EFFECTIVE list:**
+
+```
+resolve_target(ctx):
+  ; The single shape every op in §4 uses. Stated once here; the blocks below
+  ; call it rather than restating it, because a rule restated per operation is
+  ; a rule that drifts per operation.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)   ; CORE §5.2
+  if len(effective) == 0:
+    return error(400, "path_required", "operation requires a resource target")
+  if len(effective) != 1:
+    return error(400, "ambiguous_resource", "operation requires exactly one resource target")
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource", "operation requires a concrete path, not a pattern")
+  return effective[0]
+```
+
+- **empty** → `400 path_required`. **This IS the absent case** — a request naming one target and
+  excluding it asks for nothing.
+- **more than one** → `400 ambiguous_resource`. Answering this code for an *absent* resource inverts
+  the two and is non-conformant.
+- **a single pattern target** → `400 malformed_resource`. These operations take a concrete path.
+
+> **Why this section exists: until v1.5 the four blocks below read `ctx.resource.targets[0]` with no
+> guard of any kind** — no arity check, no pattern check, no selection rule. `local/files` writes and
+> deletes real filesystem content, so this document was the sharpest instance of the composition in
+> the corpus. **The cardinality check alone would not have closed it:** `targets:[P,Q] exclude:[P]`
+> with `Q` in-grant has effective `[Q]`, size one, so the arithmetic says *proceed* while
+> `targets[0]` is still `P`. **The selection carries the authority; the count is only the ambiguity
+> rule.**
+
 ### 4.1 Read
 
 Read a file from the filesystem, chunk it via FastCDC, persist blob + chunks to the content store, bind the file entity into the tree, and return the file entity. The response envelope's `included` map carries the blob entity always; chunks are included when the blob's `total_size ≤ 64 KiB` (CONTENT v3.5 §4.3).
@@ -293,7 +337,7 @@ EXECUTE local/files  operation: "read"
 
 ```
 handle_read(ctx):
-  tree_path = ctx.resource.targets[0]
+  tree_path = resolve_target(ctx)          ; §4.0 — effective[0], never targets[0]
   root      = find_root_mapping(tree_path)
   if root is null: return error(404, "root_mapping_not_found")
 
@@ -361,7 +405,7 @@ EXECUTE local/files  operation: "list"
 
 ```
 handle_list(ctx):
-  tree_path = ctx.resource.targets[0]
+  tree_path = resolve_target(ctx)          ; §4.0 — effective[0], never targets[0]
   root      = find_root_mapping(tree_path)
   if root is null: return error(404, "root_mapping_not_found")
 
@@ -409,7 +453,7 @@ EXECUTE local/files  operation: "write"
 
 ```
 handle_write(ctx, params):
-  tree_path     = ctx.resource.targets[0]
+  tree_path     = resolve_target(ctx)      ; §4.0 — effective[0], never targets[0]
   root          = find_root_mapping(tree_path)
   if root is null: return error(404, "root_mapping_not_found")
   if root.read_only: return error(403, "read_only_root")
@@ -491,7 +535,7 @@ EXECUTE local/files  operation: "delete"
 
 ```
 handle_delete(ctx):
-  tree_path     = ctx.resource.targets[0]
+  tree_path     = resolve_target(ctx)      ; §4.0 — effective[0], never targets[0]
   root          = find_root_mapping(tree_path)
   if root is null: return error(404, "root_mapping_not_found")
   if root.read_only: return error(403, "read_only_root")

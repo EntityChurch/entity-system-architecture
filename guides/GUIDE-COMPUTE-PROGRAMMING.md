@@ -175,10 +175,28 @@ response = peer.execute(uri, "eval", params, resource)
 What's where:
 
 - **URI** = `system/compute`. Dispatch routes by longest-prefix match on the URI; nothing past `system/compute` is needed.
-- **`resource.targets[0]`** = the tree path of the expression. The handler reads it from `ctx.resource.targets[0]` and does `entity_tree.get(...)` to fetch the expression.
+- **`resource`** = the tree path of the expression. The handler resolves it with **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL.md` §5.2) and does `entity_tree.get(effective[0])`. **Never `ctx.resource.targets[0]`** — see the box below.
 - **`params`** = empty (or `{budget: ...}` to override the default budget). Operation-specific options only — the path is in resource per V7 §3.2's path-as-resource convention.
 
 The path lives in one place: `resource`. The dispatch capability check authorizes against it; the handler reads from it. One source of truth.
+
+> ⛔ **One source of truth is the goal; `effective_targets` is what makes it true. Read this before you write a handler `[MUST]`.**
+>
+> `resource` carries `targets` **and** an optional `exclude`, and the dispatch-level authorizer honours the caller's own excludes: a target the caller excluded is not a target the caller is asking for, so the authorizer skips it. **A handler that reads `ctx.resource.targets[0]` is therefore reading a different set from the one that was authorized — and the caller picks the difference.** Name the path you want, put the same path in `exclude`, and the authorization check passes having examined nothing while the handler acts on it anyway.
+>
+> **So every handler derives its subject from one function:**
+>
+> ```
+> effective = effective_targets(ctx.resource, ctx.local_peer_id)   ; CORE §5.2
+> ; empty -> 400 path_required   (an excluded lone target IS the absent case)
+> ; >1    -> 400 ambiguous_resource
+> ; pattern, for an op requiring a concrete path -> 400 malformed_resource
+> path = effective[0]
+> ```
+>
+> **The count is not the fix — the selection is.** `targets:[P,Q] exclude:[P]` with `Q` in your grant has an effective set of exactly one, so an arity check passes, and `targets[0]` is still `P`. A handler that counts the effective list and then indexes `targets[0]` has implemented the rule's arithmetic completely and is still reading a path nothing authorized. **Index the list you counted.**
+>
+> **This is not a defensive extra.** It is the enforcement: the dispatch-level check can be made vacuous by caller-controlled input, so it is not a "primary" check that makes yours redundant (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`).
 
 The empty-params shape is `entity(primitive/any, {})` — a `primitive/any` entity whose data is the canonical CBOR encoding of an empty map (single byte `a0`). Each SDK should expose a single helper for constructing this. See V7 §3.2 for the normative wire shape.
 
@@ -566,9 +584,9 @@ The escape hatch: write a language-native handler for the heavy work and call in
 
 | Operation | URI | Path source | What it does |
 |---|---|---|---|
-| `eval` | `system/compute` | `resource.targets[0]` | One-shot evaluation of expression at the given path |
-| `install` | `system/compute` | `resource.targets[0]` | Install reactive subgraph; audit, persist, initial eval, subscribe |
-| `uninstall` | `system/compute` | `resource.targets[0]` | Remove reactive subgraph and its dependency subscriptions |
+| `eval` | `system/compute` | `effective_targets(resource)[0]` | One-shot evaluation of expression at the given path |
+| `install` | `system/compute` | `effective_targets(resource)[0]` | Install reactive subgraph; audit, persist, initial eval, subscribe |
+| `uninstall` | `system/compute` | `effective_targets(resource)[0]` | Remove reactive subgraph and its dependency subscriptions |
 | `register` (handler) | `system/handler` | `params.manifest.expression_path` (for entity-native) | Atomically register a handler manifest + grant (entity-native or language-native) |
 
 ### 9.2 Validate-peer files (Go reference impl)

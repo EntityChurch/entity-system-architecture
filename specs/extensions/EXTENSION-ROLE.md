@@ -1,6 +1,7 @@
 # Role Extension — Normative Specification
 
-**Version**: 2.2
+**Version**: 2.3
+**v2.3 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 **Status**: Draft
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.39+)
 **Optional**: EXTENSION-SUBSCRIPTION.md (v3.10+) — reactive grant lifecycle
@@ -380,7 +381,7 @@ system/handler := {
 
 ### 4.2 Operation Inputs
 
-Role operations carry their target tree path in `EXECUTE.resource.targets[0]` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2). The handler decomposes the path to extract context and assignee/peer-id.
+Role operations carry their target tree path in `EXECUTE.resource` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2), and each resolves it through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (§5.2) — **acting on `effective[0]`, never `ctx.resource.targets[0]` `[MUST]`**. The handler decomposes the path to extract context and assignee/peer-id.
 
 ```
 ; define (per IA11) — write a role definition through the handler. Resource is
@@ -398,7 +399,7 @@ system/role/define-request := {
 system/role/define-result := {
   fields: {
     role_path:        {type_ref: "system/tree/path"}
-                      ; Echoes EXECUTE.resource.targets[0] as received per
+                      ; Echoes the resolved effective target (§5.2) as received per
                       ; V7's canonicalization-on-input model — caller chose
                       ; the form (peer-relative or peer-qualified); handler
                       ; preserves it. Do NOT canonicalize.
@@ -514,7 +515,7 @@ system/role/delegate-result := {
 }
 ```
 
-**Path decomposition.** The handler parses `ctx.resource.targets[0]` to extract the context and peer identity components:
+**Path decomposition.** The handler parses the resolved effective target — `effective_targets(ctx.resource, ctx.local_peer_id)[0]`, **never `ctx.resource.targets[0]`** — to extract the context and peer identity components:
 
 - `define`: resource is `system/role/{context}/{role_name}` (the role-definition entity being written; per IA11).
 - `assign`: resource is `system/role/{context}/assignment/{assignee_peer_id_hex}/{role_name}`.
@@ -535,13 +536,22 @@ handle_assign(ctx, params):
   ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
   ; different remedies, and the code selects the remedy. Collapsing them is
   ; non-conformant on the absent case.
-  if ctx.resource is null or len(ctx.resource.targets) == 0:
+  ; Resolve through the EFFECTIVE set — the targets this request actually
+  ; names, after the caller's OWN exclusions (ENTITY-CORE-PROTOCOL.md §5.2).
+  ; Counting or indexing ctx.resource.targets directly is non-conformant:
+  ; the authorizer skips caller-excluded targets, so the two layers would
+  ; be deriving different sets and the caller chooses the difference.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
     return error(400, "path_required",
       "assign requires a resource target (the assignment path)")
-  if len(ctx.resource.targets) != 1:
+  if len(effective) != 1:
     return error(400, "ambiguous_resource",
       "assign requires exactly one resource target (the assignment path)")
-  assignment_path = ctx.resource.targets[0]
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "this operation requires a concrete path, not a pattern")
+  assignment_path = effective[0]
   (context, assignee) = parse_assignment_path(assignment_path)
   if invalid:
     return error(400, "malformed_resource",
@@ -632,7 +642,7 @@ handle_assign(ctx, params):
 
 ### 4.4 Unassign / Exclude / Unexclude
 
-All three operations read their target path from `ctx.resource.targets[0]` (ENTITY-CORE-PROTOCOL.md §3.2 path-as-resource) and carry no params content — callers send the empty-params shape per ENTITY-CORE-PROTOCOL.md §3.2.
+All three operations read their target path from **`effective_targets(ctx.resource, ctx.local_peer_id)[0]`** (ENTITY-CORE-PROTOCOL.md §5.2; §3.2 path-as-resource) — **never `ctx.resource.targets[0]`** — and apply the same arity guard as `assign` (§4.3). They carry no params content — callers send the empty-params shape per ENTITY-CORE-PROTOCOL.md §3.2.
 
 `unassign` removes the assignment entity and revokes derived tokens. The handler decomposes context and assignee from the resource path. It SHOULD verify the caller's capability covers the role's grants — same RL2 check as `assign` — to prevent narrow-cap callers from removing assignments they couldn't have made.
 

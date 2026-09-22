@@ -148,7 +148,7 @@ The `signature` category uses fixed Ed25519 seeds named in the `.diag` as 32-byt
 
 **Corollary — do not audit for this by grepping declaration strings.** The declaration is not the check, and name-grepping scores it wrong in *both* directions: core-go's `authz` category scores **0/11** on a refusal-word grep while *being* the negative halves, and `encryption`'s `sender_auth_peer` reads as a single positive declaration while carrying two tamper vectors. **Read the implementation.** An audit that reports coverage from category names has measured its own vocabulary.
 
-This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, **§2.4a is a surface the suite reaches and scores backwards**, §2.4b is a surface the suite reaches and scores **forwards for the wrong reason**, and §5.2c is a surface the suite reaches only **by accident**.
+This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong thing"* in its authoring-time form: §5.2a is a rule with no surface, §5.2b is a surface the suite cannot reach, **§2.4a is a surface the suite reaches and scores backwards**, §2.4b is a surface the suite reaches and scores **forwards for the wrong reason**, **§2.4c is a surface the suite reaches and cannot READ** — both answers are the same observable — and §5.2c is a surface the suite reaches only **by accident**.
 
 ### §2.4b A deny-only check MUST establish its own antecedent `[MUST]`
 
@@ -168,7 +168,20 @@ This is ADR-0012's *"conformance-green ≠ correct if the test asserts the wrong
 
 **The mechanical tell, and it is worth grepping for.** A deny-only check that needs this rule almost always **says so in its own declaration**: read the declarations for *"even though"*, *"while"*, *"despite"*, *"notwithstanding"* — then ask which arm establishes the clause that follows. If none does, the check measures the clause before it and nothing else.
 
+
 > **The declaration KEEPS the antecedent, and names the arm that establishes it.** The tell above has an obvious perverse discharge — **delete the *"even though"* clause and the grep goes quiet while the check is unchanged** — so the rule is stated in the direction that closes it. **The antecedent is the reason the property is not obvious**, and a declaration that drops it leaves the next reader unable to tell a paired check from a bare one without reading the body. A conformant declaration says both halves: *what MUST be refused, even though X holds* — **and** *paired with the arm that establishes X.*
+
+### §2.4c When both arms SUCCEED, the status cannot discriminate — assert the field that names which input was acted on `[MUST]`
+
+**§2.4a is a check that scores a correct peer backwards; §2.4b is a check that passes for the wrong reason; this is a check whose two outcomes are the same observable.** Where a probe varies *which* of several inputs a peer should act on, and **both the right answer and the wrong answer return success**, a status assertion measures nothing at all — and unlike §2.4b it does not even need a fault to go wrong. It is wrong by construction on every run.
+
+> **The rule.** Where the property under test is **which** input the peer selected, the check MUST assert a **field of the response that is attributable to exactly one input** — a returned entity's type, an identifier, a content hash — and MUST NOT rest on the status, the count, or the absence of an error.
+
+**The worked shape.** A request carries two candidate targets, one the caller is entitled to and one it is not, and the peer answers `200` either way. The only thing separating a conformant peer from a compromised one is **the type of the entity that came back**: one of them can only have come from the entitled path, the other only from the forbidden one. **A check that asserts `200` reports the same result for both.**
+
+**Why this is a distinct rule and not §2.4b restated.** §2.4b is about a refusal whose *cause* is unestablished; the remedy is a positive control. Here there is no refusal to attribute — **both arms are successes and the peer is behaving; the question is which thing it did.** A positive control does not help, because the control also passes. **Only a witness field does**, and the check has to know in advance which field can only have come from one input.
+
+**Corollary, and it is what makes this cheap to apply: pick the discriminating input for its WITNESS, not only for its authority.** A probe target chosen because it is out of scope but whose response is shaped identically to the in-scope one cannot be read; a target whose response carries a distinct type makes the same probe self-reporting. **That choice is made when the vector is designed and cannot be recovered afterwards.**
 
 ---
 
@@ -450,6 +463,28 @@ Two corollaries follow, and both cut against ordinary triage:
 - **A green sibling is not evidence that the flaking implementation is uniquely broken.** It may be evidence that the sibling *cannot observe* the defect it also has. **"Two impls green, one flaky" is equally consistent with three defective implementations and one accidental instrument** — which is exactly what it turned out to be. Investigate before converging, and treat the flaking tree as the one holding the evidence.
 
 *This is `ADR-0012`'s "conformance-green ≠ correct" in its sharpest form: not a test asserting the wrong thing, but a correct test whose ability to fail is an artifact of one implementation's internals. Raised by an implementation, not by review — the cohort's own §5.2b twin, one layer down.*
+
+### §5.2d A suite declares what it BORROWED — the self-check rule, pointed at the instrument `[added 2026-09-11]`
+
+**§5.2's self-check rule is about a check that never contacts the peer. This is the same rule one level up: a check that contacts the peer through machinery it took *from* that peer.**
+
+A conformance suite needs a wire client — framing, a canonical-encoding codec, a signature scheme. It can write one, or it can borrow one from an implementation. **Borrowing is legitimate and is often the only affordable option. What is not legitimate is borrowing silently**, because the surfaces the suite borrowed stop being independently measured, and nothing in the report says so.
+
+**The rule `[MUST]`.** A suite **MUST** declare the implementations it borrows from and the surfaces it borrows. **A requirement whose subject is a surface the suite borrowed is reported against the lending peer as a `[self]` check, never as a peer result.**
+
+**The test is §5.2's, unchanged:** *could a sibling implementation ship none of this rule and the row not move?* A suite using peer P's ECF codec to score peer P's canonical encoding will score `PASS` whatever P does, because both sides of the comparison are P. The row is about the suite, not the peer.
+
+| Suite consumes | What stops being independently measured |
+|---|---|
+| a peer's client library wholesale | framing, canonical form, handshake — measured **through one implementation's reading of the wire**, so a shared bug is invisible |
+| a peer's codec only | the encoding requirements become partial self-checks against that peer |
+| nothing — written from scratch | nothing, and it costs the most |
+
+**None of the three is wrong. The undeclared one is.** A from-scratch suite is the strongest and the most expensive; a borrowing suite is cheaper and narrower, and *a reader can only tell which they are holding if it is written down.*
+
+**Where this becomes load-bearing rather than pedantic:** once more than one suite exists, **the difference between two suites is itself the measurement.** Two suites that borrow from the same peer agree for reasons that have nothing to do with the specification, and their agreement will read as convergence. Declaring the borrow is what keeps that distinguishable from the real thing.
+
+*Raised by `entity-system-conformance` while deciding how to build its first suite, and generalised here because it binds any suite, including the reference oracle. Its authority is §5.2's `[MUST; ruled 2026-08-09]` — this states the borrowed-substrate case that ruling's wording did not enumerate. **If a reader takes it as a new obligation rather than a restatement, it wants a proposal and this clause should be cut back to a pointer.***
 
 ---
 

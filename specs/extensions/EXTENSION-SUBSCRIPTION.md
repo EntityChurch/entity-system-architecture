@@ -1,6 +1,6 @@
 # Subscription Extension — Normative Specification
 
-**Version**: 3.18
+**Version**: 3.19
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.31+), EXTENSION-INBOX.md (v5.0+)
@@ -338,7 +338,11 @@ EXECUTE
   }
 ```
 
-The subscription pattern is `resource.targets[0]` — the same field that authorizes the operation at dispatch time. No duplication between authorization and semantics.
+The subscription pattern is carried in `resource` — the same field that authorizes the operation at dispatch time. No duplication between authorization and semantics.
+
+**It is resolved through `effective_targets(ctx.resource, ctx.local_peer_id)` (`ENTITY-CORE-PROTOCOL.md` §5.2), not by indexing `ctx.resource.targets[0]` `[MUST]` (v3.19).** The authorizer skips every target covered by the caller's **own** `exclude`; a handler that indexes `targets` directly is deriving a different set from the same field, and **the caller chooses the difference** — it can name a prefix, exclude the same prefix, clear the dispatch-level resource check vacuously, and be subscribed to a prefix no grant covered.
+
+> ⚠ **`subscribe` is the corpus's one operation whose subject is legitimately a PATTERN, and `ENTITY-CORE-PROTOCOL` §3.3's `malformed_resource` rule does NOT bind it.** That rule reads *"a resource-requiring operation takes a concrete path"* and scopes itself to operations requiring **a** resource; §3.3 states the carve-out in the same clause — *"pattern targets remain valid for operations whose specification defines a set-valued subject."* **This specification defines one:** a subscription prefix is a set of paths by construction, and rejecting a pattern here would break the extension's primary use. **The exclusion rule still binds** — a pattern the caller excluded is not a subject — and that half is what v3.19 lands. Stated explicitly because the fold that introduced the pattern rule reaches every document that reads `resource`, and a reader applying it uniformly would break `subscribe` while believing they were hardening it.
 
 The handler stores the subscription entity with the provided deliver token. Notifications are delivered later via the inbox mechanism (EXTENSION-INBOX.md) — the stored deliver token authorizes the delivering peer to send to the inbox URI. The subscription and inbox extensions are thus complementary: subscriptions define *what* to watch; inbox defines *how* to deliver.
 
@@ -381,7 +385,17 @@ handle_subscribe(ctx, params):
   limits = apply_server_limits(params.limits or server_defaults)
 
   ; 3a. Check subscriber capacity for this prefix (§2.7)
-  prefix = ctx.resource.targets[0]
+  ; The EFFECTIVE set (CORE §5.2) — targets minus the caller's own excludes.
+  ; A pattern IS a valid subject here (§2.1); indexing ctx.resource.targets
+  ; directly is not (v3.19).
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
+    return error(400, "path_required",
+      "subscribe requires a resource target (the subscription pattern)")
+  if len(effective) != 1:
+    return error(400, "ambiguous_resource",
+      "subscribe requires exactly one resource target (the subscription pattern)")
+  prefix = effective[0]
   if max_subscribers_per_prefix > 0 and subscriber_count(prefix) >= max_subscribers_per_prefix:
     ; At capacity — return redirect response
     alternatives = list_subscriber_peers(prefix)   ; MAY be empty or omitted
@@ -398,7 +412,7 @@ handle_subscribe(ctx, params):
       }
     }
 
-  pattern = ctx.resource.targets[0]                    ; From EXECUTE resource field
+  pattern = effective[0]                               ; the resolved effective target (§5.2)
 
   ; 3b. include_payload read-authorization (§2.3): content delivery requires
   ;     read access — the subscribe grant alone does not authorize it.

@@ -1,19 +1,4 @@
 {
-  "meta": {
-    "note": "accepted debt; --update-baseline may only lower",
-    "total": 2407,
-    "files": 168,
-    "rules": [
-      "amendment-provenance",
-      "date-in-body",
-      "discipline-letter-ref",
-      "document-history-section",
-      "impl-team-ref",
-      "internal-path-ref",
-      "operator-quote",
-      "proposal-citation"
-    ]
-  },
   "categories": {},
   "debt": {
     "docs/proposals/INDEX.md": {
@@ -25,7 +10,8 @@
     "docs/proposals/active/applications/PROPOSAL-ACQUISITION-SURFACE-PROTOTYPE-TIER.md": {
       "discipline-letter-ref": 2,
       "impl-team-ref": 15,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-CHAT.md": {
       "operator-quote": 2
@@ -36,36 +22,44 @@
     },
     "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-CONTRACT.md": {
       "impl-team-ref": 5,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md": {
-      "impl-team-ref": 3
+      "impl-team-ref": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-FOLLOW-THE-PATTERN-THE-SET-AND-THE-TWO-ROUTES.md": {
       "impl-team-ref": 1,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-SUB-PEER-ISOLATION-MODEL.md": {
       "impl-team-ref": 18,
       "internal-path-ref": 2,
-      "operator-quote": 4
+      "operator-quote": 4,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-THE-COORDINATE-AND-WALK-DISCOVERY.md": {
-      "discipline-letter-ref": 1
+      "discipline-letter-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-THE-REPLY-HINT.md": {
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/applications/PROPOSAL-WINDOW-ID-LIFETIME-AND-THE-WINDOW-INDEX.md": {
       "discipline-letter-ref": 10,
       "impl-team-ref": 25
     },
     "docs/proposals/active/extensions/PROPOSAL-CLOCK-ADDRESSABLE-TICK-AND-DEADLINE.md": {
-      "impl-team-ref": 1
+      "impl-team-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-COMPUTE-BUDGET-PREEMPTION.md": {
       "impl-team-ref": 5,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM.md": {
       "impl-team-ref": 4
@@ -74,7 +68,8 @@
       "discipline-letter-ref": 3,
       "impl-team-ref": 17,
       "internal-path-ref": 1,
-      "operator-quote": 4
+      "operator-quote": 4,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-IDENTITY-ROTATION-AUTHORITY-PARITY.md": {
       "impl-team-ref": 3,
@@ -82,43 +77,73 @@
       "operator-quote": 2
     },
     "docs/proposals/active/extensions/PROPOSAL-INBOX-OPEN-DELIVERY-ADMISSION.md": {
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-MEMBERSHIP-CONDITIONED-GRANTS.md": {
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-REFLECTION-LISTENER-ADMISSION.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-RELAY-COMPLETE-THE-MODE-SET.md": {
       "discipline-letter-ref": 14,
       "impl-team-ref": 33,
       "internal-path-ref": 11,
-      "operator-quote": 15
+      "operator-quote": 15,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-REVISION-MERGE-DELEGATION-AND-CASCADE.md": {
       "discipline-letter-ref": 1,
       "impl-team-ref": 43,
       "internal-path-ref": 7,
-      "operator-quote": 5
+      "operator-quote": 5,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME.md": {
       "impl-team-ref": 10,
-      "internal-path-ref": 3
+      "internal-path-ref": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/extensions/PROPOSAL-SYSTEM-DEVICE.md": {
       "impl-team-ref": 5
     },
+    "docs/proposals/active/extensions/PROPOSAL-THE-IDENTITY-ATTESTATION-QUORUM-REPAIR-SET-AND-THE-UNSPECIFIED-ARRIVAL-PATH.md": {
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-THE-PUBLISHED-WALK.md": {
+      "proposal-artifact-unnamed": 1
+    },
     "docs/proposals/active/process/PROPOSAL-CONFORMANCE-ORACLE-CONTRACT.md": {
       "impl-team-ref": 9,
-      "internal-path-ref": 3
+      "internal-path-ref": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/process/PROPOSAL-CORPUS-REFERENCE-INTEGRITY.md": {
-      "impl-team-ref": 2
+      "impl-team-ref": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/active/process/PROPOSAL-MATURITY-MODEL-AND-ROADMAP-COMMUNICATION.md": {
       "impl-team-ref": 17,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/active/process/PROPOSAL-THE-CONFORMANCE-INVENTORY-IS-ADDRESSABLE-OR-IT-IS-PROSE.md": {
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/active/process/PROPOSAL-THE-VOCABULARY-LIFECYCLE-TRANSITIVE-COMPATIBILITY-AN-EXPERIMENTAL-SEGMENT-AND-THE-FREEZE-TRIGGER.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/deferred/PROPOSAL-IDENTITY-CROSS-ALGORITHM-MIGRATION.md": {
-      "impl-team-ref": 9
+      "impl-team-ref": 9,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-A-CONVENTION-STATES-WHAT-A-CHECK-MUST-DISCRIMINATE-AND-SHIPS-NO-ARTIFACT.md": {
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-A-PUBLIC-SHARE-IS-A-DIFFERENT-TYPE-NOT-AN-AUDIENCE-VALUE.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/applications/PROPOSAL-APP-CONVENTION-FEED.md": {
       "impl-team-ref": 4,
@@ -129,17 +154,23 @@
     },
     "docs/proposals/implemented/applications/PROPOSAL-EXTENSION-HOST-INSTALL-SEAM.md": {
       "discipline-letter-ref": 2,
-      "impl-team-ref": 2
+      "impl-team-ref": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/applications/PROPOSAL-SDK-HANDLER-OWNED-SERVICES.md": {
       "impl-team-ref": 6,
       "internal-path-ref": 1,
-      "operator-quote": 4
+      "operator-quote": 4,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/applications/PROPOSAL-SHARE-AS-GRANT-AND-THE-AUDIENCE-CARRIER.md": {
       "discipline-letter-ref": 2,
       "impl-team-ref": 14,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-THE-REFERENCE-ATOM.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-EMPTY-GRANTS-AND-POLICY-WITHDRAWAL.md": {
       "impl-team-ref": 30,
@@ -148,11 +179,13 @@
     },
     "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-MINT-TEMPORAL-CEILING-AND-THE-WITHDRAWAL-BOUND.md": {
       "impl-team-ref": 33,
-      "operator-quote": 3
+      "operator-quote": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/core/PROPOSAL-CONNECT-PREAUTH-SCOPE-AND-ADDRESS-BEFORE-AUTH.md": {
       "discipline-letter-ref": 3,
-      "impl-team-ref": 8
+      "impl-team-ref": 8,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/core/PROPOSAL-CONTINUATION-BOUNDS-PROPAGATION.md": {
       "impl-team-ref": 12,
@@ -168,11 +201,13 @@
     },
     "docs/proposals/implemented/core/PROPOSAL-STATUS-CODE-SLOT-AND-THE-DEFAULT-CODE-FORCE.md": {
       "discipline-letter-ref": 10,
-      "impl-team-ref": 31
+      "impl-team-ref": 31,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/core/PROPOSAL-STATUS-TABLE-DEFAULT-CODES-AND-THE-501-SYNONYM.md": {
       "discipline-letter-ref": 8,
-      "impl-team-ref": 23
+      "impl-team-ref": 23,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/core/PROPOSAL-THE-400-SLOT-FALLBACK-AND-THE-TREE-PUT-ROWS.md": {
       "impl-team-ref": 7,
@@ -185,14 +220,20 @@
     "docs/proposals/implemented/core/PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY.md": {
       "discipline-letter-ref": 11,
       "impl-team-ref": 6,
-      "operator-quote": 3
+      "operator-quote": 3,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-A-WILDCARD-IS-NOT-CONSENT-TO-AUDIT-THE-MACHINERY.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-AVAILABILITY-DESCRIPTOR.md": {
-      "impl-team-ref": 2
+      "impl-team-ref": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md": {
       "impl-team-ref": 7,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM.md": {
       "impl-team-ref": 4
@@ -206,7 +247,8 @@
     "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-COLLECTION-PRIMITIVES.md": {
       "discipline-letter-ref": 3,
       "impl-team-ref": 12,
-      "operator-quote": 5
+      "operator-quote": 5,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-IS-ERROR-PREDICATE.md": {
       "discipline-letter-ref": 3,
@@ -216,19 +258,23 @@
     "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-V324-CORNERS.md": {
       "discipline-letter-ref": 3,
       "impl-team-ref": 10,
-      "internal-path-ref": 3
+      "internal-path-ref": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONNECTION-NODE.md": {
       "impl-team-ref": 6,
-      "operator-quote": 8
+      "operator-quote": 8,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md": {
       "impl-team-ref": 6,
-      "operator-quote": 12
+      "operator-quote": 12,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONTAINED-ERROR-BOUNDARY-AND-CONTENT-URL-HASH-SHAPE.md": {
       "discipline-letter-ref": 2,
-      "impl-team-ref": 8
+      "impl-team-ref": 8,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-DELIVER-TOKEN-AND-LEVEL-2.md": {
       "impl-team-ref": 7,
@@ -236,32 +282,38 @@
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-LOST-ERROR-MARKER-MUST.md": {
       "impl-team-ref": 7,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-STANDING-MODEL.md": {
       "impl-team-ref": 7,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-DEFAULT-NAME-FORMAT-DISPATCH.md": {
       "impl-team-ref": 18,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-DISCOVERY-RENDEZVOUS-BACKEND.md": {
       "impl-team-ref": 11
     },
     "docs/proposals/implemented/extensions/PROPOSAL-DISPATCH-AUTHORIZATION-FRAME.md": {
       "discipline-letter-ref": 1,
-      "impl-team-ref": 19
+      "impl-team-ref": 19,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-ENCRYPTION-NAMESPACE-AND-RECIPIENT-RESOLUTION.md": {
       "impl-team-ref": 8,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md": {
       "impl-team-ref": 10
     },
     "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-SIGNALING-COORDINATION-ENVELOPE.md": {
-      "impl-team-ref": 9
+      "impl-team-ref": 9,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md": {
       "impl-team-ref": 10,
@@ -270,37 +322,45 @@
     "docs/proposals/implemented/extensions/PROPOSAL-HISTORY-CONFIG-SELECTION-TOTAL-ORDER.md": {
       "discipline-letter-ref": 1,
       "impl-team-ref": 10,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG.md": {
       "impl-team-ref": 16,
       "internal-path-ref": 4,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM.md": {
       "impl-team-ref": 7,
-      "internal-path-ref": 2
+      "internal-path-ref": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVENESS-REACTIVE-BUILDOUT.md": {
       "impl-team-ref": 31,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-REACHABILITY-FACTS.md": {
       "impl-team-ref": 7,
-      "operator-quote": 5
+      "operator-quote": 5,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-SEAM-CONSULTATION-BOUND.md": {
-      "impl-team-ref": 9
+      "impl-team-ref": 9,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md": {
       "impl-team-ref": 10,
-      "operator-quote": 11
+      "operator-quote": 11,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-PEER-TRANSPORT-SET.md": {
       "discipline-letter-ref": 12,
       "impl-team-ref": 32,
       "internal-path-ref": 1,
-      "operator-quote": 7
+      "operator-quote": 7,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-PIN-THE-PATH-REQUIRED-STATUS.md": {
       "discipline-letter-ref": 8,
@@ -309,7 +369,8 @@
     "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-FRONT-DOOR.md": {
       "discipline-letter-ref": 1,
       "impl-team-ref": 19,
-      "internal-path-ref": 1
+      "internal-path-ref": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH.md": {
       "impl-team-ref": 21,
@@ -319,19 +380,22 @@
       "discipline-letter-ref": 3,
       "impl-team-ref": 18,
       "internal-path-ref": 1,
-      "operator-quote": 12
+      "operator-quote": 12,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-DISPATCH-FILTER-SEMANTICS.md": {
       "discipline-letter-ref": 2,
       "impl-team-ref": 21,
       "internal-path-ref": 1,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-ASSOCIATION-AND-THE-HOSTILE-HOST.md": {
       "discipline-letter-ref": 3,
       "impl-team-ref": 31,
       "internal-path-ref": 1,
-      "operator-quote": 11
+      "operator-quote": 11,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-LEGALITY-INPUT-DOMAINS.md": {
       "discipline-letter-ref": 3,
@@ -344,13 +408,15 @@
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PEER-ISSUED-REGISTRATION.md": {
       "impl-team-ref": 30,
       "internal-path-ref": 6,
-      "operator-quote": 14
+      "operator-quote": 14,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PIN-AUTHORITY-CAPABILITY-ENCODING.md": {
       "discipline-letter-ref": 2,
       "impl-team-ref": 10,
       "internal-path-ref": 1,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RENEW-TTL-CASCADE.md": {
       "discipline-letter-ref": 2,
@@ -361,11 +427,13 @@
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RESOLVER-CEILING-CONFIG-SITE.md": {
       "discipline-letter-ref": 1,
       "impl-team-ref": 15,
-      "operator-quote": 3
+      "operator-quote": 3,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md": {
       "impl-team-ref": 2,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-REVISION-AUTO-VERSION-EXCLUDE-PARITY.md": {
       "impl-team-ref": 18,
@@ -373,17 +441,21 @@
     },
     "docs/proposals/implemented/extensions/PROPOSAL-STATIC-PUBLISH-HANDSHAKE-AND-MANIFEST-FRESHNESS.md": {
       "discipline-letter-ref": 1,
-      "impl-team-ref": 16
+      "impl-team-ref": 16,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-SUBSTITUTE-CONFORMANCE-REACHABILITY.md": {
-      "impl-team-ref": 7
+      "impl-team-ref": 7,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-SUBSTRATE-DISCHARGED-OBLIGATIONS.md": {
-      "impl-team-ref": 7
+      "impl-team-ref": 7,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-SYMMETRIC-REENTRY-MUTUAL-MINTING.md": {
       "impl-team-ref": 32,
-      "internal-path-ref": 6
+      "internal-path-ref": 6,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-TREE-NODE-SHAPE-BOUNDED-FANOUT.md": {
       "impl-team-ref": 31
@@ -392,7 +464,8 @@
       "discipline-letter-ref": 1,
       "impl-team-ref": 20,
       "internal-path-ref": 2,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/extensions/PROPOSAL-TYPE-OPERATION-ERROR-TAXONOMY.md": {
       "discipline-letter-ref": 5,
@@ -401,22 +474,33 @@
     "docs/proposals/implemented/process/PROPOSAL-CONFORMANCE-COVERAGE-FAILURE-TAXONOMY.md": {
       "impl-team-ref": 20,
       "internal-path-ref": 3,
-      "operator-quote": 2
+      "operator-quote": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/process/PROPOSAL-CORE-TYPE-EXTENSION-TIERING.md": {
-      "operator-quote": 4
+      "operator-quote": 4,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/process/PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS.md": {
       "discipline-letter-ref": 4,
       "impl-team-ref": 23,
-      "internal-path-ref": 5
+      "internal-path-ref": 5,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/process/PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD.md": {
-      "internal-path-ref": 2
+      "internal-path-ref": 2,
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/implemented/process/PROPOSAL-HASH-WIDTH-IS-NEVER-FIXED.md": {
       "impl-team-ref": 11,
-      "internal-path-ref": 2
+      "internal-path-ref": 2,
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/process/PROPOSAL-KIND-AND-AUTHORITY-ARE-TWO-AXES-AND-A-DOCUMENT-MUST-DECLARE-WHAT-GOVERNS-IT.md": {
+      "proposal-artifact-unnamed": 1
+    },
+    "docs/proposals/implemented/process/PROPOSAL-RETIRE-THE-CONDENSED-WORKING-REFERENCE.md": {
+      "proposal-artifact-unnamed": 1
     },
     "docs/proposals/superseded/PROPOSAL-INBOX-TYPE-NAMESPACE-CORRECTION.md": {
       "impl-team-ref": 21,
@@ -425,7 +509,8 @@
     },
     "docs/proposals/superseded/PROPOSAL-NAMESPACE-SEGMENT-DISCIPLINE.md": {
       "impl-team-ref": 1,
-      "operator-quote": 1
+      "operator-quote": 1,
+      "proposal-artifact-unnamed": 1
     },
     "docs/research/INDEX.md": {
       "discipline-letter-ref": 17,
@@ -717,5 +802,22 @@
     "docs/research/explorations/REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS.md": {
       "operator-quote": 2
     }
+  },
+  "meta": {
+    "files": 179,
+    "note": "accepted debt; --update-baseline may only lower",
+    "rules": [
+      "amendment-provenance",
+      "date-in-body",
+      "discipline-letter-ref",
+      "document-history-section",
+      "impl-team-ref",
+      "internal-path-ref",
+      "operator-quote",
+      "proposal-artifact-unnamed",
+      "proposal-citation"
+    ],
+    "seeded": "proposal-artifact-unnamed seeded as accepted debt when the rule was added; every other entry byte-unchanged. New findings gate.",
+    "total": 2485
   }
 }

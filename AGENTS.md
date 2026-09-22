@@ -269,7 +269,7 @@ the start of every session.
 | quote another party's sentence as evidence | **L22** |
 | file something against ourselves | **L13's fourth axis** |
 | land a `[MUST]` naming a value or capability | **L17** — three shapes |
-| publish a count or a census | **L8's twentieth form** · **L7's standing rule** |
+| publish a count or a census | **L8's twentieth form** · **L8's twenty-first — publish the surface the count ranges over, never the count alone; four bare counts published wrong in one week** · **L7's standing rule** |
 
 **The ratchet still binds, with one correction this split encodes: prose is not the
 deliverable.** An incident earns, in order of preference — **a widened scope** on a gate, index
@@ -298,7 +298,22 @@ was scoped to one repository, and each reported clean while being narrow.**
 grep -i "<noun>" docs/LEGACY-ARCHIVE-INDEX.md          # is there a document about it?
 L=<path to the archived pre-V8 architecture repository>/docs/architecture
 grep -rliE "<term>" specs guides docs "$L"             # is it discussed anywhere?
+
+# CENSUS — when the answer is a COUNT, run this, and publish the table it prints.
+# specs AND guides, always: a sweep scoped to specs/ understated one population
+# by six sites, and the guides are the surface an extension author copies from.
+grep -rn "<literal>" specs guides | awk -F: '{print $1}' | sort | uniq -c | sort -rn
+grep -rn "<literal>" specs guides | wc -l              # total, beside the breakdown
 ```
+
+**Publish the SURFACE, never the count alone (L8's twenty-first form).** A count inherits the shape of
+the search that produced it and **the shape is invisible in the number** — four bare counts were
+published wrong in one week, from three different mechanisms: a **scope** (`specs/` only), a **unit**
+(grep LINES read as sites, one of them in our own `DESIGN-REGISTER`), and a **membership** omission (a
+sentence naming four of five backends, the fifth inferred into the wrong half). Two rode into a
+normative proposal and two into routing packets before anyone re-measured. **`27 across 7` with the
+per-document table beside it is falsifiable by inspection; `27 sites` is not.** And when counting
+members of a known set, **enumerate every member, including the ones that pass.**
 
 **A title index is not the whole search, measured.** Of five gaps a 2026-09-06 audit ranked
 `[ZERO]`, the index finds two by title and misses three discussed *inside* documents titled for

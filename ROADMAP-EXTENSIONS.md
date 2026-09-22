@@ -46,22 +46,22 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 
 | extension | ver | what it provides |
 |---|---|---|
-| `EXTENSION-TREE` | 4.8 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
+| `EXTENSION-TREE` | 4.9 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
 | `EXTENSION-CONTENT` | 3.7 | content-hash address space, closure materialization, partial-sync |
 | `EXTENSION-TYPE` | 1.3 | runtime type registration |
 | `EXTENSION-REVISION` | 3.13 | revision chains, diff/merge-config, deletion markers |
-| `EXTENSION-SUBSCRIPTION` | 3.18 | reactive subscriptions, cross-peer mirror |
-| `EXTENSION-CONTINUATION` | 1.24 | forward continuations, structural-transform chains |
+| `EXTENSION-SUBSCRIPTION` | 3.19 | reactive subscriptions, cross-peer mirror |
+| `EXTENSION-CONTINUATION` | 1.25 | forward continuations, structural-transform chains |
 | `EXTENSION-INBOX` | 5.9 | message inbox, delivery |
 | `EXTENSION-HISTORY` | 1.10 | parent-ref history walk |
 | `EXTENSION-QUERY` | 1.7 | entity query / path-prefix |
-| `EXTENSION-COMPUTE` | 3.30 | expression evaluation, the lowering toolkit |
+| `EXTENSION-COMPUTE` | 3.31 | expression evaluation, the lowering toolkit |
 | `EXTENSION-GROUP` | 1.4 | group membership |
 | `EXTENSION-IDENTITY` | 3.10 | identity convention over the attestation substrate |
 | `EXTENSION-ATTESTATION` | 1.3 | generic attestation edge substrate |
 | `EXTENSION-QUORUM` | 1.2 | K-of-N quorum primitive |
 | `EXTENSION-CLOCK` | 1.3 | logical/wall clock |
-| `EXTENSION-ROLE` | 2.2 | role assignment + delegation (M4→M5: v2.0 root-cap green round pending) |
+| `EXTENSION-ROLE` | 2.3 | role assignment + delegation (M4→M5: v2.0 root-cap green round pending) |
 
 > **How an extension attaches, which is not visible from a version column and which an implementer
 > needs before choosing an order.** Most extensions register a **new handler at a new pattern**

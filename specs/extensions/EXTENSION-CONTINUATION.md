@@ -1,6 +1,7 @@
 # Continuation Extension — Normative Specification
 
-**Version**: 1.24
+**Version**: 1.25
+**v1.25 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
@@ -386,7 +387,7 @@ system/continuation/abandon-request := {
 
 The `install` operation is the proper create path for continuation entities — see §3.2 and §1.1 (Coherent Capability).
 
-**No wrapper request type (v1.7).** Callers pass a `system/continuation` or `system/continuation/join` entity directly as `params`. The install path is carried in `EXECUTE.resource.targets[0]` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2). The install handler discriminates forward vs join on `params.type`. There is no `system/continuation/install-request` wrapper — every field that would have been on it is either data on the continuation entity itself (`target`, `operation`, `resource`, `params`, `result_field`, `dispatch_capability`, `on_error`, `deliver_to`, `remaining_executions`) or the install path (now resource).
+**No wrapper request type (v1.7).** Callers pass a `system/continuation` or `system/continuation/join` entity directly as `params`. The install path is carried in `EXECUTE.resource` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2) and is resolved through `effective_targets` (§5.2), **never by indexing `targets[0]`**. The install handler discriminates forward vs join on `params.type`. There is no `system/continuation/install-request` wrapper — every field that would have been on it is either data on the continuation entity itself (`target`, `operation`, `resource`, `params`, `result_field`, `dispatch_capability`, `on_error`, `deliver_to`, `remaining_executions`) or the install path (now resource).
 
 ```
 system/continuation/install-result := {
@@ -424,7 +425,7 @@ Handler entity at pattern path `system/continuation`. Dispatch resolves any URI 
 
 The `install` operation is the proper create path for continuation entities — see §3.2.
 
-The `advance` operation implements the continuation advancement algorithm (§3.3-§3.6). The continuation path is specified via `resource.targets[0]`. **Who may trigger advancement — and under what authority — depends on whether the advance is a reactive delivery or an administrative invoke; see §3.1b (normative).**
+The `advance` operation implements the continuation advancement algorithm (§3.3-§3.6). The continuation path is specified via `resource`, resolved through `effective_targets` (ENTITY-CORE-PROTOCOL.md §5.2) — **never by indexing `targets[0]`**. **Who may trigger advancement — and under what authority — depends on whether the advance is a reactive delivery or an administrative invoke; see §3.1b (normative).**
 
 The `resume` operation reconstructs an EXECUTE from a suspended continuation and dispatches it (§3.7).
 
@@ -456,7 +457,7 @@ A standing continuation (`remaining_executions: null`) is decoupled from any sin
 
 Creates a continuation entity (forward or join) at a suspended path under `system/continuation/suspended/*`. This is the proper create path — direct `tree:put` of `system/continuation` / `system/continuation/join` entities is reserved for system-extension and administrative use (see §1.1 and ENTITY-CORE-PROTOCOL.md §6.3).
 
-The caller passes a continuation entity directly as `params`; the install path is carried in `EXECUTE.resource.targets[0]` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2). The handler dispatches forward vs join on `params.type` — one operation, two accepted entity types.
+The caller passes a continuation entity directly as `params`; the install path is carried in `EXECUTE.resource` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2) and is resolved through `effective_targets` (§5.2), **never by indexing `targets[0]`**. The handler dispatches forward vs join on `params.type` — one operation, two accepted entity types.
 
 ```
 handle_install(ctx, params):
@@ -464,13 +465,22 @@ handle_install(ctx, params):
   ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
   ; different remedies, and the code selects the remedy. Collapsing them is
   ; non-conformant on the absent case.
-  if ctx.resource is null or len(ctx.resource.targets) == 0:
+  ; Resolve through the EFFECTIVE set — the targets this request actually
+  ; names, after the caller's OWN exclusions (ENTITY-CORE-PROTOCOL.md §5.2).
+  ; Counting or indexing ctx.resource.targets directly is non-conformant:
+  ; the authorizer skips caller-excluded targets, so the two layers would
+  ; be deriving different sets and the caller chooses the difference.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
     return error(400, "path_required",
       "install requires a resource target (the suspended path)")
-  if len(ctx.resource.targets) != 1:
+  if len(effective) != 1:
     return error(400, "ambiguous_resource",
       "install requires exactly one resource target (the suspended path)")
-  install_path = ctx.resource.targets[0]
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "this operation requires a concrete path, not a pattern")
+  install_path = effective[0]
 
   ; Step 2: discriminate forward vs join on entity type. params IS the
   ; continuation entity to install.
@@ -1131,7 +1141,19 @@ matching it, so nothing is lost in expressiveness.
 ```
 handle_resume(ctx, params):
   ; params is system/continuation/resume-request
-  suspended_path = ctx.resource.targets[0]
+  ; Resolve through the EFFECTIVE set (ENTITY-CORE-PROTOCOL.md §5.2) — never
+  ; ctx.resource.targets[0]. This block carried NO arity guard before v1.9.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
+    return error(400, "path_required",
+      "resume requires a resource target (the suspended path)")
+  if len(effective) != 1:
+    return error(400, "ambiguous_resource",
+      "resume requires exactly one resource target (the suspended path)")
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "resume requires a concrete path, not a pattern")
+  suspended_path = effective[0]
   suspended = entity_tree.get(suspended_path)
 
   if suspended is null:
@@ -1169,7 +1191,19 @@ handle_resume(ctx, params):
 
 ```
 handle_abandon(ctx, params):
-  suspended_path = ctx.resource.targets[0]
+  ; Resolve through the EFFECTIVE set (ENTITY-CORE-PROTOCOL.md §5.2) — never
+  ; ctx.resource.targets[0]. This block carried NO arity guard before v1.9.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
+    return error(400, "path_required",
+      "abandon requires a resource target (the suspended path)")
+  if len(effective) != 1:
+    return error(400, "ambiguous_resource",
+      "abandon requires exactly one resource target (the suspended path)")
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "abandon requires a concrete path, not a pattern")
+  suspended_path = effective[0]
   suspended = entity_tree.get(suspended_path)
 
   if suspended is null:

@@ -1,6 +1,7 @@
 # System Tree Extension
 
-**Version**: 4.8
+**Version**: 4.9
+**v4.9:** §6.1/§6.2 — **the disposition of a malformed `extract.paths[]` entry**, which was undefined and had two defensible readings. A malformed entry is now **`400 invalid_path` for the whole request**; a well-formed entry that binds nothing is **silently omitted**, unchanged. The two were collapsible precisely because both are safe — and a caller who gets seven results for ten paths cannot tell which case it hit. Ruled as a MUST because the readings are cross-peer observable. §6.2 validates every entry **before reading any**, and Appendix A gains the row. ⚠ Independently of this, the store boundary stays **total** per `ENTITY-CORE-PROTOCOL` §5.4 (0.8.2.21): `paths[]` reaches a path boundary through `params`, a channel no resource-target pre-validator sees, and a boundary that asserts there is a remote denial of service.
 **v4.8:** §8.7 — the sentence no longer restates a `system/*` prefix rule at all. `ENTITY-CORE-PROTOCOL` 0.8.2.13 **withdrew** the reservation; install authorization at any path is the capability check on the install path. The least-privilege point this paragraph exists to make — the prefix is organizational and confers no tree privilege — is unchanged and is now stated without leaning on a rule that no longer exists. *(v4.7 restated the same rule at a narrower scope and is superseded; both it and the scope it described lasted one day.)*
 **v4.6:** §3.8 — the walk contract, new. *The absence of a node is never an answer*: a declared node that does not resolve is `incomplete_walk` (502, terminal, carrying the cut point) and never a shorter result, children are derived structurally rather than by byte-scan, and a partial walk is opt-in and never presented as complete. §4.3's collectors gain the branch they never had and thread the declaring node's hash. §6.2 **deletes** the "unfiltered subtree nodes MAY be omitted" sentence — v3.x path-navigation residue that contradicted the rebuild directly above it — and states the property that is true: an extract is complete against its own root, filtered or not, because publishing a subset is **re-rooting, not filtering**. Six vectors, and the control case is required so that a walk which always fails cannot score green.
 **v4.5:** Appendix A's `put` rows get the predicate they were missing. *"Does not decode"* is now stated — the submitted value is admitted as a `core/entity` (all three fields required) **before** its hash is compared, so a submission that is both malformed and mis-hashed is the structural row; the `unsupported_content_hash_format` arm is restated from `ENTITY-CORE-PROTOCOL` §4.7 row 5 because `put` is one of its ingest surfaces; and **`set` is dropped from the rows** — `ENTITY-CORE-PROTOCOL` §6.3 and §2.2 below both define exactly two index operations, and `set` was never one of them.
@@ -1191,6 +1192,19 @@ system/tree/extract-request := {
 
 When `paths` is provided, only those relative paths are included in the snapshot and envelope. Paths are relative to `prefix` — the same relative paths that appear in snapshot bindings and diff results.
 
+**A malformed `paths` entry is `400 invalid_path` for the whole request; an ABSENT one is silently omitted `[MUST]` (v4.9).** These are different inputs with different remedies and they must not be collapsed:
+
+| the entry is | answer |
+|---|---|
+| **absent** — a well-formed relative path that binds nothing | **silently omitted** from the result. Unchanged, and it is what the filter is *for*: a caller extracting after a diff is asking which of these exist |
+| **malformed** — a control character, an empty segment (`//`), a leading `/`, or anything that does not canonicalize to a valid path under `prefix` | **`400 invalid_path`**, and **no** partial result |
+
+> **Why reject rather than omit, when both are safe.** Silent omission is defensible — a malformed path binds nothing, and the boundary already treats it as absent — but it makes the two cases **indistinguishable to the caller**: a request for ten paths comes back with seven and the caller cannot tell whether three are missing or three were garbage. *"Fix your path"* is a different instruction from *"that binding does not exist"*, and the code is what selects the remedy. It also matches the disposition of a malformed **resource** target, so one operation does not carry two rules for the same defect on two channels.
+>
+> **And it is a `[MUST]` rather than a preference because the two readings are cross-peer observable**: one conformant peer answers `400`, another answers `200` with a short result, and a client written against the second breaks against the first. Both readings are safe; only one can be the contract.
+>
+> ⚠ **The rejection is the HANDLER's answer, not the boundary's.** `ENTITY-CORE-PROTOCOL` §5.4 (0.8.2.21) requires the store boundary to stay **total** independently — a read at an invalid path is absent, never a panic or an assert — because `paths[]` is a caller-controlled array reaching a path boundary through `params`, which no resource-target pre-validator sees. **The 400 is what the caller is told; the total boundary is what makes the operation safe if some future call site forgets to tell them.** Neither substitutes for the other.
+
 > **Incremental "since" transport lives in the revision layer.** Transporting only what changed between two versions is a *revision* concern (its inputs are version hashes, and version → trie-root dereference is the revision extension's knowledge). See `EXTENSION-REVISION.md` §4.4.19 `fetch-diff`. A `since` parameter was briefly added to `tree:extract` (v3.14) and **withdrawn in v3.15** — placing it here forced a tree op to dereference revision version entries, a layering violation. `tree:extract` filters by `paths` only.
 
 **Returns:** `system/envelope`
@@ -1205,7 +1219,17 @@ execute_extract(tree, content_store, prefix, paths):
   ; Collect bindings — only what's needed
   bindings = []
   if paths is not null:
-    ; Filtered: read specific paths directly
+    ; Validate EVERY entry before reading ANY (v4.9). paths[] is a
+    ; caller-controlled array arriving through params — a channel the
+    ; resource-target pre-validator never sees — so this is the operation's
+    ; own admission step (ENTITY-CORE-PROTOCOL §5.4).
+    for path in paths:
+      if not is_valid_relative_path(path):
+        return error(400, "invalid_path",
+          "extract paths[] entry is not a valid relative path")
+    ; Filtered: read specific paths directly. A well-formed path that binds
+    ; nothing is ABSENT and is silently omitted — that is what the filter is
+    ; for, and it is NOT the malformed case handled above.
     for path in paths:
       hash = tree.get(prefix + path)
       if hash is not null:
@@ -1750,6 +1774,7 @@ Merge requires `put` authorization on every path it writes. The handler **MUST**
 | `merge` | `tree_not_found` | 404 | Target tree doesn't exist |
 | `merge` | `capability_denied` | 403 | Capability does not grant `put` on target path |
 | `extract` | `invalid_prefix` | 400 | Non-empty prefix doesn't end with `/` |
+| `extract` | `invalid_path` | 400 | A `paths[]` entry is not a valid relative path (control character, empty segment, leading `/`). **The whole request is rejected; no partial result.** Distinct from a well-formed entry that binds nothing, which is silently omitted (§6.1) |
 | `extract` | `tree_not_found` | 404 | Referenced tree_id doesn't exist |
 | `create` | `tree_exists` | 409 | Tree with this tree_id already exists |
 | `create` | `invalid_config` | 400 | Missing `capability` when `source` is present |

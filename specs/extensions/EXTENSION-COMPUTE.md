@@ -1,6 +1,7 @@
 # Compute Extension — Normative Specification
 
-**Version**: 3.30
+**Version**: 3.31
+**v3.31 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 **Status**: Active
 **v3.29 — the builtin override prohibition stands on its own** (§4, override prohibition). The rule previously described itself as *"a subset of"* the core `system/*` reservation and told implementers that enforcing that reservation needed *"no separate compute-specific guard."* **That reservation has been withdrawn from the core protocol entirely** (`ENTITY-CORE-PROTOCOL` 0.8.2.13), so the subset claim named a rule that no longer exists — and before the withdrawal it was already false in the direction that opens a hole. The prohibition now states its own basis: it binds every installation path because it is a **cross-peer determinism requirement**, not a namespace policy. Two peers disagreeing about what `"add"` means is an interop failure, which is why this is a MUST while local install policy is not. *(v3.28 stated the same conclusion by reference to the core rule's scope and is superseded.)*
 **v3.27 — the contained set is a RULE, not a count; and eval limits are not ordinary errors**
@@ -662,7 +663,7 @@ system/compute/install-result := {
 ; canonical CBOR-encoded empty map data.
 ```
 
-`eval`, `install`, and `uninstall` all carry their target tree path in `EXECUTE.resource.targets[0]` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2):
+`eval`, `install`, and `uninstall` all carry their target tree path in `EXECUTE.resource` per the path-as-resource convention (ENTITY-CORE-PROTOCOL.md §3.2), and each resolves it through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (§5.2) — **acting on `effective[0]`, never `ctx.resource.targets[0]` `[MUST]`**:
 
 - `eval` — resource is the expression path the handler reads.
 - `install` — resource is the `root_expression_path` the handler audits and from which the subgraph is built.
@@ -710,13 +711,22 @@ handle_eval(ctx, params):
   ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
   ; different remedies, and the code selects the remedy. Collapsing them is
   ; non-conformant on the absent case.
-  if ctx.resource is null or len(ctx.resource.targets) == 0:
+  ; Resolve through the EFFECTIVE set — the targets this request actually
+  ; names, after the caller's OWN exclusions (ENTITY-CORE-PROTOCOL.md §5.2).
+  ; Counting or indexing ctx.resource.targets directly is non-conformant:
+  ; the authorizer skips caller-excluded targets, so the two layers would
+  ; be deriving different sets and the caller chooses the difference.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
     return error(400, "path_required",
       "eval requires a resource target (the expression path)")
-  if len(ctx.resource.targets) != 1:
+  if len(effective) != 1:
     return error(400, "ambiguous_resource",
       "eval requires exactly one resource target (the expression path)")
-  expression_uri = ctx.resource.targets[0]
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "this operation requires a concrete path, not a pattern")
+  expression_uri = effective[0]
 
   expression = ctx.entity_tree.get(expression_uri)
   if expression is null: return error(404, "not_found", "No entity at path")
@@ -771,13 +781,22 @@ handle_install(ctx, params):
   ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
   ; different remedies, and the code selects the remedy. Collapsing them is
   ; non-conformant on the absent case.
-  if ctx.resource is null or len(ctx.resource.targets) == 0:
+  ; Resolve through the EFFECTIVE set — the targets this request actually
+  ; names, after the caller's OWN exclusions (ENTITY-CORE-PROTOCOL.md §5.2).
+  ; Counting or indexing ctx.resource.targets directly is non-conformant:
+  ; the authorizer skips caller-excluded targets, so the two layers would
+  ; be deriving different sets and the caller chooses the difference.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
     return error(400, "path_required",
       "install requires a resource target (the root expression path)")
-  if len(ctx.resource.targets) != 1:
+  if len(effective) != 1:
     return error(400, "ambiguous_resource",
       "install requires exactly one resource target (the root expression path)")
-  root_path = ctx.resource.targets[0]
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "this operation requires a concrete path, not a pattern")
+  root_path = effective[0]
   expression = ctx.entity_tree.get(root_path)
   if expression is null:
     return error(404, "not_found", "No expression at path")
@@ -1061,13 +1080,22 @@ handle_uninstall(ctx, params):
   ; ENTITY-CORE-PROTOCOL.md §3.3: absent and ambiguous are different inputs with
   ; different remedies, and the code selects the remedy. Collapsing them is
   ; non-conformant on the absent case.
-  if ctx.resource is null or len(ctx.resource.targets) == 0:
+  ; Resolve through the EFFECTIVE set — the targets this request actually
+  ; names, after the caller's OWN exclusions (ENTITY-CORE-PROTOCOL.md §5.2).
+  ; Counting or indexing ctx.resource.targets directly is non-conformant:
+  ; the authorizer skips caller-excluded targets, so the two layers would
+  ; be deriving different sets and the caller chooses the difference.
+  effective = effective_targets(ctx.resource, ctx.local_peer_id)
+  if len(effective) == 0:
     return error(400, "path_required",
       "uninstall requires a resource target (the subgraph path)")
-  if len(ctx.resource.targets) != 1:
+  if len(effective) != 1:
     return error(400, "ambiguous_resource",
       "uninstall requires exactly one resource target (the subgraph path)")
-  subgraph_path = ctx.resource.targets[0]
+  if is_pattern(effective[0]):
+    return error(400, "malformed_resource",
+      "this operation requires a concrete path, not a pattern")
+  subgraph_path = effective[0]
 
   subgraph = ctx.entity_tree.get(subgraph_path)
   if subgraph is null or subgraph.type != "system/compute/subgraph":

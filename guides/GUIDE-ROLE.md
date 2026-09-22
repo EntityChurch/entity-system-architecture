@@ -159,7 +159,7 @@ alice_runtime_peer.execute(
 
 What happens inside the role handler:
 
-1. Reads `ctx.resource.targets[0]` and parses out `(context: "group/team-alpha", assignee: Bob_id)`.
+1. Resolves the target through `effective_targets(ctx.resource, ctx.local_peer_id)` (`ENTITY-CORE-PROTOCOL.md` §5.2) and parses `effective[0]` out to `(context: "group/team-alpha", assignee: Bob_id)`. **Not `ctx.resource.targets[0]`**: the authorizer skips targets the caller excluded, so indexing `targets` directly reads a different set from the one that was authorized, and the caller chooses the difference. `GUIDE-COMPUTE-PROGRAMMING` §2 has the worked explanation.
 2. Reads the role definition at `system/role/group/team-alpha/manager`. (404 `role_not_found` if absent.)
 3. Resolves templates: `{context}` → `group/team-alpha`, `{peer_id}` → `Bob_id`.
 4. **Exclusion check.** If `system/role/group/team-alpha/excluded/{Bob_id}` exists, returns 403 `assignee_excluded`. This fires *before* the authority check — excluded peers don't even get to the authority check.
