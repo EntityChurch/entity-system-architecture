@@ -1,7 +1,6 @@
 # Role Extension — Normative Specification
 
 **Version**: 2.3
-**v2.3 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 **Status**: Draft
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.39+)
 **Optional**: EXTENSION-SUBSCRIPTION.md (v3.10+) — reactive grant lifecycle
@@ -1393,3 +1392,9 @@ system/role/group/team-alpha/excluded/{dave_id} → {
 ; Dave's assignment MAY be deleted as cleanup:
 ;   tree.put("system/role/group/team-alpha/assignment/{dave_id}", null)
 ```
+
+---
+
+## Document History
+
+**v2.3 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.

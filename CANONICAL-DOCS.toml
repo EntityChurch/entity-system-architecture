@@ -377,12 +377,22 @@ title = "Application development — what an L5 application convention must be"
 blurb = "The applications tier standard: what makes a cross-impl, application-layer convention a convention rather than a dumping ground, and which corpus-wide rules bind one."
 group = "Applications"
 
-# ── Domain patterns ───────────────────────────────────────────────────────────
+# ── Bridge extensions ─────────────────────────────────────────────────────────
+# Extensions that reach OUT of the entity system onto a foreign technology, one
+# document per technology. `specs/domains/` was the earlier home; its name was
+# defined once and circularly, and the study that produced the family framing
+# rejected the word outright. Retired 2026-09-14 — see SYSTEM-ARCHITECTURE §13.1.
 [[doc]]
-path  = "specs/domains/DOMAIN-LOCAL-FILES.md"
-title = "Local Files Domain — Normative Specification"
-blurb = "The local files domain maps a host filesystem subtree into the entity tree, making filesystem content accessible through the entity protocol."
-group = "Domain patterns"
+path  = "specs/bridge-extensions/DOMAIN-LOCAL-FILES.md"
+title = "Local Files — Normative Specification"
+blurb = "The local files bridge maps a host filesystem subtree into the entity tree, making filesystem content accessible through the entity protocol."
+group = "Bridge extensions"
+
+[[doc]]
+path  = "guides/GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md"
+title = "Bridge extension development — reaching a technology that is not the entity system"
+blurb = "The cross-family discipline every bridge extension answers: the three-layer separation, the direction-mode axis, the seven questions a bridge specification must answer, and the hazards that recur at every foreign boundary."
+group = "Bridge extensions"
 
 # ── System & architecture ─────────────────────────────────────────────────────
 [[doc]]

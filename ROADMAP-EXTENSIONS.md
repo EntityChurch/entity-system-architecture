@@ -46,7 +46,7 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 
 | extension | ver | what it provides |
 |---|---|---|
-| `EXTENSION-TREE` | 4.9 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
+| `EXTENSION-TREE` | 4.11 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
 | `EXTENSION-CONTENT` | 3.7 | content-hash address space, closure materialization, partial-sync |
 | `EXTENSION-TYPE` | 1.3 | runtime type registration |
 | `EXTENSION-REVISION` | 3.14 | revision chains, diff/merge-config, deletion markers |
@@ -135,6 +135,25 @@ entity-chat-on-the-async-floor.** #2/#3 are parallel/deferred; #4 is opt-in.
 |---|---|---|
 | `EXTENSION-TRANSACTION` | 0.2 | initial design, pre-review |
 | `EXTENSION-DURABILITY` | 0.1 | exploratory, extracted from INBOX §10; optional, not active |
+
+## Stage BX — Bridge extensions (`specs/bridge-extensions/`)
+
+**A separate family, not a stage of the one above.** The stages A–E track the entity system's own
+extension library; a **bridge extension** reaches out of the system onto a foreign technology, one
+document per technology, and it answers a different question — so it is rostered separately rather
+than filed at a maturity band inside the library. The family discipline is
+`guides/GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md`; the placement rationale is
+`SYSTEM-ARCHITECTURE.md` §13.1.
+
+| bridge | ver | state |
+|---|---|---|
+| `DOMAIN-LOCAL-FILES` | 1.5 | **Active** — the host filesystem; the family's only landed member and the prior art its discipline was derived from. **Named before the family framing existed**; the successor for the general filesystem case is additive, not a rename |
+
+**Named but unauthored: `EXTENSION-BRIDGE-HTTP` · `EXTENSION-BRIDGE-SMTP`** — both are cited `(planned)`
+by landed documents (Stage D below). ⚠ **Neither is the right first bridge to author.** The web
+protocol is simultaneously a transport, which makes it a bad teacher for the category; **version
+control and a package store are the better first members**, because neither is load-bearing for the
+protocol itself.
 
 ## Stage D — Proposed, not landed (M0–M1): design intent in `proposals/`
 

@@ -1,11 +1,6 @@
 # EXTENSION-REGISTRY
 
 **Version**: 1.26
-**v1.26:** §2.3 and §12 — two claims about reverse `peer_id → endpoint` lookup are withdrawn. §2.3 said `:resolve` is *"name-keyed by contract"* and scoped reverse lookup to the identity extension; §12 said that scoping *"lives in an EXTENSION-IDENTITY amendment, separately authored."* **No such amendment exists, the two clauses cited each other, and the widening went beyond what §2.3's fallback-loop argument establishes** — which is only that the transport-fallback loop re-resolves the original *name*. **Reverse peer-id → transport lookup is `EXTENSION-NETWORK` §6.5.1c's `system/peer/transport-set`**, which needs neither a name nor a registry. A registry MAY serve or index one; that is lookup machinery and is not the same as defining the record.
-**v1.25:** §6a.3a — the enumeration-completeness claim now cites the rule that delivers it (`EXTENSION-TREE` §3.8 R1), having asserted flatly that a hostile origin *"cannot omit a node from the walk without the walk failing"* while the walk it depended on never specified the branch. §6a.6 — the signed-root walk it offers as the better-than-TTL path inherited the same absent-vs-withheld collapse it was offered as an escape from; §3.8 R1 is what separates them, and the reason the keyed index does **not** get the same guarantee is now stated rather than left to be inferred. §11.1 gains **`REG-BROWSE-WITHHELD-1`**, the registry-side check the claim never had.
-**v1.24:** §6.6 — retired `Public_X` vocabulary for EXTENSION-IDENTITY's landed function names, and corrected a false rotation claim: a binding survives **agent** rotation, while §4.3/§4.4 rotation of the handle-bearing cert replaces the key `target_peer_id` names and is not specified here. §12 Q3 split into the binding's validity (answered) and the receiver's ability to follow (open).
-**v1.23:** §8.2 — the inherited "cross-peer subscription does not exist" blocker is withdrawn (see `EXTENSION-RELAY` §11.1a). Registry federation is unblocked; Mode A's normative text is what remains unwritten.
-**v1.22:** Appendix A — the registry's defined error codes. `unsupported_mode` is pinned at both statuses (400 store-refusal, 501 fail-closed live registration) and is explicitly NOT a synonym of `unsupported_operation`: the handler is registered and `register` is implemented.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.3+) — the supersedes-chain discipline that binding revocation and superseded-binding retention are defined against (§3, §6.5, §7)
 **Related**: EXTENSION-RELAY.md (Mode S can host a registry peer's tree; Mode A gates cross-registry federation, deferred from v1 — §8.2); EXTENSION-CONTENT.md (binding entities live in the content tree); EXTENSION-DISCOVERY.md (the sibling mechanism — peer-finding, not name lookup); EXTENSION-NETWORK.md (bootstrap endpoints)
@@ -1917,3 +1912,17 @@ handler is registered and `register` **is** implemented; the refusal is about th
 policy*, not about operation existence. `ENTITY-CORE-PROTOCOL` §9.1's 501-slot synonym list is scoped
 to spellings of *that* row and does not reach a domain code naming a different failure at the same
 status. The test is the failure named, never the status shared.
+
+---
+
+## Document History
+
+**v1.26:** §2.3 and §12 — two claims about reverse `peer_id → endpoint` lookup are withdrawn. §2.3 said `:resolve` is *"name-keyed by contract"* and scoped reverse lookup to the identity extension; §12 said that scoping *"lives in an EXTENSION-IDENTITY amendment, separately authored."* **No such amendment exists, the two clauses cited each other, and the widening went beyond what §2.3's fallback-loop argument establishes** — which is only that the transport-fallback loop re-resolves the original *name*. **Reverse peer-id → transport lookup is `EXTENSION-NETWORK` §6.5.1c's `system/peer/transport-set`**, which needs neither a name nor a registry. A registry MAY serve or index one; that is lookup machinery and is not the same as defining the record.
+
+**v1.25:** §6a.3a — the enumeration-completeness claim now cites the rule that delivers it (`EXTENSION-TREE` §3.8 R1), having asserted flatly that a hostile origin *"cannot omit a node from the walk without the walk failing"* while the walk it depended on never specified the branch. §6a.6 — the signed-root walk it offers as the better-than-TTL path inherited the same absent-vs-withheld collapse it was offered as an escape from; §3.8 R1 is what separates them, and the reason the keyed index does **not** get the same guarantee is now stated rather than left to be inferred. §11.1 gains **`REG-BROWSE-WITHHELD-1`**, the registry-side check the claim never had.
+
+**v1.24:** §6.6 — retired `Public_X` vocabulary for EXTENSION-IDENTITY's landed function names, and corrected a false rotation claim: a binding survives **agent** rotation, while §4.3/§4.4 rotation of the handle-bearing cert replaces the key `target_peer_id` names and is not specified here. §12 Q3 split into the binding's validity (answered) and the receiver's ability to follow (open).
+
+**v1.23:** §8.2 — the inherited "cross-peer subscription does not exist" blocker is withdrawn (see `EXTENSION-RELAY` §11.1a). Registry federation is unblocked; Mode A's normative text is what remains unwritten.
+
+**v1.22:** Appendix A — the registry's defined error codes. `unsupported_mode` is pinned at both statuses (400 store-refusal, 501 fail-closed live registration) and is explicitly NOT a synonym of `unsupported_operation`: the handler is registered and `register` is implemented.

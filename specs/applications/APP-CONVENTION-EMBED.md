@@ -12,26 +12,6 @@ three-substrate round was the high-yield sweep; the cross-impl exchange is the l
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Consumers:** `APP-CONVENTION-SEMANTIC-CONTENT-SITE` (first); workbench-go panels; Godot panels.
 
-> **v0.2 corrections (lead's critical pass):** (1) **`hex33` removed** — it re-locked SHA-256; the system is
-> encoding-agnostic, so all hash references are the self-describing **`content-hash`** `(format_code, digest)` per
-> V7 §1.2 (§3). (2) **base/embed model explicit + `EmbedOutput` trimmed** to a small result-shape, not a page AST.
->
-> **v0.2.1 refinements (lead + both peers, prose only — CDDL byte-stable):** (3) **base format is the consuming
-> convention's choice, not EMBED's** — v1 recommends markdown for reach, but EMBED is base-format-independent
-> (§1.1). (4) **The output basis & the extension point are now stated** (§4): EmbedOutput is a **closed basis of
-> display primitives — four leaves (`text/image/raw/fallback`) + one container (`box`)**; you **extend by writing
-> a handler** (open, input layer) that **lowers** your new type into the basis — you do **not** add output kinds.
-> "Why image and not chart?" image is irreducible; a chart composes → a chart is a handler, not a primitive.
->
-> **v0.2.2 refinements (lead's pass, prose + one reserved-slot note — CDDL byte-stable for the required five):**
-> (5) **the five are reframed as a CLOSED DISPATCH VOCABULARY filling four roles** (2 content atoms + 1 container +
-> 1 floor + 1 escape), not "five co-equal display primitives" — fixes the self-contradiction that `raw` was called
-> a "primitive every renderer must implement" when it is precisely the one kind a renderer MAY drop. **`raw` is the
-> escape/FFI-to-native, not a primitive** (§4.0). (6) **`media` + `interactive` are now RESERVED candidate kinds**
-> (§4.0a), the V7 §1.2/§1.5 reserved-range discipline applied to the display basis — named/sketched/slot-held,
-> **experimental, not required in v0.2, not locked** — so "the basis is closed" no longer means "we pretend no
-> other irreducible kind exists."
-
 > **What this is.** The single mechanism for **all** rich content beyond plain text in an entity-system L5
 > application: images, charts, tables, forms, video, "whatever a guy dreams up." It is **one typed entity + one
 > registry + one fallback contract** — it invents no markup language and no new kernel machinery. An image is the
@@ -504,3 +484,29 @@ they are markdown, covered by the CommonMark/GFM conformance suite (§1.1), not 
 - Cross-team passes: entity-browser-rust, workbench-go (`G-PIN-1..4`, `S-1..11`), godot (`[ASK-ARCH-OUTPUT-SHAPE]`).
 - Substrate grounding: `expression_path` core-stable (V7 §3.7/§6.6, EXTENSION-COMPUTE); `system/handler/*`
   dispatch; self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4). Charter: `guides/GUIDE-APPLICATION-DEVELOPMENT.md`.
+
+---
+
+## Document History
+
+> **v0.2 corrections (lead's critical pass):** (1) **`hex33` removed** — it re-locked SHA-256; the system is
+> encoding-agnostic, so all hash references are the self-describing **`content-hash`** `(format_code, digest)` per
+> V7 §1.2 (§3). (2) **base/embed model explicit + `EmbedOutput` trimmed** to a small result-shape, not a page AST.
+>
+
+> **v0.2.1 refinements (lead + both peers, prose only — CDDL byte-stable):** (3) **base format is the consuming
+> convention's choice, not EMBED's** — v1 recommends markdown for reach, but EMBED is base-format-independent
+> (§1.1). (4) **The output basis & the extension point are now stated** (§4): EmbedOutput is a **closed basis of
+> display primitives — four leaves (`text/image/raw/fallback`) + one container (`box`)**; you **extend by writing
+> a handler** (open, input layer) that **lowers** your new type into the basis — you do **not** add output kinds.
+> "Why image and not chart?" image is irreducible; a chart composes → a chart is a handler, not a primitive.
+>
+
+> **v0.2.2 refinements (lead's pass, prose + one reserved-slot note — CDDL byte-stable for the required five):**
+> (5) **the five are reframed as a CLOSED DISPATCH VOCABULARY filling four roles** (2 content atoms + 1 container +
+> 1 floor + 1 escape), not "five co-equal display primitives" — fixes the self-contradiction that `raw` was called
+> a "primitive every renderer must implement" when it is precisely the one kind a renderer MAY drop. **`raw` is the
+> escape/FFI-to-native, not a primitive** (§4.0). (6) **`media` + `interactive` are now RESERVED candidate kinds**
+> (§4.0a), the V7 §1.2/§1.5 reserved-range discipline applied to the display basis — named/sketched/slot-held,
+> **experimental, not required in v0.2, not locked** — so "the basis is closed" no longer means "we pretend no
+> other irreducible kind exists."

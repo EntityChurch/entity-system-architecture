@@ -87,7 +87,10 @@ floor. Concretely, the published surface is:
 - **SDK conventions** — `specs/sdk/SDK-*.md`, the cross-impl binding layer over the type surface.
 - **Applications (L5)** — `specs/applications/` content-format conventions (Embed, Semantic
   Content Site) so web / Godot / terminal front-ends render the same bytes.
-- **Domains** — `specs/domains/DOMAIN-LOCAL-FILES.md`, the handler-domain pattern.
+- **Bridge extensions** — `specs/bridge-extensions/`, extensions that reach out onto a foreign
+  technology rather than extending the entity system itself. One member today
+  (`DOMAIN-LOCAL-FILES.md`, the host filesystem); the family discipline is
+  `guides/GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md`.
 - **System model** — `specs/SYSTEM-ARCHITECTURE.md`, `specs/SYSTEM-COMPOSITION.md`,
   `specs/SYSTEM-IDENTITY-COMPOSITION.md`, `specs/ARCHITECTURE-IDENTITY-INFRASTRUCTURE.md`.
 - **Guides** — `guides/GUIDE-*.md`, developer how-to + discipline docs (incl.

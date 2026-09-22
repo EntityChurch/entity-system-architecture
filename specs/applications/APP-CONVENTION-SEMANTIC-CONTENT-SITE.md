@@ -2,45 +2,6 @@
 
 **Version**: 0.5.2
 **Status**: Draft
-
-**v0.5.2:** two clauses, neither widening a rule, both naming an authority that already binds. §4 states
-that a bare-string link or asset reference in a page body resolves per `APP-CONVENTION-REFERENCE` §3.4 —
-**a leading `/` is root-absolute within the current site** — because **the asset position is not special
-and this convention has no rule of its own about it**, and two implementations diverged for a week over a
-form §3.4's own paragraph recommends producers emit. §7 adds the verification scope: the site subgraph is
-the capability scope of the site's **bytes**, and the evidence that makes those bytes verifiable — the
-publisher's `system/peer/published-root` and the `system/signature/` location of its root — sits **outside
-the subgraph by design**, so a grant covering the subgraph alone yields a readable, unverifiable site and
-reports it as *"this publisher has published no root"*, which is a false statement about the publisher
-manufactured by the reader's own grant.
-
-**v0.5.1:** `app/site-asset`'s `payload` is **narrowed to `inline-payload / pointer-payload`** and the
-`child` arm is refused as **invalid for its type** (§4), with a §9 vector asserting the three payload
-outcomes stay distinctly attributed. The field imported a union wider than the type admits; an asset
-names bytes, and a `child` ref names an entity whose dispatch tag would be a second `media_type`. Per
-the site-asset-child-arm-and-publication-grant proposal.
-
-**v0.5:** `{publisher_peer_id}/content/sites/{site_id}/_root` placement (a layer violation: `system/content/*` is the
-CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always
-`{hex(H)}` per `EXTENSION-CONTENT §6.4.2`; an L5 application subgraph has no business there). Sites are now
-free subgraphs at publisher-chosen tree paths; the site's capability scope is its own subgraph root. Adds a
-**new §11 URL projection prefix** that registers `sites` as the SITE convention's reserved first-segment
-literal at the `EXTENSION-NETWORK §6.5.6` demux layer (per Amendment 9's reserved-word extensibility hook
-and length-floor rule). Word-overloading rule: each word in the system carries one meaning; `content` is
-the CONTENT extension's, `sites` is the SITE convention's. Per
-the network-reserved-word-extensibility-and-site-prefix proposal.
-
-**v0.4.2:** joint cross-team round folded per
-the joint embed/site convergence synthesis (spine locked three ways; `.entsite` pinned,
-`.list` discovery folded, nav/directive/tree-version fixes). **v0.4.1: `pages` field REMOVED** (arch scaffolding;
-redundant with `nav`; reintroduced the index anti-pattern — §4.2). **v0.4.2: ordering tightened (entity-browser-rust)** — pin one
-determinism floor (lexicographic-by-name presentation rule); frontmatter is optional local flavor not the
-contract; **semantic feeds flagged OPEN / still-researching, deferred to a named post-v1 extension** (L5 — guidance
-now, lock later). v1 primitives: `manifest`/`page`/`nav`/`.list`. Reconciled to **APP-CONVENTION-EMBED v0.2.3**.
-Supersedes the scattered design set (entity-browser-rust `SPEC-SEMANTIC-CONTENT-SITE` Rev 0.1/0.2 + the v1-lock synthesis).
-**Next: exercise the §9 checks jointly with `APP-CONVENTION-EMBED`'s → ratify** (no further team cycle on the
-contracts — the cross-impl exchange is the lock; folds recirculate as a confirm).
-**Domain:** `applications/` (second member, first consumer of EMBED).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Consumes:** `APP-CONVENTION-EMBED` (the rich-content node + `EmbedOutput` + the two-level registry + the fallback ladder).
 
@@ -658,3 +619,46 @@ non-format axes); the convention is here to be analyzed and adopted on merit, no
 - Substrate grounding: `tree:snapshot`/`tree:extract` (EXTENSION-TREE v4.0.2 §3/§6); `content:ensure_closure`
   (SDK-EXTENSION-OPERATIONS §11 Amendment A); `expression_path` core-stable (V7 §3.7/§6.6, EXTENSION-COMPUTE
   v3.14); self-describing `content-hash` `(format_code,digest)` (V7 §1.2/§1.4).
+
+---
+
+## Document History
+
+**v0.5.2:** two clauses, neither widening a rule, both naming an authority that already binds. §4 states
+that a bare-string link or asset reference in a page body resolves per `APP-CONVENTION-REFERENCE` §3.4 —
+**a leading `/` is root-absolute within the current site** — because **the asset position is not special
+and this convention has no rule of its own about it**, and two implementations diverged for a week over a
+form §3.4's own paragraph recommends producers emit. §7 adds the verification scope: the site subgraph is
+the capability scope of the site's **bytes**, and the evidence that makes those bytes verifiable — the
+publisher's `system/peer/published-root` and the `system/signature/` location of its root — sits **outside
+the subgraph by design**, so a grant covering the subgraph alone yields a readable, unverifiable site and
+reports it as *"this publisher has published no root"*, which is a false statement about the publisher
+manufactured by the reader's own grant.
+
+**v0.5.1:** `app/site-asset`'s `payload` is **narrowed to `inline-payload / pointer-payload`** and the
+`child` arm is refused as **invalid for its type** (§4), with a §9 vector asserting the three payload
+outcomes stay distinctly attributed. The field imported a union wider than the type admits; an asset
+names bytes, and a `child` ref names an entity whose dispatch tag would be a second `media_type`. Per
+the site-asset-child-arm-and-publication-grant proposal.
+
+**v0.5:** `{publisher_peer_id}/content/sites/{site_id}/_root` placement (a layer violation: `system/content/*` is the
+CONTENT-extension namespace for capability-scoping the content-hash address space, where the leaf is always
+`{hex(H)}` per `EXTENSION-CONTENT §6.4.2`; an L5 application subgraph has no business there). Sites are now
+free subgraphs at publisher-chosen tree paths; the site's capability scope is its own subgraph root. Adds a
+**new §11 URL projection prefix** that registers `sites` as the SITE convention's reserved first-segment
+literal at the `EXTENSION-NETWORK §6.5.6` demux layer (per Amendment 9's reserved-word extensibility hook
+and length-floor rule). Word-overloading rule: each word in the system carries one meaning; `content` is
+the CONTENT extension's, `sites` is the SITE convention's. Per
+the network-reserved-word-extensibility-and-site-prefix proposal.
+
+**v0.4.2:** joint cross-team round folded per
+the joint embed/site convergence synthesis (spine locked three ways; `.entsite` pinned,
+`.list` discovery folded, nav/directive/tree-version fixes). **v0.4.1: `pages` field REMOVED** (arch scaffolding;
+redundant with `nav`; reintroduced the index anti-pattern — §4.2). **v0.4.2: ordering tightened (entity-browser-rust)** — pin one
+determinism floor (lexicographic-by-name presentation rule); frontmatter is optional local flavor not the
+contract; **semantic feeds flagged OPEN / still-researching, deferred to a named post-v1 extension** (L5 — guidance
+now, lock later). v1 primitives: `manifest`/`page`/`nav`/`.list`. Reconciled to **APP-CONVENTION-EMBED v0.2.3**.
+Supersedes the scattered design set (entity-browser-rust `SPEC-SEMANTIC-CONTENT-SITE` Rev 0.1/0.2 + the v1-lock synthesis).
+**Next: exercise the §9 checks jointly with `APP-CONVENTION-EMBED`'s → ratify** (no further team cycle on the
+contracts — the cross-impl exchange is the lock; folds recirculate as a confirm).
+**Domain:** `applications/` (second member, first consumer of EMBED).

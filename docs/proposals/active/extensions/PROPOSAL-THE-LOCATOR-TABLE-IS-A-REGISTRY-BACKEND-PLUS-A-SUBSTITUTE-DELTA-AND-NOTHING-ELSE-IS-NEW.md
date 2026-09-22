@@ -8,9 +8,46 @@ a landed extension, and one new entity type** — plus **two MUSTs the aggregati
 ⚠ **The title is narrower than the design** `[rev 3]`: the subject is a **predicate**, and a content hash
 is one of several. See §1.3 — the name is kept because the document is cited under it.
 
-**Status:** **PROVISIONAL DRAFT 2026-09-13 · revision 4.** ⛔ **NOT ratifiable and not routable yet** —
-but nothing blocks writing normative text. **Revision 4 does the grant CALL BY CALL (§6b), which is the
-only way any of it reads, and corrects a conflation revision 3 committed.**
+**Status:** **PROVISIONAL DRAFT 2026-09-14 · revision 6.** ⛔ **NOT ratifiable and not routable yet** —
+but nothing blocks writing normative text. **Revision 5 folds an audit of implemented code in all three
+cores, and it changes the artifact rather than only its framing. Revision 6 is one correction and it is
+to revision 5's largest conclusion: the placement (§2a) is a SPLIT across the five-document
+`DATA-EXCHANGE` family, not a chapter of one document — and the placement stays OPEN pending two
+implementations building against it.**
+
+> ⭐⭐⭐ **`[rev 5]` Four changes, and the first two are corrections to this proposal's own design, not to
+> its wording.**
+>
+> **① The expiry moves off the claim and onto the SET (§3.2).** Revisions 1–4 made `expires_at` REQUIRED
+> on the claim. A signature is keyed on its target's hash, so a re-assertion is a **new claim at a new key
+> needing a new signature** — **~200,000 stored objects per hour at aggregator scale, forever, all garbage
+> within the hour, in a corpus with no specified collection mechanism.** The claim now carries
+> `asserted_at` and the page carries `valid_until` + `seq`. **Three independent arguments reach it**, the
+> first being our own landed transport-set ruling: *sign the set; a per-member signature buys exactly one
+> thing — isolated quotation.*
+>
+> **② The top blocker is RULED, and it dissolves rather than trading (Item 2).** `EXTENSION-SUBSTITUTE` §4
+> is a **wire MUST and stays.** Revision 3's *"conservative default a grant may widen"* is **withdrawn**:
+> it is an implemented admission gate inside candidate enumeration, so a locator-supplied candidate is
+> **invisible, not denied**, and no capability can widen a check that runs below authorization. **But §4
+> was never the door: `substitute/source` is an ENDORSEMENT and a locator claim is a HINT** — the author's
+> signature protects an authority claim, and a hint claims no authority because a lie costs one wasted
+> fetch by construction. **Nothing synthesizes a source entry from a third party's claim**, which also
+> answers Item 2a.
+>
+> **③ The consumption layer inverts (§6).** The **root-anchored two-hop read** is primary and
+> origin-indifferent; the chain is a second, optional path. **Nothing blocks on the chain**, and the design
+> is buildable today for its default subject.
+>
+> **④ On reflection this is not an extension (§2a).** Two types, one operation and one convention is not an
+> extension's worth of surface, and **`SYSTEM-DATA-EXCHANGE`'s status header has named its *source* layer
+> as owed since v0.1 — this is that layer.** ⚠ **Stated as a choice, with its reason, and not as a
+> consequence of any naming or namespace rule; there is no such rule.**
+>
+> **Three signatures, not one (§3.5.1).** *Per claim, not per table* was a false alternative: the claim
+> signature survives quotation, the issuer's page signature is the only thing that detects a **dropped**
+> claim, and the aggregator's page signature attributes the gathering. **Each answers a different
+> question.**
 
 > ⛔ **`[rev 4]` Revision 3 wrote `peers: {include: ["/*/*"]}` — a RESOURCE path pattern in a
 > PEER-IDENTITY field.** `resources` is a `path-scope`; `peers` is an `id-scope` whose members are peer
@@ -44,7 +81,11 @@ only way any of it reads, and corrects a conflation revision 3 committed.**
 `EXTENSION-SUBSTITUTE.md` (v1.3) §1, §2.1, §3, §4, §5 · `EXTENSION-CONTENT.md` §6.4.2 ·
 `SYSTEM-DATA-EXCHANGE.md` (v0.2) §1.1, §2.1, §2.2, §2.3, §2.5 · `SYSTEM-ARCHITECTURE.md` §13.1 ·
 `EXTENSION-NETWORK.md` §6.5.6 · `[rev 3]` **`ENTITY-CORE-PROTOCOL.md` §3.5 (dispatch classes and where
-Dimension 4 is evaluated), §3.6 (`grant-entry`), §5.2, §5.4, §5.6**
+Dimension 4 is evaluated), §3.6 (`grant-entry`), §5.2, §5.4, §5.6** · `[rev 5]` **`EXTENSION-SUBSTITUTE.md`
+§1 position 2 (the endorsement/bytes split — the sentence Item 2 turns on), §2.1, §3 step 4, §9.1, §10 ·
+`EXTENSION-NETWORK.md` §6.5.1c (the set-versus-member signing ruling §3.2 imports) ·
+`APP-CONVENTION-FEED.md` §6 (the gathered-set shape §3.5 now specifies against) ·
+`SYSTEM-ARCHITECTURE.md` §13.5b (the axis §2a's placement argument is made under)**
 
 ---
 
@@ -229,6 +270,71 @@ happens. This mechanism is the translation between them, and the connected graph
 *"Installing this extension is additive; not installing it leaves CONTENT's miss behavior (404)
 unchanged."*
 
+### 2a `[rev 5]` ⭐⭐⭐ And on reflection this is not an extension at all — it is a chapter of the exchange substrate
+
+**The tier question above is the wrong question, or at least not the first one.** Asking *"which tier does
+this extension go in"* presupposes an extension. Inventory what is actually new:
+
+| layer | what it needs | new? |
+|---|---|---|
+| **resolution** | a **backend** in the landed resolver chain, with its precedence and config vocabulary | **no** — ruled already |
+| **the published set** | a paged, entry-signed, byte-preserved republication | **no** — the closure tier already obliges all three (§3.5) |
+| **consumption** | the root-anchored two-hop read (§6 `[rev 5]`) | **no** |
+| **the claim and page types** | §3 | ⭐ **yes — two types** |
+| **an operation that returns a SET** | the landed `ResolutionResult` is singular by construction (Item 5) | ⭐ **yes — one operation** |
+| **a peer-shaped fetch convention** | Item 2b, and only for the hash subject | ⭐ **yes, and it has an independent driver** |
+
+⇒ **Two types, one operation, one convention. That is not an extension's worth of surface, and calling it
+one would put a namespace and a handler around a property that spans four existing handlers.**
+
+> ⭐⭐ **`SYSTEM-DATA-EXCHANGE`'s own status header has named this layer as owed since v0.1:** *"the
+> subject, **source** (with its outcome taxonomy), witness, position and intent layers are specified but
+> not yet folded."* **The locator table is that source layer** — *which peers will serve this subject* is
+> precisely a source question, and the closure chapter it would sit beside is the one this proposal
+> already depends on for paging and authorship carriage.
+>
+> ⇒ **Recommendation: the normative home is `SYSTEM-DATA-EXCHANGE`'s source chapter**, not a new
+> `EXTENSION-LOCATOR`. If the material outgrows one document it becomes a sibling at the same
+> composition tier rather than an extension.
+
+> ⛔⭐⭐⭐ **`[rev 6]` INCOMPLETE — and the missing part is a whole family, not a detail.** The
+> recommendation above was reached by reading `SYSTEM-DATA-EXCHANGE`'s own status header. **It is one
+> document short: the data-exchange layer is deliberately FIVE documents, not one, and this proposal
+> cites the document that says so zero times.**
+>
+> **`DATA-EXCHANGE` spans `EXTENSION-DATA-EXCHANGE` (Tier 2b — the wire-observable surface),
+> `SYSTEM-DATA-EXCHANGE` (the properties no single extension owns), `SDK-DATA-EXCHANGE` (the one entry
+> point an application touches), a guide, and the application conventions — which carry VOCABULARY ONLY
+> and register against the mechanism rather than containing it.** The precedent named there is exact: the
+> identity family already spans the same five layers.
+>
+> ⇒ ⭐⭐ **So §2a's inventory is right and its conclusion is a third of the answer.** Apply the family map
+> to the same six rows: the **claim and page types** and the **set-returning operation** are
+> wire-observable and belong to **`EXTENSION-DATA-EXCHANGE`** — *which is the answer to "does this need a
+> handler at all": it does, and it is not a new extension, it is a second operation on one already
+> proposed.* The **source layer's properties** — reader-side merge, expiry-on-the-set,
+> *current-iff-in-a-current-page*, the per-issuer volume bound, the absence of a retraction obligation —
+> are what belongs in the composition document, and that half of §2a stands. **The one call an
+> application makes belongs to `SDK-DATA-EXCHANGE`, and this proposal has no SDK row at all.**
+>
+> ⚠ **Nothing is folded on this and the placement is deliberately still open** — the shape above is what
+> the seats build against, and whether the set-returning operation is a real handler or an SDK
+> composition is a question **building it once answers** and a document cannot. Either answer has a home
+> already named, which is the point of recording the map here.
+>
+> ⛔ **Why this was missed, recorded because it is the expensive kind:** searching the design register for
+> *locator* returns the `LK-*` block; the answer is filed under the **family** the artifact would join,
+> not under the artifact. **Before recommending a home, search the register for the family, not the
+> thing.**
+
+⚠ **Two honest qualifications, because the reasoning here is a choice and not a derivation
+`[rev 5]`.** ① **Nothing forces this.** It could be an extension; the mechanism would work identically, and
+a naming or namespace rule does not decide it — there is no such rule (`SYSTEM-ARCHITECTURE` §13.1a note 5,
+§13.5b). **The argument is that a composition document is where a property spanning several handlers is
+easier to find and to hold**, which is a comprehensibility argument and is stated as one. ② **A handler
+may still be needed** for the one new operation; if so, its name and namespace are an ordinary authoring
+decision, not a consequence of this placement.
+
 ✅ **`[rev 2]` And optionality has an enforcement point that already exists.** `EXTENSION-SUBSTITUTE`
 §8's consult-cap *"MAY narrow via `constraints` … `substitute_types` (restrict to specific handlers)."*
 **A locator backend is its own `substitute_type`, so a deployment that does not want it simply does not
@@ -248,16 +354,30 @@ a working system. Two peers must remain a working system.**
 is not the contribution and is expected to change.** The contribution is that there is only one.
 
 ```
-type: "system/locator/claim"
+type: "system/locator/claim"                    ; IMMUTABLE. Signed once, ever.
 data: {
   subject:      locator-subject,        ; §3.1 — what is being located
   holders:      [system/hash],          ; peer ids that will serve it
   issuer:       system/hash,            ; whose claim this is
-  expires_at:   time,                   ; REQUIRED, not optional — §3.2
+  asserted_at:  time,                   ; `[rev 5]` when the claim was MADE — a fact, true forever
   evidence:     locator-evidence?,      ; §3.3 — probed, asserted, or relayed
   provenance:   [system/hash]?          ; §3.4 — the merge path, if this was aggregated
 }
+
+type: "system/locator/page"                     ; MUTABLE. Re-signed each cycle. §3.2
+data: {
+  issuer:       system/hash,
+  seq:          uint,                   ; monotone per issuer; the anti-rollback floor
+  valid_until:  time,                   ; `[rev 5]` THE EXPIRY LIVES HERE — §3.2
+  updated_at:   time,                   ; DERIVED: max(asserted_at) over the claims carried — §3.2a
+  claims:       [system/hash],          ; the members, by content hash
+  ...                                   ; head/page structure per SYSTEM-DATA-EXCHANGE §2.5
+}
 ```
+
+> ⭐⭐⭐ **`[rev 5]` The expiry moved off the claim. Revisions 1–4 put `expires_at` on the claim and made
+> it REQUIRED; that was a category error with a measured cost, and §3.2 is rewritten around the
+> correction.**
 
 ### 3.1 `subject` is a namespace by default and a hash by exception
 
@@ -280,23 +400,85 @@ plainly; a `content` subject carries a **derived** key, not the bare hash.* Four
 on the principle — **the lookup key is derived from the thing that authorizes reading** — and the
 construction is §7 item 5's open work.
 
-### 3.2 `expires_at` is REQUIRED
+### 3.2 `[rev 5]` The expiry belongs to the SET, not to the claim
 
-**Not a field with a default — a required field, and the design fails without it.**
+**Everything revisions 1–4 argued for expiry stands. What changes is which object carries it**, and the
+correction is forced by arithmetic none of the four revisions did.
+
+**What stands, unchanged:**
 
 - A holder claim is about the **present** and decays. *Someone replied* stays true forever; *I hold
   these bytes* does not.
-- ⛔ **The author cannot retract.** Once an aggregator has unioned your table, a dead peer's entries
-  keep being served by parties the author cannot reach — **the author is precisely the party who
-  cannot fix it.**
-- ⭐ **Measured in a live federation:** merged blocklists do not propagate retractions, and the
-  deployed workaround is *a separate retraction feed* — which is the known-bad shape, because a
-  subscriber who misses the second feed holds the first one's errors indefinitely.
+- ⛔ **The author cannot retract.** Once an aggregator has unioned your table, a dead peer's entries keep
+  being served by parties the author cannot reach — **the author is precisely the party who cannot fix
+  it.**
+- ⭐ **Measured in a live federation:** merged blocklists do not propagate retractions, and the deployed
+  workaround is *a separate retraction feed* — the known-bad shape, because a subscriber who misses the
+  second feed holds the first one's errors indefinitely.
 - **Every deployed shared index makes the holder re-assert.** Four independent systems, one answer.
+- ⇒ **an expiring table retracts itself, and that is the only retraction mechanism this design gets.**
 
-⇒ **an expiring claim retracts itself, and that is the only retraction mechanism this design gets.**
-⛔ **An aggregator that unions without honouring expiry is building the orphaned-data problem on
-purpose.**
+#### ⛔ The arithmetic that forces the relocation
+
+**A signature's storage key is its TARGET's hash.** So, with the expiry inside the claim:
+
+```
+re-assert a claim  →  new expires_at  →  DIFFERENT BYTES  →  new content hash
+                   →  new key in the tree  →  AND A NEW SIGNATURE at a new invariant pointer
+```
+
+| aggregate size | expiry | new objects per refresh cycle |
+|---|---|---|
+| 50,000 claims | 1 hour | **~50k claims + ~50k signatures ≈ 200,000 stored objects, per hour, per aggregator, forever** |
+
+**All of it garbage within the hour, in a corpus whose collection extension does not exist** — `GC` is
+cited five times across the corpus with no file behind it, and is a named gap in the tier
+classification. ⇒ **this would be the first mechanism here whose normal operation requires a mechanism
+we have never specified.** No review of the claim schema in isolation can see that, because the cost is
+not in the schema.
+
+#### The correction, and three independent arguments reach it
+
+> **[MUST]** A claim carries `asserted_at` and **no expiry**. **The page carries `valid_until` and
+> `seq`.** A reader treats a claim as **current if and only if** it is carried by a page whose
+> `valid_until` has not passed.
+
+| | The argument |
+|---|---|
+| **1** | ⭐⭐ **It is a landed ruling of ours, for a different subject.** The transport-set question — *sign the individual profiles, or sign the set?* — was answered **sign the SET (MUST); members MAY additionally be signed**, on the ground that *a set signature proves **these are ALL of them, as of `seq` N*** while a member signature proves only *this one is theirs*, and that **a per-member signature buys exactly one thing: isolated quotation by a party not carrying the set.** DNSSEC made the identical choice — a signature covers a record *set*, never a record — and has run it in production for two decades. **Nothing in that argument is about transports, and a claim table is a set** |
+| **2** | ⭐⭐ **A content-addressed claim key cannot be a freshness handle, so the page was already the only currency unit available.** A renewal is a *different hash at a different key*, so **a reader cannot poll a claim to learn whether it was renewed** — it must poll the page. A design that lets a reader treat a claim key as a freshness handle produces a reader that holds expired claims forever **while believing itself current** |
+| **3** | **It is the mutability discriminator, applied.** Immutable authored content → sign the entity, `O(1)` objects, eternal, forwards alone. Mutable pointer → signed head with a sequence and a validity window. **An expiry is a mutable-pointer property, and revisions 1–4 wrote it into the immutable half** |
+
+**What this costs and what it buys:**
+
+| | |
+|---|---|
+| **re-assertion** | re-signs **one page** instead of N claims and N signatures |
+| **a claim** | is minted and signed **once, ever** — and its per-claim signature now earns its keep on exactly the case argument 1 names: **an aggregator quoting it outside the issuer's set** |
+| **given up** | holding a claim **out of any set** and still reasoning about its freshness — which argument 2 shows was never a real ability |
+| **kept** | the claim is still *a statement about the present*, because **presence in a current page is what makes it one** |
+
+⛔ **An aggregator that unions without honouring page validity is building the orphaned-data problem on
+purpose** — unchanged from revision 1, restated against the object that now carries the expiry.
+
+### 3.2a `[rev 5]` The clock is a parameter of publish, and a page's stamp is DERIVED
+
+**Two rules inherited from measured app-tier incidents, and without them no cross-implementation check on
+a locator table can have a byte comparand.**
+
+> **[MUST]** The publication clock is an **input to publish**, never read inside it. A wall-clock read
+> inside a publish makes the output non-reproducible: two runs of one pinned fixture produced different
+> heads **with an identical root hash**, so a byte-comparing rig reds 100% of the time — and across two
+> implementations it reds *wearing a real divergence's clothes.*
+
+> **[MUST]** A page's `updated_at` is **derived** — the newest `asserted_at` among the claims the page
+> carries — and **not stamped at publish time.** A stamped instant moved an untouched page's bytes
+> merely because the day advanced, **defeating the untouched-pages rule through the ordinary act of
+> publishing.** A derived high-water mark reproduces itself for free, forever, with nothing carried.
+
+⚠ **`valid_until` is the deliberate exception and it is not a defect:** it is a *statement of intent*
+about the future, so it cannot be derived from the members. It is therefore an **input to publish**
+alongside the clock — which is what makes a fixture reproducible while still expressing an expiry.
 
 ### 3.3 `evidence` — a claim and a probed claim are different objects
 
@@ -331,12 +513,27 @@ signature. Aggregator is transport."* **Every entry stays attributable to whoeve
 the invariant pointer `/{signer_peer_id}/system/signature/{target_hash_hex}`, or an inclusion proof"*,
 and one with neither **MUST NOT** be presented as attributed.
 
-⇒ **the signature is per CLAIM, not per table, because the claim is what travels.** *(Which is
+⇒ **a claim carries a per-entity signature, because the claim is what travels.** *(Which is
 `EXTENSION-SUBSTITUTE` §2.1's existing pattern exactly.)*
 
 ⭐⭐ **And that turns §3.1's granularity choice from a preference into arithmetic — a peer holding
 10,000 blobs mints 10,000 signatures per-hash and ONE per-namespace.** **A fifth independent
 derivation of per-namespace-by-default, and the first that is a bill rather than an argument.**
+
+> ⭐⭐⭐ **`[rev 5]` But "per claim, not per table" was a false alternative. There are THREE signatures and
+> each answers a different question** — which is the landed transport-set ruling applied unchanged (§3.2
+> argument 1), and it is what makes the expiry relocation safe rather than a loss:
+>
+> | signed object | signed by | what it establishes | what is LOST without it |
+> |---|---|---|---|
+> | **each claim** | its **issuer** | *this claim is the issuer's* — and it **survives quotation outside any set** | an aggregator's carried claim is unattributable; the aggregate becomes *a publication in which nobody wrote anything* |
+> | **the issuer's own page** | the **issuer** | ***these are ALL of my claims as of `seq` N***, and they are current until `valid_until` | a **dropped** claim is undetectable — the absent-versus-withheld collapse, which no per-member signature can see |
+> | **an aggregator's page** | the **aggregator** | *this is what I gathered* — **never** a completeness claim about anybody else's set | the aggregate cannot be attributed to the party that assembled it |
+>
+> ⇒ **The per-claim signature is not redundant and the page signature is not a substitute for it.** The
+> per-claim one exists for exactly one case — **isolated quotation by a party not carrying the set** — and
+> in this design that case is the *primary* one, because §3.5.2 requires an aggregator to carry claims
+> verbatim and an aggregator does **not** carry the issuer's page.
 
 #### 3.5.2 ⛔ An aggregator CARRIES; it does not merge
 
@@ -446,7 +643,46 @@ costs one round trip). **Hierarchy-as-hint is already safe under machinery the c
 
 ---
 
-## §6 The consumption layer — two clauses in `EXTENSION-SUBSTITUTE`
+## §6 The consumption layer `[rev 5 — REORDERED]`
+
+> ⛔⭐⭐⭐ **`[rev 5]` Read this box before the rest of §6, which is written from revisions 1–4's assumption
+> that the substitute chain is the primary consumption path. It is not. Item 2's ruling moves it.**
+>
+> **The primary path is the root-anchored two-hop read, and it is origin-indifferent by construction:**
+>
+> ```
+> locator answers:  A's estate is also served at C
+> reader does:      fetch A's manifest at C  →  verify A's ROOT (A's key, A's seq floor)
+>                   →  walk A's trie         →  fetch the blob at C  →  hash-check
+> ```
+>
+> **An entity is authentic because it is reachable from ITS AUTHOR's signed root; who served the bytes is
+> not an input to the verification.** So there is **no entry to sign, no publisher identity to hold in
+> advance, and nothing for a third party's claim to fail** — which is exactly the set of obstacles Item 2
+> found in the chain. **This is not a proposal: it is what an app-tier seat ships today**, reading every
+> foreign site, catalog and feed from origins their authors do not control, with the author's root as the
+> only authority.
+>
+> ⭐ **And the chain's own indexing is evidence FOR the join rather than against it:** its source entry
+> splits *the peer whose authority this entry claims* from *where to go* — **which is the locator's
+> author/holder split exactly.** The shape fits; it is the **admission gate** that refuses, not the model.
+>
+> | subject | consumption layer | state |
+> |---|---|---|
+> | **a namespace** — the default, five derivations | **root-anchored two-hop read** | ✅ **needs nothing new** |
+> | **a bare hash** — the exception, and Item 5a says it is not droppable | the chain **or** a new convention | ⛔ blocked on Item 2b's missing fetch convention |
+>
+> ⚠ **What the two-hop read does NOT give you, stated so it is not assumed:** it resolves **by tree
+> path**, so it answers *"who serves A's estate"* and never *"who has this bare chunk."* **The per-hash
+> subject genuinely needs the chain or a new convention** — which is why Item 2b is a build-order item and
+> not a footnote.
+>
+> ⇒ **The dependency order in §7 inverts: nothing blocks on the chain**, and the design becomes buildable
+> today. **The rest of §6 stands as the description of the SECOND, optional path**, gated on Item 2 —
+> which is now ruled, so what it is gated on is Item 2b.
+
+### 6.0 The chain as the second path — revisions 1–4's analysis, unchanged and correctly scoped
+
 
 ⭐⭐⭐ **The substituter is already the interpreter this design needs, and it already refuses exactly the
 case this design answers.** §1: *"A peer that misses on a local `system/content:get` SHOULD be able to
@@ -750,28 +986,96 @@ constraint duplicates `peers` with strictly weaker semantics (no exclude, no pat
 handler-interpreted rather than MUST-evaluated). **§6a.5 states it; it is a defect in landed text worth
 a packet, not a blocker on this design.**
 
-### Item 2 `[rev 3 — REFRAMED; it was never an arch question]` ⚠ What `EXTENSION-SUBSTITUTE` §4's *"invalid"* is
+### Item 2 `[rev 5 — RULED; the blocker dissolves]` ✅ `EXTENSION-SUBSTITUTE` §4 is a wire MUST, it stays, and the locator never needed it widened
 
 **The landed text:** *"**No transitive trust.** An entry claims authority for `source_peer_id`'s content
 only. **Peer B serving peer A's content without A's signature is invalid.**"*
 
-⛔ **Revision 2 filed this as *"should a third-party claim be admissible?"* — a question for arch to rule
-globally. That framing is wrong, and the correction is the more important content:**
+**History of this item in three revisions, because the shape of the error is the useful part.** Revision 2
+filed it as *"may a third-party claim be admissible?"* — a global ruling for arch. Revision 3 reframed it
+as policy plus *"a one-clause clarification"*, reading §4 as a **conservative default a grant may widen**
+because the bytes are already closed. **Revision 4 left it there. A seat that had built four of the five
+layers then measured the code and reported that revision 3 under-priced it by three implementations:**
 
-> ⭐⭐⭐ **Whether this peer will act on a claim about a third party is POLICY, and it belongs to whoever
-> runs the deployment. It is a `peers` scope and a `locator_issuers` constraint — a grant somebody
-> writes, not a sentence arch writes.** §6a.3 shows the same mechanism carrying three different answers:
-> enumerated devices for one person's own fleet, any-peer-on-the-group's-say-so for an application
-> network, any-peer for a public archive. **A design that picks one has taken a decision that is not
-> its to take.**
+- `verify_entry_signature_against(entry_hash, source_peer_id, …)` is called **inside candidate
+  enumeration** and **filters out** any entry that fails, before the priority sort, before the
+  `cap_denied` question, before any fetch. It also requires the source peer's identity entity to be
+  **resolvable in the local store**.
+- The spec says so too, in two places revision 3 did not read together: §4's *"Unsigned/invalid entries
+  are **rejected at consultation time**"* and §3 step 4's `signature_valid(e)` **inside the filter**.
 
-⇒ **The narrow question that remains, and it is answerable:** *is §4's sentence a **wire MUST**, or a
-**default** a grant may widen?* **Read against §1 position 2 — *"a substitute fetch is trustworthy when
-the returned bytes hash-match… regardless of who served them"* — it can only be the latter**, because
-the bytes are already closed and what is left to protect is wasted work. ⇒ **§4 states the
-conservative default; the `peers` dimension is how a deployment departs from it.** ⚠ **That still wants
-confirming in the text rather than inferred here — but it is a one-clause clarification, not a
-ruling about what networks are allowed to want.**
+⇒ **A locator-supplied candidate is a chain entry the READER synthesized from a THIRD PARTY's claim about
+author A. A did not sign it, and in the tail case A is gone — which is the case the mechanism exists for.
+The entry is INVISIBLE, not denied.** And the `peers` dimension cannot widen it, because **this is not a
+capability check**: the refusal happens one layer below authorization.
+
+#### ⛔ RULING — §4 is a wire MUST and stays. The locator is not the thing §4 governs.
+
+**§1 position 2 already separates the two objects, in one sentence neither this proposal nor the audit
+read as a distinction:** *"A substitute fetch is trustworthy when the returned bytes hash-match…
+regardless of who served them. **The substitute ENTRY additionally needs the publisher's signature,
+because the entry makes an AUTHORITY CLAIM** ('peer P endorses this source for P's content'); **the bytes
+need only the hash.**"*
+
+> ⭐⭐⭐ **`system/substitute/source` is an ENDORSEMENT. A locator claim is a HINT. Different object,
+> different trust rule — and the design has been trying to carry one inside the other.**
+
+| | **endorsement** (`substitute/source`) | **hint** (a locator claim) |
+|---|---|---|
+| who asserts it | **the content's author**, about where their own content may be had | **anybody**, about where they saw something |
+| what it claims | **authority** — *"this intermediary speaks for me"* | **location** — *"look here"* |
+| signed by | **the author, mandatorily** (§4) | **its issuer** — who needs no authority at all |
+| what a lie costs | a reader trusting a source the author never blessed | ⭐ **one wasted fetch, always, by construction** |
+| checked by | **the signature, before enumeration** | **the hash, after the fetch** |
+
+**So widening §4 would be a category error with a real cost:** it would make the endorsement class admit
+unendorsed entries — the only thing that class exists to prevent — in three implementations, to serve an
+object that does not need the guarantee. **The refusal is correct; this proposal was pointed at the wrong
+door.**
+
+⇒ **The consumption layer moves instead (§6 `[rev 5]`), and nothing synthesizes a `substitute/source`
+from a third party's claim.** Revision 3's policy argument **stands and is unaffected** — whether *this*
+peer acts on a claim about a third party is still a grant somebody writes, not a sentence arch writes.
+What is withdrawn is only *"§4 states a conservative default"*: it does not, and the sentence needed no
+clarification.
+
+> ⭐ **The transferable half, and it points both ways.** Revision 3's own lesson was *an extension's
+> summary of a core mechanism is not the mechanism.* This is its mirror: **a spec sentence's
+> implementation can be STRONGER than the sentence reads.** Two read-the-wrong-artifact errors in
+> opposite directions, four sections apart in one document.
+
+### Item 2a `[rev 5, NEW]` ⛔ The same ruling from the other side — `substitute/source` cannot carry *"a table I adopted"*
+
+**Revision 4's §1.2 claimed adoption was free:** *"`system/substitute/source` already carries
+`source_peer_id`, an opaque `endpoint`, `priority`, `enabled`, `expires_at` and `supersedes` — which is
+precisely 'a table I have adopted, at this precedence, until this date.' ⇒ **No `adopt`/`drop` operations
+should be minted.**"
+
+**Two measurements against that, both in implemented code:**
+
+1. **`source_peer_id` is not optional, and enumeration filters on equality with the missing content's
+   publisher.** A source entry names **one content publisher**; an adopted *table* is a statement about
+   an **issuer** and spans authors. **The field that would carry the issuer is already spoken for.**
+2. **A `substitute_type: "locator"` entry can never fire for the case the design exists for** — the
+   bare-hash short-circuit runs **before** candidate enumeration, so such an entry is never consulted.
+   ⇒ the two mechanisms §1.2 listed are **alternatives, not complements**, and the second cannot reach
+   the bare-hash case at all.
+
+⇒ **This is Item 2's ruling one noun over: the mandatory `source_peer_id` is the TYPE SAYING IT IS NOT
+OUR TYPE, not a schema shortage.** **The conclusion that survives is the narrow one: the adoption
+decision needs its own record, it is not this entity, and it still need not be a new *operation*.**
+
+### Item 2b `[rev 5, NEW]` ⛔ A claim naming a PEER is unfetchable by any implemented convention
+
+`holders` is a list of **peer ids**. **The only implemented substitute convention is HTTPS-only** — its
+handler refuses a non-`https://` prefix **unconditionally**, and that refusal is stated in-source as the
+security property rather than a configuration default. **`substitute_type: "peer-to-peer"` appears in
+§2.1's comment and in no extension.**
+
+⇒ **A peer-shaped fetch convention is a new artifact, and it was absent from this proposal's build
+order.** ⚠ **And the same floor refuses the whole zero-config LAN path** (`http://<lan-ip>`), which is
+how at least one app-tier seat pairs devices today — so the convention has a second driver that has
+nothing to do with the locator.
 
 ### Item 3 ⚠ §3 step 3 and §4's wildcard refusal — the delta is small but it is a v1 reversal
 
@@ -949,6 +1253,28 @@ against landed text** that is somebody's to fix rather than this design's to wai
 ---
 
 ## Document history
+
+- **2026-09-14 · revision 5** — **folds an audit of implemented code in all three cores plus a shipped
+  app-tier publisher, and it changes the artifact rather than only the framing.** ⭐ **The expiry moves off
+  the claim onto the SET (§3.2, §3.2a)** — a signature is keyed on its target's hash, so a re-assertion is
+  a new claim at a new key needing a new signature, ~200k stored objects per hour at aggregator scale in a
+  corpus with no specified collection mechanism; three independent arguments reach the relocation, the
+  first being the landed set-versus-member signing ruling. Adds the **clock-as-publish-parameter** and
+  **derived-page-stamp** rules, without which no cross-impl check on a table has a byte comparand.
+  ⭐ **Item 2 is RULED and the blocker dissolves** — `EXTENSION-SUBSTITUTE` §4 is a wire MUST and stays;
+  revision 3's *"conservative default a grant may widen"* is **withdrawn** (it is an admission gate inside
+  candidate enumeration, so a candidate is *invisible, not denied*, and no capability widens a check below
+  authorization) — **and §4 was never the door, because an endorsement and a hint are different objects.**
+  **Item 2a** (`substitute/source` cannot carry an adopted table — the mandatory `source_peer_id` is the
+  type saying it is not our type) and **Item 2b** (a claim naming a peer is unfetchable: the one
+  implemented convention is HTTPS-only by design, which also refuses the zero-config LAN path) are new.
+  **§6 inverts the consumption layer** to the root-anchored two-hop read as primary, so nothing blocks on
+  the chain. **§3.5.1 replaces *per claim, not per table* with three signatures**, each answering a
+  different question — quotation, dropped-member detection, and attribution of the gathering. **§2a
+  withdraws the extension framing:** two types, one operation and one convention is not an extension's
+  worth of surface, and `SYSTEM-DATA-EXCHANGE`'s status header has named its **source** layer as owed
+  since v0.1 — **stated as an organizational choice with its reason, explicitly not as a consequence of
+  any naming rule, because there is no such rule.**
 
 - **2026-09-13 · revision 4** — **does the grant call by call (§6b)**, on the principle that no
   dimension is readable alone: five calls, of which **only one is outbound**, with handler / operations

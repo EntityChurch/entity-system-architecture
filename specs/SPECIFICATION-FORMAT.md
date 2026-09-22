@@ -4,9 +4,6 @@
 **Status**: Active
 **Kind**: authoring-standard
 **Authority**: binding
-**v1.4:** §10 rewritten on two axes — §10.1 six document kinds, §10.2 authority (`binding` / `informative`) **declared and never derived from the kind**, §10.3 the two-level tier model (a **project tier** binding every document, and **sub-tiers** adding what is specific to one family), §10.4 rationale. §5.3 gains `Kind`, `Authority` and `Governed-by`. §8 retitled *Spec Conventions* and gains **§8.6** a capability has a valid floor · **§8.7** a published vocabulary is a compatibility contract · **§8.8** grow by handler or renderer, not by entity type · **§8.9** a disposition property lives on the entity, never its container. **No existing §8 number moved.** The four are promotions of rules that were true corpus-wide and were filed under the one tier that discovered them.
-**v1.3:** §5.1's conformance block and new §8.5a — the inventory is a table of individually identified requirements, `Level` is a closed six-value vocabulary, and each row carries a stable `<PREFIX>-R<n>` id that is allocated once and never reused. A conformance item names the requirement ids it drives.
-**v1.2:** §4.1, new — a requirement that constrains a party, a namespace or a path states the failure it prevents. §8.5's conformance-class list follows `GUIDE-CONFORMANCE` §7.0 from three classes to four (the host-seam check, §7d).
 
 ---
 
@@ -249,6 +246,23 @@ and a tool — otherwise infers them from a filename or a directory, which is ho
 document that governs five specifications came to be classed informational, and
 how the corpus's own authoring standard came to be classed a guide. Neither
 document was wrong; nothing had asked them.
+
+**The header carries the declared fields and nothing else. Version history goes at the
+END of the document, never in the header.** A specification's job is to say what the
+thing **is**; what it **was** is secondary and belongs after the content, not in front
+of it. Narrative wedged into the header does three things, all bad: it separates the
+declared fields from each other, it puts a changelog where a reader's introduction
+should be, and it grows without bound — one extension had reached **twelve paragraphs
+and over three thousand words above its first section heading**, which a reader met
+before learning what the extension does.
+
+- **Where it goes:** a trailing `## Document History` section, newest entry first.
+- **Where it is headed:** out. History is not lost by leaving a specification — it is
+  in the revision control system and in the proposal that argued for the change. **A
+  destination has not been settled, so the trailing section is the interim, not the
+  answer.**
+- **Enforcement:** `header-narrative` (position, gated) beside `document-history-section`
+  (existence, held as accepted debt while the destination is decided).
 
 **`Governed-by` names the sub-tier standard, and only that.** The project tier
 (§10.3) binds every document unconditionally, so declaring it in every header
@@ -892,3 +906,13 @@ and flags citation-form drift, dangling references, and stale section refs. The
 addressing standard is the contract; the tool reports deviations from it. A
 green corpus is one where every citation resolves, in the canonical form, to a
 permitted target.
+
+---
+
+## Document History
+
+**v1.4:** §10 rewritten on two axes — §10.1 six document kinds, §10.2 authority (`binding` / `informative`) **declared and never derived from the kind**, §10.3 the two-level tier model (a **project tier** binding every document, and **sub-tiers** adding what is specific to one family), §10.4 rationale. §5.3 gains `Kind`, `Authority` and `Governed-by`. §8 retitled *Spec Conventions* and gains **§8.6** a capability has a valid floor · **§8.7** a published vocabulary is a compatibility contract · **§8.8** grow by handler or renderer, not by entity type · **§8.9** a disposition property lives on the entity, never its container. **No existing §8 number moved.** The four are promotions of rules that were true corpus-wide and were filed under the one tier that discovered them.
+
+**v1.3:** §5.1's conformance block and new §8.5a — the inventory is a table of individually identified requirements, `Level` is a closed six-value vocabulary, and each row carries a stable `<PREFIX>-R<n>` id that is allocated once and never reused. A conformance item names the requirement ids it drives.
+
+**v1.2:** §4.1, new — a requirement that constrains a party, a namespace or a path states the failure it prevents. §8.5's conformance-class list follows `GUIDE-CONFORMANCE` §7.0 from three classes to four (the host-seam check, §7d).

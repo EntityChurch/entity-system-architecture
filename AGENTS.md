@@ -189,10 +189,16 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   `implemented/` *(**ratified** 2026-08-17)* · **L4** a claim about a document
   or a tree is checked by opening it — outward **and inward** · **L5** spec text is not our log ·
   **L6** resolve divergence from the table before the fix is written *(candidate)* · **L7** check the
-  toolkit for the instrument before building one *(candidate)* · **L8** an artifact is not a
+  toolkit for the instrument before building one — **and read its FULL worklist, never its summary:
+  a reader that prints `... +170 more` hid the finding you came for, and the count above it is not
+  what you looked at** *(candidate — sixth instance)* · **L8** an artifact is not a
   conclusion about the thing — open it *(**ratified** 2026-08-17)* · **L9** a deferral is a
-  build-state claim and expires like one — **including a resolved open item in a folded proposal**
-  *(**ratified** 2026-08-20 — second shape)* · **L10** check the framing of a routed
+  build-state claim and expires like one — **including a resolved open item in a folded proposal**, and
+  **a row or a hold created for work THIS session may itself do is re-read before the session closes**
+  *(**ratified** 2026-08-20 — second shape; **same-session axis 2026-09-14** — the shortest expiry in the
+  record is **57 minutes** and it ran twice in one day: an owed item written at 10:09 was discharged by
+  the same session at 11:06 with nobody updating the row, and a routing hold naming two conditions
+  outlived both within the hour. **A hold names a CONDITION, and a hold nobody re-reads outlives it**)* · **L10** check the framing of a routed
   finding, not only the finding *(candidate)* · **L11** read the study that produced a design space
   before ruling inside it *(**ratified** 2026-08-17 — L7's fourth and most expensive instance)* ·
   **L12** a mechanism cited in a ruling must be reachable by the actor the ruling assigns it to — name
@@ -208,7 +214,18 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   `docs/LEGACY-ARCHIVE-INDEX.md`. Name the regions searched in the claim** *(**ratified**
   2026-08-19 — second instance the next day, running the opposite direction; **corpus axis added
   2026-09-04**; **archive axis added 2026-09-07** — the same rule fired false twice in two days
-  because its named region was one repo)* · **L17** a normative MUST that names a value **or a
+  because its named region was one repo; **NAME AXIS 2026-09-14 — a census of *does X exist* searches
+  by SUBJECT — sections, handler paths, namespaces — and NEVER by the filename you expect. Three
+  instances in one arc: a study reported "no bridge material survived" from a grep of archive phrases,
+  corrected itself, and then committed the same error inside the correction — publishing *"a bridge
+  specification of any kind: 0"* while `EXTENSION-REVISION` §10 is a version-control bridge mapping in
+  a landed Tier-1 spec, and while nine forward citations sat in the addressing gate's own output;
+  **FAMILY AXIS 2026-09-14 — search the design register for the FAMILY an artifact would JOIN, never for
+  the artifact. A placement was recommended twice, by two sessions, for an artifact whose family map had
+  been RULED two days earlier: *locator* returns the lookup block and the answer was filed under *data
+  exchange*, and the proposal cited the family member mentioning its gap ELEVEN times and the proposal
+  DEFINING the family ZERO times**)* ·
+  **L17** a normative MUST that names a value **or a
   capability** does not land without a declared site a peer can carry and a conformance check
   *(**ratified** 2026-08-20 — second shape)* · **L18** a cohort
   implementation is not evidence that a cohort ruling is right — **and a citation labelled
@@ -280,6 +297,8 @@ the start of every session.
 | file something against ourselves | **L13's fourth axis** |
 | land a `[MUST]` naming a value or capability | **L17** — three shapes |
 | publish a count or a census | **L8's twentieth form** · **L8's twenty-first — publish the surface the count ranges over, never the count alone; four bare counts published wrong in one week** · **L7's standing rule** |
+| touch a namespace, a prefix, a tier or a document name | ⭐ **`spec shape`** — *holding a path, can a reader find the document that specifies it?* **168 of 185 resolve by first segment; 0 unresolved; and 10 of the 17 exceptions are ONE namespace (`system/peer/*`, four specifying documents).** Advisory, exits 0, **a linter and not a gate** — these are guidelines with legitimate exceptions. ⚠ **Pass `--namespace-root ../entity-core-protocol/specs`** or every core-owned segment reports as unresolved. And **price a rename before proposing one**: `system/peer/transport` is 85 refs across 14 docs with `profile-id` pinned inside a three-way-green ordering |
+| write that an organizational pattern **is a rule** | ⭐ **`AP-24`** — *consistency is evidence of a CONVENTION and never of NECESSITY.* A census of our own past choices describes the past and cannot constrain the future; to claim necessity you need a mechanism that **fails** when the convention is broken, and organizational choices have none (rename everything to UUIDs and the suite stays green). **A rule is cheaper to carry than a judgment, which is why this one is tempting** — and an author that holds arbitrary identifiers at no cost is the wrong judge of it. Record the decision AS a decision, with its reason. **`SYSTEM-ARCHITECTURE` §13.5b is the axis; this is its founding incident and it is ours** |
 
 **The ratchet still binds, with one correction this split encodes: prose is not the
 deliverable.** An incident earns, in order of preference — **a widened scope** on a gate, index
@@ -331,7 +350,29 @@ grep -rliE "<term>" specs guides docs "$L" "$P"        # is it discussed anywher
 # by six sites, and the guides are the surface an extension author copies from.
 grep -rn "<literal>" specs guides | awk -F: '{print $1}' | sort | uniq -c | sort -rn
 grep -rn "<literal>" specs guides | wc -l              # total, beside the breakdown
+
+# ⛔ SEARCH BY SUBJECT, NEVER BY THE FILENAME YOU EXPECT (L16 name axis, 2026-09-14).
+# "Is there a spec for X?" is NOT `ls | grep X`. A subject lives in SECTIONS of
+# documents titled for something else: EXTENSION-REVISION §10 is a whole
+# version-control bridge, and three passes reported the bridge corpus empty.
+grep -rn "^#.*<subject>" specs guides                  # sections named for it
+grep -rn "<namespace-or-op>" specs guides              # paths/ops that implement it
+
+# ⛔ COUNTING ACROSS SIBLING TREES: exclude build output AND vendored copies, or
+# one repo is counted twice. A hand count of doc-name reach returned 214; 95 of
+# it was one repo's pinned copy of another (`.core-pin/`). Truth was 119.
+EX='/dist|/target/|node_modules|/\.git/|/\.core-pin/|/vendor/'
+for d in ../entity-core-{go,rust,py} ../entity-core-keystone ../entity-browser-rust \
+         ../entity-workbench-go ../entity-system-generator ../entity-core-protocol; do
+  printf "%5d  %s\n" "$(grep -rl "<term>" "$d" 2>/dev/null | grep -Ev "$EX" | wc -l)" "$(basename $d)"
+done
 ```
+
+⛔ **A GATE'S SUMMARY IS NOT ITS FINDINGS (L7 reader axis, 2026-09-14).** `spec address` prints six
+examples per class and then `... +170 more`. **Nine forward citations to an unwritten bridge
+specification sat in that elision for months, on every run**, while sessions quoted the class count as
+if they had read it. **Every reader in this toolkit takes `--owed`; use it** — `address` did not until
+this was found, and it has the largest finding population of any of them.
 
 **Publish the SURFACE, never the count alone (L8's twenty-first form).** A count inherits the shape of
 the search that produced it and **the shape is invisible in the number** — four bare counts were
@@ -367,11 +408,21 @@ to an internal path — a path that resolves only in our layout is not a referen
   burns down). **Run it before you push a `specs/` change:**
 
   ```bash
-  python3 <arch-tools>/spec-tool/cli.py provenance --since origin/dev          # in THIS repo
+  python3 <arch-tools>/spec-tool/cli.py provenance --since origin/dev \
+      --proposal-root ../entity-core-protocol                                  # in THIS repo
   cd ../entity-core-protocol && python3 <arch-tools>/spec-tool/cli.py \
       provenance --since origin/dev --root . \
       --proposal-root ../entity-system-architecture                            # in the CORE repo
   ```
+
+  > **`--proposal-root` is needed in BOTH directions, and only one was written down
+  > `[2026-09-14]`.** The core→arch direction has been documented since the flag existed. The
+  > mirror is just as real and was found the first time it fired: **a core-protocol ruling with an
+  > extension-tier half folds a `0.8.2.x` proposal into `specs/extensions/`, in THIS repo, citing a
+  > stem that lives in the other one** — and the run came back
+  > `normative-edit-without-proposal` on a correctly-cited fold. Same could-not-look, same flag,
+  > opposite direction. **Any round where a core ruling has an extension half produces it**, which
+  > is most of them.
 
   **`--proposal-root` is not optional for `entity-core-protocol`, and the invocation documented here
   was blind without it for the whole `0.8.2.x` arc.** That corpus's folds are authored, ratified and
@@ -421,6 +472,24 @@ reconstruction pass.
   nothing — never read it as either a pass or a lint failure. *(It reported both, for
   months, against a corpus root left behind by the repo split; fixed in arch-tools
   `7fd538f`.)*
+
+  > ⛔ **`check` IS A TWO-CORPUS RUN. `entity-core-protocol` is ours and cwd resolution never
+  > reaches it `[2026-09-14]`.** Run BOTH, every time:
+  >
+  > ```bash
+  > python3 <arch-tools>/spec-tool/cli.py check                                    # this corpus
+  > SPEC_CORPUS=../entity-core-protocol python3 <arch-tools>/spec-tool/cli.py check # the core corpus
+  > ```
+  >
+  > **A real `header-narrative` error stood in `ENTITY-CBOR-ENCODING` from the `0.8.2.10` fold
+  > through every subsequent *"thirteen gates green"* / *"all gates exit 0"* report** — a v1.6
+  > changelog line wedged into the header block, in the corpus whose own rule is *spec text is not
+  > our log*. Every one of those reports was **true about the arch corpus and was never a statement
+  > about the core one**, because every invocation in this file runs from this tree. **Third
+  > instance of this exact class in this toolkit** — `address`'s `--namespace-root`, `provenance`'s
+  > `--proposal-root`, now `check`'s corpus — and the generalization is the one that keeps coming
+  > back: **we own three repos and default to grading one.** When a gate takes a root, ask what it
+  > resolves to when you do not pass one, and whether that is the tree you meant.
 - **`docs/DESIGN-REGISTER.md` — READ IT BEFORE DERIVING ANYTHING.** The design-side answer to *"do we
   already know this?"*, and the other half of `spec coverage`'s sentence below: **coverage answers
   "is there a document," the register answers "is there an ANSWER."** One row per settled conclusion —
@@ -502,6 +571,16 @@ reconstruction pass.
   | *"Where did we work on X?"* | `spec coverage` · `research/INDEX.md`'s §1–§9 subjects · the archive's **subject map** |
   | *"What state is it in?"* | `spec ledger` · `docs/proposals/INDEX.md` §1–§4 |
   | ***"Does this question already have an ANSWER?"*** | **`docs/DESIGN-REGISTER.md`, and only that** — `spec register` measures the gap |
+  | ⭐ ***"Where does this ARTIFACT belong?"*** `[2026-09-14]` | **`docs/DESIGN-REGISTER.md`, searched for the FAMILY it would join — never for the artifact.** A row is filed under the question it answers, and *where does this go* is a question about the family, so the artifact's own name is the one string that will not find it |
+
+  ⛔ **The fifth surface is new and it cost a recommendation twice, from two sessions, on the same
+  artifact** `[2026-09-14]`. `AT-86` is a **RULED** row answering *"is this one extension and what layer
+  is each part"* for the `DATA-EXCHANGE` family; a placement was recommended without it, twice, because
+  **searching `locator` returns the `LK-*` block and the answer is filed under *data exchange*.** The
+  proposal cites the family member whose header mentions its gap **eleven times** and the proposal that
+  **defines the family zero times**, naming two of its five members nowhere. ⇒ **before recommending a
+  home, grep the register for the family; `spec register` reports `244 of 244` cited and a gate cannot
+  make anyone read a row.**
 
   **`docs/proposals/INDEX.md` §0b is the content roster** — every proposal with the H1 line as the
   answer, generated, plus an `In register` column that is the backlog made visible. It works because
@@ -869,9 +948,28 @@ reconstruction pass.
 
 - **`spec roster` — the living roadmaps' version column against the spec headers they copy. RUN IT
   AFTER ANY VERSION BUMP.** `AGENTS.md` says *"the spec header is source of truth"* — and the corpus
-  then restates every spec's version in `ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md` and in
-  `GUIDE-APPLICATION-DEVELOPMENT` §5's members table. **Neither end says the roster is a copy**, so
+  then restates every spec's version in `ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md`, in
+  `GUIDE-APPLICATION-DEVELOPMENT` §5's members table, and — **since 2026-09-14** — in
+  `SYSTEM-ARCHITECTURE` §13.1's tier classification. **Neither end says the roster is a copy**, so
   the drift is invisible from both: `charter`'s defect one tier down, against a different pair.
+
+  > ⛔ **The fourth roster was found two weeks after the gate shipped, and it was the worst of the
+  > four.** `SYSTEM-ARCHITECTURE` §13.1 is the document that answers *what is this system made of and
+  > what depends on what* — **13 of 22 version rows stale** by up to eleven minor revisions, **four
+  > extensions absent from both the classification AND the dependency DAG** (`REGISTRY` at v1.26,
+  > `SUBSTITUTE`, `ROUTE`, `SIGNALING`), and one landed extension described as an early sketch. ⭐⭐ **And
+  > three of the four absent extensions declare their tier in their OWN headers and cite §13.1 by number
+  > as the authority for it** — so *the placements existed and were declared by the members; the map was
+  > the copy that drifted*, and a citation resolved to a section that did not list the citing document.
+  >
+  > ⭐ **The transferable half is about widening a gate, not about this document: adding the filename
+  > alone would have gated NOTHING and reported clean.** §13.1's tables put the maturity word and the
+  > version together in **cell 2**, where the members-table shape expects them in cell 3 — so the scope
+  > widening had to ship with a **third row shape** (arch-tools `304b4f8`), and both orderings needed
+  > matching (`Draft v4.9` **and** `v0.1 Exploratory`, the second live on the Tier 4 row and missed by
+  > the first cut — a silent hole, which is the worse direction). ***When you point an existing gate at a
+  > new document, check that it MATCHES anything there before believing the clean run*** — the row count
+  > is the tell: 38 → 63.
 
   ```bash
   python3 <arch-tools>/spec-tool/cli.py roster          # reader, exits 0

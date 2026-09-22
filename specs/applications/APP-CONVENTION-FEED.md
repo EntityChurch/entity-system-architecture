@@ -2,30 +2,6 @@
 
 **Version**: 0.3
 **Status**: Draft
-**v0.3:** §6's mirror becomes a **bounded head plus key-addressed pages** — the shape §4.2 already
-defines for an author's index, applied to a gathered view. v0.2 widened `subject` to `any-reference` so
-a mirror could be of a **timeline**, which §1.3 makes monotone and unbounded; the shape did not widen
-with it, so the leg §6.2 sells as the cheap one transferred the whole view to read its newest entries.
-Pages are filled in **gather order** and sealed, because a gatherer backfills and because gather order
-is the order a source leg is read in — which is what makes §4.3 rule 4's `O(new)` expressible over a
-mirror at all. §6.0.1's coordinate is now **`prefix_hash`** (`EXTENSION-REVISION` §3.1), declared
-**derive-to-meet** per `SPECIFICATION-FORMAT` §8.4.6: the previous wording named a one-argument
-`content_hash` over a path, which is not a function this corpus defines, leaving `FEED-12`'s own
-comparand underivable. §6.0 now names the live subject's path — `app/feed/index` — because *"a prefix"*
-is not a legal live-reference target (§2.2.2 requires one that resolves). And §2.4's `cursor` field is
-**removed**: the reader's position is local state, never published, which is what `[OPEN-FEED-1]`
-resolved and what §4.4 has always described.
-**v0.2:** §6's `subject` widens to `any-reference`, and §6.0 states what each kind means. A pinned
-subject names one entity many parties contribute to — a thread; a live subject names a prefix one peer
-owns — a timeline. **The narrow production admitted only the first**, so a peer republishing an
-author's walk had no legal way to say what the walk was of, and the mirror could not serve as a source
-leg for the case it is most useful for. §6.0 also forbids a subject that is a pin to a moving value —
-an author's index head is a **witness**, not an identity. §6.0.1 pins the prefix `app/feed/mirrors/`
-and the key derivation, over **identifying fields only**, so two gatherers of one subject compute one
-address. §6.1's four republication rules now name their authority: they are stated in
-`SYSTEM-DATA-EXCHANGE` §2.3 and restated here — promoted because any peer republishing another peer's
-content is bound by them, not only a feed reader.
-**Domain:** `applications/` (fifth member).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §1.2 (content hash) · §1.4 (paths) · §1.5 (`PeerID`) · §3.5
 (`system/signature`, the invariant pointer and its forwardable property) · `EXTENSION-TREE.md` §3.1
@@ -1078,3 +1054,33 @@ would resolve it.
 | **F-9** | **A quote — *render that entry inside this one* — is expressible two ways and assigned neither.** It is not a reply (it asserts no answer) and not an ordinary attachment (it is an entry, not a file). `attachments` is a reference list; the body's handler layer is open, so an entity-reference embed type is legal. **Two candidate homes, no rule, and picking one is cheap** | a renderer needs to show a quote |
 | **F-10** | **The multi-party record — reserved at §1.1.2, not designed.** Every shape here has exactly one signing party. A co-signed record is bounded, multi-party and claims completeness **verifiably**, since it names its parties and each signature sits at the core's invariant pointer in that party's namespace. **The substrate is complete and no shape exists.** Instances: a co-authored post, a mutual follow read as a relationship, a confirmed invitation, a receipt, an order | an implementation needs a co-signed object |
 | **F-11** | **Is `context` doing too much?** It carries *part of a topic*, *part of an album* and *part of an event* in one field. **If consumers must branch on which, it fails the taxonomy's own test and should be split** | a second consumer of `context` exists |
+
+---
+
+## Document History
+
+**v0.3:** §6's mirror becomes a **bounded head plus key-addressed pages** — the shape §4.2 already
+defines for an author's index, applied to a gathered view. v0.2 widened `subject` to `any-reference` so
+a mirror could be of a **timeline**, which §1.3 makes monotone and unbounded; the shape did not widen
+with it, so the leg §6.2 sells as the cheap one transferred the whole view to read its newest entries.
+Pages are filled in **gather order** and sealed, because a gatherer backfills and because gather order
+is the order a source leg is read in — which is what makes §4.3 rule 4's `O(new)` expressible over a
+mirror at all. §6.0.1's coordinate is now **`prefix_hash`** (`EXTENSION-REVISION` §3.1), declared
+**derive-to-meet** per `SPECIFICATION-FORMAT` §8.4.6: the previous wording named a one-argument
+`content_hash` over a path, which is not a function this corpus defines, leaving `FEED-12`'s own
+comparand underivable. §6.0 now names the live subject's path — `app/feed/index` — because *"a prefix"*
+is not a legal live-reference target (§2.2.2 requires one that resolves). And §2.4's `cursor` field is
+**removed**: the reader's position is local state, never published, which is what `[OPEN-FEED-1]`
+resolved and what §4.4 has always described.
+
+**v0.2:** §6's `subject` widens to `any-reference`, and §6.0 states what each kind means. A pinned
+subject names one entity many parties contribute to — a thread; a live subject names a prefix one peer
+owns — a timeline. **The narrow production admitted only the first**, so a peer republishing an
+author's walk had no legal way to say what the walk was of, and the mirror could not serve as a source
+leg for the case it is most useful for. §6.0 also forbids a subject that is a pin to a moving value —
+an author's index head is a **witness**, not an identity. §6.0.1 pins the prefix `app/feed/mirrors/`
+and the key derivation, over **identifying fields only**, so two gatherers of one subject compute one
+address. §6.1's four republication rules now name their authority: they are stated in
+`SYSTEM-DATA-EXCHANGE` §2.3 and restated here — promoted because any peer republishing another peer's
+content is bound by them, not only a feed reader.
+**Domain:** `applications/` (fifth member).

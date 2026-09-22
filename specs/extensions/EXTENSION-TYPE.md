@@ -1,8 +1,6 @@
 # Type Extension — Normative Specification
 
 **Version**: 1.3
-**v1.3:** Appendix A — operation error codes. A typing verdict is a `200`; an unresolvable referenced type is `404 type_not_found` on every analysis operation whose result type cannot carry the outcome, and a `200` `structural` violation on `validate`. Three implementations had converged on this ahead of the fold.
-**v1.2 naming normalization:** the 7 `system/type/constraint/*` type-path leaves are renamed snake → kebab per `STYLE-NAMING-CONVENTIONS.md` §3.2; **parameter keys stay snake** — the path is now `system/type/constraint/min-length`, the field key remains `min_length`. This is **breaking** for these extension type-entity content-hashes; impls land in lockstep at this fold.
 **Status**: Active
 **Conformance grade:** Draft (per `GUIDE-EXTENSION-DEVELOPMENT.md` §9). No cross-impl validation pass yet. Reference impls pending.
 
@@ -1306,3 +1304,11 @@ defined code §3.3's 500/404 escape requires, and this table is where it is defi
 | 1.0 | — | Initial draft. Constraint dispatch model (§2), 11 standard constraint types (§4), standard constraint handler (§5), narrowing rules (§6), type analysis operations — compare / converge / compatible / adopt / reconcile (§7), conformance MUST / SHOULD / MAY (§12). |
 
 **Hygiene pass:** Header reformatted to `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 shape (added Used-by, Owned namespaces, Owned ops, Owned entity types, Extension points exposed/consumed). Conformance grade added per GUIDE §9 (Draft). §1.1 future-cross-ref to `EXTENSION-COMPUTE.md §10.3` updated to current compute version (v3.19+) and reframed — the dispatch surface already admits a compute-backed constraint handler; convergence semantics defer to a follow-on TYPE amendment. §4.6 stale reference to `PROPOSAL-COMPUTE-AMENDMENTS C4` updated to the landed `PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md` (D3–D6 → EXTENSION-COMPUTE v3.7). No normative change. Source: review against the GUIDE-EXTENSION-DEVELOPMENT initial draft.
+
+---
+
+## Document History
+
+**v1.3:** Appendix A — operation error codes. A typing verdict is a `200`; an unresolvable referenced type is `404 type_not_found` on every analysis operation whose result type cannot carry the outcome, and a `200` `structural` violation on `validate`. Three implementations had converged on this ahead of the fold.
+
+**v1.2 naming normalization:** the 7 `system/type/constraint/*` type-path leaves are renamed snake → kebab per `STYLE-NAMING-CONVENTIONS.md` §3.2; **parameter keys stay snake** — the path is now `system/type/constraint/min-length`, the field key remains `min_length`. This is **breaking** for these extension type-entity content-hashes; impls land in lockstep at this fold.

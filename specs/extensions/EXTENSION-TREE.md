@@ -1,12 +1,6 @@
 # System Tree Extension
 
-**Version**: 4.9
-**v4.9:** §6.1/§6.2 — **the disposition of a malformed `extract.paths[]` entry**, which was undefined and had two defensible readings. A malformed entry is now **`400 invalid_path` for the whole request**; a well-formed entry that binds nothing is **silently omitted**, unchanged. The two were collapsible precisely because both are safe — and a caller who gets seven results for ten paths cannot tell which case it hit. Ruled as a MUST because the readings are cross-peer observable. §6.2 validates every entry **before reading any**, and Appendix A gains the row. ⚠ Independently of this, the store boundary stays **total** per `ENTITY-CORE-PROTOCOL` §5.4 (0.8.2.21): `paths[]` reaches a path boundary through `params`, a channel no resource-target pre-validator sees, and a boundary that asserts there is a remote denial of service.
-**v4.8:** §8.7 — the sentence no longer restates a `system/*` prefix rule at all. `ENTITY-CORE-PROTOCOL` 0.8.2.13 **withdrew** the reservation; install authorization at any path is the capability check on the install path. The least-privilege point this paragraph exists to make — the prefix is organizational and confers no tree privilege — is unchanged and is now stated without leaning on a rule that no longer exists. *(v4.7 restated the same rule at a narrower scope and is superseded; both it and the scope it described lasted one day.)*
-**v4.6:** §3.8 — the walk contract, new. *The absence of a node is never an answer*: a declared node that does not resolve is `incomplete_walk` (502, terminal, carrying the cut point) and never a shorter result, children are derived structurally rather than by byte-scan, and a partial walk is opt-in and never presented as complete. §4.3's collectors gain the branch they never had and thread the declaring node's hash. §6.2 **deletes** the "unfiltered subtree nodes MAY be omitted" sentence — v3.x path-navigation residue that contradicted the rebuild directly above it — and states the property that is true: an extract is complete against its own root, filtered or not, because publishing a subset is **re-rooting, not filtering**. Six vectors, and the control case is required so that a walk which always fails cannot score green.
-**v4.5:** Appendix A's `put` rows get the predicate they were missing. *"Does not decode"* is now stated — the submitted value is admitted as a `core/entity` (all three fields required) **before** its hash is compared, so a submission that is both malformed and mis-hashed is the structural row; the `unsupported_content_hash_format` arm is restated from `ENTITY-CORE-PROTOCOL` §4.7 row 5 because `put` is one of its ingest surfaces; and **`set` is dropped from the rows** — `ENTITY-CORE-PROTOCOL` §6.3 and §2.2 below both define exactly two index operations, and `set` was never one of them.
-**v4.4:** Appendix A gains the `put` / `set` rows. The two core data operations the protocol runs on had no error-code row in the only table their extension has: a non-decoding entity is `400 invalid_request` (§3.3's generic case), a content-hash mismatch is `400 hash_mismatch` (`EXTENSION-CONTENT` §923's code for the same failure), and the CAS race that shares that token is tabulated beside it at 409 so the two are not collapsed.
-
+**Version**: 4.11
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -128,6 +122,33 @@ The location index provides two primitive operations:
 | `put` | `(path, entity?) → ()` | Entity present: store and bind. Entity absent/null: remove binding. |
 
 These are defined in ENTITY-CORE-PROTOCOL.md §6.3 as system tree handler operations. Both accept an optional `tree_id` parameter — without it, they target the default tree; with it, they target the specified non-default tree.
+
+> **`get` does NOT require a `resource`, and the two empties are not the same empty `[MUST]`.** ENTITY-CORE-PROTOCOL.md §3.3 delegates *which* operations require one to each operation's own specification, and this table is `get`'s: an **empty** path is a specified input and its answer is the root listing. But a **genuinely absent** `resource` and a `resource` that is **present with an empty effective list** (§5.2 — the caller named a target and excluded it) are different requests, and only the first asks for a listing. The second **MUST** be refused **`400 path_required`**; serving it the root listing answers a request for one excluded path with a listing of the tree. `put` requires a resource and answers `path_required` for both.
+>
+> **`get` is a BROAD-RESULT operation and §2.2a declares the whole set `[MUST]` (v4.11).** ENTITY-CORE-PROTOCOL.md §3.3 requires each resource-optional operation to state whether its absent case is a **broad result** (refuse the self-excluded case) or an **optional filter** (answer it empty). **This extension's eight operations are declared in §2.2a** — the field is not inferable from a handler's source, and three independent implementations inferred three different answers from this paragraph alone.
+
+### 2.2a Resource requirement, per operation (normative, v4.11)
+
+ENTITY-CORE-PROTOCOL.md §3.3 delegates *which* operations require a `resource` to each operation's own specification, and — since 0.8.2.25 — requires every resource-**optional** operation to declare which of two shapes it has. **This table is that declaration for all eight operations. It is normative, and it is the field an implementation cannot derive from its own source.**
+
+| Operation | `resource` | Absent-case answer | `targets:[P] exclude:[P]` |
+|---|---|---|---|
+| `get` (§2.2) | optional | **BROAD** — the root listing | **400 `path_required`** |
+| `snapshot` (§3.2) | optional | **BROAD** — prefix `""`, the **whole tree** | **400 `path_required`** |
+| `extract` (§6) | optional | **BROAD** — an envelope of **every bound entity** under the prefix | **400 `path_required`** |
+| `put` (§2.2) | **required** | — | 400 `path_required` (both empties, §3.3 unchanged) |
+| `diff` (§4.2) | required | — | 400 `path_required` (both empties) |
+| `merge` (§5.2) | required | — | 400 `path_required` (both empties) |
+| `create` | required | — | 400 `path_required` (both empties) |
+| `destroy` | required | — | 400 `path_required` (both empties) |
+
+**The three BROAD rows are ordered by blast radius and `extract` is the widest** — it returns the entities themselves, where `get` returns a listing of paths and `snapshot` returns a root hash. A self-excluded `extract` served its absent case hands the caller every entity in the tree in response to a request naming one path the caller then excluded.
+
+⚠ **`snapshot` is the row §8.4 exempts from the path-level check**, on the argument that a view-tree snapshot captures only what the handler is authorized to see. **That exemption's premise is falsified by a request the caller writes itself** if the self-excluded case is served as absent: the diff-against-empty then carries the excluded key and its content hash. The exemption is unchanged and remains correct; it is not a licence to skip this row.
+
+⛔ **A guard keyed on *"this handler reads `resource`"* does not reach this set.** `snapshot`, `diff`, `merge`, `create` and `destroy` take their path from `params`, so a handler can ignore the field entirely and still owe the refusal — and a handler that reads it may still **fall back** to a `params` path when the effective set is empty, which is the same defect with an extra step. Guard at the handler's **entry**, ahead of the operation dispatch, so an operation added later inherits it.
+
+⚠ **And the refusal is only reachable if the dispatch boundary preserved the discriminator** — ENTITY-CORE-PROTOCOL.md §3.3's non-lossy-projection rule. An implementation that narrows `resource.targets` to the effective set before the handler runs has already turned `targets:[P] exclude:[P]` into the absent case, and **every row in this table becomes dead code behind a green unit test**. Only a drive across a socket distinguishes the two.
 
 Everything this extension provides is composition of these primitives.
 
@@ -313,6 +334,8 @@ system/tree/snapshot-request := {
 ```
 
 **Returns:** `system/tree/snapshot`
+
+> **`snapshot` is resource-OPTIONAL and BROAD-RESULT `[MUST]` (v4.11; §2.2a).** Its absent-case prefix is `""` — **the whole tree** — so a `resource` that is **present** with an empty effective list (`targets:[P] exclude:[P]`, ENTITY-CORE-PROTOCOL.md §5.2) **MUST** be refused **`400 path_required`** and **MUST NOT** fall back to the absent case or to a `params`-supplied prefix. An empty prefix is a valid *absent-case* input and is not a valid answer to a self-excluded request. **This is the widest form of the rule after `extract`**, and §8.4's view-tree exemption does not reach it (§2.2a).
 
 ### 3.3 Algorithm
 
@@ -1209,6 +1232,10 @@ When `paths` is provided, only those relative paths are included in the snapshot
 
 **Returns:** `system/envelope`
 
+> ⭐ **`extract` is resource-OPTIONAL and BROAD-RESULT, and it is the WIDEST instance of the rule `[MUST]` (v4.11; §2.2a).** A `resource` that is **present** with an empty effective list (`targets:[P] exclude:[P]`, ENTITY-CORE-PROTOCOL.md §5.2) **MUST** be refused **`400 path_required`**. It **MUST NOT** fall back to the absent case, and — the arm that actually bites — **MUST NOT fall back to the `params`-supplied `prefix`**, whose default is `""`: an empty prefix is a *valid* input in its own right, so a fallback silently succeeds and validates.
+>
+> **Where `get` leaks a listing of paths and `snapshot` leaks a root hash, `extract` returns the entities themselves** — every bound entity under the prefix, bundled, in response to a request naming one path the caller then excluded. The `paths` filter above does not save it: `paths` is an *intersection* applied after the prefix is chosen, and a caller who supplies no `paths` gets the whole closure.
+
 ### 6.2 Algorithm
 
 ```
@@ -1471,6 +1498,8 @@ All bulk operations (§3-§6) work on view trees unchanged:
 
 A snapshot of a view tree captures exactly what the handler is authorized to see. A merge into a view tree enforces write scope per-path (each path checked against `put` grants; atomic failure on denial). No changes to the operation definitions — the view tree's filtering is the only difference.
 
+> ⚠ **This exemption is about the caller's AUTHORIZATION, never about which request was made `[MUST]` (v4.11).** `snapshot`'s premise here — *it captures only what the handler may see, so a path-level check adds nothing* — holds for a genuinely absent `resource` and is false for a **self-excluded** one, because the caller wrote the exclusion themselves and the view filter knows nothing about it. §2.2a's refusal is therefore **not** covered by this row and MUST be applied before it: a self-excluded `snapshot` served as absent puts the excluded key and its content hash into a diff-against-empty, using the exemption as the carrier. **Two different questions — *may this caller see it* and *did this caller ask for it* — and only the first is authorization.**
+
 ### 8.5 Scope Compilation
 
 At dispatch time, the system compiles the effective scope for the two tree operations:
@@ -1548,6 +1577,8 @@ check_scope(canonical_path, operation, grant_entries, local_peer_id):
 `get` covers both entity reads and listings; `put` covers both writes and removals. Pattern matching uses ENTITY-CORE-PROTOCOL.md §5.4 rules. All paths and patterns are canonicalized (§5.4) before matching. Compilation happens once per request dispatch. The compiled scope is a fast check (prefix matching) on every tree operation.
 
 When `max_scope` is absent, the dual-check reduces to the single request capability check — no overhead for handlers without max_scope.
+
+> **This reduction is scoped to `max_scope`, and it does NOT reduce `ENTITY-CORE-PROTOCOL.md` §6.8 row 1 `[MUST]`.** That row's ceiling is **the executing handler's own grant**, which is mandatory at every dispatch (§6.8's dispatch-time grant validation: a missing or invalid grant is `permission_denied`, and the dispatcher MUST NOT fall back to the caller's capability). `max_scope` is the optional **view-tree** field; the handler grant is not optional, so the intersection §6.8 requires on a path serving a caller's request is always owed. A view tree is one mechanism for enforcing that intersection structurally — it is not the condition under which the intersection applies.
 
 Handler filtering in `compile_grant_entries` ensures that only grants relevant to the tree handler (matching the `handlers` field) contribute to the compiled scope. Grants for other handlers are skipped.
 
@@ -1797,3 +1828,17 @@ This provides root identity (snapshot hash changes if any binding changes) plus 
 **Prior versions (v3.x) used a path-keyed compressed trie** where prefix queries DID navigate the trie. That structure produced O(N) per-Put encoding cost in wide-flat workloads (the cliff Stage 7 fixed) and structurally privileged path locality at the cost of depth-with-path-segment-count. The v4.0 fork trades path-locality for bounded-fanout / bounded-depth / canonicalization-under-history-reorder. See `proposals/implemented/PROPOSAL-TREE-NODE-SHAPE-BOUNDED-FANOUT.md` §3 (why IPLD HashMap, not JMT or other alternatives) + §3.7 (math contract — what's preserved, lost, recoverable) for the full rationale.
 
 The location index remains a flat path → hash map. The trie is a content-addressed projection — built when snapshots are needed (or maintained incrementally per §3.4), stored in the content store, used for diff/merge/transfer. Both structures co-exist; each has a clear role.
+
+---
+
+## Document History
+
+**v4.9:** §6.1/§6.2 — **the disposition of a malformed `extract.paths[]` entry**, which was undefined and had two defensible readings. A malformed entry is now **`400 invalid_path` for the whole request**; a well-formed entry that binds nothing is **silently omitted**, unchanged. The two were collapsible precisely because both are safe — and a caller who gets seven results for ten paths cannot tell which case it hit. Ruled as a MUST because the readings are cross-peer observable. §6.2 validates every entry **before reading any**, and Appendix A gains the row. ⚠ Independently of this, the store boundary stays **total** per `ENTITY-CORE-PROTOCOL` §5.4 (0.8.2.21): `paths[]` reaches a path boundary through `params`, a channel no resource-target pre-validator sees, and a boundary that asserts there is a remote denial of service.
+
+**v4.8:** §8.7 — the sentence no longer restates a `system/*` prefix rule at all. `ENTITY-CORE-PROTOCOL` 0.8.2.13 **withdrew** the reservation; install authorization at any path is the capability check on the install path. The least-privilege point this paragraph exists to make — the prefix is organizational and confers no tree privilege — is unchanged and is now stated without leaning on a rule that no longer exists. *(v4.7 restated the same rule at a narrower scope and is superseded; both it and the scope it described lasted one day.)*
+
+**v4.6:** §3.8 — the walk contract, new. *The absence of a node is never an answer*: a declared node that does not resolve is `incomplete_walk` (502, terminal, carrying the cut point) and never a shorter result, children are derived structurally rather than by byte-scan, and a partial walk is opt-in and never presented as complete. §4.3's collectors gain the branch they never had and thread the declaring node's hash. §6.2 **deletes** the "unfiltered subtree nodes MAY be omitted" sentence — v3.x path-navigation residue that contradicted the rebuild directly above it — and states the property that is true: an extract is complete against its own root, filtered or not, because publishing a subset is **re-rooting, not filtering**. Six vectors, and the control case is required so that a walk which always fails cannot score green.
+
+**v4.5:** Appendix A's `put` rows get the predicate they were missing. *"Does not decode"* is now stated — the submitted value is admitted as a `core/entity` (all three fields required) **before** its hash is compared, so a submission that is both malformed and mis-hashed is the structural row; the `unsupported_content_hash_format` arm is restated from `ENTITY-CORE-PROTOCOL` §4.7 row 5 because `put` is one of its ingest surfaces; and **`set` is dropped from the rows** — `ENTITY-CORE-PROTOCOL` §6.3 and §2.2 below both define exactly two index operations, and `set` was never one of them.
+
+**v4.4:** Appendix A gains the `put` / `set` rows. The two core data operations the protocol runs on had no error-code row in the only table their extension has: a non-decoding entity is `400 invalid_request` (§3.3's generic case), a content-hash mismatch is `400 hash_mismatch` (`EXTENSION-CONTENT` §923's code for the same failure), and the CAS race that shares that token is tabulated beside it at 409 so the two are not collapsed.

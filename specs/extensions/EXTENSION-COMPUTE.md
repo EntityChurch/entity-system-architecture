@@ -1,65 +1,7 @@
 # Compute Extension — Normative Specification
 
 **Version**: 3.32
-**v3.31 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
 **Status**: Active
-**v3.29 — the builtin override prohibition stands on its own** (§4, override prohibition). The rule previously described itself as *"a subset of"* the core `system/*` reservation and told implementers that enforcing that reservation needed *"no separate compute-specific guard."* **That reservation has been withdrawn from the core protocol entirely** (`ENTITY-CORE-PROTOCOL` 0.8.2.13), so the subset claim named a rule that no longer exists — and before the withdrawal it was already false in the direction that opens a hole. The prohibition now states its own basis: it binds every installation path because it is a **cross-peer determinism requirement**, not a namespace policy. Two peers disagreeing about what `"add"` means is an interop failure, which is why this is a MUST while local install policy is not. *(v3.28 stated the same conclusion by reference to the core rule's scope and is superseded.)*
-**v3.27 — the contained set is a RULE, not a count; and eval limits are not ordinary errors**
-(§3.5, §2.3, §7.1): v3.26 pinned the contained set as *"exactly three positions."* That enumeration was
-taken over the four v3.25 primitives; `map`, `filter` and `fold` predate that table and also place
-closure results into outputs. **It is five.** The count is replaced by the rule that generates it —
-a position is **contained** when the primitive places the value without reading it, **consumed** when
-it reads it to decide control flow, ordering, membership or a write location — so a new primitive adds
-a row by applying the rule rather than amending a number. Two consequences are pinned with it: a
-`compute/error` behaves **identically however it was produced**, minted or value-form (a restatement of
-§2.4, not a new rule); and the three **evaluation-limit** codes are separated on whether their counter
-survives an element — `depth_exceeded` **contains** (restored on unwind, §5.1), `budget_exhausted` and
-`cascade_limit` **short-circuit** everywhere (cumulative and chain-wide respectively; containing either
-reports a value for an evaluation that was aborted, at a split point no rule pins). `concat-args`
-carries **one hash of an expression**, uniform with every sibling collection argument. And §7.1's
-dependency walk is corrected to reach references inside containers, which its own conservative-collection
-rule already required and its pseudocode did not do.
-**v3.26 — a CONTAINED `compute/error` has a boundary form** (§2.3, §3.5): v3.25's data positions made
-v3.23 ruling B's premise false — *"an error is never placed into the data"* was true until `assoc`'s
-`value`, `concat`'s elements and `group-by`'s `members` existed. Ruling B is **scoped, not reversed**:
-it is a consumption-site invariant, and in those three positions the error materializes **code-only,
-by bare `system/hash`**. Code-only is load-bearing — a contained `message` would fork the containing
-array's bytes across two conformant peers. Everywhere else §7.2's short-circuit is unchanged.
-**v3.25 — the v3.24 primitives' four corners close** (§3.5, §9.1): the first implementation of v3.24
-found three corners that determine boundary bytes, and a fourth surfaced while ruling them. `group-by`
-returns **`system/compute/group{key, members}`** — the key is in the result, restored from the shape the
-design record ruled and the v3.24 fold narrowed away. `assoc`'s out-of-range index is
-**`index_out_of_range`**, correcting a v3.24 clause that contradicted §2.2's cross-impl ruling that an
-out-of-domain magnitude is not a type error. `range`'s negative or oversized `n` is the new
-**`count_out_of_range`**, following `cast_out_of_range`'s precedent rather than overloading either
-neighbour. Error-as-value flow-through needed no new rule — §7.2's consumed-operand `[MUST]` already
-decides all seven positions, and §3.5 now cites it instead of leaving it to be re-derived.
-**v3.23 — `is_error` is defined, and it is kind-based** (§4.1): the predicate the evaluator branches on
-39 times was used throughout and defined nowhere, so a `compute/error` reaching a `compute/construct`
-field embedded in one implementation, propagated in a second, and embedded-without-materializing in a
-third. `compute/error` is removed from §4.1's construct materialization set and from §2.3 N1's
-placement list — an error materializes where it is written (§7.2 `result_path`, SA-9 `store`), never
-where it is consumed. Worked example added at the short-circuit `[MUST]`.
-
-**v3.22 (2026-07-23) — §11 Alternate-Engine Admission** (AE-1 boundary-equivalence + AE-2–AE-6): folded from
-`PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` on its only gate being met — the first green **inproc** alternate-engine
-admission run (**Axis-1**, Go, `entity-core-go` report `2026-07-23-ae5-axis1-inproc-admission-GREEN`: 330/330
-byte-identical alternate==reference, 0 fallbacks, `engine-role==alternate` enforced). The reference interpreter
-(§4) remains the conformance floor; an alternate engine is a per-impl opt-in.
-**v3.21 (2026-07-23) — validated by the compute corpus three-way LOCK (330/330 byte-identical across Go/Rust/Python,
-oracle-pinned `seed 20260716 / SplitMix64 / corpus-SHA d0fdd757`)** *(that pin is **historical**: it records what v3.21
-was blessed against and **does not describe the corpus today** — the set has since grown past 330 and re-frozen under a
-new SHA, and the outcome cross-bless at the current SHA is owed. A conformance claim cites the MANIFEST beside the
-bytes, never this line.)* **:** `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`
-(implemented — §4.2, Q2; all three impls charge `evaluate()` steps only, `worked/budget/exhausted-deterministic`
-agrees). Also validated three-way by the same lock: F-1 (Rust cast-to-uint materialization, §2.2 rule 11), F-2
-(§9.1 out-of-range index), F-3 (Python tier-1 `included`). Ruled in `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`.
-**Pending (provisional — folded in §2.4 but NOT yet corpus-gated cross-impl):**
-`PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM` (§2.4 — materialized `compute/error` is `code`-only, Q1) —
-validated intra-Go (Axis-1 == Stage-1, code-only). **Cross-impl gate:** Python (+Rust) materialize `compute/error`
-code-only per this §2.4, and a corpus vector that materializes an error *into a construct/tree* runs three-way.
-(This §2.4 is the canonical home for `compute/error`. `ENTITY-CORE-MACHINE-SPEC.md`, which carried a derived
-condensed restatement, is **retired** and is not a citable source.)
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
 
 **The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
@@ -2844,3 +2786,72 @@ answers `index_out_of_range`); the corpus surfaced the drift and the fix closed 
 alternate engine admitted against the spec-arbitrated boundary — the admission procedure is proven; a second,
 independent alternate engine is what would upgrade the evidence to independent convergence. See the compute
 conformance ledger for the residual coverage items.)*
+
+---
+
+## Document History
+
+**v3.31 — the subject is the EFFECTIVE resource set.** Every operation here resolved its target by indexing `ctx.resource.targets[0]`, while `ENTITY-CORE-PROTOCOL` §5.2's dispatch-level authorizer skips every target covered by the caller's **own** `exclude`. Two layers deriving different sets from one field, with the caller choosing the difference: name a path, exclude the same path, clear the resource check vacuously, and be acted upon. Operations now resolve through **`effective_targets(ctx.resource, ctx.local_peer_id)`** (`ENTITY-CORE-PROTOCOL` §5.2, `0.8.2.20`) and act on `effective[0]`; arity answers on the effective list per §3.3's 400 row, and a single pattern target where a concrete path is required answers `400 malformed_resource`. **The arity check alone does not close it** — `targets:[P,Q] exclude:[P]` with `Q` in-grant has effective size one, so the count passes while `targets[0]` is still `P`. The selection carries the authority.
+
+**v3.29 — the builtin override prohibition stands on its own** (§4, override prohibition). The rule previously described itself as *"a subset of"* the core `system/*` reservation and told implementers that enforcing that reservation needed *"no separate compute-specific guard."* **That reservation has been withdrawn from the core protocol entirely** (`ENTITY-CORE-PROTOCOL` 0.8.2.13), so the subset claim named a rule that no longer exists — and before the withdrawal it was already false in the direction that opens a hole. The prohibition now states its own basis: it binds every installation path because it is a **cross-peer determinism requirement**, not a namespace policy. Two peers disagreeing about what `"add"` means is an interop failure, which is why this is a MUST while local install policy is not. *(v3.28 stated the same conclusion by reference to the core rule's scope and is superseded.)*
+
+**v3.27 — the contained set is a RULE, not a count; and eval limits are not ordinary errors**
+(§3.5, §2.3, §7.1): v3.26 pinned the contained set as *"exactly three positions."* That enumeration was
+taken over the four v3.25 primitives; `map`, `filter` and `fold` predate that table and also place
+closure results into outputs. **It is five.** The count is replaced by the rule that generates it —
+a position is **contained** when the primitive places the value without reading it, **consumed** when
+it reads it to decide control flow, ordering, membership or a write location — so a new primitive adds
+a row by applying the rule rather than amending a number. Two consequences are pinned with it: a
+`compute/error` behaves **identically however it was produced**, minted or value-form (a restatement of
+§2.4, not a new rule); and the three **evaluation-limit** codes are separated on whether their counter
+survives an element — `depth_exceeded` **contains** (restored on unwind, §5.1), `budget_exhausted` and
+`cascade_limit` **short-circuit** everywhere (cumulative and chain-wide respectively; containing either
+reports a value for an evaluation that was aborted, at a split point no rule pins). `concat-args`
+carries **one hash of an expression**, uniform with every sibling collection argument. And §7.1's
+dependency walk is corrected to reach references inside containers, which its own conservative-collection
+rule already required and its pseudocode did not do.
+
+**v3.26 — a CONTAINED `compute/error` has a boundary form** (§2.3, §3.5): v3.25's data positions made
+v3.23 ruling B's premise false — *"an error is never placed into the data"* was true until `assoc`'s
+`value`, `concat`'s elements and `group-by`'s `members` existed. Ruling B is **scoped, not reversed**:
+it is a consumption-site invariant, and in those three positions the error materializes **code-only,
+by bare `system/hash`**. Code-only is load-bearing — a contained `message` would fork the containing
+array's bytes across two conformant peers. Everywhere else §7.2's short-circuit is unchanged.
+
+**v3.25 — the v3.24 primitives' four corners close** (§3.5, §9.1): the first implementation of v3.24
+found three corners that determine boundary bytes, and a fourth surfaced while ruling them. `group-by`
+returns **`system/compute/group{key, members}`** — the key is in the result, restored from the shape the
+design record ruled and the v3.24 fold narrowed away. `assoc`'s out-of-range index is
+**`index_out_of_range`**, correcting a v3.24 clause that contradicted §2.2's cross-impl ruling that an
+out-of-domain magnitude is not a type error. `range`'s negative or oversized `n` is the new
+**`count_out_of_range`**, following `cast_out_of_range`'s precedent rather than overloading either
+neighbour. Error-as-value flow-through needed no new rule — §7.2's consumed-operand `[MUST]` already
+decides all seven positions, and §3.5 now cites it instead of leaving it to be re-derived.
+
+**v3.23 — `is_error` is defined, and it is kind-based** (§4.1): the predicate the evaluator branches on
+39 times was used throughout and defined nowhere, so a `compute/error` reaching a `compute/construct`
+field embedded in one implementation, propagated in a second, and embedded-without-materializing in a
+third. `compute/error` is removed from §4.1's construct materialization set and from §2.3 N1's
+placement list — an error materializes where it is written (§7.2 `result_path`, SA-9 `store`), never
+where it is consumed. Worked example added at the short-circuit `[MUST]`.
+
+**v3.22 (2026-07-23) — §11 Alternate-Engine Admission** (AE-1 boundary-equivalence + AE-2–AE-6): folded from
+`PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION` on its only gate being met — the first green **inproc** alternate-engine
+admission run (**Axis-1**, Go, `entity-core-go` report `2026-07-23-ae5-axis1-inproc-admission-GREEN`: 330/330
+byte-identical alternate==reference, 0 fallbacks, `engine-role==alternate` enforced). The reference interpreter
+(§4) remains the conformance floor; an alternate engine is a per-impl opt-in.
+
+**v3.21 (2026-07-23) — validated by the compute corpus three-way LOCK (330/330 byte-identical across Go/Rust/Python,
+oracle-pinned `seed 20260716 / SplitMix64 / corpus-SHA d0fdd757`)** *(that pin is **historical**: it records what v3.21
+was blessed against and **does not describe the corpus today** — the set has since grown past 330 and re-frozen under a
+new SHA, and the outcome cross-bless at the current SHA is owed. A conformance claim cites the MANIFEST beside the
+bytes, never this line.)* **:** `PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM`
+(implemented — §4.2, Q2; all three impls charge `evaluate()` steps only, `worked/budget/exhausted-deterministic`
+agrees). Also validated three-way by the same lock: F-1 (Rust cast-to-uint materialization, §2.2 rule 11), F-2
+(§9.1 out-of-range index), F-3 (Python tier-1 `included`). Ruled in `ARCH-RESPONSE-COMPUTE-CORPUS-FIRST-RUN`.
+**Pending (provisional — folded in §2.4 but NOT yet corpus-gated cross-impl):**
+`PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM` (§2.4 — materialized `compute/error` is `code`-only, Q1) —
+validated intra-Go (Axis-1 == Stage-1, code-only). **Cross-impl gate:** Python (+Rust) materialize `compute/error`
+code-only per this §2.4, and a corpus vector that materializes an error *into a construct/tree* runs three-way.
+(This §2.4 is the canonical home for `compute/error`. `ENTITY-CORE-MACHINE-SPEC.md`, which carried a derived
+condensed restatement, is **retired** and is not a citable source.)

@@ -4,12 +4,6 @@
 **Status**: DRAFT — the closure chapter and the growth rule. The subject, source, witness, position,
 intent and authority layers are specified but not yet folded; they arrive in later revisions of this
 document.
-**v0.2:** adds **§2.5, the growth rule** — a republication format whose membership grows with
-participation carries its members as a bounded head plus key-addressed pages, never as one unbounded
-collection. Promoted here for the same reason §2.3's four rules were: the cost is the **reader's** and
-is invisible from the format that causes it, so a convention inherits closure without inheriting what
-makes a closed object still readable when it is large. The corpus had stated the rule twice, in two
-application conventions neither citing the other, and a third convention made the mistake anyway.
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.20+) §1.2, §1.4, §3.5 · EXTENSION-TREE.md (v4.8+) §1, §3.3a ·
 EXTENSION-SIGNALING.md (signature binding at the invariant pointer) · APP-CONVENTION-FEED.md (v0.2+) §1.1, §6
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -286,3 +280,14 @@ normative entry point. **None of them is in this document yet**, and a reader sh
 their absence that they are unspecified. This revision folds the closure chapter only, because it is
 the precondition every other layer rests on and the one an implementation needs before it republishes
 anything.
+
+---
+
+## Document History
+
+**v0.2:** adds **§2.5, the growth rule** — a republication format whose membership grows with
+participation carries its members as a bounded head plus key-addressed pages, never as one unbounded
+collection. Promoted here for the same reason §2.3's four rules were: the cost is the **reader's** and
+is invisible from the format that causes it, so a convention inherits closure without inheriting what
+makes a closed object still readable when it is large. The corpus had stated the rule twice, in two
+application conventions neither citing the other, and a third convention made the mistake anyway.

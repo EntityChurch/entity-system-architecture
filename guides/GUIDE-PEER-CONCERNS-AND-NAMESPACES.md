@@ -181,8 +181,21 @@ Each extension's own spec is the authority for the namespace it owns and the lay
 | `host/` | Machine resources. Filesystem, processes, network, hardware. | Peers exposing the local machine (device archetype). |
 | `app/{app-id}/` | Per-application state. Workspace, settings. | Peers running applications. Scoped by app ID so multiple apps can coexist. |
 | `local/` | Device-local data and handlers. Used by handlers like `local/files`, with associated config at `system/config/local-files/...` (or similar per the handler's convention). | Device-local extensions. |
-| `bridge/` | External system connections. Git, HTTP, etc. | Peers with external integrations. |
+| `bridge/` | External system connections *reached across a boundary* — version control, mail, a package store, a third-party web origin. **Reserved; no occupants yet.** | Peers with external integrations. |
 | `storage/{identity}/` | Identity-scoped persistent data on a shared peer. | Peers providing multi-user storage (device archetype). |
+
+#### 4.1a `host/` versus `local/` versus `bridge/` — what the split means
+
+**Three of the prefixes above reserve space for the world outside the protocol, and the line between them is *what we are standing on* versus *what we are reaching out to*.** It was arrived at by practice before it was written down, and it is worth stating because it is not obvious from the names:
+
+- **A filesystem or process bridge is assumed present.** The system runs **on** it. It is substrate as well as adapter, not an optional integration a deployment may or may not have. That is what `host/` and `local/` are for.
+- **A version-control, package-store or mail bridge is an optional integration reached across a boundary.** That is `bridge/`.
+
+⚠ **Three caveats, because this area is less settled than the table implies.**
+
+1. **`host/` currently has no occupants and `local/` holds the filesystem** — the one case `host/` names explicitly. **A reserved prefix lost its declared subject to a neighbour**, because reserving a prefix and specifying one are different acts and only the second leaves a document. Treat `local/files` as the shipped fact and the two prefixes as unreconciled.
+2. **A name that asserts *locality* is falsified by a network-mounted filesystem**, which is reached through the same interface and is not local. A prefix naming *whose machine* survives that case; one naming *how near the bytes are* does not. The reconciliation is expected to be **additive** — a new namespace alongside the old — rather than a rename.
+3. **`bridge/` is reserved and empty while the corpus's forward references to bridges spell `system/bridge/...` and `app/bridge/...`.** See `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md` §6.1 — **the first bridge specification authored decides this, and no precedent here is binding on it.**
 
 ### 4.2 Content Domains
 

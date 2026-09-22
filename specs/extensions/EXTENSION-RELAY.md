@@ -1,7 +1,6 @@
 # EXTENSION-RELAY
 
 **Version**: 1.5
-**v1.5:** §11.1a — the Mode A deferral's stated blocker is withdrawn. Cross-peer subscription is specified and cross-impl verified (`EXTENSION-SUBSCRIPTION` §§1, 2.2, 5, 6, 8); what remains deferred is Mode A's own normative text.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; a relay peer is just a peer running `system/relay`, and the origin's capability chain passes through unchanged (§1).
 **Related**: EXTENSION-ROUTE.md (consulted for a next hop only when a `forward-request` carries no source route — one of three sources, §3.1.1); EXTENSION-INBOX.md, EXTENSION-CONTINUATION.md, EXTENSION-NETWORK.md, EXTENSION-REGISTRY.md, EXTENSION-DISCOVERY.md (composition surfaces named in §1); EXTENSION-ENCRYPTION.md (peer-mode payloads carried opaquely)
@@ -738,3 +737,9 @@ Circuit relay for NAT traversal is structurally distinct (bidirectional virtual 
 - `EXTENSION-INBOX.md` (v5.9), `EXTENSION-CONTINUATION.md` (v1.20), `EXTENSION-NETWORK.md` (Amdt 10), `EXTENSION-REGISTRY.md` (v1.0), `EXTENSION-DISCOVERY.md` (v1.0), `EXTENSION-ROUTE.md` (v1, routing plane) — composition surfaces.
 - `proposals/implemented/PROPOSAL-RELAY-SOURCE-ROUTED-MULTIHOP-AND-ROUTING-BOUNDARY.md` — v1.1 source-route fold; `explorations/EXPLORATION-INFORMATION-TRAVEL-RELAY-ROUTING-GOSSIP.md` — the relay/routing/gossip taxonomy that grounds the boundary.
 - `proposals/PROPOSAL-EXTENSION-STORAGE-SUBSTITUTE-HTTP.md`, `proposals/PROPOSAL-EXTENSION-BRIDGE-HTTP.md`, `docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md`, `proposals/PROPOSAL-STATIC-PEER-HOSTING-UMBRELLA.md` — in-flight dependencies.
+
+---
+
+## Document History
+
+**v1.5:** §11.1a — the Mode A deferral's stated blocker is withdrawn. Cross-peer subscription is specified and cross-impl verified (`EXTENSION-SUBSCRIPTION` §§1, 2.2, 5, 6, 8); what remains deferred is Mode A's own normative text.

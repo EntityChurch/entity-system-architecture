@@ -2,8 +2,6 @@
 
 **Version**: 1.10
 **Status**: Active
-**v1.10:** §2.2 gains `pattern_exclude` with a stated evaluation order, and §6.3's worked configuration uses it. A `pattern: "*"` config recorded the peer's own protocol bookkeeping — signature bindings, grant storage, peer status — as ordinary transitions, one or more per served request, permanently. A wildcard is a statement about scope, not consent to audit the machinery; naming such a path explicitly is how you ask for it. The exclusion list in §6.3 is an example for the recommended path convention and deliberately not a normative set. Also: the §2.2 specificity paragraph's peer-wildcard example is corrected to `/*/project/*`, the spelling v1.8 ruled.
-**v1.9:** §9.1 is the worked reference for `SPECIFICATION-FORMAT` §8.5a — fifteen requirements, each with a stable `HIST-R<n>` id, a per-row `Level` and the section that owns it. Two rows changed meaning and are called out under the table: `HIST-R7` now states §3.3's retention floor rather than the "pruning" the v1.8 chain ruling removed, and `HIST-R8` is restated as the `MUST NOT` it always was.
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.19+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
@@ -969,3 +967,11 @@ back to the 404 default and lose the distinction the security model depends on.
 **The token is the `code`, never a label in the `message`.** `message` is optional and
 human-readable (`ENTITY-CORE-PROTOCOL` §3.3); a discriminator a caller must branch on cannot
 live there, because a conformant peer may omit the field entirely.
+
+---
+
+## Document History
+
+**v1.10:** §2.2 gains `pattern_exclude` with a stated evaluation order, and §6.3's worked configuration uses it. A `pattern: "*"` config recorded the peer's own protocol bookkeeping — signature bindings, grant storage, peer status — as ordinary transitions, one or more per served request, permanently. A wildcard is a statement about scope, not consent to audit the machinery; naming such a path explicitly is how you ask for it. The exclusion list in §6.3 is an example for the recommended path convention and deliberately not a normative set. Also: the §2.2 specificity paragraph's peer-wildcard example is corrected to `/*/project/*`, the spelling v1.8 ruled.
+
+**v1.9:** §9.1 is the worked reference for `SPECIFICATION-FORMAT` §8.5a — fifteen requirements, each with a stable `HIST-R<n>` id, a per-row `Level` and the section that owns it. Two rows changed meaning and are called out under the table: `HIST-R7` now states §3.3's retention floor rather than the "pruning" the v1.8 chain ruling removed, and `HIST-R8` is restated as the `MUST NOT` it always was.

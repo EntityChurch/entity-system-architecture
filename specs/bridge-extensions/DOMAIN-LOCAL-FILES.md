@@ -1,14 +1,20 @@
 # Local Files Domain — Normative Specification
 
 **Version**: 1.5
-**v1.5:** **§4.0 Resource resolution**, binding every operation in §4. The four operation blocks read `ctx.resource.targets[0]` with no guard of any kind — no arity check, no pattern check, no selection rule — which is the sharpest instance in the corpus of a composition where a caller names a target, excludes the same target, clears dispatch-level authorization vacuously and is acted upon anyway. Every operation now resolves through `effective_targets` (`ENTITY-CORE-PROTOCOL.md` §5.2) and answers arity per §3.3's 400 row.
-**v1.4:** **Appendix A — the handler's error-code table**, which this domain never had, so every code it emits was undefined by construction of the corpus (`ENTITY-CORE-PROTOCOL` §3.3 admits a specific code only where a spec code set defines one). Two defects the census surfaced and the table closes: §3.2's presence rule carried its discriminator as a **label in the `message`** while the `code` stayed `invalid_params` — a caller cannot branch on an optional human-readable field, so it now emits **`ambiguous_input` / `missing_input`**, `EXTENSION-CONTENT` Appendix A's codes for the same condition; and the root-mapping 404 was spelled **two ways in one document** (`no_root_mapping` ×4, `root_mapping_not_found` ×1), now converged on the `{noun}_not_found` form the rest of the corpus uses.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.51+), EXTENSION-CONTENT.md (v3.5+), EXTENSION-TREE.md (v3.1+), EXTENSION-SUBSCRIPTION.md (v3.4+)
 **Optional**: EXTENSION-REVISION.md (v2.0+) — versioning and cross-peer sync
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
 ---
+
+> **Placement.** This is a **bridge extension**: it reaches out of the entity system onto a foreign
+> technology — here, a host filesystem — rather than extending the system itself. The family's
+> cross-cutting discipline is `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md`, and this specification is the
+> prior art most of that discipline was derived from. **Its file name and its `local/` namespace
+> predate the family and are retained deliberately**; the family's naming for new members is
+> `EXTENSION-BRIDGE-<TECHNOLOGY>`, and a successor for the general filesystem case is additive rather
+> than a rename — see that guide's §6.
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/tree` means `/{local_peer_id}/system/tree`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.
 
@@ -1101,3 +1107,11 @@ house form for a 404 everywhere else it appears (`handler_not_found` §3.3, `tre
 `EXTENSION-CONTENT` Appendix A). **New 404 codes in any extension follow it** — the point is that the
 name is derived from a stated rule rather than chosen per site, so the next one does not need a
 ruling.
+
+---
+
+## Document History
+
+**v1.5:** **§4.0 Resource resolution**, binding every operation in §4. The four operation blocks read `ctx.resource.targets[0]` with no guard of any kind — no arity check, no pattern check, no selection rule — which is the sharpest instance in the corpus of a composition where a caller names a target, excludes the same target, clears dispatch-level authorization vacuously and is acted upon anyway. Every operation now resolves through `effective_targets` (`ENTITY-CORE-PROTOCOL.md` §5.2) and answers arity per §3.3's 400 row.
+
+**v1.4:** **Appendix A — the handler's error-code table**, which this domain never had, so every code it emits was undefined by construction of the corpus (`ENTITY-CORE-PROTOCOL` §3.3 admits a specific code only where a spec code set defines one). Two defects the census surfaced and the table closes: §3.2's presence rule carried its discriminator as a **label in the `message`** while the `code` stayed `invalid_params` — a caller cannot branch on an optional human-readable field, so it now emits **`ambiguous_input` / `missing_input`**, `EXTENSION-CONTENT` Appendix A's codes for the same condition; and the root-mapping 404 was spelled **two ways in one document** (`no_root_mapping` ×4, `root_mapping_not_found` ×1), now converged on the `{noun}_not_found` form the rest of the corpus uses.

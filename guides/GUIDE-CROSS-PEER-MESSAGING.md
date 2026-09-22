@@ -147,7 +147,9 @@ until a mesh/DTN driver appears (RELAY §11.1a). Not a regression vs SMTP.
 **Bridging to the real world.** A `BRIDGE-SMTP` peer (bridge-family member, BRIDGE-HTTP
 shape) translates entity-messages ↔ real email: outbound via real DNS/MX, inbound
 wrapping received mail into a peer's INBOX. Interop is a peer-you-run, zero core change.
-See `proposals/PROPOSAL-EXTENSION-BRIDGE-SMTP.md`.
+It would land as `EXTENSION-BRIDGE-SMTP.md` **(planned — not yet authored)**; the discipline such a
+specification answers is `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md`, and note that mail is an
+ingress-and-egress bridge, so both direction modes are in scope from the start.
 
 ### 3A.1 Worked example — stranger sends to an offline named peer (the canonical SMTP flow)
 

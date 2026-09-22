@@ -2,13 +2,6 @@
 
 **Version**: 0.2.1
 **Status**: Draft
-
-**v0.2.1:** §2.5's *"no grant"* is disambiguated — it names the **audience model** (no member
-enumerated, no per-member token), never an instruction to leave the target unauthorized, which is the
-only reading under which `SHARE-9` can pass. Adds the reachability `[MUST]`, a `[SHOULD]` on how the
-authorizing entry is written, and **`SHARE-10`** for the request-path narrowing that authoring one can
-cause. Per the site-asset-child-arm-and-publication-grant proposal.
-**Domain:** `applications/` (third member).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §3.6 / §5.2 / §5.4 (grant structure, `check_permission`,
 pattern matching) · `EXTENSION-TREE.md` §3.3a (`published-root`) · `APP-CONVENTION-EMBED.md` §3
@@ -458,3 +451,14 @@ The cases this document names:
 **SHARE-4, SHARE-6 and SHARE-9 are the three that matter** — they are the assertions that fail loudly if an
 implementation adopts the intuitive-but-wrong reading. **`SHARE-10` is the one that fails QUIETLY**, which is
 why it is named separately: everything it guards keeps working from the publisher's side.
+
+---
+
+## Document History
+
+**v0.2.1:** §2.5's *"no grant"* is disambiguated — it names the **audience model** (no member
+enumerated, no per-member token), never an instruction to leave the target unauthorized, which is the
+only reading under which `SHARE-9` can pass. Adds the reachability `[MUST]`, a `[SHOULD]` on how the
+authorizing entry is written, and **`SHARE-10`** for the request-path narrowing that authoring one can
+cause. Per the site-asset-child-arm-and-publication-grant proposal.
+**Domain:** `applications/` (third member).

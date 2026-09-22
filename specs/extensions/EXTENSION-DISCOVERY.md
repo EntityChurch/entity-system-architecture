@@ -1,7 +1,6 @@
 # EXTENSION-DISCOVERY
 
 **Version**: 1.2
-**v1.2:** Appendix A — the discovery handler's defined error codes. `backend_error` (500) is the code §3.3 already required for a backend failure without naming one; `unknown_backend` (400) is tabulated from the §3.3 erratum.
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
 **Related**: EXTENSION-SIGNALING.md (the carrier the `rendezvous` backend rides, §5.5); EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
@@ -429,3 +428,9 @@ failure be distinguishable from *"no candidates this scan"* — a successful
 `ScanResult { candidates: [], truncated: false }`. Collapsing it to the §3.3 default would erase the
 distinction the rule exists to create. The condition is a **backend** fault, not a fault in the
 discovery handler, which is what makes it more specific than `internal_error`.
+
+---
+
+## Document History
+
+**v1.2:** Appendix A — the discovery handler's defined error codes. `backend_error` (500) is the code §3.3 already required for a backend failure without naming one; `unknown_backend` (400) is tabulated from the §3.3 erratum.

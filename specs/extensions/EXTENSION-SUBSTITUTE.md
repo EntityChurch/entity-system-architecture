@@ -2,13 +2,8 @@
 
 **Version**: 1.3
 **Status**: Active
-**v1.3 — `{hash}` in a content URL is the full wire hex, format byte included** (§7): this spec restated
-the `content_layout` URL construction without restating what `{hash}` is, so a reader working from here
-alone reached for the digest. `EXTENSION-NETWORK` §6.5.3.1 defines it and declares it universal; the
-shard slices are positions in that string, so `[0:2]` is the algorithm partition and a digest-only
-rendering silently breaks it. The source proposal's 64-character examples are superseded.
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-CONTENT.md (v3.6+) — this extension exists to be consulted on CONTENT's local-miss path and hooks it at §5; without CONTENT there is no miss to substitute for. (The dependency is one-directional: not installing this leaves CONTENT's 404 behavior unchanged, §1.)
-**Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); EXTENSION-BRIDGE-HTTP (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above)
+**Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); `EXTENSION-BRIDGE-HTTP.md` **(planned — not yet authored)** (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above); `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md` (what a bridge specification answers)
 **Tier:** Operational — Tier 1 (CDN release v1 critical path).
 
 **The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
@@ -64,7 +59,7 @@ kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
 > match. **That is what closes the arbitrary-caller-triggered outbound-fetch and forced-ingestion
 > hole**, and an installer that treats the cap as a boolean re-opens it.
 **Authors:** Architecture team.
-**Two-mechanism disambiguation (load-bearing, read first):** the HTTP convention here is **Mechanism A — HTTP-as-storage-transport**: an inline HTTP GET whose body bytes *are* entity-encoded content, verified by content hash, with the hash as the sole trust anchor. It is **NOT** `system/bridge/http:get` and does **NOT** use the `system/capability/bridge-http-fetch` cap — that is `EXTENSION-BRIDGE-HTTP` / **Mechanism B** (foreign content wrapped as `system/bridge/http/fetched`), a structurally distinct surface. See NETWORK §6.5.3/§6.5.5 and `GUIDE-EXTENSION-DEVELOPMENT.md §3.7`. (Earlier draft text in the source HTTP proposal conflated the two; that text is superseded by this spec.)
+**Two-mechanism disambiguation (load-bearing, read first):** the HTTP convention here is **Mechanism A — HTTP-as-storage-transport**: an inline HTTP GET whose body bytes *are* entity-encoded content, verified by content hash, with the hash as the sole trust anchor. It is **NOT** `system/bridge/http:get` and does **NOT** use the `system/capability/bridge-http-fetch` cap — that is `EXTENSION-BRIDGE-HTTP.md` **(planned — not yet authored)** / **Mechanism B** (foreign content wrapped as `system/bridge/http/fetched`), a structurally distinct surface. See NETWORK §6.5.3/§6.5.5 and `GUIDE-EXTENSION-DEVELOPMENT.md §3.7`. (Earlier draft text in the source HTTP proposal conflated the two; that text is superseded by this spec.)
 
 ---
 
@@ -463,3 +458,13 @@ Wildcard / bare-hash substitution; transitive substitute following; cross-peer c
 ---
 
 *Consolidated from the storage-substitute sources proposal (substrate) + the storage-substitute HTTP-convention proposal (HTTP convention, §7). Q2 (`content_url_prefix` required) + Q3 (`endpoint` opaque) pinned per the cohort release-green ambiguities ruling. Mechanism-A disambiguation applied per the corridor cross-chain synthesis (supersedes the source HTTP proposal's pre-disambiguation `bridge-http-fetch` references). Cross-impl ruling provenance: the storage-substitute cross-impl rulings, the named-capability-mapping ruling, and the cycle-closeout 0.3 ruling.*
+
+---
+
+## Document History
+
+**v1.3 — `{hash}` in a content URL is the full wire hex, format byte included** (§7): this spec restated
+the `content_layout` URL construction without restating what `{hash}` is, so a reader working from here
+alone reached for the digest. `EXTENSION-NETWORK` §6.5.3.1 defines it and declares it universal; the
+shard slices are positions in that string, so `[0:2]` is the algorithm partition and a digest-only
+rendering silently breaks it. The source proposal's 64-character examples are superseded.

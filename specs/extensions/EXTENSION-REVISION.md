@@ -1,8 +1,6 @@
 # System Revision Extension
 
 **Version**: 3.14
-**v3.13:** `pull` against a remote with no versions at the prefix is a `200` with `merge-result.status = "remote_empty"`, not a `500`. Nothing failed internally, and the declared result type carries the outcome.
-
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+), SYSTEM-COMPOSITION.md (v1.5+)
 **Optional**: EXTENSION-HISTORY.md (v1.0+) — enriches versioning with per-path detail
@@ -4004,6 +4002,15 @@ The translation is mechanical. The git commit tree hash maps to `root`. Author, 
 
 ### 10.2 Bridge Handler Pattern
 
+*This section sketches a bridge; it is not the bridge specification. A Git bridge would land as
+`EXTENSION-BRIDGE-GIT.md` **(planned — not yet authored)**, and the seven questions such a
+specification answers — authority assignment, capability translation in both directions, namespace
+convention, sync-state visibility, cache invalidation, hash-identity translation, egress idempotency
+— are in `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md`. **The `app/bridge/` prefix used below is this
+sketch's own and is NOT settled**: `bridge/` is the reserved prefix for external system connections
+per `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1, and the corpus's other bridge references spell
+`system/bridge/`. The first bridge specification authored decides it.*
+
 A Git bridge handler at `app/bridge/git` could provide:
 
 | Operation | Description |
@@ -4157,3 +4164,9 @@ Per §9 #7:
 - **Local-namespace:** `system/revision/{H}/conflicts/{path}` (already declared peer-local in §2.2: "Conflicts are peer-local. They are NOT included in version snapshots and are NOT synced to other peers." — this subsection lifts that to the formal §9 #7 declaration position); `system/revision/{H}/remotes/{peer_id}` (collaboration-topology metadata); `system/revision/{H}/config` (per-prefix operator configuration); `system/revision/config/merge/*` (global merge configuration). These MUST NOT be carried in version snapshots; subscription-based propagation MUST be refused at the subscription handler (subscription pattern `system/revision/*` matches MUST explicitly carve out these subpaths, or grant scope MUST enumerate the included subpaths).
 
 Chain-error markers bound on `revision:fetch-diff` chain-dispatch failures per §4.4.19 are themselves **local-namespace** per EXTENSION-CONTINUATION.md §6.5 (the canonical home for chain-error marker locality).
+
+---
+
+## Document History
+
+**v3.13:** `pull` against a remote with no versions at the prefix is a `200` with `merge-result.status = "remote_empty"`, not a `500`. Nothing failed internally, and the declared result type carries the outcome.

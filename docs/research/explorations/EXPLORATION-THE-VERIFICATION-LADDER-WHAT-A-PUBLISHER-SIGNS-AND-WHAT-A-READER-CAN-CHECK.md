@@ -28,13 +28,26 @@ establish once you have one**, and that absence is the layer the operator keeps 
 **The ladder has five rungs. Every instrument for rungs 0–3 already exists and is landed; rung 4 is
 impossible and should be stated as impossible.**
 
-| Rung | The reader's question | Instrument | Cost to check | **Can a MIRROR answer it?** |
-|---|---|---|---|---|
-| **0** | Are these the bytes I asked for? | **content hash** | free | **yes** — anyone |
-| **1** | **Who wrote them?** | **detached `system/signature`** at `/{author}/system/signature/{hex(H)}` | **1 entity** | **yes** — this is what makes mirroring work |
-| **2** | Did the author actually **publish** it? | **inclusion proof** vs their signed root — *or* a **binding assertion** (§4) | log₃₂(n) nodes + root — *or* **1 entity** | **yes**, if it carries them |
-| **3** | Is it **current**? | signed root **`seq`** + rollback-reject | a root fetch | **NO — only the authority** |
-| **4** | Is this **everything**? | **none. Unattainable without a gatekeeper** | — | **no — and neither can anyone** |
+| Rung | The reader's question | Instrument | Cost to check | **Can a MIRROR answer it?** | **Survives TIME?** `[added 2026-09-14]` |
+|---|---|---|---|---|---|
+| **0** | Are these the bytes I asked for? | **content hash** | free | **yes** — anyone | **yes** |
+| **1** | **Who wrote them?** | **detached `system/signature`** at `/{author}/system/signature/{hex(H)}` | **1 entity — 207 B and 2 objects, FLAT** (§2a) | **yes** — this is what makes mirroring work | **yes** |
+| **2** | Did the author actually **publish** it? | **inclusion proof** vs their signed root | ⛔ **unpriceable — zero implementations, all three cores** (§2b) | **yes**, if it carries them | ⛔ **NO — it PERISHES in the recipient** (§2c) |
+| **2′** | *(the same question, durable form)* | a **binding assertion** (§4) | **1 entity** | **yes** | **yes** |
+| **3** | Is it **current**? | signed root **`seq`** + rollback-reject | a root fetch | **NO — only the authority** | n/a |
+| **4** | Is this **everything**? | **none. Unattainable without a gatekeeper** | — | **no — and neither can anyone** | — |
+
+> ⭐⭐ **The last column was added 2026-09-14 and it forced rung 2 to SPLIT.** Rung 2's two instruments
+> had been priced as *heavier* versus *lighter*; they differ in **kind**. **A carried root is a claim
+> about a moment, and a reader who has already seen a later moment from the same author is obliged to
+> refuse it** — and that refusal is the anti-rollback floor, which is the whole reason a signed root is
+> worth having. ⇒ **the instrument that makes rung 3 possible is the instrument that makes rung 2
+> non-durable**, and the two cannot be separated by trying harder. **A binding assertion has no
+> equivalent failure mode, because it makes no claim about *now*** — so §4 is not a lighter rung 2, it is
+> the *durable* one, which is the argument its "optional" disposition never had.
+>
+> **Transferability is a COLUMN, never a rung**, because it is not ordered the way the rungs are: 0 and 1
+> survive both axes, 2 survives hand-off and not time, 3 survives neither.
 
 > **That table is the answer to the mirroring question.** *"What do I need so I don't have to go to B
 > and C?"* — **rungs 0, 1 and 2, all of which peer A can hand you.** Rung 3 you cannot get from a
@@ -91,7 +104,7 @@ publisher paid for.
 | To let a reader reach… | The publisher MUST… | Cost | Landed? |
 |---|---|---|---|
 | **rung 0** | nothing — content-addressing is automatic | zero | ✓ |
-| **rung 1** | **sign each entry** — mint a `system/signature` at `/{me}/system/signature/{hex(entry_hash)}` | **one signature per entry** | **RULED, unlanded** — `FEED` §1.1 |
+| **rung 1** | **sign each entry** — mint a `system/signature` at `/{me}/system/signature/{hex(entry_hash)}` | **one signature per entry** | ⭐ **RULED — and LANDED on one app-tier seat as of 2026-09-10** for one entity class; see the correction below |
 | **rung 2** | publish a **signed root** covering the path, and serve its closure — *or* mint a **binding assertion** per portable binding | one signature per republish — *or* one per binding | ✓ `TREE` §3.3a + `NETWORK` Amendment 10 |
 | **rung 3** | **republish on change**, within the 30 s convergence ceiling, `seq` monotone | bounded, coalescing permitted | ✓ `NETWORK` §6.5.6 |
 | **rung 4** | — | — | impossible |
@@ -102,11 +115,120 @@ Measured independently in both app-tier trees this session — `entity-browser-r
 capabilities**, and **no content entity**. `FEED` §1.1 records the same fact from the implementation
 side (`entity-browser-rust` `62c6d62`): *"a publish signs exactly one thing, the root."*
 
-> **So the operator's *"that's not adequate"* is measurably the current state.** A reader receiving a
+> ⚠⚠ **CORRECTED 2026-09-14, and the correction is four days younger than the claim.** That sentence was
+> taken at a commit that a per-entry-signing publisher had already overtaken: one app-tier seat mints a
+> `system/signature` per entry **into the published projection**, verified from the projection rather than
+> from source at n ∈ {1, 4, 9} as a ratio (`n` entries → `n + 1` signatures, one per entry plus one over
+> the root). **A second seat has the minting function and calls it from nothing but tests** — so the
+> honest ecosystem statement is *the capability exists on two seats and the emission on one*, and
+> *"nothing signs individual entities"* is now false for exactly one entity class.
+>
+> ⭐ **And the contrast measured in the same pass is the more useful half:** a site publish of a manifest
+> plus three pages emits **exactly one** signature, targeting the root — confirmed against published
+> directories holding **16 site entities and 1 signature** against **4 registry bindings and 5
+> signatures**. ⇒ **the corpus already runs both disciplines side by side, and the registry reached this
+> document's rung-1 conclusion for one entity type without ever generalising it.** That is a stronger
+> argument for the rule being tier-wide than any derivation: *the case that needed transferability got it,
+> locally, years before the rule was written.*
+
+> **So the operator's *"that's not adequate"* is measurably the current state** for every entity class but
+> one. A reader receiving a
 > post today gets rung 0 and **cannot reach rung 1 at all** — not because verification is hard, but
 > because **the signature was never minted.** Rung 1 is one signature per entry and it is the whole
 > difference between *"the content hash pans out and that's all we know"* and *"I know who wrote
 > this."*
+
+---
+
+## §2a `[2026-09-14]` ⭐⭐ Rung 1 costs a CONSTANT, so *"what else should be signed"* is not a budget question
+
+**Measured on a live publisher:** a detached signature is **207 bytes flat** — 64 of signature, two
+33-byte hashes, the type string and the encoding frame — and **two stored objects** (pointer + blob),
+**whatever it signs.** Constant per entity, not proportional.
+
+| Signing… | Costs |
+|---|---|
+| a 189-byte social post | **+110%** |
+| a 30 KB page | **+0.7%** |
+| a 476 KB published figure | **+0.04%** |
+
+> **The only case where the ratio looks alarming is the case where the absolute number is 207 bytes.**
+> ⇒ **Bytes are not the argument against signing broadly**, and the decision axis is not *which entities
+> are important* — it is **which entities travel.**
+
+⭐⭐ **And because *will this travel* is a prediction, the obligation belongs to the TYPE, not the
+entity.** An entity published as purely local becomes a quotation the moment somebody cites it. A corpus
+where some entities of one type carry a signature and others do not trains every reader to ignore the
+distinction — which destroys §3's fail-closed rule, the thing that makes the whole ladder mean anything.
+**A convention declares the floor for its types; a publisher does not decide per object.**
+
+⇒ **The real cost is the object count (2× per signed entity), and it lands on the PUBLISHER's
+re-projection rather than on the reader — which couples this to a question nobody had connected to it.**
+Both app-tier publishers project **the whole archive** on every publish (16,000 entries → 32,501 trie
+keys, 66,640 files, 4.1 s; adding one entry moves **3–4 keys** and the publisher re-emits all 32,501).
+**Nothing in the corpus says a publisher MAY keep its prior trie and recompute only the touched path.**
+⇒ *"should more classes be signed?"* and *"may a publisher re-project incrementally?"* are **one
+decision**, and the affordability of the first is currently decided by an omission nobody made on purpose.
+
+## §2b `[2026-09-14]` ⛔ The rung-2 inclusion proof prices a mechanism that exists nowhere
+
+**Named search for every spelling** — `inclusion proof`, `verify_inclusion`, `proof_path`,
+`merkle proof`, `trie proof` — **across all three reference implementations: zero occurrences.** And
+structurally, **no verb anywhere takes *(entity, root, path)* and answers *"is this in that root"*.**
+
+⇒ **`log₃₂(n)` nodes + root was the right number for an unbuilt mechanism.** Carrying rung 2 today does
+not mean carrying `log₃₂(n)` nodes; it means **reconstructing something that looks like the author's
+origin** and handing it to a consumer whose floor may then decline it (§2c). **The *"or a binding
+assertion"* alternative in the original cell is the one that is actually reachable** — it is a signed
+entity and therefore rung-1-shaped, which is why the table now gives it its own row.
+
+⚠ **This lands on a landed MUST and not only on a cost table.** `SYSTEM-DATA-EXCHANGE` §2.2 / `DX-R10`
+obliges a republished object to carry authorship evidence surviving detachment — *"a detached per-entity
+signature, **or** an inclusion proof."* **A conformant-looking implementation can satisfy that MUST by
+naming the arm nothing can execute.** The obligation is right; the disjunction owes a statement of which
+arm is real.
+
+## §2c `[2026-09-14]` ⭐⭐⭐ Rung 2 perishes, and the perishing happens in the RECIPIENT
+
+**Measured in both directions in one gate.** An author publishes twice through one projector so the
+sequence genuinely advances; the **older** tree — the snapshot a third party would be carrying — is then
+offered to two readers:
+
+- a reader who has already seen the author's current tree → **declined, as a rollback**
+- a reader who has not → **the identical bytes are accepted without complaint**
+
+> **A carried snapshot is neither valid nor invalid on its own terms. Its fate is decided by the
+> recipient's history — and a mirror handing one bundle to two readers gets two answers.**
+
+Everything about the carried tree verifies: the key is right, the signature checks, every body hashes to
+its address. **What refuses it is the consumer's own monotonicity floor** — rung 3's instrument — so rung 3
+is what makes rung 2 non-transferable.
+
+⚠ **The variant is load-bearing and belongs in the ladder's language: `declined`, never `invalid`.**
+Neither the carrier nor the author has a defect, and reporting it as a verification failure hands a
+publisher a defect they do not have. **The field case that produces it is an author's own second
+machine.**
+
+⇒ **And the general rule this earns:** ***a verifier must separate "X published this once" from "this is
+X's current state", and nothing in the corpus tells an implementation these are two questions.*** A tidy
+implementation answers both with one comparison — which is correct for currency and destroys the only
+evidence that the author ever published the entry.
+
+## §2d `[2026-09-14]` ⛔ Rung 1 does NOT satisfy the substitute chain's admission gate
+
+**Stated here because it is the first wrong inference anyone will draw from a landed rung 1**, including
+the seats that landed it.
+
+The substitute chain's enumeration filter demands a `system/signature` whose **target is the hash of the
+chain entry** — an entity in *the reader's* tree asserting **where A's content can be fetched**. An
+entry's own invariant signature has **`target` = the content hash.** Different target; the chain's
+tree-resident signature lookup cannot match it, **and no amount of content signing produces one.**
+
+> **Signing content does not sign a claim about content.**
+
+⇒ **Rung 1 and the third-party-hint question are two asks.** Rung 1 makes an entity speak for itself once
+you have it; the other is about whether **a stranger may tell you where to get it.** Conflating them turns
+a measured transferability result into an unearned answer to an open ruling.
 
 ---
 
@@ -187,6 +309,15 @@ checks. No root, no trie walk, no prior knowledge of the publisher. Against an i
 **Where it is clearly right:** where **the path IS the claim** — a site's page map (*"the canonical
 `/about` is `H`"*), a registry name, a pinned release. **Where it is redundant:** immutable authored
 content, where the entity to sign already exists and rung 1 covers authorship completely.
+
+> ⭐⭐ **A second argument for it arrived 2026-09-14, and it is not a reader-convenience argument at all.**
+> §2b and §2c together say that **the inclusion proof is unbuilt AND non-durable**, so *"did the author
+> put this there"* has **no transferable, non-perishing instrument today.** ⇒ **the binding assertion is
+> not an optimisation of rung 2; it is the only reachable form of it** — and the requirement that forces
+> it is not the reader's ladder, it is the record: *can I show a third party, a year from now, what a peer
+> asserted?* **That question the reader does not get to opt out of, which is why the "let the client
+> decide" disposition under-specifies it.** The empirical question (*do feed readers demand it?*) stays
+> open; the accountability question does not depend on the answer.
 
 > **Withdrawn from the previous session: *"the social tier does not need it."*** That was stated with
 > more confidence than the evidence carried, and the operator's objection is correct — **we have not
