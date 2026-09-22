@@ -7,6 +7,10 @@ and this project aims to follow [Semantic Versioning](https://semver.org/spec/v2
 
 ## [Unreleased]
 
+Development lands on `dev`; `master` carries the last release.
+
+## [0.9.0] — 2026-09-21
+
 **Measured against the published tree on 2026-09-20: 91 of the 217 published paths differ.**
 Seventy were rewritten in place — 26 extension specs, 15 guides, 3 application conventions, 2 SDK
 specs, `SYSTEM-ARCHITECTURE`, both authoring standards and all three roadmaps, plus the agent
