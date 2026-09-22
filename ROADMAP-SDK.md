@@ -20,7 +20,7 @@ reference surface; the specs ratify the empirical baseline as a cross-impl targe
 
 | spec | version | hdr | maturity | scope |
 |---|---|---|---|---|
-| `SDK-OPERATIONS` | 1.11 | Active | **M2** (tracks V7; §11.6.9 service-owning handlers folded) | core SDK surface: put/get, dispatch, connection, handler registration |
+| `SDK-OPERATIONS` | 1.13 | Active | **M2** (tracks V7; §11.6.9 service-owning handlers folded) | core SDK surface: put/get, dispatch, connection, handler registration |
 | `SDK-EXTENSION-OPERATIONS` | 0.9 | Working draft | **M2** | per-extension SDK surface: Content closure (`EnsureClosure`), Continuation assembly, Subscription, Revision, Compute (expression builder + lowering toolkit) |
 | `SDK-IDENTITY-INFRASTRUCTURE` | 0.5 | Draft | **M2** | identity-stack tooling: bundle wire-shape, Bootstrap-vs-Restore, role/identity SDK surface |
 | **Guides** (7) | — | — | doc | `GUIDE-SDK-PATTERNS`, `GUIDE-IDENTITY-SDK`, `GUIDE-PERSISTENCE`, `GUIDE-SHELL-FRAMING`, `GUIDE-PEER-CONCERNS-AND-NAMESPACES`, `GUIDE-IMPL-DISCIPLINE`, `GUIDE-ENTITY-WORKBENCH-APP` |

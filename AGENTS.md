@@ -63,7 +63,7 @@ item" instead of fixed, twice, because the tool lives in a different directory.
 |---|---|
 | **`entity-system-architecture`** (here) | The optional capability layer. Spec authority — ratify / retract / correct. |
 | **`entity-system-arch-tools`** | **Ours.** The `spec` linter + gates. A gate defect is fixed there, in the same session it is found, with its own commit and its own tests (`make test` — parity + address self-test). |
-| **`entity-core-protocol`** | **Ours.** The V7 core spec, upstream of this corpus. Normative core changes are still **proposal-first** and still land as a core-spec revision — owning the repo changes *who edits it*, never *how* (the locked wire core is never renumbered; ADR-0002 stands). |
+| **`entity-core-protocol`** | **Ours.** The V7 core spec, upstream of this corpus. Normative core changes are still **proposal-first** and still land as a core-spec revision — owning the repo changes *who edits it*, never *how* (the locked wire core is never renumbered; ADR-0002 stands). **A core-protocol change's proposal lives in THAT repo's `docs/proposals/`, not this one's `active/core/`** `[operator ruling, 2026-09-09]` — *"core protocol we manage very deliberately; everything has to be tracked there as well, even if we're guiding it from here."* That repo's own `docs/proposals/README.md` has said so since it was written (*"the architecture team manages this repo directly… proposals here are authored by the arch team"*), and the `0.8.2.15` fold was authored only here anyway, because **nobody read the README of the workspace they were writing into.** Write the core-tier record there; an authoring copy here is fine and the two are one change. |
 
 Everything else in the polyrepo — `entity-core-{go,rust,py}`, `entity-core-keystone`,
 `entity-browser-rust`, `entity-workbench-go`, `entity-core-formalization`, and the meta
@@ -224,7 +224,7 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   close with *"no open items"* — it is commissioning a first measurement *(**ratified** 2026-09-01 —
   second shape, a guide consumed by a pin; third and
   fourth shapes 2026-09-02; **fifth shape 2026-09-03** — an app-tier convention, where the fourth
-  shape's enforcement point is written in core-spec nouns and so never fired; **row axis 2026-09-06**)*
+  shape's enforcement point is written in core-spec nouns and so never fired; **row axis 2026-09-06**; **consumer axis 2026-09-09** — the mirror image, the delivery failing at the RECEIVING end: a seat gated a deployment on a proposal in `implemented/` whose text the fold had superseded. **`implemented/` is a record that a change was delivered, never the authority for what it says**)*
   · **L22** a peer's true
   sentence about their own artifact carries none of its verification onto a different artifact — the
   party that moves it owns re-checking it, whoever they are and however short the move
@@ -234,7 +234,12 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   tokens**, before rewriting it, **and a restatement names its authority so the next sweep is a grep**
   *(**ratified** 2026-08-30 — second shape: same-document homes, and one
   that shares none of the rule's vocabulary; fourth shape 2026-08-31 — unmarked restatements of a
-  canonical table, invisible from the authority)* ·
+  canonical table, invisible from the authority; **PSEUDOCODE AXIS 2026-09-09** — a code block is a
+  normative home that shares **none** of its rule's vocabulary, so *enumerate-by-subject* and
+  *grep-the-literal* both structurally miss it: the first finds documents that argue about a rule,
+  the second documents that state it, and a block **executes** it. Three instances in one week.
+  **Sweep the ~40 pseudocode blocks in `ENTITY-CORE-PROTOCOL` — bounded and completable, and a
+  standing pre-fold step**)* ·
   **L24** a reference is only a pin if it resolves in the history **and the layout** the receiving
   audience gets — a `dev` SHA never resolves on public `master`, and a sibling path never resolves in
   a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)* ·
@@ -594,8 +599,10 @@ reconstruction pass.
   python3 <arch-tools>/spec-tool/cli.py inbound --gate         # 0 clean · 1 findings · 2 could-not-look
   ```
 
-  **First run: 397 packets across ten sibling repos · 212 addressed here · 14 on the ledger · 198
-  owed**, plus 44 that cc us and **73 that name no recipient any parser can read.** That last
+  **Current: 297 packets · 156 addressed here · 21 on the ledger · 135 owed**, plus 28 that cc us
+  and **55 that name no recipient any parser can read.** *(First run said `397 · 212 · 14 · 198`
+  across "ten sibling repos" — see the clone note below: **four of those ten were working clones of
+  one repo** and 114 of the files were copies of packets already counted.)* The unaddressed
   bucket is the design: **`unaddressed` is UNKNOWN and is never counted as "not ours"** — folding
   it into *addressed-elsewhere* would silently discard a quarter of the channel, which is
   `could-not-look wearing a verdict's clothes` for the fourth time in this toolkit.
@@ -607,11 +614,52 @@ reconstruction pass.
   vocabulary**; the ledger cites `ROUTING-2026-08-20-e`, the file is that plus a title. Matching is
   a leading clause with a separator required, and a bare date credits nothing.
 
-  **Its second finding is the naming scheme itself: four ledger citations reach more than one
-  packet** (`ROUTING-2026-08-20-e` reaches three). A `date-letter` id is unique to one repo on one
-  day, which is not unique — **arch's own tree carries five internal collisions**, and arch's
-  `ROUTING-2026-09-06-b` is outbound while the generator's is inbound. **Cite packets by full
-  stem.** The standard is in `AGENTS-STANDARD.md` §*Routing packets*; ambiguity is its own bucket,
+  > ⛔ **ITS DEFAULT PEER ROOT IS `<root>/..` AND NO INVOCATION IN THIS REPO HAS EVER PASSED
+  > `--peers` `[2026-09-09]`.** That resolves to the directory holding the implementation cohort,
+  > so **two seats sitting one level above it — the coordination seat and the devops seat — have
+  > never been in any scan arch has run.** Run it twice:
+  >
+  > ```bash
+  > python3 <arch-tools>/spec-tool/cli.py inbound                                     # the cohort
+  > python3 <arch-tools>/spec-tool/cli.py inbound --peers <the outer meta root>        # meta + devops
+  > ```
+  >
+  > **Nothing is being missed today and that is luck, not design** — the second run returns a
+  > correct `could-not-look` because the meta seat has written zero `ROUTING-*` files, which is
+  > exactly what its own tracker says. **But its inbound to arch is real and has been for months**
+  > (`docs/status/HANDOFF-TO-ARCH.md`, 302 lines, and now `TRACKER-entity-system-architecture.md`),
+  > **and it is invisible on two independent counts — wrong root AND wrong filename — either of
+  > which alone is enough.** **A peer's `docs/status/TRACKER-<us>.md` is an inbound surface the gate
+  > does not look for**; six seats now keep one and for several it is the only place their open set
+  > is stated. Count it **separately** from `ROUTING-*` — a tracker is a standing index, not a
+  > delivery event. *(Both are owed in arch-tools; `docs/COHORT-OPEN-ITEMS.md` §0t.8. The
+  > transferable half is the fifth of its kind here: **the scope was set to "the sibling directory"
+  > when every seat was a sibling, and nothing re-read it when the layout grew a level.**)*
+
+  > ⛔ **A PACKET IS ONE OBLIGATION HOWEVER MANY CHECKOUTS HOLD IT — fixed in arch-tools `94edc83`,
+  > and the published number was 44% high `[2026-09-09]`.** This scope is a directory of
+  > directories, and **nine of those directories are working clones of TWO repositories at different
+  > tips** (all five browser trees share root commit `bf4e6ee`; `wbg-curate` / `wbg-oracle2` share
+  > `entity-workbench-go`'s). Four clones of `entity-browser-rust` held **114 ROUTING files and not
+  > one was unique** — every one byte-identical to a packet already counted under the live tree.
+  > **`194 owed` was `135`.** Packets now collapse on **(filename, sha256)** across directories,
+  > attributed to the directory holding the most scanned packets — a stale clone is a strict subset,
+  > so the fullest tree is the live one — and the collapsed copies are **reported on their own line,
+  > never silently dropped.** *(The first cut keyed on content alone and merged two distinct packets
+  > from one seat that shared a short body; **four existing assertions caught it**, which is what
+  > that suite is for.)*
+
+  **Its second finding was the naming scheme, and the gate's own evidence for it was wrong.** It
+  reported *"four ledger citations reach more than one packet"* — **those were clone copies, and
+  the count is now zero.** ⚠ **The claim still holds and has better evidence, which the gate
+  structurally cannot see because it does not scan our own tree:** `ROUTING-2026-08-20-e` names one
+  packet in `entity-system-architecture` (to workbench-go, about the compute deferral) and a
+  completely different one in `entity-browser-rust` (to arch, about the locator gap), and **arch's
+  own tree carries exactly five internal `date-letter` collisions, re-counted 2026-09-09.** A
+  `date-letter` id is unique to one repo on one day, which is not unique. **Cite packets by full
+  stem.** *(The transferable half: **a true rule can be held up by a false measurement**, and
+  fixing the instrument is when you find out — so re-derive the claim, do not just re-run the
+  gate.)* The standard is in `AGENTS-STANDARD.md` §*Routing packets*; ambiguity is its own bucket,
   never a silent credit or a silent drop.
 
 - **`spec pins` — does a citation resolve for the reader it ships to?** The **L24** gate. Every other
@@ -742,6 +790,77 @@ reconstruction pass.
   That is **L24 on the time axis** — an identifier that does not survive the boundary cannot carry a
   claim across it — and it is now **detected and reported per document as COULD-NOT-LOOK**, never
   measured through. What survives is 20, every one of them the RELAY rule landed the day before.
+
+- **`spec vocab` — do the APP-TIER seats speak the same vocabulary? Run it after touching any
+  `app/*` type tag, and before minting one.** The instrument for the question `census` structurally
+  cannot reach.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py vocab                 # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py vocab --prefix share  # one convention family
+  python3 <arch-tools>/spec-tool/cli.py vocab --gate          # 0 clean · 1 findings · 2 could-not-look
+  ```
+
+  **Why it had to be built: `census` works on the core tier because the wire is self-falsifying** —
+  two peers agree on bytes or they do not, and the suite turns that into 46/46 · 778·0F. **Two APP
+  peers can be perfectly wire-conformant and completely vocabulary-divergent with no error
+  anywhere**, which `APP-CONVENTION-SHARE` §2 states outright: *a type-filtered query on the wrong
+  tag returns a correct, complete, **empty** answer.* So *"do our app seats agree"* was answerable
+  only by a person reading two trees side by side — **which is exactly how `app/share/offer` nearly
+  got minted while both seats already shipped that word meaning opposite things.**
+
+  ⭐ **`divergent-family` is the row to read first** — two seats emitting under one convention prefix
+  with **zero** tags in common. It fires once today: **`app/share/*`**, browser-rust holding
+  `app/share/manifest` against workbench-go's `record`/`audience-entry`/`follow`. Also reported:
+  `declared-unimplemented` (**`app/feed/*` is 6 declared, 0 implemented** — landed and never
+  exercised), `implemented-undeclared`, and `single-seat`.
+
+  **Two calibration invariants it was built with, both found by validating against the live trees
+  before publishing a number, and both generalize.** ① **A type tag never ends in a slash** — the
+  first run read `ShareOfferPrefix = "app/share/records/"`, a tree path, as a seat inventing
+  vocabulary out of its own directory name. ② **A parametric declaration declares a FAMILY** —
+  `APP-CONVENTION-EMBED`'s tag is `app/embed/{media_type}`, so without open-family support the gate
+  calls a conformant `app/embed/image/png` undeclared. **A false accusation against a correct seat is
+  the expensive direction.** Declared is three-valued (`declared` · `mentioned` · absent) for the
+  same reason: §2 of SHARE names the tag it **forbids**, and an occurrence-counting matcher reads
+  that as a blessing.
+
+- **`spec roster` — the living roadmaps' version column against the spec headers they copy. RUN IT
+  AFTER ANY VERSION BUMP.** `AGENTS.md` says *"the spec header is source of truth"* — and the corpus
+  then restates every spec's version in `ROADMAP-{EXTENSIONS,SDK,APPLICATIONS}.md` and in
+  `GUIDE-APPLICATION-DEVELOPMENT` §5's members table. **Neither end says the roster is a copy**, so
+  the drift is invisible from both: `charter`'s defect one tier down, against a different pair.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py roster          # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py roster --owed   # the worklist
+  python3 <arch-tools>/spec-tool/cli.py roster --gate   # 0 clean · 1 findings · 2 could-not-look
+  ```
+
+  **First run: 13 of 38 rows stale** — `EXTENSION-REGISTRY` 1.21 against a header at **1.26**, TREE
+  4.3 against **4.8**, HISTORY 1.7 against **1.10**, SHARE 0.1 against **0.2**. **SWEPT TO ZERO the
+  same session, so run it in `--gate` mode.** These are the documents a cohort seat opens to learn
+  what state an extension is in, which is why a stale row is expensive rather than untidy: **it reads
+  as a build-state fact.**
+
+  **No baseline, deliberately** — the narrative gates hold real authoring debt where a first run of
+  N reds teaches people to skip the gate; here the debt is *a number one edit from correct*, so a
+  baseline would only be a place for correct numbers to hide.
+
+  > ⚠ **The calibration runs the OTHER way from usual and is the reason the gate is usable.** 97
+  > places in the corpus put a spec name near a version and **only 38 are roster rows.** The rest are
+  > **`Depends:` pins — a deliberate, dated statement of what an author reasoned against, which MUST
+  > NOT track the dependency's HEAD**; advancing one erases the only record of what was actually
+  > checked. A gate reading all 97 would file sixty-odd accusations against correct text. **Every
+  > silence case is asserted in the self-test rather than left untested**, because an exemption
+  > nobody can audit is not an exemption.
+  >
+  > **And the gate fixes the NUMBER, never the narrative — it says so in its own docstring, and one
+  > live row proves why it matters.** `EXTENSION-ROLE`'s row now reads `2.1` beside prose saying
+  > *"v2.0 root-cap green round pending"*. That note is an **unpinned cohort build-state claim**, not
+  > a spec claim; **this sweep did not verify it and did not touch it.** A bumped number beside stale
+  > prose is more authoritative-looking than either was alone — so after running it, **read the rows
+  > it changed.**
 
 - **`spec charter` — the discipline set, checked against itself. Run it whenever you touch a rule.**
   The set lives in **two homes** — `docs/DISCIPLINE-CHARTER.md` (authoritative, internal) and this

@@ -186,14 +186,26 @@ v1 directive grammar (leaf form, CommonMark-directive style):
 
 - `ref` resolves to a sibling `Embed` entity (the `child` payload target). The bracketed text seeds the rendered
   fallback if the embed cannot render *and* the entity is unreachable.
-- **`ref` path-vs-content-hash discrimination (`F-1`, godot — round-trip is parser-dependent without it):** at the
-  wire layer CBOR types disambiguate `path` (tstr) from `content-hash` (bstr); in the directive *string* they
-  don't. **Normative rule: a `ref` value with a leading `/` is a `path` (V7 §1.4 absolute entity path); otherwise
-  it is a `content-hash` in its canonical string form (multibase/hex).** This is `G-PIN-2`'s tagged-disambiguation
-  applied to the directive string — without it, lowering is not deterministic across parsers.
+- **`ref` is a reference string and resolves by `APP-CONVENTION-REFERENCE` §3.4**, identically to a link in a
+  page body (§3.1): a leading `/` is root-absolute **within the current site**; `site:` is the same-peer
+  cross-site form; `entity+ref://` is fully qualified; **anything else is directory-relative to the current
+  page.** A string parsing as none of these is treated as leaving the system and is refused, not guessed at.
+- **A content-addressed embed target is spelled as a reference, never as a bare digest.** Use
+  `APP-CONVENTION-REFERENCE` §3.1's pinned form (`entity+ref://{peer}/?hash={hash}`) when the target is on
+  another peer, or a **`pointer` payload** (`APP-CONVENTION-EMBED` §2) when it is a blob in the resolving peer's
+  own content store. **A bare hex digest in a `ref` position is not a distinguishable form and MUST NOT be
+  emitted** — it is indistinguishable from a directory-relative reference to a page of that name.
+- *(`F-1`'s former path-vs-content-hash rule is **WITHDRAWN**. It disambiguated the untagged
+  `(path / content-hash)` union that `APP-CONVENTION-EMBED` §2 retired in favour of a tagged reference atom
+  (`APP-CONVENTION-REFERENCE` §2.1 `REF-R1` — there is no untagged atom); with no untagged union at the wire
+  layer there is no ambiguity for the string form to inherit. Every form above is syntactically decidable,
+  which is the property `F-1` existed to provide. Its leading-`/` arm additionally read as a V7 §1.4 **absolute
+  entity path**, which addresses the whole tree rather than the site subgraph and is an off-subgraph
+  reference — `APP-CONVENTION-REFERENCE` §3.4's root-absolute-within-the-site reading is the correct one and
+  is confined.)*
 - A renderer that doesn't understand the directive renders the bracketed text (degradation by construction).
 - **Lowering is normative and lossless:** `::embed[…]{ref=X}` ⇔ a `child`-payload `Embed` pointing at `X` (with
-  `X` classified per the rule above). A conformant editor round-trips the two without divergence.
+  `X` resolved per `APP-CONVENTION-REFERENCE` §3.4). A conformant editor round-trips the two without divergence.
 - v1 embeds **append / block-level only** (no mid-paragraph interleave); a container/inline-flow directive is a
   named post-v1 extension of *this* grammar, not EMBED's.
 
@@ -238,6 +250,25 @@ propose-back/edit arc (itself `[GRADIENT][DEFER build]`).
 `nav` is a tree and MAY contain authored cycles or pathological depth. A renderer walking nav **MUST**: maintain
 a **visited-set** (cycle detection), enforce a **max depth (recommend 32)**, and on either limit **stop cleanly**
 (render what it has; never infinite-loop / stack-overflow). One-line contract; v1-blocking.
+
+**The visited-set obligation is on the WALK, and an implementation whose decoded `nav` representation cannot
+express a cycle discharges it structurally.** A representation in which children are owned values decoded from a
+serialization carrying no back-reference has no cycle to detect, and a visited-set there guards a state the
+representation forbids. **What MUST hold in every case is the outcome** — no unbounded recursion and no stack
+exhaustion on any authored input. An implementation claiming the structural discharge states the property of its
+representation that provides it.
+
+**A manifest a decoder REFUSES is a different outcome from a walk that stops at the depth limit, and the two MUST
+be distinguishable.** *"Stop cleanly (render what it has)"* binds the walk. Where a manifest cannot be decoded at
+all — including because its authored nesting exceeds a decoder's own nesting limit — the renderer **MUST**
+surface a refusal distinct from a successfully-decoded empty or untitled manifest. **Substituting a default
+manifest is not conformant**, because it reports a fact about the site (that it has no title, no identity) that
+is not true, and it reports it silently.
+
+**Implementations SHOULD NOT rely on a dependency's nesting limit to provide this section's bound.** Where the
+no-unbounded-recursion property holds only because a decoder happens to stop first, a change in that dependency
+moves it with nothing to announce it; a check for this rule should fail on such a change rather than track the
+number.
 
 ### 4.2 Discovery, ordering & why the manifest holds no page-collection `[v0.4.2 — discovery+floor LOCKED; semantic feeds OPEN/researching]`
 **Discovery is lazy, one-level-at-a-time `.list` over the site namespace** — the scalable v1 default. A renderer
@@ -430,9 +461,14 @@ names the cases; the fixtures, the bytes and the run are the implementations' an
   directive → lowered `child` `Embed` → re-serialized, byte-identical).
 - A **signed `site-root` pin** that verifies **cross-impl** (`G-PIN-3`) — fixture signed by a known identity, with
   expected signature bytes (byte-identical across at least two independent L5 implementations).
-- A **reproducible-publish** test (`G-PIN-4`) — one fixture, two publishers, identical site root.
+- A **reproducible-publish** test (`G-PIN-4`) — one fixture, two publishers, an identical **`tree:snapshot` root
+  over the site subgraph** (`EXTENSION-TREE` §3.2). **Not the published-root head**, which carries `published_at`
+  and is not comparable across runs or across implementations — a check posed on the head fails one hundred
+  percent of the time and, across two implementations, fails wearing a real divergence's clothes.
 - An **`::embed` directive ⇔ child-`Embed` lowering** vector (round-trip lossless, §3.2) — including a `ref` of
-  **each form** (leading-`/` path and bare content-hash) to pin the `F-1` discrimination rule.
+  **each resolvable form** (`APP-CONVENTION-REFERENCE` §3.4: root-absolute, `site:`, fully-qualified, and
+  directory-relative) **plus one unparseable string**, to pin that resolution *and refusal* agree across
+  implementations.
 - A **nav-cycle / max-depth** vector (`F-5`): a fixture of **authored depth 40** (> the max 32) with a cycle;
   assert the renderer stops at depth 32 and on the cycle without looping — pinned depth so "stop cleanly" is not
   vacuously conformant.

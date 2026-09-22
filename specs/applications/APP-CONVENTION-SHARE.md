@@ -1,6 +1,6 @@
-# APP-CONVENTION-SHARE — the share record and its audience binding — v0.1 DRAFT
+# APP-CONVENTION-SHARE — the share record, its audience binding, and the audience-less publication — v0.2 DRAFT
 
-**Version**: 0.1
+**Version**: 0.2
 **Status**: Draft
 **Domain:** `applications/` (third member).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
@@ -27,7 +27,12 @@ enumerable.
 | *How may it be touched?* | the grant's `handlers` + `operations` scopes | §3.6 |
 | **Who is the audience?** | **the minted token's `grantee`** — or equivalently the `{peer_pattern}` key of a `system/capability/policy` entry | §5.2 step 3 hard-DENYs unless `hash_equals(capability.data.grantee, execute.data.author)`. The grantee is the *wielder* |
 | *Which peers may this be used against?* | the grant's `peers` scope — **OMITTED for a share** | §3.6: absent → `{include: [local_peer_id]}`, which is already correct for "my content, on my peer" |
-| *What is withdrawal?* | a real revocation, not an unlisting | §5.1 revocation markers |
+| *What is withdrawal?* | **for an `app/share/record`** — a real revocation, not an unlisting. **For an `app/share/publication` there is no grant to revoke, so withdrawal is UNLISTING and nothing else — §2.5** | §5.1 revocation markers; §2.5 |
+
+> **This table is written in `app/share/record`'s terms**, because every slot in it is a slot on a
+> **grant** and an `app/share/publication` has none. Read it as the answer for the audience-bearing
+> type; §2.5 answers the same four questions for the audience-less one, and **the withdrawal row is
+> the one where the two types give opposite answers.**
 
 ### 1.1 `peers` is not the audience (normative, and the most-repeated error in this area)
 
@@ -72,9 +77,10 @@ namespace and a convention adds no kernel surface (GUIDE-APPLICATION-DEVELOPMENT
 
 | Type | Role |
 |---|---|
-| `app/share/record` | the share itself — what is shared, under what title, to whom |
+| `app/share/record` | the share itself — what is shared, under what title, **to whom** |
+| `app/share/publication` | a share with **no audience** — offered to anyone who can reach it, pull-only |
 | `app/share/audience-entry` | one audience member's binding within a record |
-| `app/share/follow` | a consumer's subscription to another peer's share |
+| `app/share/follow` | a consumer's subscription to another peer's share **record** |
 
 ### 2.1 Shared atoms
 
@@ -118,6 +124,11 @@ prefix-target = { tag: "prefix", path: tree-path }
 object; a `prefix-target` shares a subtree. The record does not restate the scope — the grant is the
 authority and the record is the label. **A consumer MUST NOT infer authorization from the record.**
 
+**`app/share/record` is direct-audience-only.** A share offered to no one in particular is
+`app/share/publication` (§2.5), **not** a `record` with an empty `audience` — the empty array keeps
+its meaning above, *an authored share with no members yet*, which is the self-only state and is a
+different thing from public.
+
 > **`share-target` is deliberately NOT an `entity-ref`, and the reason is §1.1's reason.** The two
 > shapes are already the atom's pinned/live split — a hash and a path, tagged — **minus the authority
 > term, because a share is over the sharer's own content on the sharer's own peer**, so the publisher
@@ -156,6 +167,12 @@ share-follow = {
 }
 ```
 
+**`record` names an `app/share/record` and MUST NOT name an `app/share/publication` (§2.5).** A
+publication has no audience and no grant, so there is nothing for a follow to be scoped by; a
+consumer tracking a publisher's publications issues the §2 type-filtered query instead (see §2.5).
+**This is stated because the mistake is silent**: pointing a follow at the wrong tag returns a
+correct, complete, **empty** answer, which is the same failure the box below describes.
+
 **The follow surface is NOT LOCKED.** `strategy` is optional and its vocabulary is undefined here on
 purpose — see §5. Everything else in this document is settled; this part is not, and an implementation
 should not read the rest of the spec's firmness as extending to it.
@@ -179,6 +196,69 @@ should not read the rest of the spec's firmness as extending to it.
 
 ---
 
+### 2.5 `app/share/publication`
+
+**A share with no audience.** It is `share-record` **minus `audience`, and nothing else differs** —
+the audience model is the only axis this type splits on, so it is the only field that moves.
+
+```cddl
+share-publication = {
+  type: "app/share/publication",
+  data: {
+    title:      tstr,                ; human-facing label; NOT an identifier
+    target:     share-target,        ; what is offered — §2.2's atom, tagged, blob OR prefix
+    ? note:     tstr,                ; optional human-facing description
+    created_at: uint                 ; ms since epoch, publisher's clock
+  }
+}
+```
+
+- **No `audience` and no grant.** Authorization at fetch is **none required, pull-only**. A
+  publication carrying an `audience` field is **invalid**.
+- **A consumer needs no token and performs no binding lookup.** Reaching the bytes is the whole
+  protocol.
+- **The publisher cannot know who fetched it**, and an implementation MUST NOT present it as though
+  it can.
+- **`target` is `share-target` unchanged**, so a publication of a subtree is as ordinary as a
+  publication of one blob. §2.2's note on why `share-target` is not an `entity-ref` applies here for
+  the same reason: the publisher is the sharer, so the authority term is already known.
+
+> **Why this is a separate type rather than a value inside `audience`.** `audience` is an enumeration
+> of authorized wielders, each holding a token minted for them; a publication has neither, so there
+> is nothing to enumerate. Every in-field encoding breaks something already load-bearing: the empty
+> array is taken (*authored, no members yet* — §2.2), a sentinel `grantee` makes that field accept a
+> value that is not a `peer-id`, and a sibling flag leaves two fields able to disagree with no way
+> for the schema to forbid it. **§2.4 already refused the same move on the same grounds**, declining
+> to unify `app/share/follow` with `app/feed/follow` because it *"would change what an absent field
+> means in an already-landed schema."*
+
+**Retrieval takes no new mechanism.** §2 already gives it: cross-peer aggregation is a `type_filter`
+query over the universal tree **with no peer filter**, and the type tag is the index key. A reader
+wanting a publisher's publications issues that query. **No `publication`-side follow type is defined
+here on purpose** — what one would add is a persisted intention plus a cursor, which is a general
+subscription concern and does not get minted piecemeal inside this convention.
+
+> **Withdrawal UNLISTS; it does not retract — and this follows from the definition, so it is not an
+> implementation gap.** A publication requires no authorization to retrieve, so there is no grant to
+> revoke and a withdrawal has nothing to act on but the entity itself. Deleting or unpublishing an
+> `app/share/publication` removes it from type-filtered discovery. **Any party already holding the
+> content hash may still retrieve the bytes**, and no mechanism in this convention or in the content
+> layer changes that.
+>
+> **The asymmetry against §2.2 is the point.** For an `app/share/record` a withdrawal has a real lever
+> at the capability layer — emptying the member's `audience-entry` stops that member's token
+> validating — so lingering bytes are a hygiene problem and the user-visible promise stays keepable.
+> **For a publication, discovery IS the whole access path, and discovery is the half that binds
+> nobody.**
+>
+> **[SHOULD]** An interface offering this action names it for what it does — *stop listing*, *stop
+> offering* — and **SHOULD NOT** present it as deletion, retraction or recall. **The failure mode is
+> silent**: nothing errors, no check fails, and the party left holding the false belief is the person
+> who published. This is §2's *correct, complete, empty answer* pointed at the publisher instead of
+> the consumer.
+
+---
+
 ## 3. Group audience — per-member tokens, and the join-side gap
 
 **A group audience is materialized at authoring time as one `audience-entry` per member, each with its own
@@ -198,6 +278,17 @@ Three carriers were considered and two are foreclosed by landed core text:
   `system/capability:delegate` is self-attenuation-only in v1. Filed as `[ASK-CORE]` in §7.
 
 ### 3.1 Withdrawal — what a UI may claim
+
+**This section is the `app/share/record` half. §2.5 is the `app/share/publication` half, and the two
+reach opposite conclusions** — here a withdrawal has a real lever at the capability layer, there it has
+none by construction. **An implementation offering one *stop sharing* control over both types owes the
+user two different sentences.**
+
+**Both halves sit under the same tier-wide rule and neither restates it: removal from a tree is
+UNPUBLICATION, never erasure** (`APP-CONVENTION-FEED` §7.5, and it is a `[MUST NOT]` on presenting
+removal as deletion). What this section and §2.5 add is the *second* lever and whether it exists: FEED
+§7.5 governs what a party already holding the bytes can do, and nothing here changes that answer for
+either type.
 
 **Removing a member takes two operations, and the two mint paths behave differently.**
 
@@ -321,6 +412,9 @@ The cases this document names:
 | SHARE-4 | the same grant with `peers: {include: [grantee_id]}` → **403 `capability_denied`** | §1.1, the defect made observable — **the vector that makes the silent failure loud** |
 | SHARE-5 | `content-hash` under a non-SHA-256 format code round-trips | SPECIFICATION-FORMAT §8.4.5, no fixed width |
 | SHARE-6 | policy-entry removal → subsequent `request` yields `403 scope_exceeds_authority`; a previously `request`-minted token still verifies | §3.1, both halves of the withdrawal claim |
+| SHARE-7 | `app/share/record` with an **empty** `audience` → read as **self-only**, never as public | §2.2, the state the split exists to keep distinct |
+| SHARE-8 | `app/share/publication` carrying an `audience` field → **rejected as invalid**; one with a `prefix-target` → **accepted as ordinary** | §2.5, both directions of the new type's shape |
+| SHARE-9 | a consumer fetching a publication presents **no token** and is **not refused for lacking one**; an `app/share/follow` naming a publication is **rejected** | §2.5 / §2.4, the pull-only posture and the silent-empty mistake made loud |
 
-**SHARE-4 and SHARE-6 are the two that matter** — they are the assertions that fail loudly if an
+**SHARE-4, SHARE-6 and SHARE-9 are the three that matter** — they are the assertions that fail loudly if an
 implementation adopts the intuitive-but-wrong reading.

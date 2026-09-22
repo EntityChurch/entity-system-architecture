@@ -65,6 +65,28 @@ a second home.
 | A conformance requirement is one row with a stable id | `SPECIFICATION-FORMAT.md` §8.5a |
 | Improvise no protocol — a gap files an ask, and the answer is a proposal | `AGENTS-STANDARD` (proposal-first); `GUIDE-EXTENSION-DEVELOPMENT.md` §7 |
 | **A spec names what a check must discriminate and ships no artifact** | `GUIDE-EXTENSION-DEVELOPMENT.md` §7 · `GUIDE-CONFORMANCE.md` §5.1a, §7.0, §7c.6 |
+| **Removal from a tree is UNPUBLICATION, never erasure — a convention MUST NOT let an application present it as deletion** | `APP-CONVENTION-FEED.md` §7.5 |
+| **A type that requires no authorization has no revocation lever at all — for it, withdrawal is unlisting and the convention says so** | `APP-CONVENTION-SHARE.md` §2.5 |
+
+> **The last two rows were added 2026-09-09, and why they were missing is the more useful half.**
+> **Both are tier-wide honesty rules and both were living inside a single member convention**, where
+> the author of a *sixth* convention would never meet them: an author reads this document and their
+> own draft, not a peer's §7.5. **The tell is that they were re-derived rather than cited** — the
+> publication half was worked out from first principles in `APP-CONVENTION-SHARE` §2.5 while
+> `APP-CONVENTION-FEED` §7.5 had carried the general rule, with a `[MUST NOT]`, for days.
+>
+> **They are pointers and not a second home**, per §10.3 — the authority is the section named, and a
+> convention that needs to say more about withdrawal says it about *its own types* and cites these.
+> **The two are different levers and a convention usually owes both**: §7.5 governs what a party who
+> already holds the bytes can do (nothing reaches into another peer's store, ever), and §2.5 governs
+> whether *future* retrieval can be stopped — which depends entirely on whether the type has an
+> authorization step to withdraw.
+>
+> ***The general form, which is where this comes from:*** a published claim set is **monotone**, so
+> *un-publishing* is a non-monotone operation and the architecture has no mechanism for it. Where a
+> type carries an authorization step, the capability layer supplies a legitimate closed world and a
+> withdrawal is real. **Where a type is defined as needing none, there is no closed world to find, and
+> a control labelled *Delete* is a promise the architecture cannot keep.**
 
 > **The last row is the one this tier got wrong, and it is worth the sentence.**
 > This document's predecessor said *"each convention ships example entities +
@@ -100,8 +122,8 @@ not on a missing section.
 |---|---|---|
 | `APP-CONVENTION-REFERENCE` | **Foundational — the reference atom (*"this points at that"*) and its string form.** The single home for the shared `content-hash` / `peer-id` / `tree-path` atoms; **imported by the other members rather than restated in them** | Draft v0.1 — **authored; not yet exercised.** Eleven required checks named in `APP-CONVENTION-REFERENCE.md` §6.2, of which `REF-V3`, `REF-V7` and `REF-V9` would not be written from the prose alone |
 | `APP-CONVENTION-EMBED` | Foundational — the generic rich-content typed node + two-level registry + output shape | Draft v0.2.3 — spine locked 3-way; **authored; not yet exercised.** Required checks in `APP-CONVENTION-EMBED.md` §9 |
-| `APP-CONVENTION-SEMANTIC-CONTENT-SITE` | First consumer — content sites built on Embed (document / content / compute anatomy) | Draft v0.4.2 — spine locked 3-way; `pages` cut; ordering floor pinned, semantic feeds open; v1 = manifest/page/nav/`.list`; **authored; not yet exercised.** Required checks in `APP-CONVENTION-SEMANTIC-CONTENT-SITE.md` §9, jointly with EMBED's |
-| `APP-CONVENTION-SHARE` | The share record + audience binding — a share is a titled grant; the audience is the `grantee`, never the `peers` scope | Draft v0.1 — **authored; not yet exercised**, and it leaves the follow `strategy` vocabulary open. Six required checks named in `APP-CONVENTION-SHARE.md` §8; `SHARE-4` and `SHARE-6` are the two that fail loudly under the intuitive-but-wrong reading |
+| `APP-CONVENTION-SEMANTIC-CONTENT-SITE` | First consumer — content sites built on Embed (document / content / compute anatomy) | Draft **v0.5** — spine locked 3-way; `pages` cut; ordering floor pinned, semantic feeds open; v1 = manifest/page/nav/`.list`; **v0.5 adds §11's `sites` URL-projection prefix.** ⭐ **PARTLY EXERCISED — the only member that is.** **3 of §9's 7 cases addressed**, by two implementations independently: the **entity round-trip** (each decodes and re-encodes the other's `app/site-manifest` / `app/site-page` bytes byte-identically), **`G-PIN-4`** (one fixture, two publishers, agreeing structural root, across two *different cores*), and **`F-5`** (nav depth, both bounds falsified). **The other 4 are blocked on something other than effort** — `G-PIN-3` on a signable pin artifact, and the lowering / passive-refuse vectors on an `Embed` entity node that exists in neither implementation, which is `APP-CONVENTION-EMBED`'s sequencing question and not this convention's. Required checks in §9, jointly with EMBED's |
+| `APP-CONVENTION-SHARE` | The share record + audience binding — a share is a titled grant; the audience is the `grantee`, never the `peers` scope | Draft **v0.2** — adds `app/share/publication`, the audience-less type, with D1–D4 and `SHARE-7`/`-8`/`-9`. **Authored; not yet exercised**, and it leaves the follow `strategy` vocabulary open. **Nine** required checks named in `APP-CONVENTION-SHARE.md` §8; `SHARE-4` and `SHARE-6` are the two that fail loudly under the intuitive-but-wrong reading |
 | `APP-CONVENTION-FEED` | **A thing someone posted** — the entry, the key-addressed index, the bounded collection, and the mirror. The vocabulary that makes *following someone across independent hosts* a format two implementations can both produce and both read | Draft v0.1 — **authored; not yet exercised.** Eleven required checks named in `APP-CONVENTION-FEED.md` §11.2, of which `FEED-3`/`-5`/`-6`/`-9` are load-bearing |
 
 ## 6. Document history

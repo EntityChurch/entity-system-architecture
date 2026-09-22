@@ -92,6 +92,19 @@ with an addressee block, each field on its own line:
 
 - **`To:` names repositories, one per line-item, never a person or a nickname.** Write the
   full repo name. A brace list (`entity-core-{go,rust,py}`) is fine and is expanded.
+- **A `To:` field is checked by OPENING the named tree and finding the subject in it
+  `[2026-09-09]`.** Every argument about this convention so far has been about seats that write
+  no addressee. **The other failure is worse and nobody predicted it: two seats each wrote a
+  correct-looking `To:`, and the packets still went nowhere because the repository named did not
+  hold the subject** — publish-pipeline findings addressed to a tooling repo when `publish.sh`,
+  the guards and the estate live in the meta repo one directory over. **A wrong-but-parseable
+  `To:` is indistinguishable from a right one to every instrument there is**; it parses, so it is
+  never `unaddressed`, and it is counted as delivered to *someone*. It also manufactures a false
+  negative about the recipient: the standing caveat on that channel read *"their tree contains
+  **zero** occurrences of us"* — measured at the same commit, **10 files, 14 occurrences**,
+  including a release audit with the sender's name in the filename. **Grep the tree you are about
+  to address. Same discipline as evidencing delivery, applied one step earlier — at the address
+  rather than at the receipt.**
 - **`cc:` is a real distinction, not decoration** — it says *this is not addressed to you and
   you are not on the hook for it.* A packet you need acted on goes in `To:`.
 - **The three fields go on their own lines.** `**To:** X · **From:** Y` on one line parses,
@@ -110,6 +123,20 @@ is opened.
   `ROUTING-2026-09-06-b-arch-the-code-set-that-omits-the-code-it-musts`.
 - **Letters are per-day and per-repo**, so never reuse one within a day in your own tree —
   two documents sharing an id is a defect in the sender's tree, not the reader's problem.
+
+### Record what you deliberately did NOT send `[2026-09-09]`
+
+**A tracker gets a section for the things you analysed and chose not to route** — with the reason,
+and including anything you drafted and withdrew. **Deliberately-not-sent is invisible from the other
+side and reads identically to forgotten**, so the next person to notice the gap re-derives the
+analysis and files the packet you already decided against.
+
+The strongest instance to date names three: a format convention held because its trigger (two
+working feeds) has not fired; an offer of cross-implementation evidence that is *an offer and not a
+request*, costing the recipient nothing to decline; and **a packet withdrawn because it was drafted
+on a measurement error — *"sending it would have handed a seat a fabricated forcing function."***
+That last one is the reason the section exists: a withdrawn packet leaves no trace anywhere, so
+nothing stops it being re-drafted from the same error.
 
 ### Receiving
 

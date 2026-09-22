@@ -8,9 +8,11 @@ application forever?
 enough instances to look for the pattern, and too many to keep adding to without one.
 
 **The short answer, and it inverts the expected one.** The carrier is not a design problem waiting
-to be solved. **Measured against the field's three-layer model for this exact question, two of the
-three layers are already built here and are the strongest in deployment. The third is written and
-is sitting in the wrong document.** The work is landing a rule, not inventing a format.
+to be solved. **Measured against the field's three-layer model for this exact question, all three
+layers are in place and two of them are the strongest in deployment.** What remains is not a format
+to invent but **four narrow corrections**, the sharpest of which is that the compatibility rule as
+written is *pairwise* where this substrate needs it *transitive* — because a mirror replays old
+entries forever.
 
 **Method.** Structural claims are checked against landed specification text or against
 implementation source. Comparative claims were read at the primary source. Where something is
@@ -142,12 +144,42 @@ error**. The field's mitigation comes in exactly three layers:
 
 | Layer | The field's best | **Here** |
 |---|---|---|
-| **1. A normative rule** — one way to do each thing; no in-place breaking change | criteria for new message kinds; schema evolution rules | ⚠ **drafted and NOT landed** — the compatibility contract and the growth rule live in a proposal, not in the tier standard |
+| **1. A normative rule** — one way to do each thing; no in-place breaking change | criteria for new message kinds; schema evolution rules | ✅ **landed as three project-tier `[MUST]`s** — and *stronger* than the tier-local discipline that was asked for, because it binds every specification rather than one family |
 | **2. Registry / collision prevention** | opaque integer kinds; DNS-rooted namespaced ids | ✅ **and it is the strongest of the three** — types are content-addressed **resolvable** entities: fetchable and self-describing, which an opaque integer is not |
 | **3. Runtime fallback** | an alt-text convention; handler advertisement | ✅ **and the strongest** — a **mandatory non-empty fallback**, a degradation ladder, and *unknown format drops clean rather than showing source text* |
 
-**So the position is: layers 2 and 3 are built and lead the field. Layer 1 is written and unlanded —
-and layer 1 is the one that governs the other two.**
+**So all three layers are in place, and the position is better than the field's.** *(A first pass of
+this document said layer 1 was "drafted and unlanded". That was true when the underlying schema study
+was written and had **already stopped being true**: the rule was promoted from a proposed
+family-local discipline to a project-tier obligation in the same week. **A build-state claim, stale
+inside a fortnight, in the document written to survey the state** — which is the recurring shape
+worth noticing more than the error.)*
+
+### §4.0 What the rule actually says
+
+**The compatibility contract.** A published type vocabulary is a commitment: **all data valid under a
+previous version must remain valid under the current one, and data produced under the current one
+must remain valid under the previous.** Concretely — *new fields are optional · a field's type never
+changes · a field is never renamed · a tag is never repurposed · a breaking change takes a new type
+tag.* A spec that must break compatibility **mints a new name and leaves the old one meaning what it
+meant.**
+
+**Why it is an obligation and not advice, and this is the sharpest sentence in the area:** a naming
+divergence **has no discovery path**. A type-filtered query using the wrong tag returns a *correct,
+complete, empty* answer. It never surfaces as a byte mismatch, because the two sides never hold each
+other's data at all — so the failure is invisible from both ends, indefinitely. **Its enforcement
+point is that pinned tags are greppable and a shape change fails cross-implementation comparison**;
+what a specification owes is that the case is *named* in its conformance inventory, so there is a
+comparison to run.
+
+**The anti-explosion gate.** A new entity type is minted **only when a conformant consumer must
+behave differently**, and whoever mints one must name that behaviour; otherwise new products go to a
+body type, a handler, or a renderer. **The test is behavioural, not taxonomic** — two things a
+consumer treats identically are one type however differently a person would describe them.
+
+**The container rule.** A property governing what a consumer may *do* with an entity — republish,
+warn over, cache — **lives on the entity, never on a collection, index or mirror containing it.**
+*Containers do not travel; entities do.*
 
 ### §4.1 The falsification, which is the strongest evidence here
 
@@ -163,24 +195,36 @@ arrivals at the same encoding decision.
 
 ### §4.2 So what is actually open
 
-Not *"design a carrier."* Four narrower things:
+Not *"design a carrier"*, and no longer *"land the rule"*. **Four narrower things, each checked
+against the landed text rather than against the proposal that asked for it:**
 
-1. **Land layer 1.** The governing rule exists as drafted text in a proposal and belongs in the tier
-   standard, where every member inherits it rather than one member owning it.
-2. **Three named gaps in that rule**, each currently absent: an **experimental namespace
-   convention** · a stated **freeze trigger** (the field's sharpest is *a third-party
-   implementation, even without permission*) · and whether the compatibility contract is
-   **transitive or pairwise** — which matters here more than in most systems, because **a mirror
-   replays old entries forever**.
-3. **Defaults.** The field says defaults are what make adding and removing fields compatible. This
-   substrate has optionality and a hash-distinguishing absent/null rule, which is stricter and may
-   make defaults *impossible* rather than merely missing: **a default a consumer materializes
-   changes no bytes; a default a producer materializes changes the hash.** That asymmetry has no
-   paragraph anywhere.
-4. **How much structure the envelope carries.** Too much and every application inherits a schema it
-   did not want; too little and nothing generic can index, check freshness, or render a fallback.
-   **This is the one genuinely open design question**, and §4's scorecard narrows it considerably:
-   layers 2 and 3 already answer most of what an envelope would have been invented to provide.
+1. ⚠ **The contract is PAIRWISE and this substrate needs it TRANSITIVE.** As landed it binds *"a
+   previous version"* — singular, i.e. each version against the one before it. The field's name for
+   the stronger form is *transitive* compatibility, and it exists because teams that replay
+   long-retention data get bitten by the weak one. **This system replays long-retention data by
+   design: a mirror re-serves entries indefinitely, and a reader walking an old signed root is
+   reading a vocabulary several versions back.** So the chain-of-pairwise-steps guarantee is not the
+   one we need. **Small correction to landed text, real consequence.**
+2. **No experimental namespace convention exists** — searched, and there is none at any tier. The
+   field reserves a range or a marked segment precisely so that *"this is not yet a commitment"* is
+   sayable. Without one, every experiment is either a permanent commitment on first publication or
+   an undeclared breach of the contract above, and **the contract's own strictness is what creates
+   the need**.
+3. **No freeze trigger is stated.** Nothing says when a vocabulary stops being editable. The field's
+   sharpest answer is behavioural rather than procedural — *a third-party implementation, even one
+   built without permission* — which fits this ecosystem well, since publication is unilateral and
+   nobody grants permission to implement.
+4. **Defaults, and the asymmetry is peculiar to content addressing.** The field says defaults are
+   what make adding and removing fields compatible. Here there is optionality and a
+   hash-distinguishing absent/null rule, which is stricter and may make defaults *impossible* rather
+   than merely missing: **a default a consumer materializes changes no bytes; a default a producer
+   materializes changes the hash.** That has no paragraph anywhere.
+
+**And then the design question:** how much structure the envelope carries. Too much and every
+application inherits a schema it did not want; too little and nothing generic can index, check
+freshness, or render a fallback. **The scorecard narrows it considerably** — layers 2 and 3 already
+supply most of what an envelope would have been invented to provide, so what remains is a much
+smaller decision than it looked before this pass.
 
 ### §4.3 A consequence worth stating plainly
 
@@ -206,10 +250,23 @@ accept those terms mostly evaporates.** The architecture above is what makes tha
 remaining friction is operational, and it is exactly the friction the hosted rung removes.
 
 **What gates it today, measured, is the on-ramp and not the vocabulary.** In the shipped
-implementation the publish path reads a **render directory**, not a live profile; a browser-resident
-user's data has no path out at all. **A composer that writes a perfect entry therefore produces
-something nobody can see.** This blocks the *claim*; it does not block the vocabulary work, and the
-vocabulary should not wait for it.
+implementation the publish path runs on **a fresh ephemeral peer seeded with a bundled demo set** —
+its own module header calls it *"a demo / SSG generator, honestly so"* — rather than on the user's
+live profile. **A composer that writes a perfect entry therefore produces something nobody can
+see.** This blocks the *claim*; it does not block the vocabulary work, and the vocabulary should not
+wait for it.
+
+**But the gap is a wiring gap, not a missing capability, and that is the most useful thing this
+survey re-measured.** The seam is already named in the source, with the assertion that *swapping the
+"fresh + seed demo" body for "load peer dir → read its real sites" leaves every emitter downstream
+unchanged* — and **the native backend already loads the durable store and the key together**, in one
+record carrying both the keypair and a concrete on-disk store path. **The two halves exist on the
+same side of the wall and are not connected.** So this is a smaller and much better-understood piece
+of work than *"publishing is unimplemented"* suggests.
+
+**And it is the structural reason the native build is the natural publishing host** (§4): the two
+things the publish seam needs are already resolved together there and nowhere else. Any other host
+would have to re-implement the half that already exists.
 
 **The pipeline underneath it — domains, storage providers, cache behaviour, transport semantics — is
 deliberately unspecified for now.** It is the least protocol-native surface in the system, the one
@@ -234,9 +291,9 @@ hosted service must not be able to produce any entity a self-hoster could not pr
 | Byte fidelity when re-serving a foreign encoding | 🟢 **built and measured**, falsified in both directions |
 | The shared reference atom | 🟡 **specified**, not yet exercised |
 | Feed / share / embed / site vocabularies | 🟡 **specified**; exercise belongs to the implementations |
-| **The compatibility rule (layer 1)** | 🔴 **drafted, unlanded** — §4 |
+| **The compatibility rule (layer 1)** | 🟢 **landed**, as three project-tier obligations — but **pairwise where it needs to be transitive**, §4.2 |
 | **Follow set, cursor, refresh loop** | 🔴 **neither** — three shipped consumers want it, none has it |
-| **Publish from a live profile** | 🔴 **neither** — §5 |
+| **Publish from a live profile** | 🟡 **both halves built, not wired** — the seam is named and the durable store and key already load together on the native side; the headless publish binary does not go through that path (§5) |
 | **The hosted-publishing handoff** | 🔴 **specified nowhere** |
 
 **One correction this table encodes:** several capabilities recorded elsewhere as missing are built.
@@ -251,13 +308,13 @@ shipped code.
 
 | # | Work | Scale | Rests on | Note |
 |---|---|---|---|---|
-| 1 | **Land layer 1** — the compatibility rule into the tier standard | **S** | nothing | Text exists. It governs everything below it |
+| 1 | **Make the compatibility contract transitive**, and add an experimental namespace + a freeze trigger | **S** | nothing | The rule is landed; these are corrections to it. Cheapest high-value work on the board |
 | 2 | **The refresh loop as substrate** | **M–L** | nothing | **Do it before any feed work.** Three shipped consumers already want it, none has a cursor, and it carries the most design risk. A loop falsified against three real callers beats one falsified against a hypothetical |
-| 3 | **Name the application ABI** (§1), including the emit slot | **S** | 1 | Prevents a third application growing its own arm |
+| 3 | **Name the application ABI** (§1), including the emit slot | **S** | — | Prevents a third application growing its own arm |
 | 4 | **Feed vocabulary + reader + composer** | **S/M each** | 2, 3 | Every piece has an in-tree template |
-| 5 | **Publish from a durable store** | **L** | — | No template. The self-hosted half of the on-ramp |
+| 5 | **Publish from a durable store** | **M** *(was sized L)* | — | **Not a missing capability — a wiring gap.** The seam is named, its downstream is asserted unchanged, and the store and key already load together on the native side. **Re-sized after a source read; the L came from a survey** |
 | 6 | **The hosted handoff, and the live rung beside it** | **?** | the pipeline settling | Gates the §5 claim. Not sized until the shape stops moving |
-| 7 | **The envelope question** (§4.2 item 4) | **M** | 1, and enough vocabularies to generalize from | Arguably reachable now |
+| 7 | **The envelope question** (§4.2) | **M** | 1, and enough vocabularies to generalize from | Arguably reachable now, and smaller than it looked |
 
 **The ordering that matters most is 2 before 4**, and it inverts the obvious one.
 

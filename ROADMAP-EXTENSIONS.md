@@ -46,22 +46,22 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 
 | extension | ver | what it provides |
 |---|---|---|
-| `EXTENSION-TREE` | 4.3 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
-| `EXTENSION-CONTENT` | 3.6 | content-hash address space, closure materialization, partial-sync |
-| `EXTENSION-TYPE` | 1.2 | runtime type registration |
-| `EXTENSION-REVISION` | 3.12 | revision chains, diff/merge-config, deletion markers |
+| `EXTENSION-TREE` | 4.8 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
+| `EXTENSION-CONTENT` | 3.7 | content-hash address space, closure materialization, partial-sync |
+| `EXTENSION-TYPE` | 1.3 | runtime type registration |
+| `EXTENSION-REVISION` | 3.13 | revision chains, diff/merge-config, deletion markers |
 | `EXTENSION-SUBSCRIPTION` | 3.18 | reactive subscriptions, cross-peer mirror |
 | `EXTENSION-CONTINUATION` | 1.23 | forward continuations, structural-transform chains |
 | `EXTENSION-INBOX` | 5.9 | message inbox, delivery |
-| `EXTENSION-HISTORY` | 1.7 | parent-ref history walk |
+| `EXTENSION-HISTORY` | 1.10 | parent-ref history walk |
 | `EXTENSION-QUERY` | 1.7 | entity query / path-prefix |
-| `EXTENSION-COMPUTE` | 3.27 | expression evaluation, the lowering toolkit |
+| `EXTENSION-COMPUTE` | 3.29 | expression evaluation, the lowering toolkit |
 | `EXTENSION-GROUP` | 1.4 | group membership |
 | `EXTENSION-IDENTITY` | 3.10 | identity convention over the attestation substrate |
 | `EXTENSION-ATTESTATION` | 1.3 | generic attestation edge substrate |
 | `EXTENSION-QUORUM` | 1.2 | K-of-N quorum primitive |
 | `EXTENSION-CLOCK` | 1.3 | logical/wall clock |
-| `EXTENSION-ROLE` | 2.0 | role assignment + delegation (M4→M5: v2.0 root-cap green round pending) |
+| `EXTENSION-ROLE` | 2.1 | role assignment + delegation (M4→M5: v2.0 root-cap green round pending) |
 
 > **How an extension attaches, which is not visible from a version column and which an implementer
 > needs before choosing an order.** Most extensions register a **new handler at a new pattern**
@@ -88,12 +88,12 @@ Landed as specs; implementation converging. This is the **release-critical work-
 | extension | ver | maturity | phase / open work |
 |---|---|---|---|
 | `EXTENSION-NETWORK` | 1.6 A14 | M4 | transport family; v1 publish/relay gate 3-way green. Base wire framing is core. Amdt 8 (session entity) / 11 (dispatch-fallback) / 13 (reachability facts) / 14 (`establish_live` seam) folded. |
-| `EXTENSION-RELAY` | 1.3 | M4 | dispatch-fallback seam folded; §8 store bounds (retention clamp + storage refusal) landed; R8 raw-frame gaps tracked. **2 of the 4 modes still carry no normative text** |
+| `EXTENSION-RELAY` | 1.5 | M4 | dispatch-fallback seam folded; §8 store bounds (retention clamp + storage refusal) landed; R8 raw-frame gaps tracked. **2 of the 4 modes still carry no normative text** |
 | `EXTENSION-ROUTE` | 1.0 | M3 | source-routed multi-hop; Go build-tested, cohort catching up |
-| `EXTENSION-SIGNALING` | 1.1 | M3 | `system/signaling` rendezvous carrier + `system/nat/*`; built three ways, unwrapped surface + punch not yet built |
+| `EXTENSION-SIGNALING` | 1.2 | M3 | `system/signaling` rendezvous carrier + `system/nat/*`; built three ways, unwrapped surface + punch not yet built |
 | `EXTENSION-SUBSTITUTE` | 1.3 | M4 | CDN release v1 (Tier-1) — Mechanism-A storage substrate |
-| `EXTENSION-REGISTRY` | 1.21 | M2→M3 | substrate + local-name + peer-issued resolve landed; **v1 NOT complete** (see Stage E) |
-| `EXTENSION-DISCOVERY` | 1.1 | M2→M3 | mDNS peer-finding; impl-ready |
+| `EXTENSION-REGISTRY` | 1.26 | M2→M3 | substrate + local-name + peer-issued resolve landed; **v1 NOT complete** (see Stage E) |
+| `EXTENSION-DISCOVERY` | 1.2 | M2→M3 | mDNS peer-finding; impl-ready |
 | `EXTENSION-ENCRYPTION` | 1.0 | M2→M3 | self/peer/group; BLOCK-0 byte-pin green 3-way; **BLOCK-1 end-to-end gating v1.0** (Stage E) |
 
 **Phase ordering in this family:** NETWORK transport → RELAY/ROUTE forwarding → REGISTRY/DISCOVERY

@@ -30,7 +30,7 @@ The patterns are descriptive vocabulary, not normative architecture. They help r
 
 Content is fully determined by the current code and the peer's identity material. Both inputs are available at every start; the peer can compute the full canonical content.
 
-Examples: type definitions, handler entities, handler interface entities, local transport bindings, the peer's identity entity (`system/peer/self`, deterministic from `{peer_id, public_key, key_type}`).
+Examples: type definitions, handler entities, handler interface entities, local transport bindings, the peer's identity entity (`system/peer/self`, deterministic from `{public_key, key_type}` — `peer_id` is not in the hashable basis, `ENTITY-CORE-PROTOCOL.md` §3.5).
 
 Handling pattern: idempotent re-creation at every start works fine. When the code is unchanged, the resulting content hash matches the existing tree binding and §1.1 no-op suppression eliminates the emit. When the code changes (a release with new handler manifest shape, new type field, new transport configuration), the new content hash differs and the upgrade cascade fires naturally — old binding overwritten, consumers notified.
 
