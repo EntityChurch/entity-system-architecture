@@ -1,7 +1,8 @@
 # Entity System — Normative Specification Format
 
-**Version**: 1.1
+**Version**: 1.2
 **Status**: Active
+**v1.2:** §4.1, new — a requirement that constrains a party, a namespace or a path states the failure it prevents. §8.5's conformance-class list follows `GUIDE-CONFORMANCE` §7.0 from three classes to four (the host-seam check, §7d).
 
 ---
 
@@ -157,6 +158,26 @@ Per RFC 2119:
 | **MAY** | Optional. Implementations choosing not to implement remain conformant. |
 
 Keywords appear in **UPPERCASE BOLD** in prose, or uppercase in pseudocode comments.
+
+### 4.1 A constraining requirement states the failure it prevents
+
+**[MUST]** A normative requirement that **constrains a party, a namespace, or a path** states the
+failure it prevents, in the same paragraph — or cites the section that does.
+
+**An unexplained prohibition is an over-broad prohibition by default.** A later reader cannot scope
+what was never explained, and a reader guessing conservatively guesses **wider**, not narrower. The
+rule is written against a measured case: the core protocol's `system/*` path reservation carried no
+rationale in any revision from the file's first commit, and its widest reading — the one every
+implementer arrived at independently — made it impossible to install any standard extension on any
+peer, because every standard extension owns a `system/*` namespace. The rule was not wrong. It was
+unscoped in the one way that mattered, and nobody could tell, because it never said what it was for.
+
+This is an authoring property, not a style preference: the *because* clause is the only thing that
+lets a downstream reader decide whether a new case falls inside the rule or outside it.
+
+**Mechanically checkable:** a `MUST NOT` naming a path prefix or a class of actor, with no *because*
+clause in its paragraph and no citation to one, is the finding. Existing debt is held and paid down
+file by file rather than gating.
 
 ---
 
@@ -496,7 +517,7 @@ Conversely, connectivity data — candidates, observed addresses, punch coordina
 
 Extension specs have their own conformance section. An implementation MAY be conformant to the core protocol without implementing any extensions. Extension conformance is independent.
 
-**A conformance item MUST declare its class, and "vector" alone does not `[MUST]`.** `GUIDE-CONFORMANCE` §7.0 names three different artifacts the word is used for — a **`validate-peer` check** (behavioral, driven over the wire against a running peer, authored by the oracle author), a **fixture-corpus vector** (static byte-level `.diag` + canonical `.cbor`, authored upstream), and an **impl-internal unit / property / fuzz test** (not cross-impl, not conformance). A spec that pins a conformance item **names which**, because the three have different authors, different homes, and wildly different costs to satisfy — and an undeclared item routes work to a seat that does not author it.
+**A conformance item MUST declare its class, and "vector" alone does not `[MUST]`.** `GUIDE-CONFORMANCE` §7.0 names four different artifacts the word is used for — a **`validate-peer` check** (behavioral, driven over the wire against a running peer, authored by the oracle author), a **fixture-corpus vector** (static byte-level `.diag` + canonical `.cbor`, authored upstream), a **host-seam check** (an assertion about a peer's in-process API, driven by the peer's own harness and asserted over the wire — `GUIDE-CONFORMANCE` §7d), and an **impl-internal unit / property / fuzz test** (not cross-impl, not conformance). A spec that pins a conformance item **names which**, because the four have different authors, different homes, and wildly different costs to satisfy — and an undeclared item routes work to a seat that does not author it.
 
 **The classes are not interchangeable as evidence, which is the substantive reason and not a filing convention.** A pure-function check any seat can satisfy in-tree with no harness proves almost nothing about interop; a behavioral check against a live peer may require harness capability nobody has built. **Reporting both as "3-way green" reads as one level of assurance and delivers two.** Where a spec's own text distinguishes them — *"landed 3-way GREEN, injected-reader"*, *"byte-pinned"* — it is making exactly this distinction, and it should be made everywhere rather than where an author happened to remember.
 

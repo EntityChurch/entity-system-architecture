@@ -451,7 +451,7 @@ This is the only cross-repo flow. Arch writes to its own repo; keystone reads fr
 
 Wire conformance (§§1–6) is one of several surfaces. A peer's conformance claim is `(spec-version, V7 §2.11 level, extension set)` — what it must clear scopes to that.
 
-### §7.0 Three different things are called a "vector" — say which one
+### §7.0 Four different things are called a "vector" — say which one
 
 **The word is overloaded, including inside the oracle's own source comments, and asking for the wrong
 one routes work to a seat that does not author it.** Before writing *"needs a vector,"* pick a row:
@@ -460,6 +460,7 @@ one routes work to a seat that does not author it.** Before writing *"needs a ve
 |---|---|---|---|
 | **`validate-peer` check** (or *behavioral vector*) | an assertion driven **over the wire against a running peer**, grouped into a **category** (`capability`, `entity_native`, `connectivity`, …) | `entity-core-go/cmd/internal/validate/*.go` | **`entity-core-go`**, per the §9 register's cross-impl authoring convention — *not* whichever seat found the defect |
 | **fixture corpus** (or *test-vector corpus*) | static byte-level data — `.diag` source + canonical `.cbor` — for ECF / crypto-agility | `entity-core-protocol/specs/test-vectors/` | **architecture** (this team); vendored downstream per §6 |
+| **host-seam check** | an assertion about a peer's **in-process API** — `register_handler` and what it binds — **driven** by the peer's own harness and **asserted** over the wire. The one class `validate-peer` structurally cannot drive alone, because it speaks TCP and the surface under test is a function call | harness: generated per peer · assertion: the `validate-peer` transport | **architecture** authors the reference handler and its expected observable; the generator builds the harness; `entity-core-go` carries the transport. **See §7d** |
 | **unit / property / fuzz test** | impl-internal correctness, not cross-impl and not conformance | each repo's own test files | that repo, its own concern |
 
 **`entity-core-keystone` authors none of these.** It **consumes** the oracle: it pins a version
@@ -791,6 +792,101 @@ correction note below.
 > class is not the discipline; opening the section that owns it is.** The cost had it shipped: four
 > vectors routed to the wrong authoring split, into a directory built for crypto agility, against a corpus
 > that already existed and would have absorbed them for free.
+
+## §7d The extension-host seam (`register_handler`) — the class the wire oracle cannot drive
+
+**Class:** host-seam check. **Driven** in-process by the peer's own harness; **asserted** over the wire
+by the oracle. **Authored** by architecture (the reference handler and its expected observable);
+**built** per-peer by the generator; **run** by the existing `validate-peer` transport.
+
+### §7d.1 Why this is a fourth class and not a `validate-peer` category
+
+`validate-peer` drives a peer over TCP. **It cannot call an in-process API**, so there is no way to
+write a wire check that asserts *"this peer's `register_handler` works."* That is not an oversight in
+the oracle; it is the shape of the problem, and it is why the seam went unmeasured for the whole life
+of the cohort while every peer reported green.
+
+The mechanism to close it already exists. Every generated peer boots into a conformance mode that
+installs handlers a normal run does not have (§7a's `system/validate/*` surface). **The host-seam check
+is that hook with one difference: the handlers MUST be installed through the public primitive, not
+compiled into bootstrap.** A peer that satisfies §7a by hardcoding its validate handlers into its
+bootstrap path satisfies nothing here.
+
+### §7d.2 The harness contract
+
+The peer's host-seam harness performs the following, in order, using **only public API**:
+
+| # | Harness action | Oracle asserts over the wire |
+|---|---|---|
+| 1 | `register_handler` a reference handler at `app/validate/host-seam/echo` with a **language-native** body | the three `SDK-OPERATIONS` §11.6.1 tree artifacts exist at their paths |
+| 2 | — | dispatch to the pattern returns the **native body's** result (§7d.3) |
+| 3 | `register_handler` the **same pattern** again; publish the outcome at `app/validate/host-seam/collision` | that entity records `409` |
+| 4 | close the handle | dispatch → `404`; all three tree artifacts are gone |
+| 5 | `register_handler` at `system/validate/host-seam/ext` — a `system/*` install path | the three artifacts exist |
+
+**Row 5 asserts only that the SDK primitive does not carry a hardcoded namespace refusal of its own**
+(`SDK-OPERATIONS` §11.6). Every standard extension owns a `system/{ext}/…` namespace, so a primitive that
+refuses `system/*` by prefix cannot install one, and that is the defect this row catches.
+
+> **It is NOT a check that a peer permits `system/*` installation as a matter of policy.**
+> `ENTITY-CORE-PROTOCOL` 0.8.2.13 **withdrew** the `system/*` prefix reservation, and withdrawing a
+> prohibition does not create an obligation in the other direction: a deployment that declines to install
+> extensions at `system/*` after startup, or that issues no grant covering those paths, is conformant.
+> **This row runs against the peer's own conformance harness composing its own peer, which is the one
+> context where the policy question does not arise.** An earlier draft of this row asserted that the peer
+> *"did not refuse `403 forbidden_pattern`"* — that would have made a local policy decision a conformance
+> failure, which is exactly the overreach the withdrawal removed.
+
+### §7d.3 The reference body MUST be inattributable to any other mechanism
+
+**The whole class turns on row 2.** The oracle already carries a `core_register_body_binding` check
+whose message reads *"entity-native echo body bound at …/expr"* — it binds a `compute/literal` at an
+`expression_path`, because that is the body kind a wire oracle can install. **Two body mechanisms reach
+one observable — a `200` from a registered pattern — and a check that does not separate them attributes
+the result to whichever it can drive.** So:
+
+> The reference body **MUST** return a value that no `compute/literal` can produce — specifically, a
+> value derived from **both** a field of the request params **and** state captured at registration time
+> (for example `f(params.n, captured_salt)`). A `compute/literal` returns a fixed entity, and a
+> compute-expression body cannot see registration-time host state at all.
+
+Without that property the check passes on a peer that implements nothing new, which is the state every
+peer in the cohort is in today.
+
+### §7d.4 Both controls are mandatory
+
+A gate is validated in **both** directions before it is trusted, and both runs are recorded in the
+check's own message — the `core_register_reserved_*` family already does this:
+
+- **Negative.** A harness mutated to skip §11.6.1's step 4 — tree writes performed, dispatch index not
+  bound — **MUST go RED**. Without this control the check passes on a peer that only writes the tree.
+- **Positive.** An unmutated harness **MUST go GREEN**, and a peer that declares the class **declined**
+  (`SDK-OPERATIONS` §11.6) **MUST report `declined`, not WARN and not FAIL**. A population where most
+  peers score inconclusive is the tell that the reference answer is wrong, and this class starts against
+  a cohort in which several peers genuinely have no first-class callable to bind.
+
+**`declined` is a conformance outcome, not a gap.** A peer that composes a fixed extension set at build
+time rather than at runtime is a legitimate peer; what is not legitimate is being unable to tell that
+peer apart from one that simply never implemented the seam.
+
+### §7d.5 Consumer ordering — the one row this class owes that is not about `register_handler`
+
+`SYSTEM-COMPOSITION` §2.2 fixes the order in which emit consumers run, and states its own failure in
+**wire-observable** terms: reversing the subscription and revision positions produces *"subscribers
+seeing a change without a version entry."* **Nothing in any conformance category tests consumer
+ordering**, and the ordering is set by registration order in peer-owner wiring code — the same
+hand-written composition this seam exists to let a generator replace.
+
+One row, and it is drivable with no new surface:
+
+> Install REVISION and SUBSCRIPTION on a peer, subscribe under a tracked prefix, write to a path under
+> that prefix, and assert the **version entry is present in the notification the subscriber receives**.
+> A peer whose auto-version consumer runs after subscription notification fails this and is otherwise
+> indistinguishable from a conformant one.
+
+This row is filed here rather than under a per-extension category because the property is a fact about
+the **composition**, not about either extension — §2.4 is explicit that the ordering applies to whichever
+consumers are present, so no single extension's spec owns it.
 
 ## §8 `validate-peer` remediation roadmap (the Go handoff)
 

@@ -1,724 +1,722 @@
 {
- "meta": {
-  "note": "accepted debt; --update-baseline may only lower",
-  "total": 2466,
-  "files": 168,
-  "rules": [
-   "amendment-provenance",
-   "date-in-body",
-   "discipline-letter-ref",
-   "document-history-section",
-   "impl-team-ref",
-   "internal-path-ref",
-   "operator-quote",
-   "proposal-citation"
-  ]
- },
- "categories": {},
- "debt": {
-  "docs/proposals/INDEX.md": {
-   "discipline-letter-ref": 10,
-   "impl-team-ref": 28,
-   "internal-path-ref": 13,
-   "operator-quote": 5
-  },
-  "docs/proposals/active/applications/PROPOSAL-ACQUISITION-SURFACE-PROTOTYPE-TIER.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 15,
-   "operator-quote": 2
-  },
-  "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-CHAT.md": {
-   "operator-quote": 2
-  },
-  "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-COMPUTE-PROGRAM.md": {
-   "impl-team-ref": 13,
-   "operator-quote": 1
-  },
-  "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-FEED.md": {
-   "impl-team-ref": 4,
-   "operator-quote": 1
-  },
-  "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-CONTRACT.md": {
-   "impl-team-ref": 5,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md": {
-   "impl-team-ref": 3
-  },
-  "docs/proposals/active/applications/PROPOSAL-EXTENSION-HOST-INSTALL-SEAM.md": {
-   "discipline-letter-ref": 19,
-   "impl-team-ref": 24,
-   "internal-path-ref": 1,
-   "operator-quote": 5
-  },
-  "docs/proposals/active/applications/PROPOSAL-FOLLOW-THE-PATTERN-THE-SET-AND-THE-TWO-ROUTES.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/proposals/active/applications/PROPOSAL-SUB-PEER-ISOLATION-MODEL.md": {
-   "impl-team-ref": 18,
-   "internal-path-ref": 2,
-   "operator-quote": 4
-  },
-  "docs/proposals/active/applications/PROPOSAL-THE-COORDINATE-AND-WALK-DISCOVERY.md": {
-   "discipline-letter-ref": 1
-  },
-  "docs/proposals/active/applications/PROPOSAL-THE-REPLY-HINT.md": {
-   "operator-quote": 1
-  },
-  "docs/proposals/active/applications/PROPOSAL-WINDOW-ID-LIFETIME-AND-THE-WINDOW-INDEX.md": {
-   "discipline-letter-ref": 10,
-   "impl-team-ref": 33
-  },
-  "docs/proposals/active/extensions/PROPOSAL-CLOCK-ADDRESSABLE-TICK-AND-DEADLINE.md": {
-   "impl-team-ref": 1
-  },
-  "docs/proposals/active/extensions/PROPOSAL-COMPUTE-BUDGET-PREEMPTION.md": {
-   "impl-team-ref": 5,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/active/extensions/PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM.md": {
-   "impl-team-ref": 4
-  },
-  "docs/proposals/active/extensions/PROPOSAL-CONSUMER-TRUST-ANCHOR-ON-THE-STATIC-PATH.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 17,
-   "internal-path-ref": 1,
-   "operator-quote": 4
-  },
-  "docs/proposals/active/extensions/PROPOSAL-IDENTITY-ROTATION-AUTHORITY-PARITY.md": {
-   "impl-team-ref": 3,
-   "internal-path-ref": 3,
-   "operator-quote": 2
-  },
-  "docs/proposals/active/extensions/PROPOSAL-INBOX-OPEN-DELIVERY-ADMISSION.md": {
-   "operator-quote": 1
-  },
-  "docs/proposals/active/extensions/PROPOSAL-MEMBERSHIP-CONDITIONED-GRANTS.md": {
-   "internal-path-ref": 1
-  },
-  "docs/proposals/active/extensions/PROPOSAL-PEER-TRANSPORT-SET.md": {
-   "discipline-letter-ref": 12,
-   "impl-team-ref": 32,
-   "internal-path-ref": 1,
-   "operator-quote": 7
-  },
-  "docs/proposals/active/extensions/PROPOSAL-RELAY-COMPLETE-THE-MODE-SET.md": {
-   "discipline-letter-ref": 14,
-   "impl-team-ref": 33,
-   "internal-path-ref": 11,
-   "operator-quote": 15
-  },
-  "docs/proposals/active/extensions/PROPOSAL-REVISION-MERGE-DELEGATION-AND-CASCADE.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 43,
-   "internal-path-ref": 7,
-   "operator-quote": 5
-  },
-  "docs/proposals/active/extensions/PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME.md": {
-   "impl-team-ref": 10,
-   "internal-path-ref": 3
-  },
-  "docs/proposals/active/extensions/PROPOSAL-SYSTEM-DEVICE.md": {
-   "impl-team-ref": 5
-  },
-  "docs/proposals/active/process/PROPOSAL-CONFORMANCE-ORACLE-CONTRACT.md": {
-   "impl-team-ref": 9,
-   "internal-path-ref": 3
-  },
-  "docs/proposals/active/process/PROPOSAL-CORPUS-REFERENCE-INTEGRITY.md": {
-   "impl-team-ref": 2
-  },
-  "docs/proposals/active/process/PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD.md": {
-   "internal-path-ref": 2
-  },
-  "docs/proposals/active/process/PROPOSAL-MATURITY-MODEL-AND-ROADMAP-COMMUNICATION.md": {
-   "impl-team-ref": 17,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/deferred/PROPOSAL-IDENTITY-CROSS-ALGORITHM-MIGRATION.md": {
-   "impl-team-ref": 9
-  },
-  "docs/proposals/implemented/applications/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md": {
-   "impl-team-ref": 17
-  },
-  "docs/proposals/implemented/applications/PROPOSAL-SDK-HANDLER-OWNED-SERVICES.md": {
-   "impl-team-ref": 6,
-   "internal-path-ref": 1,
-   "operator-quote": 4
-  },
-  "docs/proposals/implemented/applications/PROPOSAL-SHARE-AS-GRANT-AND-THE-AUDIENCE-CARRIER.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 14,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-EMPTY-GRANTS-AND-POLICY-WITHDRAWAL.md": {
-   "impl-team-ref": 30,
-   "internal-path-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-MINT-TEMPORAL-CEILING-AND-THE-WITHDRAWAL-BOUND.md": {
-   "impl-team-ref": 33,
-   "operator-quote": 3
-  },
-  "docs/proposals/implemented/core/PROPOSAL-CONNECT-PREAUTH-SCOPE-AND-ADDRESS-BEFORE-AUTH.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 8
-  },
-  "docs/proposals/implemented/core/PROPOSAL-CONTINUATION-BOUNDS-PROPAGATION.md": {
-   "impl-team-ref": 12,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/core/PROPOSAL-GENERIC-400-SYNONYMS-AND-THE-PRE-ESTABLISHMENT-EXECUTE.md": {
-   "discipline-letter-ref": 8,
-   "impl-team-ref": 12
-  },
-  "docs/proposals/implemented/core/PROPOSAL-POLICY-PATH-KEY-FORMS-6-2-VS-6-9A-1.md": {
-   "impl-team-ref": 19,
-   "operator-quote": 4
-  },
-  "docs/proposals/implemented/core/PROPOSAL-STATUS-CODE-SLOT-AND-THE-DEFAULT-CODE-FORCE.md": {
-   "discipline-letter-ref": 10,
-   "impl-team-ref": 31
-  },
-  "docs/proposals/implemented/core/PROPOSAL-STATUS-TABLE-DEFAULT-CODES-AND-THE-501-SYNONYM.md": {
-   "discipline-letter-ref": 8,
-   "impl-team-ref": 23
-  },
-  "docs/proposals/implemented/core/PROPOSAL-THE-400-SLOT-FALLBACK-AND-THE-TREE-PUT-ROWS.md": {
-   "impl-team-ref": 7,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/core/PROPOSAL-THE-PUT-ADMISSION-PREDICATE-AND-THE-CONTENT-CODE-TABLES.md": {
-   "discipline-letter-ref": 5,
-   "impl-team-ref": 11
-  },
-  "docs/proposals/implemented/core/PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY.md": {
-   "discipline-letter-ref": 11,
-   "impl-team-ref": 6,
-   "operator-quote": 3
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-AVAILABILITY-DESCRIPTOR.md": {
-   "impl-team-ref": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md": {
-   "impl-team-ref": 7,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM.md": {
-   "impl-team-ref": 4
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE.md": {
-   "discipline-letter-ref": 9,
-   "impl-team-ref": 38,
-   "internal-path-ref": 2,
-   "operator-quote": 4
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-COLLECTION-PRIMITIVES.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 12,
-   "operator-quote": 5
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-IS-ERROR-PREDICATE.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 5,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-V324-CORNERS.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 10,
-   "internal-path-ref": 3
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONNECTION-NODE.md": {
-   "impl-team-ref": 6,
-   "operator-quote": 8
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md": {
-   "impl-team-ref": 6,
-   "operator-quote": 12
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONTAINED-ERROR-BOUNDARY-AND-CONTENT-URL-HASH-SHAPE.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 8
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-DELIVER-TOKEN-AND-LEVEL-2.md": {
-   "impl-team-ref": 7,
-   "internal-path-ref": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-LOST-ERROR-MARKER-MUST.md": {
-   "impl-team-ref": 7,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-STANDING-MODEL.md": {
-   "impl-team-ref": 7,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-DEFAULT-NAME-FORMAT-DISPATCH.md": {
-   "impl-team-ref": 18,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-DISCOVERY-RENDEZVOUS-BACKEND.md": {
-   "impl-team-ref": 11
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-DISPATCH-AUTHORIZATION-FRAME.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 19,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-ENCRYPTION-NAMESPACE-AND-RECIPIENT-RESOLUTION.md": {
-   "impl-team-ref": 8,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md": {
-   "impl-team-ref": 10
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-SIGNALING-COORDINATION-ENVELOPE.md": {
-   "impl-team-ref": 9
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md": {
-   "impl-team-ref": 10,
-   "internal-path-ref": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-HISTORY-CONFIG-SELECTION-TOTAL-ORDER.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 10,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG.md": {
-   "impl-team-ref": 16,
-   "internal-path-ref": 4,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM.md": {
-   "impl-team-ref": 7,
-   "internal-path-ref": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVENESS-REACTIVE-BUILDOUT.md": {
-   "impl-team-ref": 31,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-REACHABILITY-FACTS.md": {
-   "impl-team-ref": 7,
-   "operator-quote": 5
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-SEAM-CONSULTATION-BOUND.md": {
-   "impl-team-ref": 9
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md": {
-   "impl-team-ref": 10,
-   "operator-quote": 11
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-PIN-THE-PATH-REQUIRED-STATUS.md": {
-   "discipline-letter-ref": 8,
-   "impl-team-ref": 6
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-FRONT-DOOR.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 19,
-   "internal-path-ref": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH.md": {
-   "impl-team-ref": 21,
-   "internal-path-ref": 4
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-DISPATCH-CONFIG-ENFORCEMENT-POINT.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 18,
-   "internal-path-ref": 1,
-   "operator-quote": 12
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-DISPATCH-FILTER-SEMANTICS.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 21,
-   "internal-path-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-ASSOCIATION-AND-THE-HOSTILE-HOST.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 31,
-   "internal-path-ref": 1,
-   "operator-quote": 11
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-LEGALITY-INPUT-DOMAINS.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 8
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-ONE-NAME-MATCHER.md": {
-   "impl-team-ref": 9,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PEER-ISSUED-REGISTRATION.md": {
-   "impl-team-ref": 30,
-   "internal-path-ref": 6,
-   "operator-quote": 15
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PIN-AUTHORITY-CAPABILITY-ENCODING.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 10,
-   "internal-path-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RENEW-TTL-CASCADE.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 12,
-   "internal-path-ref": 1,
-   "operator-quote": 6
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RESOLVER-CEILING-CONFIG-SITE.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 15,
-   "operator-quote": 3
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md": {
-   "impl-team-ref": 2,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-REVISION-AUTO-VERSION-EXCLUDE-PARITY.md": {
-   "impl-team-ref": 18,
-   "operator-quote": 5
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-STATIC-PUBLISH-HANDSHAKE-AND-MANIFEST-FRESHNESS.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 16
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-SUBSTITUTE-CONFORMANCE-REACHABILITY.md": {
-   "impl-team-ref": 7
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-SUBSTRATE-DISCHARGED-OBLIGATIONS.md": {
-   "impl-team-ref": 7
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-SYMMETRIC-REENTRY-MUTUAL-MINTING.md": {
-   "impl-team-ref": 32,
-   "internal-path-ref": 6
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-TREE-NODE-SHAPE-BOUNDED-FANOUT.md": {
-   "impl-team-ref": 31
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-TREE-WALK-COMPLETENESS.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 20,
-   "internal-path-ref": 2,
-   "operator-quote": 1
-  },
-  "docs/proposals/implemented/extensions/PROPOSAL-TYPE-OPERATION-ERROR-TAXONOMY.md": {
-   "discipline-letter-ref": 5,
-   "impl-team-ref": 13
-  },
-  "docs/proposals/implemented/process/PROPOSAL-CONFORMANCE-COVERAGE-FAILURE-TAXONOMY.md": {
-   "impl-team-ref": 20,
-   "internal-path-ref": 3,
-   "operator-quote": 2
-  },
-  "docs/proposals/implemented/process/PROPOSAL-CORE-TYPE-EXTENSION-TIERING.md": {
-   "operator-quote": 4
-  },
-  "docs/proposals/implemented/process/PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS.md": {
-   "discipline-letter-ref": 4,
-   "impl-team-ref": 23,
-   "internal-path-ref": 5
-  },
-  "docs/proposals/implemented/process/PROPOSAL-HASH-WIDTH-IS-NEVER-FIXED.md": {
-   "impl-team-ref": 11,
-   "internal-path-ref": 2
-  },
-  "docs/proposals/superseded/PROPOSAL-INBOX-TYPE-NAMESPACE-CORRECTION.md": {
-   "impl-team-ref": 21,
-   "internal-path-ref": 4,
-   "operator-quote": 2
-  },
-  "docs/proposals/superseded/PROPOSAL-NAMESPACE-SEGMENT-DISCIPLINE.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/INDEX.md": {
-   "discipline-letter-ref": 17,
-   "impl-team-ref": 14,
-   "internal-path-ref": 3,
-   "operator-quote": 35
-  },
-  "docs/research/README.md": {
-   "impl-team-ref": 1,
-   "internal-path-ref": 2
-  },
-  "docs/research/explorations/ANALYSIS-COMPUTE-CONSTRUCTION-AND-EXECUTION-READINESS.md": {
-   "impl-team-ref": 17,
-   "internal-path-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/ANALYSIS-CONNECTION-FLOWS-AND-MINIMAL-INFRA-FOOTPRINT.md": {
-   "operator-quote": 2
-  },
-  "docs/research/explorations/ANALYSIS-CONNECTIVITY-LIBP2P-COMPARATIVE-AUDIT-AND-LANDSCAPE.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/ANALYSIS-CORE-CATALOGUE-DUPLICATION-AND-DRIFT.md": {
-   "impl-team-ref": 3
-  },
-  "docs/research/explorations/ANALYSIS-CORE-NAMESPACE-CLAIMS-IMPACT.md": {
-   "impl-team-ref": 13,
-   "operator-quote": 4
-  },
-  "docs/research/explorations/ANALYSIS-DEVICE-STANDARDS-ALIGNMENT-REDFISH-OTEL.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/ANALYSIS-DEVICE-STORAGE-SHAPE-OPERATIONAL-STATE.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/ANALYSIS-LANDSCAPE-COMPLETENESS-AND-ENTITY-NATIVE-TRANSLATION.md": {
-   "impl-team-ref": 3,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/ANALYSIS-NON-INTERACTIVE-FRESHNESS-CRITICALITY.md": {
-   "impl-team-ref": 1,
-   "internal-path-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/ANALYSIS-REDUCING-FOLLOW-THE-PATTERN-THE-DATA-AND-THE-TWO-ROUTES.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/ANALYSIS-SUBSTRATE-CONVERGENCE-COMPUTE-DEVICE-SCHEDULER.md": {
-   "impl-team-ref": 6,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/ANALYSIS-SUPPLY-CHAIN-LANDSCAPE-ALIGNMENT.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/ANALYSIS-THE-ENTITY-CORE-NAME-COLLISION-AND-THE-EIOS-INITIATIVE.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 7,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-BRIDGE-HOST-AND-ANY-NATIVE-COMPUTE.md": {
-   "impl-team-ref": 16,
-   "internal-path-ref": 2,
-   "operator-quote": 7
-  },
-  "docs/research/explorations/EXPLORATION-CERTIFICATE-TRANSPARENCY-THE-WITNESS-AND-THE-APPEND-ONLY-ASYMMETRY.md": {
-   "discipline-letter-ref": 4,
-   "impl-team-ref": 1,
-   "operator-quote": 5
-  },
-  "docs/research/explorations/EXPLORATION-COMPUTE-EXECUTION-BUDGET-AND-BOUNDARY-LOWERING.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 4
-  },
-  "docs/research/explorations/EXPLORATION-COMPUTE-PROGRAM-RUNTIME-CONTRACT.md": {
-   "impl-team-ref": 24,
-   "operator-quote": 14
-  },
-  "docs/research/explorations/EXPLORATION-COMPUTE-WHOLE-STATE-TICK-COST.md": {
-   "impl-team-ref": 5,
-   "internal-path-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md": {
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-CONTENT-ADDRESSED-SUPPLY-CHAIN.md": {
-   "impl-team-ref": 3,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-EVOLVABLE-SCHEMAS-AND-THE-VOCABULARY-PROBLEM.md": {
-   "discipline-letter-ref": 7,
-   "impl-team-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-EXECUTION-SUBSTRATE-ORCHESTRATION.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 5
-  },
-  "docs/research/explorations/EXPLORATION-FEDERATED-REPOSITORIES-RADICLE-FORGEFED-AND-TWO-CVES-IN-OUR-OWN-DESIGN-SPACE.md": {
-   "discipline-letter-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-FULL-STACK-DISCOVERY-INFRA-AND-ENTITY-CHAT.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 4
-  },
-  "docs/research/explorations/EXPLORATION-GENERIC-HOST-AND-DESCRIPTOR.md": {
-   "impl-team-ref": 4,
-   "operator-quote": 7
-  },
-  "docs/research/explorations/EXPLORATION-HYPER-G-THE-SYSTEM-THAT-SHIPPED-WHAT-XANADU-DESIGNED.md": {
-   "discipline-letter-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-L5-APP-HOSTING-UNIFICATION.md": {
-   "impl-team-ref": 23,
-   "internal-path-ref": 1,
-   "operator-quote": 10
-  },
-  "docs/research/explorations/EXPLORATION-MACHINE-BOUNDARY-AND-FULL-STACK-TRAJECTORY.md": {
-   "impl-team-ref": 13,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-NAMING-LANDSCAPE-AND-THE-DNS-MAPPING.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 4,
-   "operator-quote": 4
-  },
-  "docs/research/explorations/EXPLORATION-NON-INTERACTIVE-FRESHNESS-AND-ANTI-REPLAY.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 11,
-   "internal-path-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-P2P-CONNECTIVITY-AND-OVERLAY.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 6
-  },
-  "docs/research/explorations/EXPLORATION-REGISTRY-COMPOSITION-MANY-REGISTRIES-AND-WHY-IT-DOES-NOT-BECOME-A-MESS.md": {
-   "discipline-letter-ref": 7,
-   "impl-team-ref": 1,
-   "internal-path-ref": 2,
-   "operator-quote": 6
-  },
-  "docs/research/explorations/EXPLORATION-RELAY-LANDSCAPE-AND-PRIOR-ART.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 2,
-   "operator-quote": 7
-  },
-  "docs/research/explorations/EXPLORATION-ROTATION-AUTHORITY-AND-KEY-LIFECYCLE.md": {
-   "impl-team-ref": 4
-  },
-  "docs/research/explorations/EXPLORATION-RUN-ENVIRONMENTS-AND-WORKLOAD-ACTUATION.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-SUBSTRATE-INTROSPECTION-DEVICE-AND-STORAGE.md": {
-   "impl-team-ref": 12,
-   "internal-path-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-SUPPLY-CHAIN-EXECUTION-AND-REPO-ARCHITECTURE.md": {
-   "impl-team-ref": 10,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-THE-BRIDGE-WHAT-IT-TAKES-TO-INTEROPERATE-WITH-ATPROTO-WILLOW-SSB-AND-MATRIX.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 2,
-   "operator-quote": 8
-  },
-  "docs/research/explorations/EXPLORATION-THE-CAPABILITY-LITERATURE-SPKI-OCAP-MACAROONS-AND-THE-FEATURE-LEVEL.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-CONVERGENCE-THESIS-THREE-LAYERS-AND-THE-HOSTED-TIER.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-CONVERGENT-DESIGNS-WILLOW-SSB-USENET-MATRIX-AND-THE-FIVE-VERDICTS.md": {
-   "operator-quote": 4
-  },
-  "docs/research/explorations/EXPLORATION-THE-DATA-MODEL-LADDER-WHAT-FORCES-A-MORE-COMPLEX-MODEL-AND-WHAT-EACH-RUNG-COSTS.md": {
-   "impl-team-ref": 4,
-   "operator-quote": 9
-  },
-  "docs/research/explorations/EXPLORATION-THE-DURABLE-REFERENCE-THE-ANCHOR-AND-THE-THREE-WAY-READ.md": {
-   "discipline-letter-ref": 3,
-   "operator-quote": 12
-  },
-  "docs/research/explorations/EXPLORATION-THE-FALSIFICATION-TEST-FOUR-REAL-OBJECTS-AGAINST-THE-FLOOR.md": {
-   "discipline-letter-ref": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-HYPERTEXT-LINEAGE-XANADU-HYPER-G-AND-WHAT-THE-WEB-DECLINED-TO-SOLVE.md": {
-   "discipline-letter-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-THE-INTERACTION-LANDSCAPE-WHAT-FITS-WHAT-DOES-NOT-AND-WHERE-THE-BOUNDARY-IS.md": {
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-INTEROP-FLOOR-FOUR-CANDIDATE-SETS-AND-WHAT-SURVIVES-PEELING.md": {
-   "impl-team-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-KEY-AS-HUB-NAMING-TOPOLOGY-AND-THE-REPUBLICATION-NETWORK.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-L5-CONTENT-TAXONOMY-AND-THE-FLOOR-THAT-STOPS-THE-EXPLOSION.md": {
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-LINK-AND-THE-WALK-WHAT-A-REFERENCE-CARRIES-AND-WHAT-A-CLIENT-DOES-WITH-IT.md": {
-   "discipline-letter-ref": 5,
-   "impl-team-ref": 3,
-   "internal-path-ref": 2,
-   "operator-quote": 15
-  },
-  "docs/research/explorations/EXPLORATION-THE-LOCAL-VIEW-PROBLEM-WHO-ANSWERED-AND-WHY-OUR-NAMESPACE-DIFFERS.md": {
-   "discipline-letter-ref": 7,
-   "impl-team-ref": 5,
-   "internal-path-ref": 1,
-   "operator-quote": 22
-  },
-  "docs/research/explorations/EXPLORATION-THE-NETWORK-FAMILY-CONSOLIDATED-DESIGN-RECORD.md": {
-   "discipline-letter-ref": 4,
-   "impl-team-ref": 1,
-   "internal-path-ref": 2,
-   "operator-quote": 6
-  },
-  "docs/research/explorations/EXPLORATION-THE-OPERATING-MODELS-AND-THE-ALWAYS-ON-TIER.md": {
-   "impl-team-ref": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-P2P-COVERAGE-AUDIT-WHAT-WE-HAVE-STUDIED-AND-THE-FIVE-AXES-WE-HAVE-NOT.md": {
-   "discipline-letter-ref": 3,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-PUBLIC-SOCIAL-STACK-THE-COMPLETE-MAP.md": {
-   "impl-team-ref": 2,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-THE-READERS-LOOP-THREAD-RECONSTRUCTION-THE-IDENTIFIER-ON-SCREEN-AND-FORKING-A-SITE.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 5,
-   "operator-quote": 14
-  },
-  "docs/research/explorations/EXPLORATION-THE-REFERENCE-ATOM-FOUR-DESIGNS-SCORED-AND-THE-CONVERGENCE.md": {
-   "discipline-letter-ref": 3,
-   "impl-team-ref": 1,
-   "internal-path-ref": 3,
-   "operator-quote": 5
-  },
-  "docs/research/explorations/EXPLORATION-THE-REFERENCE-PRIMITIVE-SIX-SYSTEMS-AGAINST-ONE-TUPLE.md": {
-   "discipline-letter-ref": 1,
-   "impl-team-ref": 1,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-RESOLUTION-CHAIN-FROM-A-SOCIAL-IDENTIFIER-TO-AN-ENTITY.md": {
-   "impl-team-ref": 2,
-   "operator-quote": 2
-  },
-  "docs/research/explorations/EXPLORATION-THE-SECOND-FALSIFICATION-THE-WIKI-THE-FORUM-THE-MARKETPLACE-AND-THE-COLLABORATIVE-DOCUMENT.md": {
-   "discipline-letter-ref": 1,
-   "operator-quote": 3
-  },
-  "docs/research/explorations/EXPLORATION-THE-SHAREABLE-REFERENCE-WHY-A-NAME-AND-A-KEY-ARE-NOT-REDUNDANT.md": {
-   "discipline-letter-ref": 5,
-   "operator-quote": 6
-  },
-  "docs/research/explorations/EXPLORATION-THE-THREE-CONSTRAINT-REGIMES.md": {
-   "discipline-letter-ref": 2,
-   "internal-path-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-TWO-LEVEL-INDEX-COORDINATE-TO-WHO-AND-THE-GATHERER-CLOSURE.md": {
-   "operator-quote": 18
-  },
-  "docs/research/explorations/EXPLORATION-THE-UNIVERSAL-NAMESPACE-AS-THE-MULTI-PEER-DATA-MODEL.md": {
-   "impl-team-ref": 21,
-   "internal-path-ref": 1,
-   "operator-quote": 1
-  },
-  "docs/research/explorations/EXPLORATION-THE-VERIFICATION-LADDER-WHAT-A-PUBLISHER-SIGNS-AND-WHAT-A-READER-CAN-CHECK.md": {
-   "discipline-letter-ref": 2,
-   "impl-team-ref": 4,
-   "operator-quote": 18
-  },
-  "docs/research/explorations/EXPLORATION-WHY-PEER-PLUS-PATH-IS-NOT-A-LINK-ADDRESSES-NAMES-AND-THE-TWO-HOPS.md": {
-   "operator-quote": 6
-  },
-  "docs/research/explorations/EXPLORATION-WILLOW-THE-NEAREST-NEIGHBOUR-READ-AGAINST-ITS-SPEC.md": {
-   "operator-quote": 5
-  },
-  "docs/research/explorations/REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS.md": {
-   "operator-quote": 2
+  "meta": {
+    "note": "accepted debt; --update-baseline may only lower",
+    "total": 2421,
+    "files": 168,
+    "rules": [
+      "amendment-provenance",
+      "date-in-body",
+      "discipline-letter-ref",
+      "document-history-section",
+      "impl-team-ref",
+      "internal-path-ref",
+      "operator-quote",
+      "proposal-citation"
+    ]
+  },
+  "categories": {},
+  "debt": {
+    "docs/proposals/INDEX.md": {
+      "discipline-letter-ref": 10,
+      "impl-team-ref": 28,
+      "internal-path-ref": 13,
+      "operator-quote": 5
+    },
+    "docs/proposals/active/applications/PROPOSAL-ACQUISITION-SURFACE-PROTOTYPE-TIER.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 15,
+      "operator-quote": 2
+    },
+    "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-CHAT.md": {
+      "operator-quote": 2
+    },
+    "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-COMPUTE-PROGRAM.md": {
+      "impl-team-ref": 13,
+      "operator-quote": 1
+    },
+    "docs/proposals/active/applications/PROPOSAL-APP-CONVENTION-FEED.md": {
+      "impl-team-ref": 4,
+      "operator-quote": 1
+    },
+    "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-CONTRACT.md": {
+      "impl-team-ref": 5,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/active/applications/PROPOSAL-COMPUTE-LOWERING-TOOLKIT.md": {
+      "impl-team-ref": 3
+    },
+    "docs/proposals/active/applications/PROPOSAL-FOLLOW-THE-PATTERN-THE-SET-AND-THE-TWO-ROUTES.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/proposals/active/applications/PROPOSAL-SUB-PEER-ISOLATION-MODEL.md": {
+      "impl-team-ref": 18,
+      "internal-path-ref": 2,
+      "operator-quote": 4
+    },
+    "docs/proposals/active/applications/PROPOSAL-THE-COORDINATE-AND-WALK-DISCOVERY.md": {
+      "discipline-letter-ref": 1
+    },
+    "docs/proposals/active/applications/PROPOSAL-THE-REPLY-HINT.md": {
+      "operator-quote": 1
+    },
+    "docs/proposals/active/applications/PROPOSAL-WINDOW-ID-LIFETIME-AND-THE-WINDOW-INDEX.md": {
+      "discipline-letter-ref": 10,
+      "impl-team-ref": 33
+    },
+    "docs/proposals/active/extensions/PROPOSAL-CLOCK-ADDRESSABLE-TICK-AND-DEADLINE.md": {
+      "impl-team-ref": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-COMPUTE-BUDGET-PREEMPTION.md": {
+      "impl-team-ref": 5,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-COMPUTE-ERROR-MATERIALIZATION-DETERMINISM.md": {
+      "impl-team-ref": 4
+    },
+    "docs/proposals/active/extensions/PROPOSAL-CONSUMER-TRUST-ANCHOR-ON-THE-STATIC-PATH.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 17,
+      "internal-path-ref": 1,
+      "operator-quote": 4
+    },
+    "docs/proposals/active/extensions/PROPOSAL-IDENTITY-ROTATION-AUTHORITY-PARITY.md": {
+      "impl-team-ref": 3,
+      "internal-path-ref": 3,
+      "operator-quote": 2
+    },
+    "docs/proposals/active/extensions/PROPOSAL-INBOX-OPEN-DELIVERY-ADMISSION.md": {
+      "operator-quote": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-MEMBERSHIP-CONDITIONED-GRANTS.md": {
+      "internal-path-ref": 1
+    },
+    "docs/proposals/active/extensions/PROPOSAL-PEER-TRANSPORT-SET.md": {
+      "discipline-letter-ref": 12,
+      "impl-team-ref": 32,
+      "internal-path-ref": 1,
+      "operator-quote": 7
+    },
+    "docs/proposals/active/extensions/PROPOSAL-RELAY-COMPLETE-THE-MODE-SET.md": {
+      "discipline-letter-ref": 14,
+      "impl-team-ref": 33,
+      "internal-path-ref": 11,
+      "operator-quote": 15
+    },
+    "docs/proposals/active/extensions/PROPOSAL-REVISION-MERGE-DELEGATION-AND-CASCADE.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 43,
+      "internal-path-ref": 7,
+      "operator-quote": 5
+    },
+    "docs/proposals/active/extensions/PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME.md": {
+      "impl-team-ref": 10,
+      "internal-path-ref": 3
+    },
+    "docs/proposals/active/extensions/PROPOSAL-SYSTEM-DEVICE.md": {
+      "impl-team-ref": 5
+    },
+    "docs/proposals/active/process/PROPOSAL-CONFORMANCE-ORACLE-CONTRACT.md": {
+      "impl-team-ref": 9,
+      "internal-path-ref": 3
+    },
+    "docs/proposals/active/process/PROPOSAL-CORPUS-REFERENCE-INTEGRITY.md": {
+      "impl-team-ref": 2
+    },
+    "docs/proposals/active/process/PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD.md": {
+      "internal-path-ref": 2
+    },
+    "docs/proposals/active/process/PROPOSAL-MATURITY-MODEL-AND-ROADMAP-COMMUNICATION.md": {
+      "impl-team-ref": 17,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/deferred/PROPOSAL-IDENTITY-CROSS-ALGORITHM-MIGRATION.md": {
+      "impl-team-ref": 9
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-APPLICATIONS-DOMAIN-AND-CONVENTION-EMBED.md": {
+      "impl-team-ref": 17
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-EXTENSION-HOST-INSTALL-SEAM.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 2
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-SDK-HANDLER-OWNED-SERVICES.md": {
+      "impl-team-ref": 6,
+      "internal-path-ref": 1,
+      "operator-quote": 4
+    },
+    "docs/proposals/implemented/applications/PROPOSAL-SHARE-AS-GRANT-AND-THE-AUDIENCE-CARRIER.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 14,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-EMPTY-GRANTS-AND-POLICY-WITHDRAWAL.md": {
+      "impl-team-ref": 30,
+      "internal-path-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/proposals/implemented/core/PROPOSAL-CAPABILITY-MINT-TEMPORAL-CEILING-AND-THE-WITHDRAWAL-BOUND.md": {
+      "impl-team-ref": 33,
+      "operator-quote": 3
+    },
+    "docs/proposals/implemented/core/PROPOSAL-CONNECT-PREAUTH-SCOPE-AND-ADDRESS-BEFORE-AUTH.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 8
+    },
+    "docs/proposals/implemented/core/PROPOSAL-CONTINUATION-BOUNDS-PROPAGATION.md": {
+      "impl-team-ref": 12,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/core/PROPOSAL-GENERIC-400-SYNONYMS-AND-THE-PRE-ESTABLISHMENT-EXECUTE.md": {
+      "discipline-letter-ref": 8,
+      "impl-team-ref": 12
+    },
+    "docs/proposals/implemented/core/PROPOSAL-POLICY-PATH-KEY-FORMS-6-2-VS-6-9A-1.md": {
+      "impl-team-ref": 19,
+      "operator-quote": 4
+    },
+    "docs/proposals/implemented/core/PROPOSAL-STATUS-CODE-SLOT-AND-THE-DEFAULT-CODE-FORCE.md": {
+      "discipline-letter-ref": 10,
+      "impl-team-ref": 31
+    },
+    "docs/proposals/implemented/core/PROPOSAL-STATUS-TABLE-DEFAULT-CODES-AND-THE-501-SYNONYM.md": {
+      "discipline-letter-ref": 8,
+      "impl-team-ref": 23
+    },
+    "docs/proposals/implemented/core/PROPOSAL-THE-400-SLOT-FALLBACK-AND-THE-TREE-PUT-ROWS.md": {
+      "impl-team-ref": 7,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/core/PROPOSAL-THE-PUT-ADMISSION-PREDICATE-AND-THE-CONTENT-CODE-TABLES.md": {
+      "discipline-letter-ref": 5,
+      "impl-team-ref": 11
+    },
+    "docs/proposals/implemented/core/PROPOSAL-UNKNOWN-FIELD-PRESERVATION-IS-A-MUST-AND-THE-FIDELITY-CONTRACT-NAMES-ITS-AUTHORITY.md": {
+      "discipline-letter-ref": 11,
+      "impl-team-ref": 6,
+      "operator-quote": 3
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-AVAILABILITY-DESCRIPTOR.md": {
+      "impl-team-ref": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-ALT-ENGINE-ADMISSION.md": {
+      "impl-team-ref": 7,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-BUDGET-CEILING-DETERMINISM.md": {
+      "impl-team-ref": 4
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE.md": {
+      "discipline-letter-ref": 9,
+      "impl-team-ref": 38,
+      "internal-path-ref": 2,
+      "operator-quote": 4
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-COLLECTION-PRIMITIVES.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 12,
+      "operator-quote": 5
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-IS-ERROR-PREDICATE.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 5,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-COMPUTE-V324-CORNERS.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 10,
+      "internal-path-ref": 3
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONNECTION-NODE.md": {
+      "impl-team-ref": 6,
+      "operator-quote": 8
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONNECTIVITY-SIGNALING-AND-PUNCH.md": {
+      "impl-team-ref": 6,
+      "operator-quote": 12
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONTAINED-ERROR-BOUNDARY-AND-CONTENT-URL-HASH-SHAPE.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 8
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-DELIVER-TOKEN-AND-LEVEL-2.md": {
+      "impl-team-ref": 7,
+      "internal-path-ref": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-LOST-ERROR-MARKER-MUST.md": {
+      "impl-team-ref": 7,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-CONTINUATION-STANDING-MODEL.md": {
+      "impl-team-ref": 7,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-DEFAULT-NAME-FORMAT-DISPATCH.md": {
+      "impl-team-ref": 18,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-DISCOVERY-RENDEZVOUS-BACKEND.md": {
+      "impl-team-ref": 11
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-DISPATCH-AUTHORIZATION-FRAME.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 19,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-ENCRYPTION-NAMESPACE-AND-RECIPIENT-RESOLUTION.md": {
+      "impl-team-ref": 8,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-ENCRYPTION.md": {
+      "impl-team-ref": 10
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-SIGNALING-COORDINATION-ENVELOPE.md": {
+      "impl-team-ref": 9
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-EXTENSION-WEBRTC-TRANSPORT.md": {
+      "impl-team-ref": 10,
+      "internal-path-ref": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-HISTORY-CONFIG-SELECTION-TOTAL-ORDER.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 10,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-NAMESPACE-CLEANUP-AND-BROWSER-LEG.md": {
+      "impl-team-ref": 16,
+      "internal-path-ref": 4,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVE-ESTABLISHMENT-SEAM.md": {
+      "impl-team-ref": 7,
+      "internal-path-ref": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-LIVENESS-REACTIVE-BUILDOUT.md": {
+      "impl-team-ref": 31,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-REACHABILITY-FACTS.md": {
+      "impl-team-ref": 7,
+      "operator-quote": 5
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-NETWORK-SEAM-CONSULTATION-BOUND.md": {
+      "impl-team-ref": 9
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-PEER-ISSUED-REGISTRY-BACKEND.md": {
+      "impl-team-ref": 10,
+      "operator-quote": 11
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-PIN-THE-PATH-REQUIRED-STATUS.md": {
+      "discipline-letter-ref": 8,
+      "impl-team-ref": 6
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-FRONT-DOOR.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 19,
+      "internal-path-ref": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-PUBLISHED-ROOT-PREFIX-AND-REPUBLISH.md": {
+      "impl-team-ref": 21,
+      "internal-path-ref": 4
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-DISPATCH-CONFIG-ENFORCEMENT-POINT.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 18,
+      "internal-path-ref": 1,
+      "operator-quote": 12
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-DISPATCH-FILTER-SEMANTICS.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 21,
+      "internal-path-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-ASSOCIATION-AND-THE-HOSTILE-HOST.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 31,
+      "internal-path-ref": 1,
+      "operator-quote": 11
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-NAME-LEGALITY-INPUT-DOMAINS.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 8
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-ONE-NAME-MATCHER.md": {
+      "impl-team-ref": 9,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PEER-ISSUED-REGISTRATION.md": {
+      "impl-team-ref": 30,
+      "internal-path-ref": 6,
+      "operator-quote": 15
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-PIN-AUTHORITY-CAPABILITY-ENCODING.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 10,
+      "internal-path-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RENEW-TTL-CASCADE.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 12,
+      "internal-path-ref": 1,
+      "operator-quote": 6
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-RESOLVER-CEILING-CONFIG-SITE.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 15,
+      "operator-quote": 3
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REGISTRY-SERVICE-ADVERTISEMENT.md": {
+      "impl-team-ref": 2,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-REVISION-AUTO-VERSION-EXCLUDE-PARITY.md": {
+      "impl-team-ref": 18,
+      "operator-quote": 5
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-STATIC-PUBLISH-HANDSHAKE-AND-MANIFEST-FRESHNESS.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 16
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-SUBSTITUTE-CONFORMANCE-REACHABILITY.md": {
+      "impl-team-ref": 7
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-SUBSTRATE-DISCHARGED-OBLIGATIONS.md": {
+      "impl-team-ref": 7
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-SYMMETRIC-REENTRY-MUTUAL-MINTING.md": {
+      "impl-team-ref": 32,
+      "internal-path-ref": 6
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-TREE-NODE-SHAPE-BOUNDED-FANOUT.md": {
+      "impl-team-ref": 31
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-TREE-WALK-COMPLETENESS.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 20,
+      "internal-path-ref": 2,
+      "operator-quote": 1
+    },
+    "docs/proposals/implemented/extensions/PROPOSAL-TYPE-OPERATION-ERROR-TAXONOMY.md": {
+      "discipline-letter-ref": 5,
+      "impl-team-ref": 13
+    },
+    "docs/proposals/implemented/process/PROPOSAL-CONFORMANCE-COVERAGE-FAILURE-TAXONOMY.md": {
+      "impl-team-ref": 20,
+      "internal-path-ref": 3,
+      "operator-quote": 2
+    },
+    "docs/proposals/implemented/process/PROPOSAL-CORE-TYPE-EXTENSION-TIERING.md": {
+      "operator-quote": 4
+    },
+    "docs/proposals/implemented/process/PROPOSAL-DEVERSION-TEST-VECTOR-CORPUS.md": {
+      "discipline-letter-ref": 4,
+      "impl-team-ref": 23,
+      "internal-path-ref": 5
+    },
+    "docs/proposals/implemented/process/PROPOSAL-HASH-WIDTH-IS-NEVER-FIXED.md": {
+      "impl-team-ref": 11,
+      "internal-path-ref": 2
+    },
+    "docs/proposals/superseded/PROPOSAL-INBOX-TYPE-NAMESPACE-CORRECTION.md": {
+      "impl-team-ref": 21,
+      "internal-path-ref": 4,
+      "operator-quote": 2
+    },
+    "docs/proposals/superseded/PROPOSAL-NAMESPACE-SEGMENT-DISCIPLINE.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/INDEX.md": {
+      "discipline-letter-ref": 17,
+      "impl-team-ref": 14,
+      "internal-path-ref": 3,
+      "operator-quote": 35
+    },
+    "docs/research/README.md": {
+      "impl-team-ref": 1,
+      "internal-path-ref": 2
+    },
+    "docs/research/explorations/ANALYSIS-COMPUTE-CONSTRUCTION-AND-EXECUTION-READINESS.md": {
+      "impl-team-ref": 17,
+      "internal-path-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/ANALYSIS-CONNECTION-FLOWS-AND-MINIMAL-INFRA-FOOTPRINT.md": {
+      "operator-quote": 2
+    },
+    "docs/research/explorations/ANALYSIS-CONNECTIVITY-LIBP2P-COMPARATIVE-AUDIT-AND-LANDSCAPE.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/ANALYSIS-CORE-CATALOGUE-DUPLICATION-AND-DRIFT.md": {
+      "impl-team-ref": 3
+    },
+    "docs/research/explorations/ANALYSIS-CORE-NAMESPACE-CLAIMS-IMPACT.md": {
+      "impl-team-ref": 13,
+      "operator-quote": 4
+    },
+    "docs/research/explorations/ANALYSIS-DEVICE-STANDARDS-ALIGNMENT-REDFISH-OTEL.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/ANALYSIS-DEVICE-STORAGE-SHAPE-OPERATIONAL-STATE.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/ANALYSIS-LANDSCAPE-COMPLETENESS-AND-ENTITY-NATIVE-TRANSLATION.md": {
+      "impl-team-ref": 3,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/ANALYSIS-NON-INTERACTIVE-FRESHNESS-CRITICALITY.md": {
+      "impl-team-ref": 1,
+      "internal-path-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/ANALYSIS-REDUCING-FOLLOW-THE-PATTERN-THE-DATA-AND-THE-TWO-ROUTES.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/ANALYSIS-SUBSTRATE-CONVERGENCE-COMPUTE-DEVICE-SCHEDULER.md": {
+      "impl-team-ref": 6,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/ANALYSIS-SUPPLY-CHAIN-LANDSCAPE-ALIGNMENT.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/ANALYSIS-THE-ENTITY-CORE-NAME-COLLISION-AND-THE-EIOS-INITIATIVE.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 7,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-BRIDGE-HOST-AND-ANY-NATIVE-COMPUTE.md": {
+      "impl-team-ref": 16,
+      "internal-path-ref": 2,
+      "operator-quote": 7
+    },
+    "docs/research/explorations/EXPLORATION-CERTIFICATE-TRANSPARENCY-THE-WITNESS-AND-THE-APPEND-ONLY-ASYMMETRY.md": {
+      "discipline-letter-ref": 4,
+      "impl-team-ref": 1,
+      "operator-quote": 5
+    },
+    "docs/research/explorations/EXPLORATION-COMPUTE-EXECUTION-BUDGET-AND-BOUNDARY-LOWERING.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 4
+    },
+    "docs/research/explorations/EXPLORATION-COMPUTE-PROGRAM-RUNTIME-CONTRACT.md": {
+      "impl-team-ref": 24,
+      "operator-quote": 14
+    },
+    "docs/research/explorations/EXPLORATION-COMPUTE-WHOLE-STATE-TICK-COST.md": {
+      "impl-team-ref": 5,
+      "internal-path-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-CONNECTIVITY-NAT-WEBRTC-UNIFIED-ARCHITECTURE.md": {
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-CONTENT-ADDRESSED-SUPPLY-CHAIN.md": {
+      "impl-team-ref": 3,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-EVOLVABLE-SCHEMAS-AND-THE-VOCABULARY-PROBLEM.md": {
+      "discipline-letter-ref": 7,
+      "impl-team-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-EXECUTION-SUBSTRATE-ORCHESTRATION.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 5
+    },
+    "docs/research/explorations/EXPLORATION-FEDERATED-REPOSITORIES-RADICLE-FORGEFED-AND-TWO-CVES-IN-OUR-OWN-DESIGN-SPACE.md": {
+      "discipline-letter-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-FULL-STACK-DISCOVERY-INFRA-AND-ENTITY-CHAT.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 4
+    },
+    "docs/research/explorations/EXPLORATION-GENERIC-HOST-AND-DESCRIPTOR.md": {
+      "impl-team-ref": 4,
+      "operator-quote": 7
+    },
+    "docs/research/explorations/EXPLORATION-HYPER-G-THE-SYSTEM-THAT-SHIPPED-WHAT-XANADU-DESIGNED.md": {
+      "discipline-letter-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-L5-APP-HOSTING-UNIFICATION.md": {
+      "impl-team-ref": 23,
+      "internal-path-ref": 1,
+      "operator-quote": 10
+    },
+    "docs/research/explorations/EXPLORATION-MACHINE-BOUNDARY-AND-FULL-STACK-TRAJECTORY.md": {
+      "impl-team-ref": 13,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-NAMING-LANDSCAPE-AND-THE-DNS-MAPPING.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 4,
+      "operator-quote": 4
+    },
+    "docs/research/explorations/EXPLORATION-NON-INTERACTIVE-FRESHNESS-AND-ANTI-REPLAY.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 11,
+      "internal-path-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-P2P-CONNECTIVITY-AND-OVERLAY.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 6
+    },
+    "docs/research/explorations/EXPLORATION-REGISTRY-COMPOSITION-MANY-REGISTRIES-AND-WHY-IT-DOES-NOT-BECOME-A-MESS.md": {
+      "discipline-letter-ref": 7,
+      "impl-team-ref": 1,
+      "internal-path-ref": 2,
+      "operator-quote": 6
+    },
+    "docs/research/explorations/EXPLORATION-RELAY-LANDSCAPE-AND-PRIOR-ART.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 2,
+      "operator-quote": 7
+    },
+    "docs/research/explorations/EXPLORATION-ROTATION-AUTHORITY-AND-KEY-LIFECYCLE.md": {
+      "impl-team-ref": 4
+    },
+    "docs/research/explorations/EXPLORATION-RUN-ENVIRONMENTS-AND-WORKLOAD-ACTUATION.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-SUBSTRATE-INTROSPECTION-DEVICE-AND-STORAGE.md": {
+      "impl-team-ref": 12,
+      "internal-path-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-SUPPLY-CHAIN-EXECUTION-AND-REPO-ARCHITECTURE.md": {
+      "impl-team-ref": 10,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-THE-BRIDGE-WHAT-IT-TAKES-TO-INTEROPERATE-WITH-ATPROTO-WILLOW-SSB-AND-MATRIX.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 2,
+      "operator-quote": 8
+    },
+    "docs/research/explorations/EXPLORATION-THE-CAPABILITY-LITERATURE-SPKI-OCAP-MACAROONS-AND-THE-FEATURE-LEVEL.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-CONVERGENCE-THESIS-THREE-LAYERS-AND-THE-HOSTED-TIER.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-CONVERGENT-DESIGNS-WILLOW-SSB-USENET-MATRIX-AND-THE-FIVE-VERDICTS.md": {
+      "operator-quote": 4
+    },
+    "docs/research/explorations/EXPLORATION-THE-DATA-MODEL-LADDER-WHAT-FORCES-A-MORE-COMPLEX-MODEL-AND-WHAT-EACH-RUNG-COSTS.md": {
+      "impl-team-ref": 4,
+      "operator-quote": 9
+    },
+    "docs/research/explorations/EXPLORATION-THE-DURABLE-REFERENCE-THE-ANCHOR-AND-THE-THREE-WAY-READ.md": {
+      "discipline-letter-ref": 3,
+      "operator-quote": 12
+    },
+    "docs/research/explorations/EXPLORATION-THE-FALSIFICATION-TEST-FOUR-REAL-OBJECTS-AGAINST-THE-FLOOR.md": {
+      "discipline-letter-ref": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-HYPERTEXT-LINEAGE-XANADU-HYPER-G-AND-WHAT-THE-WEB-DECLINED-TO-SOLVE.md": {
+      "discipline-letter-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-THE-INTERACTION-LANDSCAPE-WHAT-FITS-WHAT-DOES-NOT-AND-WHERE-THE-BOUNDARY-IS.md": {
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-INTEROP-FLOOR-FOUR-CANDIDATE-SETS-AND-WHAT-SURVIVES-PEELING.md": {
+      "impl-team-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-KEY-AS-HUB-NAMING-TOPOLOGY-AND-THE-REPUBLICATION-NETWORK.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-L5-CONTENT-TAXONOMY-AND-THE-FLOOR-THAT-STOPS-THE-EXPLOSION.md": {
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-LINK-AND-THE-WALK-WHAT-A-REFERENCE-CARRIES-AND-WHAT-A-CLIENT-DOES-WITH-IT.md": {
+      "discipline-letter-ref": 5,
+      "impl-team-ref": 3,
+      "internal-path-ref": 2,
+      "operator-quote": 15
+    },
+    "docs/research/explorations/EXPLORATION-THE-LOCAL-VIEW-PROBLEM-WHO-ANSWERED-AND-WHY-OUR-NAMESPACE-DIFFERS.md": {
+      "discipline-letter-ref": 7,
+      "impl-team-ref": 5,
+      "internal-path-ref": 1,
+      "operator-quote": 22
+    },
+    "docs/research/explorations/EXPLORATION-THE-NETWORK-FAMILY-CONSOLIDATED-DESIGN-RECORD.md": {
+      "discipline-letter-ref": 4,
+      "impl-team-ref": 1,
+      "internal-path-ref": 2,
+      "operator-quote": 6
+    },
+    "docs/research/explorations/EXPLORATION-THE-OPERATING-MODELS-AND-THE-ALWAYS-ON-TIER.md": {
+      "impl-team-ref": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-P2P-COVERAGE-AUDIT-WHAT-WE-HAVE-STUDIED-AND-THE-FIVE-AXES-WE-HAVE-NOT.md": {
+      "discipline-letter-ref": 3,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-PUBLIC-SOCIAL-STACK-THE-COMPLETE-MAP.md": {
+      "impl-team-ref": 2,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-THE-READERS-LOOP-THREAD-RECONSTRUCTION-THE-IDENTIFIER-ON-SCREEN-AND-FORKING-A-SITE.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 5,
+      "operator-quote": 14
+    },
+    "docs/research/explorations/EXPLORATION-THE-REFERENCE-ATOM-FOUR-DESIGNS-SCORED-AND-THE-CONVERGENCE.md": {
+      "discipline-letter-ref": 3,
+      "impl-team-ref": 1,
+      "internal-path-ref": 3,
+      "operator-quote": 5
+    },
+    "docs/research/explorations/EXPLORATION-THE-REFERENCE-PRIMITIVE-SIX-SYSTEMS-AGAINST-ONE-TUPLE.md": {
+      "discipline-letter-ref": 1,
+      "impl-team-ref": 1,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-RESOLUTION-CHAIN-FROM-A-SOCIAL-IDENTIFIER-TO-AN-ENTITY.md": {
+      "impl-team-ref": 2,
+      "operator-quote": 2
+    },
+    "docs/research/explorations/EXPLORATION-THE-SECOND-FALSIFICATION-THE-WIKI-THE-FORUM-THE-MARKETPLACE-AND-THE-COLLABORATIVE-DOCUMENT.md": {
+      "discipline-letter-ref": 1,
+      "operator-quote": 3
+    },
+    "docs/research/explorations/EXPLORATION-THE-SHAREABLE-REFERENCE-WHY-A-NAME-AND-A-KEY-ARE-NOT-REDUNDANT.md": {
+      "discipline-letter-ref": 5,
+      "operator-quote": 6
+    },
+    "docs/research/explorations/EXPLORATION-THE-THREE-CONSTRAINT-REGIMES.md": {
+      "discipline-letter-ref": 2,
+      "internal-path-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-TWO-LEVEL-INDEX-COORDINATE-TO-WHO-AND-THE-GATHERER-CLOSURE.md": {
+      "operator-quote": 18
+    },
+    "docs/research/explorations/EXPLORATION-THE-UNIVERSAL-NAMESPACE-AS-THE-MULTI-PEER-DATA-MODEL.md": {
+      "impl-team-ref": 21,
+      "internal-path-ref": 1,
+      "operator-quote": 1
+    },
+    "docs/research/explorations/EXPLORATION-THE-VERIFICATION-LADDER-WHAT-A-PUBLISHER-SIGNS-AND-WHAT-A-READER-CAN-CHECK.md": {
+      "discipline-letter-ref": 2,
+      "impl-team-ref": 4,
+      "operator-quote": 18
+    },
+    "docs/research/explorations/EXPLORATION-WHY-PEER-PLUS-PATH-IS-NOT-A-LINK-ADDRESSES-NAMES-AND-THE-TWO-HOPS.md": {
+      "operator-quote": 6
+    },
+    "docs/research/explorations/EXPLORATION-WILLOW-THE-NEAREST-NEIGHBOUR-READ-AGAINST-ITS-SPEC.md": {
+      "operator-quote": 5
+    },
+    "docs/research/explorations/REFERENCE-PRIOR-ART-FEDERATED-AND-P2P-PUBLISHING-SYSTEMS-BY-AXIS.md": {
+      "operator-quote": 2
+    }
   }
- }
 }

@@ -167,6 +167,8 @@ system/                          Protocol infrastructure
 
 ### 4.1 Reserved Prefixes
 
+Each extension's own spec is the authority for the namespace it owns and the layout inside it; the rows below are the reserved prefixes an implementer meets first, not the whole set. **Installation** at `system/*` is governed by two different rules on two different paths: `ENTITY-CORE-PROTOCOL.md` §6.2 (the dispatch path — reserved, `403 forbidden_pattern`) and `SDK-OPERATIONS.md` §11.6 (the in-process path — how a peer's own standard extensions are installed, and not constrained by §6.2). The `(When EXTENSION-X registered.)` rows below are the output of that second path.
+
 | Prefix | Meaning | Who uses it |
 |--------|---------|-------------|
 | `system/` | Protocol infrastructure. Handlers, types, identity, capabilities, extension state, config. | Every peer. Application code reads via SDK operations but doesn't write directly. |

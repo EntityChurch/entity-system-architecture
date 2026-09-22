@@ -576,7 +576,7 @@ The cross-impl conformance gate (the `validate-peer -category <ext>` surface, th
 - **Behavioral conformance:** validate-peer checks in the impl's validation suite (e.g., `entity-core-go/cmd/internal/validate/local_files.go` V1/V2/V3 added in v1.3).
 - **Large-scale / boundary conditions:** bench probes at boundary sizes (e.g., 16 MiB frame cliff, 64 MiB inline threshold, multi-GB streaming).
 - **Deployment quality:** static analysis on bare `except` clauses, channel-bound audits, log-coverage review.
-- **Security boundary:** regression tests for known vulnerabilities (e.g., `TestRead/WriteRejectsLeafSymlink` added Go-side in commit `ba21372` for L5).
+- **Security boundary:** regression tests for known vulnerabilities (e.g., a `TestRead/WriteRejectsLeafSymlink` pair, added alongside the L5 symlink-refusal rule).
 
 The discipline: when an amendment lands, the artifact lands or updates alongside. When the production-readiness review re-runs, every artifact re-runs and produces a fresh result. This is what distinguishes "production-ready at a point in time" from "production-ready as an attested ongoing property."
 
