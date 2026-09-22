@@ -1,6 +1,6 @@
 # PROPOSAL — the privacy MUST binds the write, not the load; and four corrections it exposed
 
-**Status:** DRAFT
+**Status:** IMPLEMENTED — folded at `EXTENSION-REGISTRY` **v1.17**. D1–D10 verified 2026-09-06. D5 reads as unlanded to a token grep and is not: the *"refused or normalized at load"* string survives only inside its own **withdrawal notice** `[v1.17]`, which is the delta.
 **Tier:** extensions — `EXTENSION-REGISTRY` §4.1, §6a.6, §6a.9.1, §11.1
 **Answers:** `entity-core-py` **SA-PY-21 Q1 / Q2**, **SA-PY-22** · `entity-core-rust` **R-4** and the row-(d) finding · `entity-core-go`'s consolidated reply `2026-08-19-e`
 **Corroboration (NOT evidence):** `entity-browser-rust` `5e2297c` — see §1.0 on why a cohort implementation cannot validate a cohort ruling

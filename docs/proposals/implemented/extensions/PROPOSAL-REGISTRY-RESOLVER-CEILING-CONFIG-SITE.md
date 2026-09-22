@@ -1,6 +1,6 @@
 # PROPOSAL — the load-bearing TTL ceiling has no config site, and four seats built four
 
-**Status:** DRAFT
+**Status:** IMPLEMENTED — folded at `EXTENSION-REGISTRY` **v1.16** (no separate bump, per D6). D1–D5 verified 2026-09-06: `PINNED KEYS: max_ttl` in the §4 schema, the config site at `[MUST, v1.16]`, the `0`-is-undeclared rule, the null-`ttl` `local_max` arm, and `REG-TTL-RESOLVER-CEILING-1`.
 **Tier:** extensions — `EXTENSION-REGISTRY` §4, §6a.9.1, §11.1
 **Answers:** `entity-core-py` **`SA-PY-15`** (filed 2026-08-17; **never entered arch's board** — zero
 occurrences in this tree until this proposal) · relayed in `entity-core-go`'s consolidated packet as GAP 2

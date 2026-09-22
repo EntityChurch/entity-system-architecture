@@ -1,6 +1,6 @@
 # PROPOSAL — the dispatch filter is one function of the name, and the privacy MUST binds the configuration rather than a row
 
-**Status:** DRAFT
+**Status:** IMPLEMENTED — folded at `EXTENSION-REGISTRY` **v1.17** + `GUIDE-RESOLUTION`. D1–D10 verified 2026-09-06. Two rows read as unlanded to a token grep and are not: D2's old sentence survives only inside the blockquote explaining why it could never execute, and the one remaining `did-key` in the guide is a **DID-method maturity row**, not the `backend_kind` token D8 retired.
 **Tier:** extensions — `EXTENSION-REGISTRY` §4, §4.1 step 2, §4.1a, §11.1; `guides/GUIDE-RESOLUTION` §6, §6.1, §6.4a
 **Answers:** `entity-core-rust`'s §4.1-step-2 contradiction · `entity-core-go` spec-issue `2026-08-19-a` · `entity-core-py` `SA-PY-17`
 **Read at:** arch `cf6871e` · go `6ae71c4` · rust `b4b7456` · py `23e77ff`

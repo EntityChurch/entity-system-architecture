@@ -1,6 +1,6 @@
 # entity-system-architecture — status
 
-_Updated: 2026-08-24 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
+_Updated: 2026-09-06 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
 CHANGELOG heading._
 
 _**The release number is 0.8.2, following `entity-core-protocol` rather than the
@@ -269,6 +269,18 @@ permitted but priced (restricted reach + no cross-format dedup).
 
 ## Done recently
 
+- **The error-code arc closed, three-way green (2026-09-06).** An eight-cycle run that started as
+  *"what is the default code at status 400"* and ended at `ENTITY-CORE-PROTOCOL` **0.8.2.11**. Its
+  last leg was `system/tree:put`: the spec mandated a code when a submitted entity *"does not
+  decode"* and never defined decoding, and the definition turned out to be already in the corpus —
+  `put-request.entity` is a `core/entity`, three fields, none optional. All six `put` error rows are
+  now driven green on all three reference peers. **Five error-code tables exist where there was
+  one** (`TREE`, `TYPE`, `REGISTRY`, `DISCOVERY`, and now `CONTENT` + `LOCAL-FILES` makes seven).
+- **The defect the arc existed to find:** no rust or py SDK could `put` to a go peer at all. At both
+  seats a lenient peer and a hash-stripping SDK sat **in the same tree**, so each round-trip was
+  perfect and neither seat's suite could see it — *a compensating pair inside one repo is invisible
+  to that repo's entire test suite, by construction*, and it surfaced only when one seat drove
+  another. Fixed at both, verified by source read at named commits.
 - **The 0.8.2 release sign-off (2026-08-23).** Corpus fold verified end to end by running the build
   owner's own gates rather than relaying a report; three findings no seat's report carried, all on
   `COHORT-OPEN-ITEMS.md`; the build surface swept, the isolation claim measured by building, and the

@@ -1,6 +1,6 @@
 # PROPOSAL — one name matcher per registry, and a `<glob>` in a schema block is an undefined referent
 
-**Status:** DRAFT
+**Status:** IMPLEMENTED — folded at `EXTENSION-REGISTRY` **v1.16**. D1–D3 verified 2026-09-06: *"the registry's name matcher"* is §4's sentence, the `500`-arm removal is row 3 of `REG-NAME-CONSTRAINTS-GRAMMAR-1`, and that check carries the discriminating rows a `*.lab` example cannot reach.
 **Tier:** extensions — `EXTENSION-REGISTRY` §4, §6a.9.1, §11.1
 **Answers:** `entity-core-go` spec-issue `2026-08-18-e` · `entity-core-py` `SA-PY-14` — **filed independently, same finding, and the two seats already diverge in code**
 **Read at:** arch `a587ce0` · go `6ae71c4` · py `23e77ff`

@@ -1,6 +1,6 @@
 # PROPOSAL — one matcher, two input domains: `name_constraints` never sees a `/`
 
-**Status:** DRAFT
+**Status:** IMPLEMENTED — folded at `EXTENSION-REGISTRY` **v1.16**. D1–D4 verified against the spec 2026-09-06: row 3 is now the old row 4 (`a[b`) and the `/`-crossing absence is normative; *"One matcher, two input domains `[MUST, v1.16]`"* is §6a.9.1's paragraph.
 **Tier:** extensions — `EXTENSION-REGISTRY` §6a.9.1, §11.1
 **Answers:** `entity-core-go` spec-issue `2026-08-19-b` (GAP 1 of their consolidated packet)
 **Read at:** arch `84cf677` · go `921accc` · rust `39082d8` · py `7a71fd4`

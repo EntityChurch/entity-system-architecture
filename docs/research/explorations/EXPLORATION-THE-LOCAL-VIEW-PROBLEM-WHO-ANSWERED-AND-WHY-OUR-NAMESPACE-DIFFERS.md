@@ -397,16 +397,27 @@ existed. **Not proposed here** — flagged because it is reachable at zero subst
 
 ---
 
-## §3d The root cause, and it is one sentence: YOU CAN ONLY SIGN AN ENTITY
+## §3d Nothing here is broken. A tree binding is not an entity YET — and minting one is a choice we have made five times already
 
-**Everything above converges here.** `system/signature.target` is a **content hash**. A content hash is
-the identity of an **entity** — `(type, data)`. Therefore **a thing is signable exactly when it is an
-entity**, and nothing else in the system can be signed at all.
+> **⚠ This section was first written as *"the root cause: you can only sign an entity,"* and both halves
+> were wrong.** `[operator correction, 2026-09-06: root cause of what — is this a problem at all, is
+> anything broken? "You can only sign an entity" is not a limitation. Everything in this system is an
+> entity, and anything you want to be one, you can make one.]`
+> **(1) There is no defect.** No seat serves foreign namespaces (measured — `browser-rust` `d9cc645`,
+> `workbench-go` `ff268ac`, `core-go` `78db4a9` with `whole-store` as a warned debug opt-in), content is
+> hash-verified on every path, and authorship has a working mechanism wherever it is used. *"Root cause"*
+> named a pathology that does not exist and made an unmade decision read as a bug.
+> **(2) *"You can only sign an entity"* is vacuous** — everything in this system is an entity, and that
+> is the design's central property, not a constraint on it. **Stated as a limit it is exactly backwards:
+> the fact that anything can be made an entity is what makes every option below available.**
 
-**A tree binding is not an entity.** `path → hash` is an *edge in a trie* (`ENTITY-CORE-PROTOCOL` §1.7).
-It has no `(type, data)` of its own and therefore **no content hash and no signature slot.** That is not
-a gap in `TREE_GET`'s route design — the route could not carry a signature over the binding, because
-**there is no such signature to carry.**
+**The accurate statement is narrow and is about the present tense.** `system/signature.target` is a
+content hash, so signing something requires that thing to *be* an entity. **A tree binding is not one
+today** — `path → hash` is an edge in a trie (`ENTITY-CORE-PROTOCOL` §1.7), with no `(type, data)` of
+its own. So `TREE_GET` has no signature to carry, **not because carrying one is impossible, but because
+nobody has minted the entity that would be signed.**
+
+**And minting that entity is ordinary work this corpus has already done five times.**
 
 **And this predicts, correctly, every workaround already in the corpus.** Each is the same move: *make
 the relation an entity, then sign the entity.*
@@ -424,22 +435,78 @@ binding is exactly a `name → target` relation, and it IS individually signed**
 it a first-class entity. **The tree binding is the same shape of relation and is the one that never
 got an entity.**
 
-> **So D-42 restates one final time, and this is the form to carry:** the tree is the system's only
-> load-bearing relation that is *not* an entity, so it is the only one that cannot be signed in place.
-> **Everything else about the local-view problem follows from that**, including why the signed root
-> exists at all — *the root is the entity we mint so that bindings become signable in bulk, because
-> individually they are not signable at all.*
+**So the signed root is not a workaround for a limitation — it is one of these mints, chosen for the
+bulk case.** *"I don't want to go through and sign everything, so I signed my whole tree."* And the
+registry made the opposite choice for the same shape of relation, because a name binding has to travel
+alone.
 
-**Which reframes §3a's four sketches.** They are not four ways to carry a signature; **they are two
-ways to mint an entity and two ways to avoid needing one.** (a) the proof suffix and (b) the consumer
-obligation both work by pointing at the **root** entity that already exists — no new entity, which is
-why they compose and why they are cheap. (c) *is* the mint-an-entity option (a signed per-binding
-entity), and its cost is exactly the cost of entity-hood: one object and one signature per binding,
-which is the write amplification §6.5.6 already declined. **The design space is smaller and better
-understood than "four sketches" suggested, and the question is now a single one:** *is a tree binding
-worth making an entity, or is pointing at the root sufficient?* **§3c's answer is that it is not
-worth it, because for immutable content the entity to sign already exists — it is the content — and for
-mutable pointers the root is the correct instrument anyway.**
+### §3d.1 The operator's shape — a signed `{path, content_hash}` assertion
+
+`[operator, 2026-09-06: "let's say I sign the reference that hey, this is the path, this is the content
+hash at that path, and then I sign that bundle. Then I'm confirming this is the address, this is what's
+at the address, and it's all signed by me. By looking at the path, you can say I have a public key, I'm
+the authoritative signer."]`
+
+**This is a well-formed sixth mint and it has a property none of §3a's sketches has: it is
+self-describing.** A tree path's first segment **is** the authority's peer-id
+(`ENTITY-CORE-PROTOCOL` §1.4), so a verifier holding only this entity can derive **who must have
+signed it** from the object itself, construct `/{that peer}/system/signature/{target_hex}`, and check.
+**No root, no trie walk, no external context, no prior knowledge of the publisher.** That is the same
+self-description that makes a content hash work, applied one level up.
+
+| | signed `{path, hash}` assertion | inclusion proof + signed root | entry signature (FEED §1.1) |
+|---|---|---|---|
+| Objects to forward | **2** (the assertion + its signature) | root + its signature + ~log₃₂(n) trie nodes | **2** |
+| Verifier needs | the path (which names the signer) | the trie algorithm + the root | the author's identity |
+| Proves | *"Alice asserted P → H"* | *"P → H was in Alice's tree at seq N"* | *"Alice authored these bytes"* |
+| **Proves currency?** | **no** | **yes, relative to seq N** | n/a — content is immutable |
+| Cost to publisher | one signature **per binding you choose to make portable** | one signature per republish | one per entry |
+
+**Two honest notes on it, neither fatal:**
+
+1. **It asserts authenticity, not currency.** *"Alice asserted P → H"* carries no ordering, so an old
+   assertion is replayable and indistinguishable from a current one. Adding a per-path counter would
+   fix that and would cost per-path state; **the root's single `seq` is the cheap way to get ordering,
+   which is precisely the job the root is good at.** So this does not replace the root — it composes
+   with it.
+2. **The write cost is opt-in, which is what makes it viable.** §6.5.6 declined *a signature per
+   `tree:put`* as write-amplifying. This is not that: you sign **the bindings you want to make
+   portable**, not every write. That is a different economics and the earlier objection does not carry
+   over.
+
+**Verdict: it is the right instrument for "hand someone a verifiable path→hash claim that travels
+alone," and `system/registry/binding` is already this exact design, shipped.** Which is the useful
+finding — **the shape is not hypothetical, we built it once and scoped it to names.**
+
+### §3d.2 But does the social tier need it? — no, and this is the question that decides D-42
+
+`[operator: "Is that the requirement we need, to follow someone on entity Twitter? You tell me, that's
+what we're trying to figure out."]`
+
+**Walk the three things a reader actually does, and none of them needs a signed binding:**
+
+| What the reader does | What must be proved | Instrument | Already ruled? |
+|---|---|---|---|
+| **Reads a post a mirror handed them** | *did Alice write these bytes?* | **the entry's own signature** — the post is immutable and identified by its hash; its path is irrelevant to who wrote it | **yes** — FEED §1.1 |
+| **Follows Alice / gets her latest** | *what is Alice's feed head NOW?* | **signed root + `seq`** — this is a mutable pointer and currency is the whole claim | **yes** — TREE §3.3a |
+| **Follows a reply to its parent** | nothing — it is a **pin** | the content hash | **yes** — self-verifying |
+
+> **The operator's own framing is the reason: *"the position in a tree isn't relevant to the identity of
+> its contents."*** For a social feed the unit is a **post**, and a post is immutable content whose
+> authorship is the entire question. **Its path is bookkeeping.** So the signed-binding entity solves a
+> problem the social tier does not have, and the two instruments the social tier *does* need are both
+> already ruled.
+
+**Where a signed binding is genuinely the right answer is the case where the path IS the claim** —
+*"the canonical `/about` page of this site is `H`"*, *"this name resolves to this target"* — content
+addressed **by position** rather than by identity. **That is the registry's job and the registry
+already does it.** A site's page map is the next plausible consumer, not a feed.
+
+**So D-42's disposition, stated plainly:** it is **latent, not a defect**, the mechanism to close it
+exists in two forms, and **the social tier does not need either** — it needs FEED §1.1 to land. The
+open decision is narrow: *does the content-site convention want the registry's signed-binding shape for
+its page map?* That is a real question with a real consumer, and it is not on the critical path to a
+feed.
 
 ---
 
