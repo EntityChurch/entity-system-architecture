@@ -224,12 +224,16 @@ The open question on whether anything narrower (e.g. a one-line V7 rule requirin
 
 ## 9. Cross-references
 
-- `proposals/PROPOSAL-DELIVERY-AND-DURABILITY.md` — design history (Status: RETRACTED).
 - `EXTENSION-DURABILITY.md` — the exploratory standalone extension carrying the lifted §10 material.
-- `EXPLORATION-DELIVERY-DURABILITY-SCENARIO-MATRIX.md` — file:line-grounded, independently verified backing for §3. (Still useful for the delivery-scenario portion; the durability verdicts in it correspond to the retracted spec text and now describe `EXTENSION-DURABILITY` behavior rather than V7 behavior.)
-- `EXPLORATION-PEER-COMPOSITIONS.md` (v2) and the deferred `PROPOSAL-PEER-COMPOSITIONS-AND-DELIVERY-CLASSES.md` — the **broader peer-compositions concept** (extension sets + topology; kernel properties; named-composition catalog).
+- `GUIDE-PEER-COMPOSITIONS.md` — **the composition framework this guide is one pattern inside**: peers
+  wired by capability grants and coupling, the named catalog, the two stall classes, and the liveness
+  invariant the catalog rests on. *Transferred into this corpus 2026-09-13; it was cited here by name
+  for months while living only in the pre-split archive.*
+- **The delivery-and-durability design history and its scenario matrix** remain archive-only and are
+  **not part of this corpus** — named rather than cited as a path, because a path that resolves in only
+  one layout is not a reference.
 - `EXTENSION-INBOX.md`; `EXTENSION-CONTINUATION.md`; `ENTITY-CORE-PROTOCOL.md` §1.4 / §3.2 / §3.3.
-- **Addressing/reachability layer (§3A):** the SMTP-model and generic-message-passing exploration (the SMTP cross-check); `EXTENSION-RELAY.md` v1.0 §3.5 (the MX-equivalent, folded; design record at `proposals/implemented/PROPOSAL-PEER-INBOX-RELAY-MX-EQUIVALENT.md`); `EXTENSION-RELAY.md` v1.0 (Mode S store-and-forward); `EXTENSION-REGISTRY.md` v1.0 (name→peer); `proposals/PROPOSAL-EXTENSION-BRIDGE-SMTP.md` (real-email interop, stub).
+- **Addressing/reachability layer (§3A):** `EXTENSION-RELAY.md` §3.5 (the MX-equivalent, folded) and its Mode S store-and-forward; `EXTENSION-REGISTRY.md` (name→peer); `ENTITY-CORE-PROTOCOL.md` §1.4 / §3.2 / §3.3. *The SMTP-model cross-check, the MX-equivalent's design record and the real-email interop stub are pre-split-archive material and are not in this corpus.*
 
 ---
 

@@ -167,7 +167,7 @@ What binds today:
   only ever lowers.
 
 **The discipline set is assembled and ratified — `docs/DISCIPLINE-CHARTER.md` is the authoritative
-home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-22), the honest
+home.** Read it once: it carries the rules, the anti-pattern catalog (AP-1…AP-23), the honest
 enforcement table, and the doctrines this repo adopts **by reference**. **The charter is the set.**
 
 > **It is INTERNAL and does not publish `[2026-09-08, operator's test]`.** It was declared canonical
@@ -239,7 +239,17 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   *grep-the-literal* both structurally miss it: the first finds documents that argue about a rule,
   the second documents that state it, and a block **executes** it. Three instances in one week.
   **Sweep the ~40 pseudocode blocks in `ENTITY-CORE-PROTOCOL` — bounded and completable, and a
-  standing pre-fold step**)* ·
+  standing pre-fold step**; **MOOD AXIS 2026-09-13 — sweep BOTH MOODS: the same obligation is written
+  as PSEUDOCODE where it is implemented and as PROSE where it is obliged, and a fold correcting one
+  leaves the other contradicting it at MUST level. `K5` found 3 of 8 sites; three of the misses were
+  `MUST` sentences the fold would have turned into MUSTs mandating what it forbids. This is the
+  pseudocode axis in the MIRROR, four days later, caught by the seat that filed the original**; **CONTROL-FLOW SHAPE 2026-09-12** — that sweep was ratified and then not
+  run on the very next fold, and the shape it needs is sharper than *find the blocks*: **read the
+  control path TO the rule's site, never the line that states it.** `0.8.2.21`'s own census scored
+  `check_resource_scope`'s pattern arm clean by quoting a fail-closed test that a `continue` two lines
+  above makes unreachable — so the ruling landed at two of its three sites and §5.4 asserts *"two
+  layers"* of a function that has one. **A site scored compliant leaves the worklist**, which is why
+  mis-scoring is worse than not looking (`AP-23`))* ·
   **L24** a reference is only a pin if it resolves in the history **and the layout** the receiving
   audience gets — a `dev` SHA never resolves on public `master`, and a sibling path never resolves in
   a solo clone, both by design *(**ratified** 2026-08-23 — second shape, the build surface)* ·
@@ -287,17 +297,34 @@ silent"*, *"nothing describes"*, *"this is new"*, or *"no seat implements"*.** T
 were published false in two days in September 2026, all from the same cause: **every instrument
 was scoped to one repository, and each reported clean while being narrow.**
 
-**There are two regions and you need both.**
+**There are THREE regions and you need all three** *(the third was added 2026-09-13 — see the note
+under the table; it had been named nowhere and no session had opened it)*.
 
 | Region | What is in it | How to search |
 |---|---|---|
 | **This corpus** | the folded result — `specs/` · `guides/` · and the workspace `docs/proposals/` · `docs/research/` (**203 design documents**; run `spec register` for the count rather than reading one here) | `spec coverage` first; then grep. **`docs/DESIGN-REGISTER.md` answers *"is there an ANSWER"*, and as of 2026-09-08 it is `203 of 203` with `--gate` green — so a miss there is now EVIDENCE, not silence.** Still a pointer, never an authority: open the document it names |
 | **The pre-split archive** | **1,068 documents**, core revisions v0.01 → v7.0 — the *reasoning* that produced this design. The split moved conclusions here and left derivations there. Frozen; last commit 2026-06-23 | **`docs/LEGACY-ARCHIVE-INDEX.md`** — internal title index of all 1,068, by revision. Grep it, then grep the archive full-text |
+| ⭐ **The paper corpus** `[2026-09-13]` | **The fifteen-paper academic set (Papers 0–14) plus its working notes — 505 markdown files, ~210k lines, and it is LIVE, not archive.** The content/documentarian leaf: it consumes this repo and refines it for an outside reader. **Several papers are the current, refined form of material this corpus only has in the frozen archive** — Paper 07 *DEOS* is the distributed-operating-system framing; Paper 09 *Application Architectures* is the developer's *"what do I build on this"* view; Paper 06 *Convergent Evolution* carries the actor-model and comparative extractions | Sibling estate, **another team's tree — read-only.** `papers/NN-*/content/paper.md` is the paper; `papers/NN-*/notes/` and `papers/shared/notes/` hold the extractions and source maps, which are often what you actually want. Grep `papers/` full-text |
+
+> ⛔ **The third region is the fifth time a search scope here was set once and never re-read.** It was
+> reachable, maintained and committed the whole time, and **no instrument, index or handoff in this
+> repo named it** — so every *"we have not studied X"* written here was scoped to two regions while
+> claiming to be scoped to the search path. Found 2026-09-13 while working the content-address-lookup
+> question, from an operator prompt, not from any check.
+>
+> **Two things it changes immediately.** ① A paper's **notes** directory is a better first stop than
+> its `paper.md` — the source maps and extractions are the raw comparative work, and the paper is the
+> compression. ② **It is a LEAF: it consumes this corpus and does not author it.** A paper is
+> evidence of what was studied and how it was framed; **it is never spec authority**, and a divergence
+> between a paper and a landed spec is a finding to route, not a correction to fold.
 
 ```bash
 grep -i "<noun>" docs/LEGACY-ARCHIVE-INDEX.md          # is there a document about it?
-L=<path to the archived pre-V8 architecture repository>/docs/architecture
-grep -rliE "<term>" specs guides docs "$L"             # is it discussed anywhere?
+# The two archived pre-split regions. They are not part of this repository; point
+# ARCHIVE at wherever your checkout holds them.
+L="$ARCHIVE/entity-core-architecture/docs/architecture"
+P="$ARCHIVE/entity-core-papers/papers"                 # the THIRD region — do not omit it
+grep -rliE "<term>" specs guides docs "$L" "$P"        # is it discussed anywhere?
 
 # CENSUS — when the answer is a COUNT, run this, and publish the table it prints.
 # specs AND guides, always: a sweep scoped to specs/ understated one population

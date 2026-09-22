@@ -1,7 +1,18 @@
-# APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5.1 DRAFT
+# APP-CONVENTION-SEMANTIC-CONTENT-SITE — content sites built on Embed — v0.5.2 DRAFT
 
-**Version**: 0.5.1
+**Version**: 0.5.2
 **Status**: Draft
+
+**v0.5.2:** two clauses, neither widening a rule, both naming an authority that already binds. §4 states
+that a bare-string link or asset reference in a page body resolves per `APP-CONVENTION-REFERENCE` §3.4 —
+**a leading `/` is root-absolute within the current site** — because **the asset position is not special
+and this convention has no rule of its own about it**, and two implementations diverged for a week over a
+form §3.4's own paragraph recommends producers emit. §7 adds the verification scope: the site subgraph is
+the capability scope of the site's **bytes**, and the evidence that makes those bytes verifiable — the
+publisher's `system/peer/published-root` and the `system/signature/` location of its root — sits **outside
+the subgraph by design**, so a grant covering the subgraph alone yields a readable, unverifiable site and
+reports it as *"this publisher has published no root"*, which is a false statement about the publisher
+manufactured by the reader's own grant.
 
 **v0.5.1:** `app/site-asset`'s `payload` is **narrowed to `inline-payload / pointer-payload`** and the
 `child` arm is refused as **invalid for its type** (§4), with a §9 vector asserting the three payload
@@ -262,6 +273,22 @@ site-asset = {                               ; type = app/site-asset
 }
 ```
 
+> **Where a link or an asset reference RESOLVES — the authority is `APP-CONVENTION-REFERENCE` §3.4, and
+> this position is not special `[v0.5.2]`.**
+>
+> **[MUST]** A link or asset reference appearing as a **bare string** in a page body — including in an
+> embed directive's asset position — is resolved per `APP-CONVENTION-REFERENCE` §3.4: **a leading `/` is
+> root-absolute within the current site**; anything else is **directory-relative to the current page**.
+> **This convention states no rule of its own about it**, and an implementation that refuses the
+> root-absolute form refuses the form §3.4's own paragraph **recommends producers emit**.
+>
+> *Stated because two implementations diverged here for a week — one resolving the form, one refusing
+> it, so the same published page rendered a figure in one reader and a gap in the other — while each
+> searched for a rule scoped to the asset position.* **The rule is scoped to the FORM, one convention
+> over.** An absolute `entity+ref://` URI is a different case with a different base (§3.1: a
+> peer-absolute tree path), and that difference is by design; whether the asset position admits the
+> atom at all is not settled here.
+
 **`app/site-asset` — declared, and the `[MUST]` closes a bypass rather than adding a rule.**
 
 > **[MUST]** An asset whose bytes exceed `inline-payload`'s `.size (1..16384)` ceiling **MUST** use a
@@ -494,6 +521,25 @@ not need to be carried in the manifest). Cross-peer caching under `/{other_id}/�
 *is* the tree, partitioned by peer), not a new feature. The prior v0.4.2 wording naming
 `{publisher_peer_id}/content/sites/{site_id}/` as the scope is dropped per the v0.5 placement erratum above
 (§4.X): a site is a free subgraph, and the scope is wherever the publisher put it.
+
+**The scope of a site's CONTENT and the scope of VERIFYING it are different sets `[v0.5.2]`.** The site
+subgraph is the capability scope of the site's **bytes**. The evidence that makes those bytes verifiable
+— the publisher's `system/peer/published-root` (`EXTENSION-TREE` §3.3a) and the `system/signature/`
+location of its root (V7 §5.2) — sits **outside the subgraph, in the publisher's namespace, by design**:
+a signed root that lived inside the subtree it commits to could not commit to itself.
+
+> **[MUST]** A grant intended to make a site **verifiable** covers those two locations **in addition to**
+> the site subgraph. A grant covering the subgraph alone yields a **readable, unverifiable** site.
+>
+> **[MUST NOT]** An implementation **MUST NOT** report an authorization failure at those locations as an
+> **absent published root**. The reader observes *"this publisher has published no root"* — a **false
+> statement about the publisher, manufactured by the reader's own grant** — and it points a diagnosis at
+> the wrong machine.
+
+**The scope sentence in §2 is unchanged and is not being widened** — the scope of the content really is
+the subgraph. This is an adjacent obligation, and it is worth stating because **the narrow grant is the
+one a careful implementer writes**: it is what the clause says, and least-privilege is the instinct.
+*The trap is baited with good practice.*
 
 ## 8. Security `[gates named with owners — security is never deferred, even when the build is]`
 

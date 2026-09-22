@@ -408,6 +408,12 @@ blurb = "This document describes cross-extension emergent properties — the beh
 group = "System & architecture"
 
 [[doc]]
+path  = "specs/SYSTEM-DATA-EXCHANGE.md"
+title = "System Data Exchange"
+blurb = "What a peer obtains from other peers it may publish, and the result is the same kind of object it was built from — the closure property, its two preconditions, and the four rules a republishing peer follows."
+group = "System & architecture"
+
+[[doc]]
 path  = "specs/SYSTEM-IDENTITY-COMPOSITION.md"
 title = "System Identity Composition — Navigation Doc"
 blurb = "The identity layer is composed of three extensions (per the landed proposal stack):"
@@ -448,6 +454,12 @@ group = "Guides"
 path  = "guides/GUIDE-CORE-COMPUTATIONAL-ARCHITECTURE.md"
 title = "Core Computational Architecture"
 blurb = "Everything in the compute arc is a facet of this single sentence."
+group = "Guides"
+
+[[doc]]
+path  = "guides/GUIDE-PEER-COMPOSITIONS.md"
+title = "Peer Compositions and Topologies"
+blurb = "Wiring several peers together: a peer is a configuration, a composition is a family, and the catalog of seven needs no protocol change."
 group = "Guides"
 
 [[doc]]

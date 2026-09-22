@@ -1,13 +1,37 @@
-# APP-CONVENTION-FEED — the entry, the index, the collection and the mirror — v0.1 DRAFT
+# APP-CONVENTION-FEED — the entry, the index, the collection and the mirror — v0.3 DRAFT
 
-**Version**: 0.1
+**Version**: 0.3
 **Status**: Draft
+**v0.3:** §6's mirror becomes a **bounded head plus key-addressed pages** — the shape §4.2 already
+defines for an author's index, applied to a gathered view. v0.2 widened `subject` to `any-reference` so
+a mirror could be of a **timeline**, which §1.3 makes monotone and unbounded; the shape did not widen
+with it, so the leg §6.2 sells as the cheap one transferred the whole view to read its newest entries.
+Pages are filled in **gather order** and sealed, because a gatherer backfills and because gather order
+is the order a source leg is read in — which is what makes §4.3 rule 4's `O(new)` expressible over a
+mirror at all. §6.0.1's coordinate is now **`prefix_hash`** (`EXTENSION-REVISION` §3.1), declared
+**derive-to-meet** per `SPECIFICATION-FORMAT` §8.4.6: the previous wording named a one-argument
+`content_hash` over a path, which is not a function this corpus defines, leaving `FEED-12`'s own
+comparand underivable. §6.0 now names the live subject's path — `app/feed/index` — because *"a prefix"*
+is not a legal live-reference target (§2.2.2 requires one that resolves). And §2.4's `cursor` field is
+**removed**: the reader's position is local state, never published, which is what `[OPEN-FEED-1]`
+resolved and what §4.4 has always described.
+**v0.2:** §6's `subject` widens to `any-reference`, and §6.0 states what each kind means. A pinned
+subject names one entity many parties contribute to — a thread; a live subject names a prefix one peer
+owns — a timeline. **The narrow production admitted only the first**, so a peer republishing an
+author's walk had no legal way to say what the walk was of, and the mirror could not serve as a source
+leg for the case it is most useful for. §6.0 also forbids a subject that is a pin to a moving value —
+an author's index head is a **witness**, not an identity. §6.0.1 pins the prefix `app/feed/mirrors/`
+and the key derivation, over **identifying fields only**, so two gatherers of one subject compute one
+address. §6.1's four republication rules now name their authority: they are stated in
+`SYSTEM-DATA-EXCHANGE` §2.3 and restated here — promoted because any peer republishing another peer's
+content is bound by them, not only a feed reader.
 **Domain:** `applications/` (fifth member).
 **Kind**: normative-spec · **Authority**: binding · **Governed-by**: `guides/GUIDE-APPLICATION-DEVELOPMENT.md` — FORMAT-only (§2.1).
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §1.2 (content hash) · §1.4 (paths) · §1.5 (`PeerID`) · §3.5
 (`system/signature`, the invariant pointer and its forwardable property) · `EXTENSION-TREE.md` §3.1
 (the trie's per-change cost), §3.3a (`published-root`), §9 (canonicalization) ·
-`APP-CONVENTION-REFERENCE.md` §2 (the reference atom) · `APP-CONVENTION-EMBED.md` (entry bodies).
+`APP-CONVENTION-REFERENCE.md` §2 (the reference atom) · `APP-CONVENTION-EMBED.md` (entry bodies) ·
+`SYSTEM-DATA-EXCHANGE.md` §2 (closure's two preconditions; the authority for §6.1's four rules).
 
 > **What this document is.** A vocabulary for *a thing someone posted* — four content shapes and one
 > subscription record — so that following people across independent hosts and reading what they
@@ -143,12 +167,15 @@ implementations mutually invisible even with a perfect mirror between them.
 | `app/feed/index-head` | the stream's entry point: which page numbers are in use | its author |
 | `app/feed/index-page` | one **key-addressed** page of the author's stream, newest-first within the page | its author |
 | `app/feed/collection` | the author's own **bounded, complete, authored-order** set — album, playlist, portfolio | its author |
-| `app/feed/mirror` | a **gathered** view of other people's entries, claiming nothing | a reader |
+| `app/feed/mirror` | the **head** of a gathered view of other people's entries, claiming nothing | a reader |
+| `app/feed/mirror-page` | one **key-addressed**, sealed page of a gathered view, in **gather** order | a reader |
 | `app/feed/follow` | a reader's durable subscription to a peer's feed | the reader, privately |
 
 **Four content shapes, and it terminates.** The three collection-shaped types are not subject-matter
 categories — they are the three answers to *"who assembled this list, and what does it therefore
-claim?"*, and there is no fourth answer. **A new product is a new body type (an embed handler, and that
+claim?"*, and there is no fourth answer. *(A `*-page` type is not a fourth answer: a head and its pages
+are **one** collection spread over several entities, and they always share the head's answer — the
+author assembles an index page, a reader assembles a mirror page. `[v0.3]`)* **A new product is a new body type (an embed handler, and that
 extension point is open and unbounded) or a new renderer.** It is a new **entity type** only if a
 conformant consumer must *behave* differently, and the burden is on whoever proposes one to name the
 behaviour. A blog post, a video post, a photo post, a comment and a forum post are all the first row.
@@ -329,11 +356,18 @@ feed-follow = {                      ; type = app/feed/follow
     subject:    peer-id,             ; whose feed this follows — a NAMESPACE, not a record
     ? label:    tstr,                ; the follower's own petname; local, never authoritative
     ? via:      tstr,                ; the identifier as typed or scanned, for provenance display
-    since:      uint,                ; ms since epoch — when this follow was created
-    ? cursor:   content-hash         ; last index page this reader applied (§4.4)
+    since:      uint                 ; ms since epoch — when this follow was created
   }
 }
 ```
+
+> **There is no `cursor` field, and its absence is normative `[v0.3]`.** A reader's position is
+> **local state** (§4.4) — nothing in this convention publishes it, and a follow record is the reader's
+> private data in any case. v0.2 carried `? cursor: content-hash` here so a v1 reader would be
+> implementable from this document alone; **a bare hash cannot express the `{page, applied}` position
+> §4.4 requires**, so the field was simultaneously the declared one and the wrong shape, and an
+> implementation building to the declaration got a cursor that breaks on edit. The position is
+> described where it is used and is stored wherever the reader keeps its own state.
 
 **This is a distinct type from `app/share/follow`, and the discriminator is the SUBJECT.**
 `app/share/follow` follows a **grant** — one titled share record with an audience the publisher
@@ -438,6 +472,12 @@ where it left off.
 **The cursor is `{page, applied}`** — the page number the reader reached, and the newest entry hash it
 took from that page.
 
+> **The cursor is LOCAL READER STATE. Nothing in this convention publishes it `[v0.3]`.** It is held
+> wherever a reader keeps its own bookkeeping, it is never a field on a published record, and a
+> publisher never learns it — which is the same property §2.4 states about a follow record. **This is
+> what makes §4.3 rule 4's `O(new)` implementable**, and an implementation without a cursor of any kind
+> re-reads its whole window on every poll, forever, whether or not anything changed.
+
 **[MUST]** If `applied` no longer resolves, the reader **resumes from `page`**. This is why the cursor
 carries a number and not only a hash: an author may remove the very entry a reader was holding as its
 position, and **a cursor that cannot survive that is a cursor that breaks on edit.**
@@ -512,18 +552,158 @@ queue. **That is presentation, and it is per-front-end by the tier standard (§2
 ## 6. The mirror — assembly as a by-product of participation
 
 ```cddl
-feed-mirror = {                      ; type = app/feed/mirror
+feed-mirror = {                      ; type = app/feed/mirror — the HEAD, at app/feed/mirrors/{coordinate}
   type: "app/feed/mirror",
   data: {
-    subject:     reference,          ; the root entry this view is of
-    entries:     [* reference],      ; what this mirror holds — republished, UNMODIFIED
-    gathered_at: uint,
+    subject:     any-reference,      ; what this view is OF — see §6.0
+    current:     uint,               ; the highest mirror page in use
+    ? oldest:    uint,               ; the lowest page still published (default 0)
+    gathered_at: uint,               ; when this gatherer last extended the view
     gathered_by: peer-id             ; the key that assembled it
+  }
+}
+
+feed-mirror-page = {                 ; type = app/feed/mirror-page
+  type: "app/feed/mirror-page",      ; at app/feed/mirrors/{coordinate}/{page} — page is a decimal uint
+  data: {
+    page:        uint,               ; this page's own number — MUST equal its key
+    entries:     [* reference],      ; republished, UNMODIFIED, always PINNED (§6.0)
+    updated_at:  uint
   }
 }
 ```
 
+**The head is fixed-size whatever the size of the view it heads** — a subject, two integers and two
+scalars. `entries` lives on pages.
+
+#### 6.0a The mirror is paged, for the reasons §4.2 is `[v0.3]`
+
+**`SYSTEM-DATA-EXCHANGE` §2.5 is the authority.** A mirror's membership grows with participation — with
+how much the gatherer gathered — so it is a bounded head plus key-addressed pages, and this section is
+that rule's instance. **On any disagreement, `SYSTEM-DATA-EXCHANGE` wins.**
+
+> **[MUST NOT]** A gatherer **MUST NOT** emit an unbounded mirror page, and a reader **MUST NOT** assume
+> any page size. *(§4.3 rule 5, over the object it needs to cover.)*
+
+> **[MUST NOT]** Mirror pages are **never renumbered, never merged and never compacted**, and are
+> **addressed by key, never chained by hash** *(§4.3 rules 1 and 3, and for the same reasons — a
+> hash chain makes extending a view republish it)*.
+
+> **[MUST]** A mirror page's `page` field **MUST** equal its key.
+
+> **[MUST] Pages are filled in GATHER order, and a page is sealed when its successor opens.** A gatherer
+> appends what it newly holds. It **MUST NOT** rewrite a sealed page to insert an entry it discovered
+> later; that entry goes on the current page.
+
+**Why gather order and not the author's order.** An author's index is append-mostly — a new entry goes
+on the current page. **A gatherer backfills**, routinely, because that is what gathering is. Paging a
+mirror in the author's order would rewrite old pages on every gather round: the archive-republishing
+cost §4.3 rule 1 exists to prevent, moved onto the peer that can least afford it. Three things make
+gather order free, and the third is the one that decides it:
+
+1. **Ordering was never the mirror's job** — §6.2 already sends a reader to *"the author's own
+   succession … never by which mirror answered first."*
+2. **A sealed page is immutable**, which matches §1.3 and is what makes a mirror cacheable: a reader
+   that has read page 7 never re-reads page 7.
+3. ⭐ **Gather order is the order a source leg is read in.** §6.2's case for the mirror is *one check
+   instead of 500*; that reader's question is **"what do you have that I have not seen?"**, which in
+   gather order is *read down from `current` to your cursor and stop* — §4.3 rule 4's `O(new)`. **In the
+   author's order it is not expressible at all.**
+
+> **The named cost.** A reader wanting *the author's newest 50* from a mirror must read and sort, because
+> gather order is not post order. That is the right trade: a mirror is a **source**, and a reader who
+> wants the author's own order has the author's own index, which is authoritative for it and one
+> signed-root check away.
+
+### 6.0 The subject is a coordinate, and it comes in two kinds
+
+**A mirror's `subject` names *what this view is of*. It accepts either reference atom (§2.2), and
+which one it is decides what the mirror means:**
+
+| subject | names | writers | *short* means |
+|---|---|---|---|
+| **pinned** | **one entity** many parties contribute to — a thread's root entry | many, no single authority | a contributor you did not reach |
+| **live** | **a resolvable path one peer owns** — for a timeline, the author's **index head** | exactly one | a gap in the timeline |
+
+> **[MUST NOT]** A `subject` **MUST NOT** be a pin to a value that moves when the subject changes.
+
+> **[MUST]** The live subject of a **timeline** mirror is a live reference to the author's index head,
+> **`app/feed/index`** (§4.2). `[v0.3]`
+
+**Three properties decide it, and no other candidate has all three.** ① **The convention pins that path
+by hand** (§4.2's *"two pinned paths"*), so a second gatherer computes it from the peer id alone — where
+an entry prefix is implementation-chosen (§2: *the cross-impl contract is the type tag, not the path*),
+so a coordinate derived from one **can never be computed by another seat**. ② **It resolves**, so
+§2.2.2's four outcomes apply and `seen` means something — *and a reader that decides to leave the mirror
+and go to the author has already fetched the thing it needs.* ③ **It does not move when the author
+posts.**
+
+> ***"A prefix" was the wrong word and it was not merely under-specified `[v0.3]`.*** A live reference's
+> `path` is **authoritative and resolvable**, and the whole of §2.2.2 depends on it — four outcomes
+> turning on what is *at* the path, and a `seen` field that is an expectation about those bytes. **A
+> prefix resolves to nothing**, so a live reference naming one has no row in that table. `app/feed/` is
+> not a legal live-reference target; `app/feed/index` is.
+>
+> **This is the repair the `[MUST NOT]` above implies, not a contradiction of it.** That clause forbids
+> pinning the head's **hash** — a witness masquerading as an identity, and underivable besides, per the
+> paragraph below. A **live reference to the head's path** has neither defect.
+
+*An author's index head is the tempting choice for a timeline mirror and it is the wrong one twice
+over: its hash changes every time the author posts, so it is a **witness** rather than an identity; and
+a reader must already have reached the author to know the hash, which is the hop the mirror exists to
+save.* **A subject is identified by a value that does not change when its current bytes change.**
+
+**`entries` is always PINNED.** A mirror carries exact bytes (§6.1 rule 1), so an entry named by a live
+reference would be a mirror of whatever is there now, which is not a mirror.
+
+#### 6.0.1 Where a mirror lives — `app/feed/mirrors/{coordinate}`
+
+**[MUST]** A mirror is bound under **`app/feed/mirrors/`** in the gathering peer's own tree, at a key
+**derived from the subject** so that a reader holding the subject computes the address rather than
+discovering it.
+
+**[MUST]** A mirror's coordinate is a **derive-to-meet** value (`SPECIFICATION-FORMAT` §8.4.6) and is
+therefore **pinned to the ECFv1-SHA-256 floor (`0x00`)**, whatever the deriving peer's home format.
+`[v0.3]`
+
+| subject | coordinate |
+|---|---|
+| **pinned** | `hex(hash)` — the referenced entity's own content hash, **hold-and-fetch**: used verbatim, at whatever width its own format byte implies |
+| **live** | `prefix_hash(path)` = `hex(content_hash(type="system/tree/path", data=path))`, `path` absolute — **`EXTENSION-REVISION` §3.1**, which defines this function and is its landed instance |
+
+> **The live coordinate is not a new derivation and MUST NOT be implemented as one `[v0.3]`.** v0.2 read
+> `hex(content_hash(absolute-path))` — a **one-argument** function this corpus does not define.
+> `content_hash` is the hash over the ECF encoding of an entity's `{type, data}`
+> (`ENTITY-CORE-PROTOCOL` §1.2), and a path is not an entity, so there was no `type` to supply and two
+> incompatible readings survived. **The function already existed**, over the identical input, with the
+> floor pinned and the reason given: *both sides compute `{H}` independently from the same path string,
+> so a home-format derivation would have two conformant peers construct different paths and never meet,
+> with nothing failing loudly.* **That is `FEED-12`'s failure mode**, written three specs away before
+> this convention existed. The `system/tree/path` type is landed (`REVISION`, `QUERY`) and is not a new
+> vocabulary item.
+
+**[MUST]** The derivation uses the reference's **identifying fields only.** `at` and `via` are optional
+hints and `seen` is an expectation (§2.2); including any of them means two readers naming the same
+subject derive different keys and neither finds the other's mirror. *A derivation that includes an
+optional field is not a derivation.*
+
+**A mirror is mutable at its key** — a gatherer republishes as it reads more — and §1.3 makes that
+monotone.
+
+> **Why a pinned path rather than a type-filtered query.** §2's *"the cross-impl contract is the type
+> tag, not the path"* holds for entries. It does not work here, because the thing a reader needs is to
+> **enumerate what a peer has gathered, from that peer's signed root, without asking them** — and a
+> type-filtered query cannot be served by a static origin. A conventional prefix is reachable by
+> ordinary trie descent on every publishing posture. *This is the same reason §4.2 names the index head
+> and its pages by hand: an index nobody can find is not an entry point.*
+
 ### 6.1 Four rules, each closing a specific hole
+
+> **Authority: `SYSTEM-DATA-EXCHANGE.md` §2.3.** These four rules are **stated there** and restated
+> here for an implementer reading only this convention. They are not feed-specific: any peer
+> republishing another peer's content is bound by them, and they were promoted out of this section
+> because a second convention shipping a gathered view would otherwise inherit the closure property
+> without inheriting the rules that make it true. **On any disagreement, `SYSTEM-DATA-EXCHANGE` wins.**
 
 1. **[MUST]** **Republish the original bytes.** Not a re-encoding, not a re-normalization, not a
    re-serialization through a local model. **A re-encoded entry no longer verifies against its author's
@@ -568,6 +748,25 @@ conflict.
 **Completeness is unattainable without a gatekeeper and this document does not pretend otherwise.**
 What is attainable is that **a view is never wrong, only short**, and that shortness is both visible
 (compare two mirrors) and repairable (read one more).
+
+**And the second reason, which is the one a developer feels first — a mirror is a SOURCE.** A reader
+following 500 authors directly pays a check per author. A reader following **one peer who mirrors
+those authors** pays one check, because the witness is that peer's signed root and one root covers
+every mirror under it.
+
+> **That argument is about ROOT CHECKS, and until v0.3 this section was silent about BYTES — which is
+> where it inverted.** A mirror whose members were one flat list had to be fetched **whole** to read its
+> newest few, so at scale the leg that exists to be cheaper than going to the author transferred
+> megabytes where the author's own leg transfers one page. *One check and the entire archive is not a
+> cheaper read; it is a different expensive one.* **§6.0a is what makes this paragraph true on both
+> axes** — a reader now pays one root check **and** reads down from `current` to its cursor and stops.
+> *(The 500-follow figure is **derived, not measured**: no implementation has walked it.)* *This is why §6.0's live subject matters: it is the kind that makes a mirror
+usable as a source leg for a person's feed, and without it the only expressible mirror is of a thread.*
+
+**A mirror is not a replacement for the author.** It is one leg of an ordered source set, alongside the
+author's live peer and the author's own published origin, and a reader orders their answers by the
+author's own succession (§4.2's index head, §1.3's growing prefix) — never by which mirror answered
+first.
 
 ---
 
@@ -793,8 +992,24 @@ carried unchanged from the design record so existing citations resolve.
 | `FEED-R22` | Show the newest revision it holds, where an entry has been revised | SHOULD | §7.5 |
 | `FEED-R23` | Declare what produced a view — sources, mirrors, exclusions — when it presents more than one publisher's feed | MUST | §9.3 |
 | `FEED-R24` | Treat an emitted syndication document as a source of truth for its own reads | MUST NOT | §8 |
+| `FEED-R25` | Bind a mirror under `app/feed/mirrors/` at a key derived from its subject | MUST | §6.0.1 |
+| `FEED-R26` | Use as `subject` a pin to a value that moves when the subject changes | MUST NOT | §6.0 |
+| `FEED-R27` | Include an optional hint field (`at`, `via`, `seen`) in a mirror's key derivation | MUST NOT | §6.0.1 |
+| `FEED-R28` | Name a mirror's `entries` by live reference | MUST NOT | §6.0 |
+| `FEED-R29` | Carry a mirror's members as an unbounded collection in the mirror record | MUST NOT | §6.0a |
+| `FEED-R30` | Emit a mirror as a bounded head plus key-addressed pages, `page` equal to its key | MUST | §6.0a |
+| `FEED-R31` | Renumber, merge or compact a mirror page, or chain pages by hash | MUST NOT | §6.0a |
+| `FEED-R32` | Rewrite a sealed mirror page to insert a later-discovered entry | MUST NOT | §6.0a |
+| `FEED-R33` | Derive a mirror's live coordinate by any function other than `prefix_hash`, at the ECFv1-SHA-256 floor | MUST NOT | §6.0.1 |
+| `FEED-R34` | Use as a timeline mirror's live subject a path other than the author's `app/feed/index` | MUST NOT | §6.0 |
+| `FEED-R35` | Publish a reader's cursor position in any record this convention defines | MUST NOT | §2.4, §4.4 |
 
 **Ids are allocated once and never reused** (`SPECIFICATION-FORMAT` §8.5a).
+
+⚠ **`FEED-R25`…`FEED-R28` are driven by one vector (`FEED-12`) and by no cross-implementation run.**
+They arrived with v0.2's subject widening and are **commissioning a first measurement**, not recording
+one — the honest state is *authored; not yet exercised*, and it resolves by somebody building a
+timeline mirror.
 
 ### 11.2 Required checks — what an implementation must discriminate
 
@@ -816,6 +1031,8 @@ implementations. **The convention is authored; it is validated when these have b
 | `FEED-9` | a mirrored entry **with its signature stripped** | `FEED-R4` | **integrity without authorship** — invisible without this vector |
 | `FEED-10` | publish N entries across 3 pages, remove one from the oldest, republish: **(a)** the new root is byte-identical to a tree built without it · **(b)** the changed-node count is `O(log_K N)`, not proportional to the archive · **(c)** the other pages' bindings are untouched | `FEED-R10`, §7.2, §7.3 | **the one that fails loudest if the design drifts back toward a chain** |
 | `FEED-11` | a reader holding cursor `{page: 1, applied: H}` where **H was since deleted** | `FEED-R14` | a cursor that breaks on edit |
+| `FEED-13` | a mirror grown **past one page**, then extended again: **(a)** the head's encoded size does not change with the member count · **(b)** every sealed page is byte-identical before and after · **(c)** a second reader fetches the head and **one** page and stops | `FEED-R29`–`FEED-R32` | ⭐ **the leg §6.2 sells as the cheap one is the expensive one.** A single-page fixture passes against a flat list and measures nothing — **the anti-vacuity arm is asserting the view spans more than one page first** |
+| `FEED-12` | a **timeline** mirror — `subject` a live reference to the author's `app/feed/index` — assembled independently by two gatherers, **each carrying different `via` hints**: both derive the **same key** and each finds the other's mirror by computing it | `FEED-R25`, `FEED-R26`, `FEED-R27` | ⭐ **two gatherers of one author cannot find each other's mirror.** Nothing errors: each publishes a correct, verifiable view at an address the other does not compute, and the republished walk is unusable as a source leg |
 
 **`FEED-3`, `FEED-5`, `FEED-6` and `FEED-9` are the load-bearing four.** Three fail if an implementation
 re-serializes instead of republishing — the failure that turns the model from evidence into hearsay —
@@ -836,6 +1053,7 @@ app/feed/index-head
 app/feed/index-page
 app/feed/collection
 app/feed/mirror
+app/feed/mirror-page
 app/feed/follow
 ```
 
@@ -849,7 +1067,7 @@ would resolve it.
 
 | # | Item | Resolves when |
 |---|---|---|
-| **F-1** | **The cursor's permanent home.** §2.4's `cursor` field is carried here so a v1 reader is implementable from this document alone. **A general reader-loop mechanism with non-social consumers is the better home**, and if one lands, this field is removed in favour of it. Flagged so nobody builds a second permanent home for it | a general reader-loop mechanism is specified |
+| ~~**F-1**~~ | ~~**The cursor's permanent home.**~~ **CLOSED v0.3 — the field is REMOVED from §2.4.** The position is local reader state and this convention publishes nothing about it (§4.4), so there was never a home to find: a published cursor field and a reader's own bookkeeping are different objects, and carrying the first *"so a v1 reader is implementable"* shipped a shape (`content-hash`) that could not express what §4.4 requires. A general reader-loop mechanism may still land and now has nothing to displace | — |
 | **F-2** | **Whether `app/feed/follow` and `app/share/follow` should eventually unify.** Recorded, not ruled — see §2.4 and the share convention's own note. Unifying requires making its `record` field optional, which changes what an absent field means in a landed schema | implementations converge |
 | **F-3** | **Retention.** Republication makes storage grow monotonically and nothing reclaims it. §6's mirror is what makes this load-bearing rather than tidy-up: a thread mirror grows forever and no rule anywhere says what a reader keeps or for how long | a retention policy exists |
 | **F-4** | **The quiet-publisher / withholding-origin indistinguishability** (§7.1). Byte-identical at the consumer, and unowned across the whole corpus. §6 narrows it — a second source detects divergence — but does not close it | a second-source comparison is specified |

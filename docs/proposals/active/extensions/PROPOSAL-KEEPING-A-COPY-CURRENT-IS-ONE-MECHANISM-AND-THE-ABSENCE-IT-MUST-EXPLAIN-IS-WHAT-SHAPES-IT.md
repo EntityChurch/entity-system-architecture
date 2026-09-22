@@ -4,10 +4,13 @@
 `EXTENSION-DATA-EXCHANGE` (Tier 2b), `SYSTEM-DATA-EXCHANGE` (the composition half),
 `SDK-DATA-EXCHANGE` (the entry point an application actually touches) and a developer guide — plus
 corrections to `EXTENSION-SUBSCRIPTION`, `APP-CONVENTION-FEED` and `APP-CONVENTION-EMBED`.
-**Status:** DRAFT 2026-09-11 · **revision 4.** Revision 3 restored the closure property as the spine;
-**revision 4 is what happened when one seat BUILT it and the other read the substrate underneath it.**
-Closure holds in running code — and it holds only under two preconditions revision 3 asserted were
-already handled (§5.0.0). §14 carries all three rounds.
+**Status:** DRAFT 2026-09-12 · **revision 5.** **PARTIALLY FOLDED and stays `active/`** (L3): the
+closure chapter has landed as `specs/SYSTEM-DATA-EXCHANGE.md` v0.1 (`D20`, `D24`) and the gathered-view
+corrections into `APP-CONVENTION-FEED` (`D25`, `D26`); everything else is open. Revision 3 restored the
+closure property as the spine; **revision 4 is what happened when one seat BUILT it and the other read
+the substrate underneath it**; **revision 5 is what happened when both seats then built against
+revision 4** — and the sentence revision 4 called load-bearing turned out to be false at one of its two
+layers (§5.0-a). §14 carries rounds 1–3, §16 round 4, §17 round 5.
 **Tier:** extensions + system + SDK. **This is deliberately not a single-capability extension**, and
 §15.5 is the layer map.
 **Depends:** `ENTITY-CORE-PROTOCOL.md` §1.2 (content hash) · §1.4 (paths) · §3.5 (signatures) ·
@@ -290,7 +293,40 @@ per convention, which is what produced the divergences in §9.
 
 > **[MUST] What a peer obtains through this mechanism, it MAY publish. A published result is the
 > SAME KIND OF OBJECT as the sources it was built from — signed entries in the publishing peer's own
-> namespace — and MUST be consumable by the identical code path.**
+> namespace — and MUST be verified, attributed and rendered by the IDENTICAL code path.**
+>
+> **[MUST] The closure is over the AGGREGATOR's output.** A gatherer's result **MUST** be consumable
+> by another gatherer with no new type and no new code path. **The fixed point is
+> `gathered → gathered`.**
+>
+> **[MUST NOT]** Closure does **not** require that a gathered set be **walked** the way an author's
+> own set is, and an implementation **MUST NOT** publish an author's own set-layer object under its
+> own namespace in order to satisfy it.
+
+#### 5.0-a ⛔ Which LAYER is closed — revision 4's sentence was literally false, and taking it literally builds a forgery
+
+**Revision 4 said *"consumable by the identical code path"* flat. The seat that built the path measured
+it and the sentence does not survive contact:**
+
+| layer | identical? |
+|---|---|
+| **entry** — decode, fetch the author's detached signature, attribute, render | ⭐ **YES, literally.** One `finish_entry`; no mirror-flavoured copy, no weaker path |
+| **set** — how you find the entries | ⛔ **NO.** An author's feed is an index head plus key-addressed pages; a gathered view is one record naming pins. **Two walks** |
+
+⛔ **And the literal reading is not merely imprecise, it is dangerous: a reader who took it at face
+value would go looking for the author's own index shape UNDER THE GATHERER** — which is the gatherer
+**forging the author's index**, and unauthenticated besides, since the authorship instrument signs
+*entries* and not the set.
+
+⇒ **The property closure actually needs is that the output carries the same authorship evidence the
+input did** — which is the entry layer, and which is exactly what §5.0.0's two `MUST`s pin. **The set
+layer is where an aggregator is allowed to be a different shape, because that shape is its own and it
+is signing it in its own name.** *The anti-centralization argument is untouched: the failure in the
+table below is that the aggregator's output is not fetchable, verifiable, republishable content at
+all. A gathered record is all three.*
+
+⚠ **So the trace's sentence needs the same scoping.** *"Erin follows Bob the same way she follows a
+person"* is **true of how she verifies and renders** and **false of how she walks** (§15.1).
 
 **Why it is the whole design and not a nicety.** If a peer's *output* is a different type from its
 *input*, aggregation cannot be aggregated: one party ends up holding what everyone needs, and there is
@@ -324,6 +360,15 @@ Arithmetic over the measured 2-request no-op check:
 
 ⇒ **250×.** *Closure is argued above as the anti-centralization property. It is also the scaling
 mechanism, and that is the more immediate reason to build it.*
+
+⚠ **The obvious objection, answered — and marked DERIVED, not measured.** If a gatherer publishes
+**one gathered record per subject**, does Erin not pay per subject again? **No, and the reason is
+which layer the witness sits at: the witness is the GATHERER's signed root, not the subject's.** One
+root comparison answers *did anything Bob gathered change* for every subject at once, because every
+gathered record is an ordinary binding in Bob's own tree — §5.0's closure supplying the property a
+second time. **The 2-request no-op is per-gatherer and does not scale with the number of subjects
+gathered.** *Arithmetic over a measured 2-request no-op plus a derivation about where the witness
+lives; nobody has built a 500-follow reader (§16.4), and the delta case is root-plus-descent, not 2.*
 
 #### 5.0.0 ⛔ Closure has TWO preconditions, and revision 3 asserted both were already handled
 
@@ -607,10 +652,10 @@ dispatch. A subject kind with no installed handler yields `not_found` and the so
 implementation that does so is non-conformant, for the reason `EXTENSION-SUBSTITUTE` §2.1 already
 gives: it forecloses the source kinds nobody has thought of yet.
 
-#### 6.2.1 Six outcomes, and the rule that generates them
+#### 6.2.1 Eight outcomes, and the rule that generates them
 
-**[MUST]** Each attempt yields exactly one of **six outcomes, and an implementation MUST NOT merge any
-two of them:**
+**[MUST]** Each attempt yields exactly one of **eight outcomes, and an implementation MUST NOT merge
+any two of them:**
 
 | outcome | means | whose fact is it — *where does it send a person?* | terminal? |
 |---|---|---|---|
@@ -620,7 +665,8 @@ two of them:**
 | **refused** | *we have it and have not shared it with you* | **the asker's authority** | **yes** |
 | **faulted** | they answered, with a failure | **the source's operation** | **no** |
 | **unheard** | nothing came back at all | **nobody's — no durable conclusion may ever be drawn from it** | **no** |
-| ⭐ **declined** | the source served, the bytes are usable, **and the reader refused them under its own policy, which it names** | ⭐ **the READER's own** | **no** |
+| ⭐ **declined** | the source served, the bytes are usable, **and the reader refused them under its own policy, which it names** | ⭐ **the READER's POLICY** — *which writer am I talking to?* | **no** |
+| ⭐ **unsupported** | the source served, the bytes are authentic and well-formed, **and this reader cannot use or keep them** — an unimplemented payload arm, a cap, a budget, a full disk | ⭐ **the READER's CAPABILITY** — *this build, this machine* | **no** |
 
 ⭐ **The generative rule, so that the next person does not re-derive the list:**
 
@@ -640,16 +686,46 @@ Run it through the generative rule: it sends a person to *"which writer am I tal
 publisher rolled back, or is this their second device?"* — **a destination none of the six names, and
 precisely the one §6.5.2's multi-device ruling created.** Asking again may change it ⇒ non-terminal. It
 merges with nothing: `unreadable` sends you to a publisher's encoder that is working, `faulted` to an
-operation that is fine, and `refused` **inverts the authority** — there *we* refused *them*. The second
-instance, which shows it is a class: served bytes the reader **cannot store** — a cap, a budget, a full
-disk.
+operation that is fine, and `refused` **inverts the authority** — there *we* refused *them*.
 
 ⚠ **Why this is not tidiness: a reader-owned outcome had nowhere to be reported, so on one of two
 otherwise-identical legs the refusal simply did not exist.** *An absent row in a taxonomy is an absent
 obligation.*
 
-⇒ ⭐ **The coverage check the taxonomy now carries: every party that can cause an attempt to end must
-own a row.** Source, publisher, asker's authority, nobody — **and the reader.**
+##### 6.2.1a ⭐⭐ The reader owns TWO rows, not one — and the generative rule is what splits them
+
+**Revision 4 filed *"served bytes the reader cannot store — a cap, a budget, a full disk"* as a second
+instance of `declined`, evidence that the reader-owned row was a class rather than a one-off. The seat
+that shipped both of them separately pointed out that it is not one class, and the document's own rule
+is what decides it:**
+
+> **Two outcomes may be merged only if they send a person to the same place *and* agree on whether
+> asking again can change the answer.**
+
+| | **`declined` — reader POLICY** | **`unsupported` — reader CAPABILITY** |
+|---|---|---|
+| the sentence | *I could, and I will not* | *I would, and I cannot* |
+| the instance | the anti-rollback floor refuses a correctly-signed replayed root | an authentic payload whose arm this build has not implemented |
+| where it sends a person | **to the WRITER** — has this publisher rolled back, or is this their second device? | **to THIS MACHINE** — upgrade the build, raise the cap, free the disk |
+
+⇒ **Different destinations, so by the rule they do not merge.** *Merging them tells a person to go and
+investigate a publisher when the answer is that their own disk is full — which is the taxonomy's
+founding complaint, one row further in.*
+
+⭐ **And the coverage rule is sharper than revision 4 stated it, which is what the split teaches:**
+
+> **[MUST] The taxonomy is generated by DESTINATION, not by party. Every party that can cause an
+> attempt to end owns *at least* one row, and a party with two destinations owns two.**
+
+*Stated the old way — one row per party — the taxonomy is closed at seven and the eighth row is
+unreachable by construction.* Source, publisher's encoder, publisher's intent, asker's authority,
+nobody — **and the reader, twice.**
+
+⭐ **A second seat has now produced a reader-owned outcome independently, in an unrelated application**,
+which is the evidence §16.4 said the row deserved: a delivery that would land on a local edit while the
+subject's reconciliation rule is unreadable is **held** — served, authentic, usable, refused under a
+named reader policy, released on the next pass. *`declined` exactly, arrived at without reference to
+this taxonomy. We are classifying their construct, not claiming they built against the row.*
 
 **This is why four was too few.** The first draft's *"could not ask — we could not reach them, or they
 faulted"* merged two conditions inside the row whose own rule forbids merging: a failure the source
@@ -914,6 +990,36 @@ deterministic breadth-first walk restarting from the base prefix each pass conve
 permanently incomplete prefix, with the truncation honestly reported and the loop making no progress.*
 **Invisible to every fixture smaller than the cap**, which is every fixture anyone has.
 
+##### 6.3.4a ⭐ The requirement binds the SCHEDULER too, and the seat that fixed the walk nearly shipped the starved version
+
+**`C15` is fixed and the fix was nearly defeated one layer up, by a back-off that is correct
+everywhere else.** A catch-up loop that slows down when a pass *recovered nothing* meets an oversized
+folder whose **first segment is entirely already-current** — a legitimate and common state — reads it
+as *nothing to do*, and backs off. ⇒ **§6.3.4 satisfied to the letter, progress on every pass, and an
+hour between passes: the subject fills one segment per hour and every gate is green.**
+
+> **[MUST]** *Repeated passes make progress* binds the **loop that schedules the passes**, not only
+> the walk. **An implementation MUST NOT derive its back-off from whether a pass transferred
+> anything.** A pass that **advanced the resumption point** has made progress whether or not it moved
+> a byte.
+
+*This is the cheapest possible fix — the back-off signal changes from "recovered nothing" to "the
+cursor did not advance" — and it is invisible from inside the walk, which is where every other clause
+in this section lives.* **We are not naming a rate.** A rate would be a cost figure in a normative
+document and there is no measurement behind one (§16.1); the defect is not *too slow*, it is
+**deriving liveness from the wrong signal**, and that is checkable without a number.
+
+⭐ **And the truncation disclosure needs a TENSE, which is the transferable half:**
+
+> **[MUST]** A truncated result **MUST** carry its **resumption point**, not only the fact of
+> truncation.
+
+**The tell, and it generalizes past this mechanism: a disclosure written in the PRESENT tense.**
+*"This is a prefix of the folder"* is **true, complete about the pass that just ran, and silent about
+the only thing the reader needs** — whether the rest is coming. The honest sentence is future: *"the
+next pass resumes after X."* ⇒ *a present-tense disclosure of an incomplete result is how a permanent
+ceiling passes review*, and it is why §6.0's `truncated` qualifier carries a value rather than a flag.
+
 ### 6.4 POSITION — it belongs to the (reader, subject) pair
 
 > **[MUST]** Position is held on the **(reader, subject) pair.** It **MAY** live inside the subject
@@ -973,6 +1079,31 @@ copy that is the whole difficulty.**
 > A reader **MUST** obtain the rule from the named party over a channel it already has. **A reader that
 > cannot read the rule MUST refuse to reconcile rather than guess** — a guess creates durable
 > divergence and a refusal is recoverable on the next pass.
+>
+> ⭐ **[MUST] The refusal is scoped to the RECONCILING ACT, not to acquisition.** A reader that cannot
+> obtain the rule **MUST** continue to acquire and apply everything that does not collide, and
+> **MUST** hold only the change that would resolve a collision. **An implementation MUST NOT stop the
+> subject.**
+>
+> **[MUST]** A held change is **reported**, as a `declined` outcome (§6.2.1) naming the reader policy
+> that held it. *A hold nobody can see is indistinguishable from a delivery that never arrived.*
+
+⚠ **Scoped because the implementing seat asked rather than assuming, and the strong reading is
+available in the words.** *Refuse to reconcile the **subject*** — stop the folder — is grammatical,
+and it is wrong here, for a reason worth stating rather than leaving to each implementer:
+
+- **The rationale only reaches the act.** Durable divergence is created by *applying a guessed
+  resolution policy.* A non-colliding change creates none; holding it buys nothing and costs
+  everything.
+- ⛔ **The strong reading fires on the ordinary case.** *The other device is asleep* is most of the
+  time in the topology these products ship in, and the strong reading converts it into a stopped
+  subject — **which from the user's side is indistinguishable from the divergence the rule exists to
+  prevent, and is less recoverable.** *A safety rule whose failure mode is the same shape as the
+  hazard, arriving more often, is a net loss.*
+- ⭐ **And it is `declined` doing exactly what the taxonomy predicts** — served, usable, refused under
+  a named reader policy, non-terminal, released on the next pass. *The row and the ruling were derived
+  independently and they land on the same behaviour, which is the cheapest kind of corroboration
+  there is.*
 
 ⚠ **This was asked for rather than invented, and the asking seat is non-conformant against it today** —
 their per-folder rule is stored **per peer**, the view that carries the other side's declaration does
@@ -1044,6 +1175,56 @@ implementation ships rollback refusal on its static leg and **nothing on its syn
 threat.** Under the blanket row the sync leg is a `shared` subject, so *having no floor was correct*
 and the gap stopped being a defect. **One clarification restores rollback protection to the exact
 configuration that has none.**
+
+#### 6.5.2b ⛔⛔ *What is the monotone quantity on a delivered leg?* — the leg carries no witness, and that is the DEFECT, not the answer
+
+**The narrowing above was adopted partly on a seat's source reading that they had explicitly marked
+unperformed. They then performed it, and it holds:**
+
+> `REPLAY: dispatch status=200, err=nil` — and the file on disk after the replay is **the older
+> version.** Two peers, real bootstrap, real connection. The newer file is gone, **silently, with a
+> success code.**
+
+**Asked back, precisely, and it is the right question: their delivery leg has no published root, no
+sequence, and nothing monotone in the protocol.** The only local candidate is the file's `modified_at`
+— *a number a filesystem chose* — and refusing on it turns a restored backup into a file that silently
+stops syncing. **And their control arm forecloses the cheap answer: a sender that GENUINELY reverts
+its own file must still be followed** — that is convergence, not an attack — **and in their probe the
+revert is byte-identical to the replay.** ⇒ *content cannot be the discriminator.*
+
+⭐ **The answer is already in §6.3.1a and needed one word moved: a witness minted by the SENDER of a
+delivered leg is AUTHOR-ANCHORED, not source-minted — because on that leg the sender IS the writer.**
+
+| candidate | class | valid floor? |
+|---|---|---|
+| the file's `modified_at` | ⛔ **neither** — minted by a **third party**, the filesystem | **no** |
+| the bytes | content-derived | **no** — *it cannot order two states, only distinguish them, and the control arm makes them identical* |
+| ⭐ **a per-`(sender, subject)` counter from the sender's own durable state, carried on the delivery** | ⭐ **author-anchored** | ⭐ **YES** |
+
+⭐⭐ **And it settles the control arm exactly, which is how you know it is the right quantity.** A
+genuine revert is **a new write by the writer**, so the counter *advances* while the bytes go
+backwards ⇒ **accepted, correctly.** A replay is *the same write arriving twice*, so the counter is
+**stale** ⇒ **refused.** *The two are indistinguishable by content and trivially distinguishable by the
+writer's own succession — which is what §6.5.2 said a writer IS.* `modified_at` fails not for being a
+number but for being minted by neither the content nor the writer.
+
+**So the ruling, and it is deliberately not a floor built out of what is lying around:**
+
+> **[MUST]** A delivered leg **SHOULD** carry a per-`(sender, subject)` monotone witness minted from
+> the sender's durable state. **Where it does not, the receiving implementation MUST report the leg's
+> witness as `not_supported` (§6.3) and MUST NOT present the leg as rollback-protected.**
+>
+> **[MUST NOT]** An implementation **MUST NOT** synthesize a floor from a quantity minted by neither
+> the writer nor the content. *A floor over the wrong authority refuses correct data and admits the
+> attack it was built for.*
+
+⇒ **The honest state: this leg has no witness, so today it has no floor, and the specification says so
+out loud rather than letting an undefended leg read as a defended one.** **Carrying the witness is a
+subscription-tier change and needs its own proposal** — it lands beside `Q4`, and it is now the second
+independent reason to open that one. ⚠ **Marked, because this is the third round in which a leg's
+protection was inferred rather than read: the seat measured that the *handler* has no ordering check,
+and did NOT measure who may dispatch to it.** *Until that is measured, the interim defence of this leg
+is the authorization on its entry point, which is an assumption and is written here as one.*
 
 #### 6.5.3 May an `owned` subject's writer change?
 
@@ -1401,6 +1582,94 @@ per-write cost is the price of the property this consumer does not need.)*
 
 ---
 
+### 9.8 ⛔⛔ The only type in the corpus that could carry the 250× cannot express it — the gathered view is a THREAD view and the trace is a TIMELINE
+
+**Found by the seat that built the gatherer, by building it: they implemented what the landed text
+says, discovered it does not reach this document's own headline trace, and routed the question rather
+than stretching the type.** *Whoever publishes first becomes the baseline — the fourth time that rule
+has been invoked on this board, and the first time it has stopped a divergence before it happened.*
+
+**The defect, and it is arithmetic over two landed productions:**
+
+| | |
+|---|---|
+| `APP-CONVENTION-FEED` §2.2 | `reference = pinned-ref` — **a pin, to one entity, and its answer can never change** |
+| §6's gathered record | `subject: reference` ⇒ **the subject is a pin**, and §6's own comment agrees: *"the root entry this view is of"* |
+| §6.2's rationale | written about exactly that: *"a conversation spans publishers, and no single publisher holds all of it"* |
+| ⛔ **§15.1's trace** | *"Bob follows Alice, Carol and Dave. Bob publishes his walk."* **Three timelines.** A timeline is §1.3's growing prefix — **not an entity, so it cannot be pinned, so it cannot be a `subject`** |
+
+⛔ **And this is the clause the 250× rests on.** §6.0.1's Profile A lists the third `SOURCE` leg as *a
+peer republishing this subject's walk*, and §6.0.1's own note says a developer without that leg
+**builds the 1,000-request version.** ⇒ **for an author-feed subject, the one application type that
+could carry the leg cannot name it.**
+
+#### 9.8.1 ⭐ The ruling — widen the subject, and the mechanism's OWN §6.1 is what decides it
+
+**The two workarounds were examined and both fail, one of them against a `MUST` in this document:**
+
+| | |
+|---|---|
+| pin the author's **index-head entity** | ⛔ **forbidden by §6.1.** *"A subject is identified by a value that does not change when its current bytes change"* — **a head's hash changes every time the author posts.** It is **a witness masquerading as an identity**, and it makes the address underivable besides: you need the head's hash before you can ask, which costs the hop the gathered view exists to save |
+| publish one gathered record **per author, with the author as `subject`** | `subject` is a `reference`; **a peer is not an entity.** Nothing in §6 admits it |
+
+> **RULED. `subject` widens to `any-reference`.** A **pinned** subject names an entity many writers
+> contribute to — the thread case, `shared`/`ownerless`, merged by union. A **live** subject names a
+> prefix **one writer owns** — the timeline case, `owned`, ordered by the author's succession.
+>
+> **[MUST NOT]** A subject **MUST NOT** be a pin to a value that moves when the subject changes.
+> *That is a witness, not an identity, and §6.1 already forbids it — this states it where it is being
+> got wrong.*
+
+⭐ **Why widening rather than a second type, and the argument is closure's.** The record shape carries
+no field that differs between the two cases, and the reader does the same thing with both: verify each
+entry against its author's detached signature, attribute to `entry.author`, render. **A second type
+would double the consuming code path at precisely the seam §5.0 requires to be single** — closure's
+*"verified, attributed and rendered by the identical code path"* is the clause a second type would
+break, in the document that introduced it. *§2.2.1 already has an `either` column; this is that column,
+on a site that was never examined for it.*
+
+⚠ **What the authority axis buys, stated so nobody re-derives it:** the two cases are not a
+presentation difference, they are `owned` versus `shared`/`ownerless` — **so the floor applies to a
+timeline view and not to a thread view** (§6.5.2a), and *short* means a **prefix gap** in one and
+**an unreached contributor** in the other. **The axis was already there; the type just could not
+reach it.**
+
+#### 9.8.2 ⭐ And the gathered view's own address is the OTHER half of the 250×, not a low-stakes detail
+
+**Filed as low stakes by the seat that filed it. It is not**, and the reason is §9.8's arithmetic one
+step further on. §6 pins **no path**, while §4.2 names the index head and its pages by hand and states
+why: *"an index nobody can find is not an entry point."* §6 has the identical problem and no answer,
+and §2's *"the cross-impl contract is the type tag, not the path"* makes finding one a type-filtered
+query — **which a static origin cannot serve** (third appearance of that gap).
+
+⇒ **Erin's 2-request no-op check requires that she can DESCEND Bob's gathered records from his signed
+root without asking him what he gathers.** A conventional prefix gives her that by ordinary trie
+descent; a type-filtered query does not, on the static publishing posture.
+
+> **RULED. The prefix is normative: `app/feed/mirrors/`.** The leaf key is the subject's
+> **coordinate**, derived by a stated rule per reference kind, so that a reader holding the subject
+> computes the address rather than discovering it. **Mutable at a stable key** — a gatherer
+> republishes as it reads more — which §1.3 makes monotone.
+
+**The derivation, per kind, over the reference's IDENTIFYING fields only:**
+
+| subject | key | why those fields |
+|---|---|---|
+| **pinned** | `hex(hash)` | **the seat's shipped key, adopted unchanged.** A pin is satisfiable by anyone holding the bytes (§2.2), so `peer` is a hint and not an identity |
+| **live** | `hex(content_hash(absolute-path))` — the path **absolute**, `/{peer}/{path}`, canonical UTF-8 | `(peer, path)` is what a live reference names; **an absolute path is one identifying string at every layer**, which is the landed model and needs no separator convention invented for it |
+
+⛔ **The trap this avoids, and it is why the rule is over identifying fields rather than over the
+atom.** *Hash the whole reference* is the tidier-looking rule and it is broken: `at` and `via` are
+**optional hints**, so two readers naming the same subject with different hints derive **different
+keys** and neither can find the other's record. ⇒ ***a derivation that includes an optional field is
+not a derivation.*** Likewise `seen` is excluded — §2.2 says in terms that it is an expectation, not
+an authority.
+
+*The derivability property is the one thing available without an index, and it is the whole reason to
+pin a key rather than a query.*
+
+---
+
 ## §10 What a conformance check set must discriminate
 
 **This section states requirements, not fixtures.** Test vectors are byproducts of implementations
@@ -1510,10 +1779,22 @@ number — two clean regions read exactly like four.
 | **D18** | `SYSTEM-ARCHITECTURE` §13.1 / `GUIDE-NETWORKING-MODEL` §4a.1 | State that **`SOURCE`'s ordered legs are the reachability rungs plus publishing posture** (§15.6) — the two are one arc, and sequencing them as separate work is what made the game case look blocked. |
 
 | **D19** | ⛔ `EXTENSION-TREE.md` §3.7.1 | **Correct the cost claim.** *"Microseconds to low-ms. Cheap"* is wrong inside its own stated range — measured **34 ms / 455 ms / 2.62 s** at 1k / 10k / 50k (§9.7.0). **State the measurement, the implementation it was taken on, and that no bulk builder exists anywhere.** |
-| **D20** | ⭐ `SYSTEM-DATA-EXCHANGE` (§5.0.0) | **Promote four rules out of `APP-CONVENTION-FEED` to the tier where closure is claimed:** a republished entry carries its author's detached signature · a mirror may carry one but never supply one · an entry whose signature is absent renders as **unattributed** · republished bytes are **never re-encoded**. **The instrument is already corpus-wide; only the obligation is application-scoped.** |
+| **D20** | ⭐ `SYSTEM-DATA-EXCHANGE` (§5.0.0) | **Promote four rules out of `APP-CONVENTION-FEED` to the tier where closure is claimed:** a republished entry carries its author's detached signature · a mirror may carry one but never supply one · an entry whose signature is absent renders as **unattributed** · republished bytes are **never re-encoded**. **The instrument is already corpus-wide; only the obligation is application-scoped.** ⭐⭐ **FOLDED — `specs/SYSTEM-DATA-EXCHANGE.md` v0.1, with `D24`.** This was the one item gating a gatherer build. |
 | **D21** | `SDK-DATA-EXCHANGE` (§5.0.0) | ⭐ **Name the bind-an-obtained-entity operation.** Byte-preserving republication needs an operation that binds *obtained bytes* rather than *data*; **the ordinary `put(path, type, data)` shape is the one a developer reaches for and it is the broken one.** At least one implementation already ships the right operation and it took a grep to establish that. |
 | **D22** | `SYSTEM-DATA-EXCHANGE` (§5.0.1) | State that **a `shared` subject's declared reconciliation rule IS the coordination point the CALM reduction predicts** — `owned` and `ownerless` are coordination-free and `shared` is not. |
 | **D23** | `SYSTEM-DATA-EXCHANGE` (§6.2.1) | Add the **seventh outcome `declined`** and the coverage rule: **every party that can end an attempt owns a row — source, publisher, asker's authority, nobody, and the READER.** |
+
+**Revision 5 — the build round's second half. `D20` is FOLDED; the rest are open.**
+
+| | Target | Change |
+|---|---|---|
+| **D24** | ⛔ `SYSTEM-DATA-EXCHANGE` (§5.0-a) | **Name the LAYER closure is over.** *Verified, attributed and rendered* by the identical path; **the walk may differ**; `MUST NOT` publish an author's own set-layer object under the gatherer's namespace to satisfy it. **Revision 4's flat sentence is literally false as built, and taken literally it builds a forgery.** ⭐ **FOLDED into `SYSTEM-DATA-EXCHANGE` v0.1 with `D20`** |
+| **D25** | ⛔ `APP-CONVENTION-FEED.md` §6 | **`subject` widens to `any-reference`**, plus `MUST NOT` pin a value that moves when the subject changes. **A pinned subject is the thread case; a live subject is the timeline case — and without the widening, the type that carries the 250× cannot name what §15.1 republishes** (§9.8). ⭐ **FOLDED** |
+| **D26** | `APP-CONVENTION-FEED.md` §6 | **Pin the prefix `app/feed/mirrors/`** and the per-kind key derivation over **identifying fields only** (§9.8.2). **This is the other half of the 250×**, not a formatting choice: Erin's 2-request check needs descent from the gatherer's signed root, and a type-filtered query is unserveable by a static origin. ⭐ **FOLDED** |
+| **D27** | `SYSTEM-DATA-EXCHANGE` (§6.2.1a) | **An eighth outcome — `unsupported`, reader CAPABILITY**, split from `declined`, reader POLICY. And the corrected coverage rule: **the taxonomy is generated by DESTINATION, not by party; a party with two destinations owns two rows.** *Stated per-party it is closed at seven and the eighth is unreachable by construction.* |
+| **D28** | `SYSTEM-DATA-EXCHANGE` (§6.5) | **Scope the reconciliation refusal to the ACT, not to acquisition** — keep acquiring, hold only the colliding change, `MUST NOT` stop the subject, and **report the hold as `declined`.** The strong reading fires on *the other device is asleep* and is less recoverable than the hazard. |
+| **D29** | `SYSTEM-DATA-EXCHANGE` (§6.3.4a) | ⭐ ***Repeated passes make progress* binds the SCHEDULER** — `MUST NOT` derive back-off from whether a pass transferred anything; a pass that advanced the resumption point made progress. Plus: **a truncated result carries its RESUMPTION POINT**, not only the fact of truncation. *The tell is a present-tense disclosure of an incomplete result.* |
+| **D30** | ⛔ `SYSTEM-DATA-EXCHANGE` (§6.5.2b) | **The delivered-leg witness.** A sender-minted per-`(sender, subject)` counter is **author-anchored**, not source-minted — *on that leg the sender is the writer* — and it separates a genuine revert from a replay, which content cannot. Plus `MUST NOT` **synthesize a floor from a quantity minted by neither the writer nor the content**, and where no witness exists the leg reports `not_supported` rather than reading as defended. **Carrying it is a subscription-tier change: the second independent reason to open `Q4`.** |
 
 **D10, D11 and D14 are independent of everything else here and should land regardless of this
 proposal's fate.**
@@ -1844,4 +2125,75 @@ surface.**
   socket, which is what every reference implementation is.
 - **No implementation has been written against revision 4**, and the promotion in `D20` is not landed —
   **which is the one thing a gatherer build should wait for**, because building on an
-  application-convention rule is the failure that promotion exists to prevent.
+  application-convention rule is the failure that promotion exists to prevent. ✅ **`D20` landed
+  2026-09-12** (§17).
+
+---
+
+## §17 ⭐⭐ Revision 5 — both seats built against revision 4, and the sentence billed as load-bearing was false at one of its two layers
+
+**Round 4 was *one seat builds, one seat reads*. Round 5 is *both seats build*, and it is the first
+round in which the findings are about THIS document's own headline claims rather than about gaps in
+them.**
+
+| | finding | kind |
+|---|---|---|
+| **1** | ⛔⛔ **§5.0's *"identical code path"* is FALSE at the set layer** — measured in a built gatherer: the entry layer is literally one function, the walk is two. **And the literal reading builds a forgery** — a reader takes it at face value and looks for the author's own index shape under the gatherer | ✅ **run** |
+| **2** | ⛔⛔ **The 250× has no type to ride on** — §6's gathered record pins ONE ENTITY, and §15.1's trace republishes THREE TIMELINES, which cannot be pinned (§9.8) | ✅ derivation over two landed productions, from a built gatherer |
+| **3** | ⭐ **The closure gate is GREEN under the neuter that breaks closure** — fixtures from your own encoder make decode-and-re-encode lossless. **The arm that measures the `MUST` needs a field the reader does not declare** | ✅ **run, and self-caught** |
+| **4** | ⛔ **The reader owns TWO destinations, not one** — policy (*I could and will not*) and capability (*I would and cannot*) send a person to different places, so the generative rule splits them (§6.2.1a) | ✅ source, both shipped |
+| **5** | ⛔ **The delivered-leg replay is PERFORMED and it lands** — `status=200`, no error, the newer file gone from disk. **And the monotone quantity is author-anchored, not source-minted** (§6.5.2b) | ✅ **run, with a control arm** |
+| **6** | ⛔ ***Repeated passes make progress* is met by a loop that never finishes** — the walk resumes and the scheduler backs off, because the first segment of an oversized folder legitimately recovers nothing (§6.3.4a) | ✅ **near-miss, caught in build** |
+| **7** | ⭐ **A second seat produced a reader-owned outcome independently** — the conflict-rule hold is `declined` exactly. **§16.4 said this was the evidence the row deserved** | ✅ source |
+| **8** | ⭐ **A `MUST` was satisfiable with facts both sides already held** — the `shared` rule's obtaining party needed no wire field, because the folder identifier already designates an owner | ✅ **built** |
+
+### 17.1 ⛔ The two corrections against THIS document, and both are against sentences it called load-bearing
+
+1. ⛔⛔ **The closure `MUST` was billed as *"the load-bearing sentence in the document"* and it is false
+   at one of the two layers it quantifies over.** Three review rounds and one build round read it and
+   agreed with it; **the round that ran a consumer against a gathered view measured it in an
+   afternoon.** ⇒ ***a sentence that is true at the layer everyone is thinking about, and false at the
+   layer nobody is, reviews clean forever.*** The repair is one word of scope and it costs the design
+   nothing — **which is the tell that the original was imprecise rather than wrong.**
+2. ⛔ **The headline trace and the only type that could carry it were never checked against each
+   other.** §15.1 has said *"Bob publishes his walk"* since revision 3, and `APP-CONVENTION-FEED` §6
+   has said `subject: reference` since it landed; **the two are one grep apart and nobody ran it,
+   because each is correct in isolation and the contradiction exists only in the join.** ⇒ **a trace
+   is not run until its types are named.** *§15's own preamble says "a trace that finds nothing was
+   not run" — it found nothing here, four traces in a row, and the reason is that it was traced
+   through the model and never through the corpus.*
+
+### 17.2 ⭐ The method finding, and it is the one to carry past this arc
+
+> **A gate whose fixtures came from your own encoder is testing your encoder against itself.**
+
+**The seat that built the closure gate neutered their own byte-preservation and the closure gate stayed
+GREEN** — because every fixture entry had been written by their encoder, so decode-and-re-encode was
+lossless over all of it. **`APP-CONVENTION-FEED` §6.1 names this hazard by hand** — *"a round trip
+through bytes your own encoder produced proves nothing: the input must be deliberately non-canonical"*
+— **and their first control arm walked into it anyway and failed honestly.** The arm that measures the
+`MUST` publishes an entry carrying **a field the reading build has never heard of**, which is the
+realistic case *because a gatherer aggregates types it did not write.*
+
+⇒ **This is `unobserved-must` at the fixture layer**, and it is worse than an uncovered requirement:
+**a gate that covers a property and a neighbouring one that merely looks as though it does is worse
+than one gate**, because the second is counted. *Both gates now say in their own text which is which.*
+
+### 17.3 What revision 5 still does not establish
+
+- **The gathered-view runs are 3 and 4 entities.** Unchanged from §16.4 and now true of two seats.
+  *Closure is a typing property and size should be irrelevant — **should be** is not **was
+  measured**, and this arc has punished that phrase twice.*
+- **Nothing publishes a gathered view from a user-facing surface.** Both implementations are native
+  gates; no verb, no window, nothing reachable by a person.
+- **The 250× is still arithmetic**, now over a measured no-op **plus** a derivation about where the
+  witness lives (§5.0). **Nobody has built a 500-follow reader.**
+- **The timeline gathered view has not been run**, because until `D25` there was nothing to run it
+  against. **The finding that produced `D25` is derived from a CDDL production, and is not a run.**
+- ⛔ **Who may dispatch to the delivered leg is UNMEASURED.** The handler's missing ordering check is
+  measured; that an unauthorized party can reach it is not, and the interim defence of that leg is
+  therefore an assumption (§6.5.2b).
+- **The `shared`-rule fix is measured in-process** — two peers, one machine, real TCP. Not across two
+  hosts.
+- **`D21`, `D22`, `D23`, `D27`–`D30` are ruled in a draft and not folded.** Only `D20`, `D24`, `D25`
+  and `D26` have landed.
