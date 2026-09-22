@@ -95,7 +95,7 @@ Class B vectors compose Class A — a Class A failure for an impl typically casc
 ### §2.3 Adding a vector
 
 1. Edit `conformance-vectors.diag` — add the vector under the appropriate category, give it a fresh `<category>.<n>` id, write the description, set `kind`, populate `input` (for `encode_equal`) or `canonical` (for `decode_reject`).
-2. Run the build script (see §3.1) to regenerate `.cbor` from `.diag`.
+2. Run the build script (see §3.2) to regenerate `.cbor` from `.diag`.
 3. Run the cross-impl loop (§§1, 4) — for `encode_equal`, the canonical field gets filled by the converged bytes; for `decode_reject`, every impl's decoder must reject.
 4. Commit the updated `.diag` and `.cbor` together.
 
@@ -247,7 +247,7 @@ The earlier proposal text named Go's `core/ecf.go` as the reference encoder and 
 
 Generator-driven flow is fine for *bootstrap* — keystone's interim oracle wraps `core/ecf.Encode` in a container and that's how F5 was caught on day one. But the v1 publication gate is cross-impl agreement, not generator output.
 
-### §3.0 Core-peer scoreboard discipline (normative for `--profile core`; V7 v7.72)
+### §3.5 Core-peer scoreboard discipline (normative for `--profile core`; V7 v7.72)
 
 Until the validate-peer oracle ships `--profile {core|full}` (cohort target ~2 days from v7.72 ratification), a core peer is scored by a per-category hand-maintained scoreboard against a documented exclusion list — NOT by a blind full-suite verdict. The keystone-generated C# core peer is the worked example (the keystone ARCH-ASK-CORE-PEER stewardship doc, §1 scoreboard). Discipline:
 
@@ -262,7 +262,7 @@ Until the validate-peer oracle ships `--profile {core|full}` (cohort target ~2 d
    - `authz` — `authz_delegate_grant_1` skipped (targets `system/role`); `authz_revoked_1` split. **Core variant (`authz_revoked_core_1`) accepts EITHER `(403, capability_revoked)` (preferred when the verifier knows the cap was revoked — same principle as v7.71's "no catch-all when a defined code applies") OR `(403, capability_denied)` (legitimate fallback when the impl genuinely doesn't track the specific reason).** Both are conformant per V7 §3.3 line 900 — `capability_revoked` is enumerated as a core defined authorization code; the ROLE-scoped element is the **401 status carve-out** for the in-flight cascade race (§5.5), not the code itself. **ROLE variant (`authz_revoked_1`) asserts `(401, capability_revoked)` under `--profile full` with ROLE installed** — the cascade fail-fast surface specifically. Per the Class-C 403 `capability_revoked` core ruling.
 5. **Once `--profile core` ships in Go**, the scoreboard becomes a clean machine-checkable PASS/FAIL; this discipline applies to interim runs only.
 
-### §3.1 Run discipline (normative for cohort closeout; V7 v7.70)
+### §3.6 Run discipline (normative for cohort closeout; V7 v7.70)
 
 A 23-day false-baseline drift (a harness keypair bug whose 20-test cascade was repeatedly labelled "pre-existing infrastructure" and inherited across sessions; documented in the v7.69 same-format-drift postmortem) makes these binding on any cohort closeout that reports test results:
 
@@ -866,9 +866,9 @@ locked.**
    (e) hash-pin the frozen corpus in a MANIFEST (like the ECF corpus SHA); vendor into keystone; the
    **compute-bearing peers re-run** at fold (the CDN-corridor meta-rule — not validated until the cross-impl
    cohort exercises it).
-6. **Reproducibility discipline (§3.1 applies).** The corpus carries `(seed, case-count, generator-version)`;
-   a failure reproduces from `(seed, case-index)`. Decode the artifact, not just its SHA (§3.1(6)); skips count
-   (§3.1(2)); no "pre-existing" without a bisect (§3.1(1)).
+6. **Reproducibility discipline (§3.6 applies).** The corpus carries `(seed, case-count, generator-version)`;
+   a failure reproduces from `(seed, case-index)`. Decode the artifact, not just its SHA (§3.6(6)); skips count
+   (§3.6(2)); no "pre-existing" without a bisect (§3.6(1)).
 
 ### §7c.5 Scope, ownership & what it gates
 

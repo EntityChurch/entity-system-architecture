@@ -1,8 +1,15 @@
 # PROPOSAL — D1's tie-break key is a path segment, neither carriage carries a path, and §6.5.1c's own justification says otherwise
 
 **Proposes:** `EXTENSION-NETWORK` §6.5.1a / §6.5.1c · `EXTENSION-REGISTRY` §4.1.1
-**Status:** DRAFT (2026-09-13) — **not folded. A schema change to a landed type that three core peers
+**Status:** DRAFT 2026-09-16 — **revision 2** *(revision 1: 2026-09-13)*. **Not folded. A schema change to a landed type that three core peers
 implement; it goes to the implementations before it goes into the spec.**
+
+> **What revision 2 changes.** Revision 1 left the carriage encoding open — *"map vs pair-array is an
+> implementation-side call and the determinism properties of each want checking by someone who
+> encodes."* **Someone who encodes checked both, and the answer forced a second clause that revision 1
+> could not have known to write.** The map is adopted (§4), and **adopting it is what creates the
+> ordering collision §4.1 closes** — the map's canonical key order is not D1's order. §4.2 is the
+> census of how far that generalizes, which is the question revision 1 left standing.
 **Tier:** extensions — `EXTENSION-NETWORK` §6.5.1a / §6.5.1c, and one clause in `EXTENSION-REGISTRY` §4.1.1.
 **Answers:** an application-tier implementation finding filed 2026-09-12, on the D1 tie-break key.
 **Filed with:** a measurement in two trees and a shipped, disclosed substitute. Nothing is blocked on this.
@@ -88,9 +95,9 @@ itself.
 drops publisher-expressed preference — both the tie-break key and the reserved `primary` name — and it
 drops it silently.
 
-> **Proposed.** `system/peer/transport-set.profiles` becomes a map from `profile-id` to the member
-> entity, or an array of `{profile_id, profile}` pairs — the implementations pick the encoding; **the normative
-> content is that the id travels with the member.**
+> **Proposed.** `system/peer/transport-set.profiles` becomes **a map from `profile-id` to the member
+> entity** `[revision 2 — the encoding is now chosen; see below]`. **The normative content is that the
+> id travels with the member.**
 >
 > **[MUST]** A consumer orders a verified set's members by `(priority asc, profile-id lex)` using the
 > **carried** id, which is D1 unchanged.
@@ -113,6 +120,84 @@ not that we lack an ordering; it is that we lost an identifier.** Restore the id
 **makes the publisher's preference inexpressible**: two equal-priority mirrors could never be ordered by
 their owner. Arguably that is what *equal priority* means, which is why this is the runner-up rather
 than wrong; it loses the reserved-`primary` rule outright, and that rule is landed and 3-way green.
+
+### 4.0 ⭐ Why the map and not the pair-array `[revision 2]`
+
+Revision 1 declined to choose. An implementation that encodes measured both against the canonical
+encoding, and the two are **not** equivalent for a type that is verified and referred to by hash:
+
+| encoding | one logical set, two producers, different insertion order |
+|---|---|
+| array of `{profile_id, profile}` pairs | ⛔ **different bytes** |
+| map `profile-id` → member | ✅ **identical bytes** |
+
+**The map is self-normalizing** — canonical map ordering makes the encoding a pure function of the
+content. **The pair-array's bytes are a function of the producer's iteration order**, so one logical
+set has many valid encodings and therefore many content hashes, *while §6.5.1c's own text says array
+order is not significant.* It would be significant, at the only layer that hashes.
+
+It also settles the set against a differential fixture: **two implementations emitting one set could
+not be compared byte-for-byte without a pinned order**, which is the property cross-implementation
+evidence is built on.
+
+### 4.1 ⛔ Adopting the map creates an ordering collision, and this clause is the whole reason revision 2 exists
+
+**The canonical encoding's map-key order is NOT `profile-id lex`, and iterating the decoded map is the
+obvious implementation of §4.** Canonical CBOR orders map keys by the bytewise order of their *encoded*
+form, and a text string's head byte carries its length — so for ids under 24 bytes the order is
+**length-first, then lexicographic**. Measured, the encoded key sequence of a three-member set:
+
+```
+a3  63 "cdn"        (3 chars)
+    67 "primary"    (7 chars)
+    68 "a-mirror"   (8 chars)
+```
+
+**D1 gives `a-mirror`, `cdn`, `primary`. The canonical encoding gives `cdn`, `primary`, `a-mirror`.**
+⇒ **at equal priority the two rules pick a different winner**, and nothing fails on it.
+
+> **Proposed, `EXTENSION-NETWORK` §6.5.1a D1.**
+>
+> **[MUST]** A consumer **MUST** sort a verified set's members by `(priority asc, profile-id lex)`.
+>
+> **[MUST NOT]** A consumer **MUST NOT** rely on the members' order **as encoded**. A canonical CBOR
+> map's key order is the bytewise order of the encoded keys — length-first for text strings — and it is
+> not `profile-id lex`.
+
+**This is not pre-existing debt; §4 introduces it.** Before the map, `profile-id` was a **path segment**,
+and paths are never canonically reordered — so the collision does not exist in the landed array form and
+arrives with the fix. **That is the argument for landing the two clauses together**, and for doing it now:
+the type has no implementation anywhere, so this is the cheapest moment it is ever fixable.
+
+### 4.2 How far this generalizes — the census, because the hazard was offered as a class
+
+The implementation that found it offered a generalization and said plainly it had checked exactly one
+site: *wherever this corpus states a sort order in one vocabulary and a canonical encoding in another,
+the encoding's own order is a plausible, silent, wrong answer.* **The class is real. The census is
+reassuring, and the reason it is reassuring is worth more than the count.**
+
+**47 statements of lexicographic order across 12 documents in `specs/` and `guides/`.** The hazard needs
+**both** halves — an ordering stated as *lex*, **over a token that is also a map key in the encoded
+form.** Sorting a *field value*, a *path*, an *array element* or a *binary hash* is untouched, because
+the encoder reorders none of them.
+
+| | |
+|---|---|
+| **sites where both halves hold** | ⛔ **one — D1, and only once §4 makes `profile-id` a map key** |
+| **sites already stating the distinction correctly** | ⭐ `EXTENSION-TREE` §3.1, which is the model: *"map keys and bucket-tuple keys within a node MUST follow the canonical orderings above (CBOR map key ordering per ECF; bucket tuples lex by key)"* — **one sentence carrying both vocabularies where both are live in one node** |
+| **sites out of scope** | ordering over values (`EXTENSION-QUERY` `order_by`, `EXTENSION-COMPUTE` string comparison), over paths (`APP-CONVENTION-SEMANTIC-CONTENT-SITE`'s presentation floor), over array elements (`EXTENSION-TREE` diff output, `EXTENSION-REVISION` `parents`), over binary hashes (`EXTENSION-ENCRYPTION` §5) |
+
+⭐ **And the class already has a landed precedent, which the census found and the filing could not have:**
+`EXTENSION-ENCRYPTION` v2.3 records that its earlier *"canonical CBOR"* phrasing **admitted two key
+orderings — length-first and older bytewise-lexicographic — and that this broke byte-equality across
+CBOR libraries.** ⇒ **this is the second instance of the class, not the first**, and the corpus's own
+remedy there was the same one proposed here: name the encoding exactly, rather than a word that has two
+readings. `EXTENSION-COMPUTE` §8.2 is the positive form, already correct — it specifies evaluation *"in
+ECF canonical map key order"* and names the length-then-lex rule rather than saying *lex*.
+
+⇒ **No corpus-wide sweep is owed.** The two disciplines that keep it that way are: **say `ECF canonical
+map key order` when you mean the encoding's order, and say `lex` only over something the encoder does not
+reorder** — and where a single structure carries both, state both, as `EXTENSION-TREE` §3.1 does.
 
 ---
 
@@ -169,6 +254,12 @@ have already written into the surface.
   is therefore a schema change to a type with zero implementations and one consumer-side rule** — the
   cheapest moment this will ever be fixable, which is the argument for doing it now rather than the
   argument for it being urgent.
-- **The encoding is not chosen here** (map vs pair-array). That is an implementation-side call and the `ECF`
-  determinism properties of each want checking by someone who encodes.
+- ~~**The encoding is not chosen here** (map vs pair-array).~~ ✅ **CLOSED in revision 2 — the map, on a
+  measurement by an implementation that encodes (§4.0), and the collision that choice creates is closed
+  in the same revision (§4.1).** Recorded rather than deleted because it is the worked example of why
+  this document defers encoding questions to the seats that encode: **the deferral was right, and the
+  answer that came back carried a defect the proposal would otherwise have landed.**
+- **The census in §4.2 is of `specs/` and `guides/` only**, by the two-part test stated there. It does
+  not range over the implementations, and an implementation may have written *lex* where it meant the
+  encoding's order without any document being wrong.
 - **Weight-based balancing among equal-priority mirrors stays out of v1**, per §6.5.1a's existing note.

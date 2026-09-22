@@ -293,7 +293,7 @@ Path segments under `system/<ext>/...` look like opaque strings, but the system 
 | `system/peer` entity's `peer_id` field (the human-shareable handle) | Base58 string |
 | Wire-level peer-id strings on connection messages | Base58 |
 
-Everywhere else — **every** `{peer_id}` segment inside `system/<ext>/...` paths, every template substitution, every body field that names a peer — uses **lowercase hex of `system/hash`** (format-code byte ‖ digest), **pinned to the ECFv1-SHA-256 floor** — 66 hex chars beginning `00`, *whatever the peers' home formats are*. This is a **derive-to-meet** value (`SPECIFICATION-FORMAT.md` §8.4.6): every peer must construct it for every other peer, and a home format is not discoverable from a peer-id. This is consistent with V7 §3.5 invariant-pointer paths (`{content_hash_hex}`), EXTENSION-ROLE v1.6 §1.5.1 (`{peer_id_hex}` for assignment/exclusion/derived-tokens/role-derived-cap), EXTENSION-IDENTITY v3.3 (`{contact_id_hex}`, `{cert_hash_hex}`), and EXTENSION-QUORUM v1.1 (`{quorum_id_hex}`, `{event_hash_hex}`).
+Everywhere else — **every** `{peer_id}` segment inside `system/<ext>/...` paths, every template substitution, every body field that names a peer — uses **lowercase hex of `system/hash`** (format-code byte ‖ digest), **pinned to the ECFv1-SHA-256 floor** — 66 hex chars beginning `00`, *whatever the peers' home formats are*. This is a **derive-to-meet** value (`SPECIFICATION-FORMAT.md` §8.4.6): every peer must construct it for every other peer, and a home format is not discoverable from a peer-id. This is consistent with V7 §3.5 invariant-pointer paths (`{content_hash_hex}`), EXTENSION-ROLE v1.6 §1.3a.1 (`{peer_id_hex}` for assignment/exclusion/derived-tokens/role-derived-cap), EXTENSION-IDENTITY v3.3 (`{contact_id_hex}`, `{cert_hash_hex}`), and EXTENSION-QUORUM v1.1 (`{quorum_id_hex}`, `{event_hash_hex}`).
 
 Why: Base58 PeerID is the human-exchange surface (operators paste it; SDKs marshal it onto the wire). Inside the system, the peer is a content reference like any other entity hash — hex aligns with content-hash conventions and lets generic tooling (entity browsers, tree walkers, conformance harnesses) interpret every non-root path segment uniformly. EXTENSION-ROLE v1.5 drifted into using Base58 for non-root segments; v1.6 reverted explicitly. Don't re-derive that drift.
 
@@ -369,7 +369,7 @@ Domain handlers whose entities reference byte content (file bytes, image data, d
 
 Per the content-materialization proposal's Amendment C (closure-language sharpening per Python's reframe).
 
-### 4.X — Error codes: status is centralized, codes are domain-scoped (v7.71)
+### 4.12 — Error codes: status is centralized, codes are domain-scoped (v7.71)
 
 When you define a handler operation that can fail, you will write two surfaces: a `status` number (the universal HTTP-style category) and a `result.data.code` string (the specific failure within that category). They have **opposite** correct homes, and writing them in the wrong place is the most common drift trap.
 
@@ -385,7 +385,7 @@ Connection codes (§4.7) and authorization codes (§3.3-403 / §5.2 AUTHZ-* matr
 
 **The catch-all anti-pattern.** Never surface a generic catch-all default like `verification_failed` or `error` when your domain has a defined code for the actual failure. The catch-all is a signal that the failure escaped its named code — fix the routing, not the symptom. The v7.71 §3.3 authorization-path MUST is the normative form of this rule for the authorization domain; the same discipline applies in every domain.
 
-### 4.X Pattern menu — recommended shapes, NOT authority (v7.72)
+### 4.13 Pattern menu — recommended shapes, NOT authority (v7.72)
 
 The Keystone-generated C# core peer (the first language-binding generator output; `entity-core-keystone/protocol-generator/csharp/`) surfaced six recurring patterns that worked well and are worth carrying forward for future peers + extension authors. Each is **recommended with stated trade-offs** — peers in different language idioms MAY deviate; this is design-space, not authority. The spec arbitrates correctness; the patterns arbitrate ergonomics.
 

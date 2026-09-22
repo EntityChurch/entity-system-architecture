@@ -1,6 +1,6 @@
 # System Tree Extension
 
-**Version**: 4.11
+**Version**: 4.12
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -125,11 +125,13 @@ These are defined in ENTITY-CORE-PROTOCOL.md §6.3 as system tree handler operat
 
 > **`get` does NOT require a `resource`, and the two empties are not the same empty `[MUST]`.** ENTITY-CORE-PROTOCOL.md §3.3 delegates *which* operations require one to each operation's own specification, and this table is `get`'s: an **empty** path is a specified input and its answer is the root listing. But a **genuinely absent** `resource` and a `resource` that is **present with an empty effective list** (§5.2 — the caller named a target and excluded it) are different requests, and only the first asks for a listing. The second **MUST** be refused **`400 path_required`**; serving it the root listing answers a request for one excluded path with a listing of the tree. `put` requires a resource and answers `path_required` for both.
 >
-> **`get` is a BROAD-RESULT operation and §2.2a declares the whole set `[MUST]` (v4.11).** ENTITY-CORE-PROTOCOL.md §3.3 requires each resource-optional operation to state whether its absent case is a **broad result** (refuse the self-excluded case) or an **optional filter** (answer it empty). **This extension's eight operations are declared in §2.2a** — the field is not inferable from a handler's source, and three independent implementations inferred three different answers from this paragraph alone.
+> **`get` is a BROAD-RESULT operation and §2.2a declares the whole set `[MUST]` (v4.11; the classification is three-valued as of v4.12).** ENTITY-CORE-PROTOCOL.md §3.3 requires each resource-optional operation to state whether its absent case is a **broad result** (refuse the self-excluded case) or an **optional filter** (answer it empty). **This extension's eight operations are declared in §2.2a** — the field is not inferable from a handler's source, and three independent implementations inferred three different answers from this paragraph alone.
 
-### 2.2a Resource requirement, per operation (normative, v4.11)
+### 2.2a Resource requirement, per operation (normative, v4.12)
 
 ENTITY-CORE-PROTOCOL.md §3.3 delegates *which* operations require a `resource` to each operation's own specification, and — since 0.8.2.25 — requires every resource-**optional** operation to declare which of two shapes it has. **This table is that declaration for all eight operations. It is normative, and it is the field an implementation cannot derive from its own source.**
+
+**The classification is three-valued, because §3.3's test is** (v4.12): an operation **requires** a `resource` where the path is its subject; is **resource-optional** where the `resource` selects or narrows, which is the case §3.3 obliges to declare BROAD or OPTIONAL-FILTER; or **targets no entity binding at all**, which is §3.3's own carve-out and for which neither obligation arises.
 
 | Operation | `resource` | Absent-case answer | `targets:[P] exclude:[P]` |
 |---|---|---|---|
@@ -137,10 +139,14 @@ ENTITY-CORE-PROTOCOL.md §3.3 delegates *which* operations require a `resource` 
 | `snapshot` (§3.2) | optional | **BROAD** — prefix `""`, the **whole tree** | **400 `path_required`** |
 | `extract` (§6) | optional | **BROAD** — an envelope of **every bound entity** under the prefix | **400 `path_required`** |
 | `put` (§2.2) | **required** | — | 400 `path_required` (both empties, §3.3 unchanged) |
-| `diff` (§4.2) | required | — | 400 `path_required` (both empties) |
-| `merge` (§5.2) | required | — | 400 `path_required` (both empties) |
-| `create` | required | — | 400 `path_required` (both empties) |
-| `destroy` | required | — | 400 `path_required` (both empties) |
+| `merge` (§5.2) | **required** | — | 400 `path_required` (both empties) |
+| `diff` (§4.2) | **no path subject** | — | not read; proceeds on handler scope |
+| `create` (§7.2) | **no path subject** | — | not read; proceeds on handler scope |
+| `destroy` (§7.3) | **no path subject** | — | not read; proceeds on handler scope |
+
+**`no path subject` is ENTITY-CORE-PROTOCOL.md §3.3's carve-out — the operation targets no entity binding, so a `resource` would have nothing to name.** Neither the `path_required` requirement nor §3.3's BROAD/OPTIONAL-FILTER declaration obligation arises for these three rows. **The test is not editorial: §11's `map_operation` already computes it** — an operation for which `map_operation` returns `null` has no path subject, and §11's `tree_handler_path_permission` returns `ALLOW` on exactly that branch. The two statements are one fact, and **§11's block is the authority; this row is a reading of it.** The handler **MUST NOT** refuse one of these three on `resource` grounds. Dispatch-level `check_permission` (ENTITY-CORE-PROTOCOL.md §5.2) is unchanged and unaffected — whatever it does with a `resource` it was handed, it has already done before the handler runs.
+
+⚠ **`diff`'s §4.2 sentence answers a different question than this column asks.** *"The `resource` field is optional; when omitted, handler-scope authorization (§11) suffices"* is about **authorization**. This column classifies **subject selection**. `diff` binds nothing — its operands are two `system/hash` values in `params`, and its result is identical whether a `resource` is present or not. The same word answers both questions, which is why a two-valued column read the sentence as the wrong answer to the wrong one.
 
 **The three BROAD rows are ordered by blast radius and `extract` is the widest** — it returns the entities themselves, where `get` returns a listing of paths and `snapshot` returns a root hash. A self-excluded `extract` served its absent case hands the caller every entity in the tree in response to a request naming one path the caller then excluded.
 
@@ -1707,6 +1713,8 @@ map_operation(operation):
   return null                                      ; diff, create, destroy — handler scope only
 ```
 
+⭐ **This block is also the authority for §2.2a's third column value (v4.12).** An operation for which `map_operation` returns `null` **targets no entity binding** — ENTITY-CORE-PROTOCOL.md §3.3's carve-out — so it neither requires a `resource` nor owes a BROAD/OPTIONAL-FILTER declaration. §2.2a reads that classification off this function rather than restating it; **an operation added to or removed from this `null` arm changes §2.2a with it, and the two MUST NOT be edited independently.**
+
 The grant's `operations.include` array lists the literal extension operation names (e.g., `"snapshot"`, `"merge"`). `check_permission` (ENTITY-CORE-PROTOCOL.md §5.2) uses `matches_scope` to check these at dispatch time. The handler then maps to base permissions for `check_path_permission`. Both checks use the same grant entries — `check_permission` uses `operations` and `handlers` scopes, `check_path_permission` uses the mapped permission against the `resources` scope (including `resources.exclude`).
 
 Merge requires `put` authorization on every path it writes. The handler **MUST** verify authorization before applying any writes. If any path is denied, the entire operation **MUST** fail with `capability_denied` (403) — merges are atomic. Implementations MAY optimize by checking a covering prefix when one exists (e.g., `target_prefix` when remapping is active), falling back to per-path checks otherwise.
@@ -1832,6 +1840,10 @@ The location index remains a flat path → hash map. The trie is a content-addre
 ---
 
 ## Document History
+
+**v4.12:** §2.2a — the `resource` column becomes **three-valued**. `diff`, `create` and `destroy` move from `required` to **no path subject**: none of the three targets an entity binding, so `ENTITY-CORE-PROTOCOL` §3.3's carve-out applies and neither the `path_required` requirement nor the BROAD/OPTIONAL-FILTER declaration obligation arises. As written at v4.11 the column obliged a conformant peer to refuse `diff(base, target)` — **the only call shape §4.2 documents** — and it contradicted four normative homes in this document, two of them inside §11's own pseudocode, which names all three operations by name. **§11's `map_operation` is now cited as the authority rather than restated**, so the classification has one home. `merge` is re-ordered above `diff` to group the three states; `put` and `merge` are unchanged, and the three BROAD rows — the reason §2.2a exists — are untouched. **The withdrawn rows were never implementable and the correction removes an obligation rather than adding one.**
+
+**v4.10 / v4.11** are absent from this section and their entries were not written at the time; v4.11 is the fold that introduced §2.2a, described above by the revision that corrects it.
 
 **v4.9:** §6.1/§6.2 — **the disposition of a malformed `extract.paths[]` entry**, which was undefined and had two defensible readings. A malformed entry is now **`400 invalid_path` for the whole request**; a well-formed entry that binds nothing is **silently omitted**, unchanged. The two were collapsible precisely because both are safe — and a caller who gets seven results for ten paths cannot tell which case it hit. Ruled as a MUST because the readings are cross-peer observable. §6.2 validates every entry **before reading any**, and Appendix A gains the row. ⚠ Independently of this, the store boundary stays **total** per `ENTITY-CORE-PROTOCOL` §5.4 (0.8.2.21): `paths[]` reaches a path boundary through `params`, a channel no resource-target pre-validator sees, and a boundary that asserts there is a remote denial of service.
 

@@ -433,7 +433,7 @@ Irreducible add-ons — a peer fundamentally needs these to run. Together with T
 
 | Member | Status | Role |
 |---|---|---|
-| `EXTENSION-TREE` | Draft v4.11 | Snapshots / diffs / merges / view-trees over the core-protocol tree. (Top-level in `specs/`, not nested under `extensions/` — a placement choice reflecting its tight coupling to V7's tree handler.) |
+| `EXTENSION-TREE` | Draft v4.12 | Snapshots / diffs / merges / view-trees over the core-protocol tree. (Top-level in `specs/`, not nested under `extensions/` — a placement choice reflecting its tight coupling to V7's tree handler.) |
 | `EXTENSION-CONTENT` | Draft v3.7 | Content store ingestion. |
 | `EXTENSION-INBOX` | Draft v5.9 | Async delivery handler. |
 | `EXTENSION-SUBSCRIPTION` | Draft v3.19 | Publish-subscribe / cross-peer reactivity. |

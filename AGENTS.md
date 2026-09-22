@@ -256,7 +256,7 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   *grep-the-literal* both structurally miss it: the first finds documents that argue about a rule,
   the second documents that state it, and a block **executes** it. Three instances in one week.
   **Sweep the ~40 pseudocode blocks in `ENTITY-CORE-PROTOCOL` — bounded and completable, and a
-  standing pre-fold step**; **MOOD AXIS 2026-09-13 — sweep BOTH MOODS: the same obligation is written
+  standing pre-fold step**; **ENUMERATION SHAPE 2026-09-16 — the polarity that manufactures a false ABSENCE: a rule EXECUTES in a block and the PROSE TABLE enumerating its class OMITS it, so a reader consults the RIGHT home and it answers WRONGLY. §6.5's pseudocode assigned the root-hash code from `0.8.2.25`; §4.11's cause table had no root row; a peer read the table and published *"no section assigns one."* ⇒ after touching a pseudocode arm, CHECK THE ENUMERATION OF ITS CLASS**; **MOOD AXIS 2026-09-13 — sweep BOTH MOODS: the same obligation is written
   as PSEUDOCODE where it is implemented and as PROSE where it is obliged, and a fold correcting one
   leaves the other contradicting it at MUST level. `K5` found 3 of 8 sites; three of the misses were
   `MUST` sentences the fold would have turned into MUSTs mandating what it forbids. This is the
@@ -273,7 +273,11 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   **L25** read the section for its **examples**, not only the clause you came for — a tightening that
   closes no hole is not conservative *(candidate)* · **L26** the cohort discovers by **building**;
   arch's failure mode is not folding what they built, so do not write a constraint telling seats to
-  hold off *(**ratified** 2026-09-02 — operator correction)*.
+  hold off *(**ratified** 2026-09-02 — operator correction)* · **L27** a claim that a reader can reach an artifact
+names three things or it is not a claim — the **reader**, the **road**, and the **signed thing** that
+carries the artifact into that reader's reach *(**ratified** 2026-09-15 — three shapes in one week at
+three layers, wording verbatim from `entity-workbench-go`, who took the third against themselves after
+arch took the first two against itself; **enforcement point OWED and named in the charter body**)*.
 
 
 ### The worked cases live in `docs/ANTI-PATTERN-CASEBOOK.md` — open it by trigger, not on cold start
@@ -753,9 +757,32 @@ reconstruction pass.
   > which alone is enough.** **A peer's `docs/status/TRACKER-<us>.md` is an inbound surface the gate
   > does not look for**; six seats now keep one and for several it is the only place their open set
   > is stated. Count it **separately** from `ROUTING-*` — a tracker is a standing index, not a
-  > delivery event. *(Both are owed in arch-tools; `docs/COHORT-OPEN-ITEMS.md` §0t.8. The
-  > transferable half is the fifth of its kind here: **the scope was set to "the sibling directory"
-  > when every seat was a sibling, and nothing re-read it when the layout grew a level.**)*
+  > delivery event. *(The transferable half is the fifth of its kind here: **the scope was set to
+  > "the sibling directory" when every seat was a sibling, and nothing re-read it when the layout
+  > grew a level.**)*
+
+  > ✅ **BOTH BUILT `[2026-09-15]`, arch-tools `300074b` — and the reason is that THREE seats found
+  > one instrument in three shapes.** `LEDGERS` was a **one-element tuple**, so `spec inbound --root .`
+  > answered **could-not-look for every seat but ours**, while `AGENTS-STANDARD.md` tells all of them
+  > to run it. The generation seat named the line **by file:line** and correctly declined to widen it
+  > (*"the ledger convention is arch's call, not ours"*); both app seats found that **tracker
+  > reconciliation is what actually recovers unread packets** — used successfully by both this week,
+  > one in about two minutes; and the third shape is this file's §0bz — **the gate's unit is a PACKET
+  > and the work's unit is an ASK**, so one row citing one packet went green over **nine unworked
+  > asks**.
+  >
+  > ```bash
+  > python3 <arch-tools>/spec-tool/cli.py inbound --ledger PATH   # repeatable; OVERRIDES the default
+  > python3 <arch-tools>/spec-tool/cli.py inbound --trackers      # peer TRACKER files naming us
+  > ```
+  >
+  > ⚠ **The own-tree tracker fallback fires ONLY when no ledger exists at the default path, and the
+  > "only" is the whole safety argument.** Adding trackers *beside* a present ledger would widen what
+  > counts as a **discharge** — and for an inbox gate **over-crediting is the dangerous direction**: a
+  > spurious row is read once and dismissed, a packet that never appears is the failure the gate
+  > exists to prevent. Asserted in both directions, and arch's own run still resolves to exactly
+  > `docs/COHORT-OPEN-ITEMS.md`. **A peer's tracker is REPORTED and never DISCHARGES** — an index is
+  > not a delivery event, and merging them would reproduce the packet/ask mismatch one level up.
 
   > ⛔ **A PACKET IS ONE OBLIGATION HOWEVER MANY CHECKOUTS HOLD IT — fixed in arch-tools `94edc83`,
   > and the published number was 44% high `[2026-09-09]`.** This scope is a directory of
@@ -782,6 +809,80 @@ reconstruction pass.
   fixing the instrument is when you find out — so re-derive the claim, do not just re-run the
   gate.)* The standard is in `AGENTS-STANDARD.md` §*Routing packets*; ambiguity is its own bucket,
   never a silent credit or a silent drop.
+
+- ⭐ **`spec arms` — what does the pseudocode REFUSE, and does the table enumerating that class list it? Run it after touching any pseudocode refusal arm.** The instrument for **L23's ENUMERATION SHAPE** — a rule that executes in a block while the prose list of its class omits it, so a reader consults the **right** home and it answers **wrongly**.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py arms --doc ENTITY-CORE-PROTOCOL   # the arms, beside the enumerations
+  python3 <arch-tools>/spec-tool/cli.py arms --owed                       # the candidate list
+  ```
+
+  ⚠ **It is a READER and it NEVER gates, and that is the design rather than timidity.** The unit of the
+  defect is the **`(cause, code)` arm**, and a cause is prose — the two causes in the founding incident
+  share no token. **A gate keyed on the CODE scores that incident clean** (`hash_mismatch` is in both
+  homes); a gate keyed on arm counts fires on every document where a block and a table legitimately
+  differ. So it prints every block arm with its branch label beside every `(status, code)` pair in the
+  document's prose, and **decides nothing.** `code-not-enumerated` is the strong signal;
+  `arm-cause-unmatched` is a word-overlap heuristic with false positives by construction, reported last.
+
+  > **Two calibrations worth carrying past this tool.** ① **A code must carry an underscore** — measured:
+  > every error code in the core corpus has one, and every underscore-free match is English (`admit`,
+  > `bytes`, `default`, `rows`) or `SHA256(encoded)` read as status `256` code `format`. ② ⭐ **A pair is
+  > matched in BOTH orders**: §4.11 writes `**400** \`hash_mismatch\`` and §4.7 writes
+  > `` `incompatible_protocol` | 400 ``, so a status-first pattern **silently missed every row of the one
+  > table that calls itself a normative MUST-emit contract** — while still printing arms and a plausible
+  > total. **The self-test caught it; a run did not and could not.** Same silent-drop shape as `deps`'s
+  > dropped pin: *the visible half stayed right.*
+
+- ⭐ **`spec deps` — what does installing this actually pull in? ALWAYS pass `--namespace-root
+  ../entity-core-protocol`.** The **declared** `Depends:` graph, which **nothing in this toolkit read**
+  until 2026-09-15: `topology` graphs *citations* (who mentions whom), `declare` checks the header
+  *has* the field. So *"what does installing X require"* was answerable only by opening 26 headers by
+  hand.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py deps --namespace-root ../entity-core-protocol
+  python3 <arch-tools>/spec-tool/cli.py deps --closure EXTENSION-TREE   # the implementer's question
+  python3 <arch-tools>/spec-tool/cli.py deps --beside                   # install-set candidates
+  ```
+
+  **Measured 2026-09-15: 42 specs · 35 declaring · 0 dangling · 24 beside pairs · ⛔ ONE declared
+  CYCLE** — `SYSTEM-COMPOSITION` and `EXTENSION-REVISION` each name the other in their `Depends`
+  headers. **Verified by reading both headers, not by trusting the tool.** It matters because
+  `SYSTEM-ARCHITECTURE` §13.1b derives **freeze sequencing** from this graph *as a DAG* (*"a node
+  freezes only when everything it depends on is frozen"*) — **a cycle makes that undecidable for those
+  two nodes: neither can freeze first.** Authoring work, not formatting.
+
+  ⭐ **`--beside` is the install-set instrument and it is a JOIN, not a new measurement:** pairs citing
+  each other 6+ times **in the body** with no declared edge either way and no transitive reach. Those
+  are candidate set members — *two specs that clearly need each other and say so nowhere a machine can
+  read.* **Reader-level on purpose**: a heavy citation with no edge is often perfectly correct (a guide
+  teaching a spec), and a gate on it would be red forever. **Only `dangling` and `cycles` gate.**
+
+  > ⛔ **IT WALKED INTO THIS TOOLKIT'S SIGNATURE DEFECT ON ITS FIRST RUN, AND THAT IS THE PART TO
+  > CARRY.** It reported **38 dangling dependencies and every one was false** — the three
+  > most-depended-upon documents live in the sibling repo, so resolving against the inspected tree
+  > alone marked the core protocol *a prerequisite that cannot be installed* **26 times.** **Sixth
+  > could-not-look here** (`address`, `provenance`, `coverage`, `pins`, `inbound`, now this) — **and the
+  > first introduced by an author who had the other five written down in front of them.** ⇒ the
+  > generalization is not *remember the flag*: **a resolver's scope is a PREMISE, and a wrong premise
+  > produces confident findings rather than an error.** Without the flag an unresolvable dep is now
+  > `unresolved`, never `dangling`, and the run prints the roots it searched.
+  >
+  > ⭐ **Two further defects were caught by WRITING THE ASSERTIONS, not by running it** — the reason the
+  > "validate a new gate against its own incident, both directions, before publishing a number" rule
+  > keeps earning its place. ① Cycle reporting emitted the whole walk, so **one** mutual dependency
+  > surfaced as **seven** findings, six of them the same 2-cycle reached from different specs upstream
+  > — *a reader counting findings would have priced one defect at seven.* ② The chunk splitter cut on
+  > any comma **including one inside a pin parenthetical** (`FOO.md (v3.5+, for tree change event
+  > semantics)` is the live shape), so the pin was **silently dropped while the edge still resolved
+  > correctly**. ⇒ ***a silent drop that leaves the visible half right is invisible to a run and only
+  > an assertion finds it.*** 73 pins are captured now.
+  >
+  > ⚠ **It does NOT compare version pins, deliberately.** A `Depends` pin records what an author
+  > reasoned against on a date and **MUST NOT track the dependency's HEAD** — advancing one erases the
+  > only record of what was actually checked. Same calibration `roster` earned: of 97 places pairing a
+  > spec name with a version, only 38 are rosters and the rest are pins.
 
 - **`spec pins` — does a citation resolve for the reader it ships to?** The **L24** gate. Every other
   analyzer asks whether a document is correct; this asks whether its identifiers are reachable by the
@@ -1001,6 +1102,53 @@ reconstruction pass.
   > a spec claim; **this sweep did not verify it and did not touch it.** A bumped number beside stale
   > prose is more authoritative-looking than either was alone — so after running it, **read the rows
   > it changed.**
+
+- ⭐ **`spec sections` — does a section number name exactly ONE section? Run it after adding or
+  renumbering any heading.** The gate for the unit this ecosystem cites in: every reference a peer
+  writes, every routing packet argument, every source comment is `DOCUMENT §N`. **Nothing checked the
+  number was unique inside its own document.**
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py sections          # reader, exits 0
+  python3 <arch-tools>/spec-tool/cli.py sections --owed    # the worklist
+  python3 <arch-tools>/spec-tool/cli.py sections --gate    # 0 clean · 1 duplicate · 2 could-not-look
+  ```
+
+  ⛔ **`address` cannot see this defect and says so about itself.** It finds the FIRST heading matching
+  a cited section and stops, so a number declared twice **resolves cleanly and silently to whichever
+  came first** — this file's own standing caveat, *"a citation that resolves to the wrong real section
+  is invisible to every gate we have,"* arriving one noun over: not a wrong section **number**, a wrong
+  section **identity**.
+
+  **Three live instances, all cited by other seats' product code, and only one was reported.**
+  `GUIDE-CONFORMANCE` carried two `§3.1` — *What each impl provides* and *Run discipline* — filed by
+  `entity-system-conformance` as `CQ-43`. `EXTENSION-ROLE` carried two `1.5`, one with children
+  `1.5.1`–`1.5.3`: **reported by nobody**, found by widening the search that answered `CQ-43`, and it
+  carries **no `§` sigil**, so a pattern requiring one calls it a clean file.
+  `GUIDE-EXTENSION-DEVELOPMENT` carried two `### 4.X` — **literal unfilled placeholders**, which the
+  gate found by itself on its first run.
+
+  ⭐ **The transferable half is the ORDERING tell, and it is why the second rule exists.** All three
+  were created the same way: **a section inserted out of numeric order onto a number already taken** —
+  `§3.0` after `§3.4`, `§1.5` before `§1.4`. `section-out-of-order` is a **warning that never gates**,
+  because the live corpus holds correct-but-unordered text (`GUIDE-CONFORMANCE` lands `§5.2c`/`§5.2d`
+  after `§5.3`) where every citation still resolves uniquely. **It is the cheap visible predictor of
+  the expensive silent defect** — read it, do not gate it.
+
+  ⚠ **A renumber is a delivery to everyone who cites the number (`L21`), and our own tree is the first
+  recipient.** Fixing `EXTENSION-ROLE` broke **five citation sites across four of our own documents**,
+  and `address`'s `stale-section` count is what caught them — it went 41 → 43 and back. **Run
+  `address` after any renumber and diff the count**; a renumber that leaves the number stale somewhere
+  has moved the defect, not fixed it. **Which side renumbers is a judgement the gate deliberately does
+  not make**: it depends on whose citations are cheapest to repair, and for `§3.1` that meant keeping
+  the number on the section cited by the keystone **protocol-generator**, whose comments ripple into
+  every generated peer.
+
+  ⭐ **`placeholder-section` closes a rule `PROPOSAL-CORPUS-REFERENCE-INTEGRITY` §2 named as owed on
+  2026-08-24** — *"a literal `§X` is not a number, so `stale-section`'s parser does not see it at all
+  … invisible to every analyzer"* — **and which was still unbuilt three weeks later.** It warns rather
+  than gates because `§X` is also ordinary English for *an arbitrary section*, which
+  `GUIDE-INSPECTABILITY` and `GUIDE-IMPL-DISCIPLINE` both use correctly.
 
 - **`spec charter` — the discipline set, checked against itself. Run it whenever you touch a rule.**
   The set lives in **two homes** — `docs/DISCIPLINE-CHARTER.md` (authoritative, internal) and this

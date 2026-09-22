@@ -46,7 +46,7 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 
 | extension | ver | what it provides |
 |---|---|---|
-| `EXTENSION-TREE` | 4.11 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
+| `EXTENSION-TREE` | 4.12 | snapshot / diff / merge / extract, the HAMT trie, tracked roots, the published root. **Extends core's `system/tree` handler rather than registering its own** — see the note under Stage A |
 | `EXTENSION-CONTENT` | 3.7 | content-hash address space, closure materialization, partial-sync |
 | `EXTENSION-TYPE` | 1.3 | runtime type registration |
 | `EXTENSION-REVISION` | 3.14 | revision chains, diff/merge-config, deletion markers |

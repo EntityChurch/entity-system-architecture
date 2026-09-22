@@ -1079,7 +1079,7 @@ Type analysis operations (compare, converge, compatible, adopt, reconcile) are d
 **Handler:** `system/role`
 **What it does:** Role-based access control — role definitions, assignments, exclusions, re-derivation, and member-to-member delegation. Assignments derive capability tokens for the assignee per the role definition. Caps are root caps (parent: null, granter: local peer's identity hash) per role v2.0 PR-1, structurally identical to startup-time L0 derivation.
 
-> **Coherent Capability.** Role definition and assignment entities are load-bearing: creating either derives or scopes capability tokens. Use `system/role:define` and `system/role:assign` rather than direct `tree:put` to role-namespace paths. The handlers validate caller authority (RL2: caller cap covers proposed grants); direct `tree:put` bypasses these checks. See `EXTENSION-ROLE.md` §1.5.2 / §6.6.
+> **Coherent Capability.** Role definition and assignment entities are load-bearing: creating either derives or scopes capability tokens. Use `system/role:define` and `system/role:assign` rather than direct `tree:put` to role-namespace paths. The handlers validate caller authority (RL2: caller cap covers proposed grants); direct `tree:put` bypasses these checks. See `EXTENSION-ROLE.md` §1.3a.2 / §6.6.
 
 > **Identity composition.** When the identity extension is registered, the typical caller cap for role ops is the local peer→controller cap issued by `system/identity:configure`. See `SDK-IDENTITY-INFRASTRUCTURE.md` §7 for role↔identity composition (multi-role per (peer, context); multi-agent concurrent re-derive; bootstrap composition; member-to-member delegation chain depth).
 

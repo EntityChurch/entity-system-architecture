@@ -108,13 +108,13 @@ This extension does **not** define:
 
 The startup-time L0 path (§4.5, IA13) is the only path that legitimately writes role entities outside the handler, and it is L0-only.
 
-**No spec-level rejection mechanism exists or is planned.** v1.5's "rejected at content validation" wording was an architectural error and is removed in v1.6. There is no kernel; capabilities are the only enforcement on raw tree writes. See §1.5.2 for the framing rule.
+**No spec-level rejection mechanism exists or is planned.** v1.5's "rejected at content validation" wording was an architectural error and is removed in v1.6. There is no kernel; capabilities are the only enforcement on raw tree writes. See §1.3a.2 for the framing rule.
 
-### 1.5 Framing clarifications
+### 1.3a Framing clarifications
 
 Three architectural rules are absolute across the system; v1.5 violated them in places, which is what produced most of the spec drift the v1.6 batch fixes. These rules are explicit in v1.6 so future spec changes can be checked against them.
 
-#### 1.5.1 Encoding rule — Base58 PeerID has exactly one home
+#### 1.3a.1 Encoding rule — Base58 PeerID has exactly one home
 
 | Position | Encoding | Spec |
 |---|---|---|
@@ -127,11 +127,11 @@ In role v1.6, all `{peer_id}` segments under `system/role/.../` and `system/capa
 
 > **The "content_hash of their `system/peer` entity" gloss is retired `[RULED 2026-08-10]`.** This section asserted two properties that cannot both hold: that `{peer_id_hex}` *is* the assignee's stored entity hash, and that **every** peer can construct it for **every other** peer. A home-format derivation makes the second false — peers A and B compute different `{peer_id_hex}` for the same third peer C, and their role assignments never meet, silently. **`{peer_id_hex}` is the floor-format identity hash**; it *coincides* with the stored `content_hash` exactly when that peer is SHA-256-home, and that coincidence is what made the contradiction invisible. A home format is not discoverable from a peer-id, so the constructing peer could never have known which to use. See `SPECIFICATION-FORMAT.md` §8.4.6 for the general rule; `IDENTITY` §5 and `QUORUM` §7 inherit it. Template-variable `{peer_id}` substitutes to the same form. Base58 PeerID does NOT appear in role-extension paths, body fields, or template substitutions. (v1.5 §3.2 told impls to use Base58 for non-root segments — that contradicted V7's universal-root-only rule; v1.6 corrects.)
 
-#### 1.5.2 No-kernel-rejection rule — capabilities govern writes
+#### 1.3a.2 No-kernel-rejection rule — capabilities govern writes
 
 There is no "kernel" in this system. `system/tree` is an extension. Writes to any path go through whatever handler is registered at that pattern; the only enforcement on raw `system/tree:put` is the capability system. If a peer holds a capability authorizing `system/tree:put` on `system/role/{context}/...`, that write happens — bypassing the role handler, bypassing RL2, bypassing the re-derive cascade. **This is a deployment choice**, not an architecture violation. v1.6 reframes §1.3 around capability discipline (don't grant what you don't trust); it does NOT mandate any kernel-level rejection mechanism, because no such mechanism exists.
 
-#### 1.5.3 Scope rule — the role extension does not reimplement V7
+#### 1.3a.3 Scope rule — the role extension does not reimplement V7
 
 The role extension is a **mapping layer**. It maps users (peer IDs in V7-only deployments; identity references when the identity extension is installed) to capability grants via templated role definitions and assignments. It does not implement, reimplement, or replace any V7 security primitive:
 
@@ -233,7 +233,7 @@ Stored at: `system/role/{context}/assignment/{peer_id_hex}/{role_name}`
 
 The `role` field references a role name within the same context. The role definition MUST exist at `system/role/{context}/{role}` for the assignment to be meaningful. An assignment referencing a non-existent role definition is valid as tree data but produces no grants.
 
-The `{peer_id_hex}` in the path is the **lowercase hex of the assignee's `system/hash`** — the content_hash of the assignee's `system/peer` entity (ENTITY-CORE-PROTOCOL.md §3.6 grantee convention), **derived under the ECFv1-SHA-256 floor whatever any peer's home format is** — always 66 hex characters starting with `00` (*derive-to-meet*, `SPECIFICATION-FORMAT.md` §8.4.6; see §1.5.1). Same form as identity v3.3 cert paths, quorum v1.1 event paths, and V7 invariant pointer paths. **Base58 PeerID is reserved for the universal-root segment `/{peer_id}/...` only** (ENTITY-CORE-PROTOCOL.md §1.4); it does NOT appear in role-extension paths or template substitutions. See §1.5.1 for the encoding rule.
+The `{peer_id_hex}` in the path is the **lowercase hex of the assignee's `system/hash`** — the content_hash of the assignee's `system/peer` entity (ENTITY-CORE-PROTOCOL.md §3.6 grantee convention), **derived under the ECFv1-SHA-256 floor whatever any peer's home format is** — always 66 hex characters starting with `00` (*derive-to-meet*, `SPECIFICATION-FORMAT.md` §8.4.6; see §1.3a.1). Same form as identity v3.3 cert paths, quorum v1.1 event paths, and V7 invariant pointer paths. **Base58 PeerID is reserved for the universal-root segment `/{peer_id}/...` only** (ENTITY-CORE-PROTOCOL.md §1.4); it does NOT appear in role-extension paths or template substitutions. See §1.3a.1 for the encoding rule.
 
 The `{role_name}` final segment supports **multi-role per (peer, context)**: a peer MAY hold multiple roles concurrently in the same context (e.g., `admin` + `auditor`, `manager` + `IC`). The (peer, role) pair is the assignment key; multiple assignments under the same peer accumulate. To remove one role while keeping others, delete only that assignment entry.
 
@@ -257,7 +257,7 @@ system/role/exclusion := {
 }
 ```
 
-Stored at: `system/role/{context}/excluded/{peer_id_hex}` where `{peer_id_hex}` is lowercase hex of the excluded peer's `system/hash`, per §1.5.1 / §3.1.
+Stored at: `system/role/{context}/excluded/{peer_id_hex}` where `{peer_id_hex}` is lowercase hex of the excluded peer's `system/hash`, per §1.3a.1 / §3.1.
 
 The excluded peer's identity is fully determined by the path segment; **no body `peer_id` field is needed**. (Earlier drafts had a `peer_id: system/hash` body field; it was redundant with the path and induced divergent encoding across implementations during the v1.5 drift period — Python, Go, and Rust each invented a different representation. Removing the field eliminates the redundancy.)
 
@@ -318,7 +318,7 @@ system/capability/grants/role-derived/{context}/{peer_id_hex}/{token_hash}
 
 The role-derived path is pinned so revocation flows can locate tokens deterministically (`is_revoked` lookups follow this path; `unassign` and `exclude` delete from this path; layer-1 fleet-wide sweep operates on this subtree per §6.5). Caps that should NOT be subject to role's exclusion lifecycle MUST be stored elsewhere (per §6.5 storage-path semantics).
 
-**Encoding of non-root path segments (normative).** All `{peer_id}` segments in role-extension paths — assignment, exclusion, derived-tokens linkage, role-derived cap storage, delegation cap storage — use **lowercase hex of `system/hash`** (the assignee's identity-entity content_hash), **derived under the ECFv1-SHA-256 floor whatever any peer's home format is** — always 66 hex characters starting with `00` (*derive-to-meet*, `SPECIFICATION-FORMAT.md` §8.4.6; see §1.5.1). All `{*_hash}` segments — `{token_hash}`, `{role_hash}`, etc. — use the same form: lowercase hex of the full `system/hash` byte sequence (format code byte + digest), no prefix. The display form `ecfv1-sha256:<hex>` (ENTITY-CORE-PROTOCOL.md §1.2 line 117) is UI-only and MUST NOT appear in path segments. Base58 PeerID is reserved for the universal-root segment `/{peer_id}/...` only (ENTITY-CORE-PROTOCOL.md §1.4) and MUST NOT appear in role-extension paths or template substitutions. This rule is consistent with identity v3.3 (`{contact_id_hex}`, `{cert_hash_hex}`), quorum v1.1 (`{quorum_id_hex}`, `{event_hash_hex}`), and ENTITY-CORE-PROTOCOL.md §3.5 invariant pointer paths (`{content_hash_hex}` for signatures). See §1.5.1 for the encoding rule.
+**Encoding of non-root path segments (normative).** All `{peer_id}` segments in role-extension paths — assignment, exclusion, derived-tokens linkage, role-derived cap storage, delegation cap storage — use **lowercase hex of `system/hash`** (the assignee's identity-entity content_hash), **derived under the ECFv1-SHA-256 floor whatever any peer's home format is** — always 66 hex characters starting with `00` (*derive-to-meet*, `SPECIFICATION-FORMAT.md` §8.4.6; see §1.3a.1). All `{*_hash}` segments — `{token_hash}`, `{role_hash}`, etc. — use the same form: lowercase hex of the full `system/hash` byte sequence (format code byte + digest), no prefix. The display form `ecfv1-sha256:<hex>` (ENTITY-CORE-PROTOCOL.md §1.2 line 117) is UI-only and MUST NOT appear in path segments. Base58 PeerID is reserved for the universal-root segment `/{peer_id}/...` only (ENTITY-CORE-PROTOCOL.md §1.4) and MUST NOT appear in role-extension paths or template substitutions. This rule is consistent with identity v3.3 (`{contact_id_hex}`, `{cert_hash_hex}`), quorum v1.1 (`{quorum_id_hex}`, `{event_hash_hex}`), and ENTITY-CORE-PROTOCOL.md §3.5 invariant pointer paths (`{content_hash_hex}` for signatures). See §1.3a.1 for the encoding rule.
 
 ### 3.2 Context Naming
 
@@ -334,9 +334,9 @@ The `{context}` segment is a free-form path that scopes the roles. Conventions f
 
 Context names SHOULD use lowercase alphanumeric characters and hyphens. Forward slashes within the context create sub-contexts (e.g., `group/team-alpha` is a context, not two nested contexts). The entire `{context}` segment is treated as a single opaque string for scoping purposes.
 
-**Reserved role names (per R10).** The role names `assignment`, `excluded`, and `derived-tokens` are RESERVED and MUST be rejected by the `system/role:define` handler with **400 `reserved_role_name`**. These names collide with the namespace they share — `system/role/{context}/assignment/...`, `system/role/{context}/excluded/...`, and `system/role/{context}/derived-tokens/...` are dedicated subtrees for assignment, exclusion, and linkage entities respectively (per §2.3, §2.4, §3.1), so a role definition under any of those names would create a path collision. Any other role name is permitted. (This is handler-side parameter validation on `:define`, not a kernel-level write rejection — see §1.5.2 for the no-kernel-rejection framing.)
+**Reserved role names (per R10).** The role names `assignment`, `excluded`, and `derived-tokens` are RESERVED and MUST be rejected by the `system/role:define` handler with **400 `reserved_role_name`**. These names collide with the namespace they share — `system/role/{context}/assignment/...`, `system/role/{context}/excluded/...`, and `system/role/{context}/derived-tokens/...` are dedicated subtrees for assignment, exclusion, and linkage entities respectively (per §2.3, §2.4, §3.1), so a role definition under any of those names would create a path collision. Any other role name is permitted. (This is handler-side parameter validation on `:define`, not a kernel-level write rejection — see §1.3a.2 for the no-kernel-rejection framing.)
 
-**Peer ID encoding in path templates (normative).** The `{peer_id}` substitution in template strings (e.g., for grant scopes inside role-definition `resources` / `handlers` patterns) substitutes to the **lowercase hex of the assignee's `system/hash`** — the same encoding used for non-root path segments per §3.1. The `{context}` substitution is the literal context-path segment as it appears in the role's location. Base58 PeerID is NOT used in role-extension templates or path segments. (v1.5 §3.2 incorrectly told impls to use Base58 for non-root segments; v1.6 corrects per V7's universal-root-only rule — see §1.5.1.)
+**Peer ID encoding in path templates (normative).** The `{peer_id}` substitution in template strings (e.g., for grant scopes inside role-definition `resources` / `handlers` patterns) substitutes to the **lowercase hex of the assignee's `system/hash`** — the same encoding used for non-root path segments per §3.1. The `{context}` substitution is the literal context-path segment as it appears in the role's location. Base58 PeerID is NOT used in role-extension templates or path segments. (v1.5 §3.2 incorrectly told impls to use Base58 for non-root segments; v1.6 corrects per V7's universal-root-only rule — see §1.3a.1.)
 
 **Closed-namespace ownership (normative).** The `system/role/...` subtree is owned by EXTENSION-ROLE. Role definitions, assignments, exclusions, and derived-token linkages bind under their respective documented paths within this subtree. Other extensions MUST NOT bind paths inside `system/role/...`. Extensions consuming role state (audit, notification, query indexes, etc.) MUST use their own top-level namespace, not nest under `system/role/{context}/`. Mirrors the closed-namespace invariant in `EXTENSION-ATTESTATION.md` §7 and `EXTENSION-QUORUM.md` §3.4.
 
@@ -354,7 +354,7 @@ When group members sync the group's role context (e.g., `system/role/group/team-
 
 ## 4. Role Handler
 
-The role handler at `system/role` is the runtime entry point for role definitions, assignments, exclusions, and delegations. Operations flow through dispatched EXECUTE so RL2, re-derive cascade, and layer-1 token revocation can be enforced. Bypass via raw `system/tree:put` is a deployment choice governed by capability discipline; see §1.3 / §1.5.2 for the framing.
+The role handler at `system/role` is the runtime entry point for role definitions, assignments, exclusions, and delegations. Operations flow through dispatched EXECUTE so RL2, re-derive cascade, and layer-1 token revocation can be enforced. Bypass via raw `system/tree:put` is a deployment choice governed by capability discipline; see §1.3 / §1.3a.2 for the framing.
 
 Implementations MAY observe direct tree-mutation arrivals on role-extension paths and trigger the equivalent cascade as a defense-in-depth fallback for misconfigured deployments — but this is OPTIONAL, not a conformance MUST. The conformance baseline is "the role handler does the right thing when called; capability discipline is the deployer's job."
 
@@ -741,7 +741,7 @@ When a handler creates a role assignment, it SHOULD also issue capability tokens
 ```
 derive_grants(context, peer_id_hex, role_name):
   ; peer_id_hex is the lowercase hex of the assignee's system/peer content_hash
-  ; (per §1.5.1 / §3.1).
+  ; (per §1.3a.1 / §3.1).
 
   ; 1. Read the assignment
   assignment = tree.get("system/role/{context}/assignment/{peer_id_hex}/{role_name}")
@@ -756,7 +756,7 @@ derive_grants(context, peer_id_hex, role_name):
   if role is null: return []
 
   ; 4. Resolve template variables in grant entries
-  ;    {peer_id} substitutes to peer_id_hex (NOT Base58 PeerID); see §1.5.1 / §5.2.
+  ;    {peer_id} substitutes to peer_id_hex (NOT Base58 PeerID); see §1.3a.1 / §5.2.
   resolved_grants = []
   for grant_entry in role.data.grants:
     resolved = resolve_templates(grant_entry, {
@@ -838,7 +838,7 @@ Template resolution is purely textual — no path normalization or validation du
 
 **Substitution values (normative).** When `derive_grants` (§5.1) calls `resolve_templates`, the supplied variables are:
 - `{context}` — the literal context-path segment as it appears in the role's location.
-- `{peer_id}` — the lowercase hex of the assignee's `system/hash` (the identity-entity content_hash; same form as the `{peer_id_hex}` path segment per §3.1). **Not Base58 PeerID** — see §1.5.1 for the encoding rule.
+- `{peer_id}` — the lowercase hex of the assignee's `system/hash` (the identity-entity content_hash; same form as the `{peer_id_hex}` path segment per §3.1). **Not Base58 PeerID** — see §1.3a.1 for the encoding rule.
 
 Templates substitute into `handlers` and `resources` dimensions only (not `peers`, `operations`, or constraints). After substitution, the resulting paths are matched against tree paths during V7's `check_permission` per ENTITY-CORE-PROTOCOL.md §5.2 — and tree paths use the hex form for non-root segments throughout the substrate stack, so substitution and matching are consistent.
 
@@ -1187,7 +1187,7 @@ Role-definition write access is high-authority: a peer that can mutate `system/r
 - `system/role:define` performs RL2 at definition-write time — the caller's capability MUST cover the proposed grant set — and triggers `re-derive` cascade per §5.5.
 - The clean security boundary: definition writes are gated by the role handler's `define` dispatch capability, restricted to the deployment's admin set.
 
-Direct `system/tree:put` to `system/role/{context}/{role_name}` bypasses the handler, RL2, and the cascade. This is permitted by the capability system if a deployment grants such authority — but doing so opts out of role's lifecycle management. Per §1.3 / §1.5.2, deployments that want cascade through the role handler MUST NOT grant raw `system/tree:put` on `system/role/...` to entities that would write outside the handler. Implementations MAY observe direct tree-mutation arrivals on role-definition paths and trigger the equivalent `re-derive` cascade as a defense-in-depth fallback for misconfigured deployments — but this is OPTIONAL, not a conformance MUST. v1.5's "rejected at content validation" framing has been removed; there is no kernel-level rejection mechanism.
+Direct `system/tree:put` to `system/role/{context}/{role_name}` bypasses the handler, RL2, and the cascade. This is permitted by the capability system if a deployment grants such authority — but doing so opts out of role's lifecycle management. Per §1.3 / §1.3a.2, deployments that want cascade through the role handler MUST NOT grant raw `system/tree:put` on `system/role/...` to entities that would write outside the handler. Implementations MAY observe direct tree-mutation arrivals on role-definition paths and trigger the equivalent `re-derive` cascade as a defense-in-depth fallback for misconfigured deployments — but this is OPTIONAL, not a conformance MUST. v1.5's "rejected at content validation" framing has been removed; there is no kernel-level rejection mechanism.
 
 Role-definition write access SHOULD be gated by capability grants restricted to the deployment's admin set. The MUST is that any role-definition mutation through `system/role:define` triggers `re-derive` per §5.5; the rest is deployment policy.
 
@@ -1199,7 +1199,7 @@ v1.5 used "rejected at content validation" framing for direct `tree:put` to role
 - If a peer holds `system/tree:put` authorization on `system/role/...`, the write happens — bypassing the role handler, RL2, and the cascade. That's a deployment choice, governed by capability discipline.
 - **Don't grant `system/tree:put` on role-extension paths to entities you don't trust.** Application-level grants SHOULD target `system/role:*` operations.
 
-No spec-level rejection mechanism exists. No V7 amendment is planned for this purpose. See §1.5.2 for the framing rule.
+No spec-level rejection mechanism exists. No V7 amendment is planned for this purpose. See §1.3a.2 for the framing rule.
 
 ---
 

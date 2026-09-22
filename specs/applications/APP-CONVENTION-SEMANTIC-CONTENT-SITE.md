@@ -481,7 +481,7 @@ the site subgraph *is* the cap surface, derived structurally from the publisher-
 not need to be carried in the manifest). Cross-peer caching under `/{other_id}/…` is PRIMER §3 (the cache
 *is* the tree, partitioned by peer), not a new feature. The prior v0.4.2 wording naming
 `{publisher_peer_id}/content/sites/{site_id}/` as the scope is dropped per the v0.5 placement erratum above
-(§4.X): a site is a free subgraph, and the scope is wherever the publisher put it.
+(§2 placement): a site is a free subgraph, and the scope is wherever the publisher put it.
 
 **The scope of a site's CONTENT and the scope of VERIFYING it are different sets `[v0.5.2]`.** The site
 subgraph is the capability scope of the site's **bytes**. The evidence that makes those bytes verifiable
