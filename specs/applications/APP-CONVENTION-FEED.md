@@ -417,6 +417,17 @@ feed-index-page = {                  ; type = app/feed/index-page
 A reader holding no reference has to start somewhere, and a reader resuming has to jump straight to
 where it left off.
 
+**These are pinned in the TREE-PATH namespace, and this convention declares `app/feed/` as the
+published tree namespace it owns** (`GUIDE-APPLICATION-DEVELOPMENT.md` §2.3; listed in
+`GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1b). Two consequences a reader needs and neither is a
+change to this format: an application may not claim `feed` as its app-id, and **any further
+well-known path this convention pins is pinned inside `app/feed/`** rather than as a second
+top-level namespace.
+
+⚠ **`app/feed/…` also spells this convention's type tags** — `app/feed/entry`, `app/feed/index-head`.
+**The type-tag namespace and the tree-path namespace are different namespaces with one spelling**, and
+every path in this section is the second one.
+
 ### 4.3 The rules
 
 1. **[MUST]** Pages are **addressed by key, never chained by hash.** A hash back-chain makes page *N*'s

@@ -53,7 +53,7 @@ categories / fixture corpus / GUIDE-CONFORMANCE §9). These are the shippable v1
 | `EXTENSION-SUBSCRIPTION` | 3.19 | reactive subscriptions, cross-peer mirror |
 | `EXTENSION-CONTINUATION` | 1.25 | forward continuations, structural-transform chains |
 | `EXTENSION-INBOX` | 5.9 | message inbox, delivery |
-| `EXTENSION-HISTORY` | 1.10 | parent-ref history walk |
+| `EXTENSION-HISTORY` | 1.11 | parent-ref history walk |
 | `EXTENSION-QUERY` | 1.8 | entity query / path-prefix |
 | `EXTENSION-COMPUTE` | 3.32 | expression evaluation, the lowering toolkit |
 | `EXTENSION-GROUP` | 1.4 | group membership |

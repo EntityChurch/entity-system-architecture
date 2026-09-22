@@ -276,6 +276,78 @@ A 23-day false-baseline drift (a harness keypair bug whose 20-test cascade was r
 
 ---
 
+### §3.6a The outcome vocabulary — five results, and three of them are not PASS and not SKIP `[MUST]` `[added 2026-09-16]`
+
+§3.6 rule 2 fixes the run triple `(PASS, FAIL, SKIP)` and the rule that a skip is *unknown, never
+correct*. That triple is about **a check that ran or did not run**. Three situations are neither, and
+a suite with only three words picks one of them **silently** — which is how the same observation
+becomes PASS in one suite and FAIL in another with neither author making a mistake.
+
+**1. An observed outcome the requirement does not enumerate is `inconclusive`, never PASS `[MUST]`.**
+Where a requirement declares a closed set of conformant answers (an `accept` arm and a `refuse` arm,
+say) and the peer produces something in neither, the probe **ran** and produced an observable, so it
+is not a SKIP; and the requirement made no claim about that answer, so it is not a PASS and cannot
+honestly be a FAIL either. It is `inconclusive`, and the suite MUST record the observed value
+verbatim. **`inconclusive` counts as NOT-PASS in the run arithmetic**, exactly as a skip does.
+
+⚠ **The distinction it preserves is an authoring signal, which is the whole reason not to collapse
+it into SKIP:** a SKIP says *we could not run this*, and an `inconclusive` says *we ran it and our
+requirement does not range over what came back.* The first is scheduled for a later cycle; the
+second is a defect **in the requirement** and is fixed by re-authoring it. Collapsing them files a
+requirement bug in the queue for environment problems, where nobody will look for it.
+
+**2. Behaviour the specification PERMITS to be absent is `not-applicable`, and it is NOT a skip
+`[MUST]`.** A peer that ships no WebSocket listener, or declines a `MAY`, has been **measured**: the
+suite established that the optional surface is absent, which is a conformant state. Treating that as
+a SKIP — and therefore, by the ecosystem rule that a skip counts as a failure, as a failure —
+penalises a peer for exercising a permission the specification granted, and makes every optional
+surface un-passable by construction. **`not-applicable` does not count against a run.**
+
+⛔ **It MUST be declared, never inferred.** The requirement names the precondition whose absence
+makes it inapplicable and cites the clause that permits the absence; the suite records **which**
+precondition fired. An undeclared `not-applicable` is indistinguishable from a suite excusing a
+failure it did not understand, and it would be the most attractive escape hatch in the vocabulary.
+
+⭐ **This does not carve an exception into "a skip counts as a failure" — it removes cases that were
+never skips.** The ecosystem rule is about *unmeasured* behaviour. A permitted absence is measured.
+
+**3. A declared precondition that did not hold makes the run a SKIP, whatever the assertion did
+`[MUST]`.** Where a requirement declares a setup precondition and the precondition was not
+established, the observation is not evidence about the requirement, and **an assertion that happens
+to hold under the wrong setup is a coincidence and MUST NOT be reported as PASS.** The suite SKIPs
+with the unmet precondition named.
+
+⚠ **This one has teeth and the worked case is why it is a MUST.** A requirement declaring a covering
+grant, run against a peer where the grant did **not** cover the probe, observed the expected status
+and would have been reported PASS — and the status it observed is the one `ENTITY-CORE-PROTOCOL`
+`0.8.2.30` subsequently ruled **non-conformant**. Reporting PASS there records a conformant-looking
+result for precisely the defect the corpus exists to catch. **The assertion holding is not evidence
+that it held for the declared reason.**
+
+**4. A requirement whose obligation quantifies over a DOMAIN declares that domain, and scores each
+member as its own arm `[MUST]`.** Where the normative rule says *every request of this kind*, a probe
+of one member measures one member. A requirement that probes one and reports on the rule is
+over-claiming, and two suites that pick different members disagree while both are right — which is
+not a divergence about the peer at all.
+
+The requirement declares the domain it ranges over (resource present/absent, URI peer-relative or
+fully qualified, and so on); each member is a scored arm; a run reports per member. **A requirement
+that deliberately probes a subset says so and scopes its claim to the subset** — which is a legitimate
+and often correct choice, and is only wrong when it is silent.
+
+**5. The step and assertion vocabularies stay OPEN until two independent suites have exchanged the
+format, and each suite declares its verb set with its results `[MUST]`.** Closing a vocabulary is
+cheap to do and expensive to do wrongly: a verb set pinned from one suite's needs pins that suite's
+internals as the contract. **This is `§1`'s Stage-4 rule one tier up** — the vectors are byproducts of
+implementations running against each other and are canonicalized afterwards, and a check-set format is
+the same kind of artifact. Until a second independent suite exists, an open vocabulary is an honest
+record of an unsettled surface; **what makes it safe is the declaration**, which turns a silent
+divergence between two readers into a visible one. **Where a step verb or SKIP condition is carried in
+prose, a suite MUST reproduce it verbatim in its result** rather than paraphrasing it into its own
+vocabulary.
+
+---
+
 ## §4 Divergence handling
 
 When the validate-peer diff reports disagreement on a vector, the response is structured:
@@ -559,7 +631,7 @@ Both use `primitive/any` params/results, ECF. Mechanism, reentry model, and cont
 - **result**: the params entity **verbatim** (`result.value == params.value`)
 
 **`system/validate/dispatch-outbound` — operation `dispatch`** — proves §6.13(b)/§6.11: the target **originates**, not just responds. No continuation/INSTALL/subscription/compute.
-- **params**: `{ target: text` (pattern to invoke **at the caller**, e.g. `system/validate/echo`)`, operation: text, value: <any>, reentry_capability, reentry_granters, reentry_cap_signatures }` — the last three are the caller-minted authority for the reentry direction (this peer → caller). **`reentry_granters` and `reentry_cap_signatures` are PLURAL carriers `[0.8.2.19]`** — arrays, and the single-granter case is an array of one. **They were singular, and that made one normative rule ungateable:** `ENTITY-CORE-PROTOCOL` §1.4's multi-signature root rule needs a K-of-2 root to drive it, which requires **two** granter identities and **two** signatures; a single-credential carrier cannot express the input, so every seat drove it in-process only. **The set is all-or-none:** supplying the three selects the presented arm, omitting all three selects the ambient arm, and a partial set is `400 invalid_params` — a partial credential is malformed, not ambient.
+- **params**: `{ target: text` (pattern to invoke **at the caller**, e.g. `system/validate/echo`)`, operation: text, value: <any>, reentry_capability, reentry_granters, reentry_cap_signatures, deadline_ms?: uint }` — **`deadline_ms` is OPTIONAL and independent of the `reentry_*` triple's all-or-none rule below**; it composes with the presented arm and the ambient arm alike. See §7a.1b for what it obliges. — the last three are the caller-minted authority for the reentry direction (this peer → caller). **`reentry_granters` and `reentry_cap_signatures` are PLURAL carriers `[0.8.2.19]`** — arrays, and the single-granter case is an array of one. **They were singular, and that made one normative rule ungateable:** `ENTITY-CORE-PROTOCOL` §1.4's multi-signature root rule needs a K-of-2 root to drive it, which requires **two** granter identities and **two** signatures; a single-credential carrier cannot express the input, so every seat drove it in-process only. **The set is all-or-none:** supplying the three selects the presented arm, omitting all three selects the ambient arm, and a partial set is `400 invalid_params` — a partial credential is malformed, not ambient.
 - **behavior**: originate **exactly one** outbound EXECUTE via the §6.11 reentry sender → `operation` on `target`, **back to the caller over the same inbound connection** (see §7a.2a) → await the response.
 - **result**: `{ status: uint, result: <downstream result entity> }`
 
@@ -659,6 +731,90 @@ Both are the §1.4 outbound check returning DENY.
 **Shape clarification (post §7b matrix — per the concurrency-gate §7b matrix rulings):** `echo` returns the params **entity** (`{value: X}`), not a bare scalar — `result.value == params.value`. `dispatch-outbound` is a **generic relay**: its `result` field carries the downstream handler's **result entity verbatim**, with **no unwrapping** (it relays arbitrary `target`/`operation` and cannot assume the downstream's shape). So for the echo round-trip the value rides as `result.value` (an entity), and a probe MUST assert `result.value == sent`, **not** `result == sent`. A relay that unwraps, or a probe that expects a bare scalar, is the non-conformant party — not a peer that returns the entity.
 
 **Value-passthrough (pin, post 6-peer matrix):** the relayed `value` IS the params data, passed through as `primitive/any` — **`dispatch-outbound` MUST NOT re-wrap it** (e.g. `{value: value}` so `result.value` comes back a *map*). All six generated peers independently re-wrapped, latent under the value-blind §7a single-call probe and surfaced only by §7b's stricter assertion — *cohort agreement ≠ conformance*. The relay passes `value` through unchanged; the downstream handler's result entity is returned as `result` verbatim. (Note: arch's ruling-#2 prediction "cohort already conformant, no ×6 change" was **wrong** — there *was* a cohort-wide ×6 re-wrap bug; the §7a *principle* held, the cohort-conformance *prediction* did not. Don't predict cohort conformance from the reference impls.)
+
+### §7a.1b The per-call deadline `[MUST]` — `ENTITY-CORE-PROTOCOL` §6.11(c)'s only expressible input
+
+**§6.11(c) is a MUST with no way to drive it.** It requires per-request deadlines to be enforced at
+the request layer rather than with connection-wide primitives *"that would race across concurrent
+in-flight requests on the same connection"* — a behaviour whose two failure directions are
+**shortening** (one request's expiry fails another that had longer) and **extending** (a later
+deadline overwrites an earlier one, so the first does not expire when it should). **One probe exposes
+both: stagger two deadlines and answer the second between them.** Staggering requires setting them,
+and until this section nothing in any handler contract let a prober set one.
+
+> **When `deadline_ms` is present, the peer MUST apply it as the per-request deadline on this
+> invocation's outbound reentry EXECUTE, enforced at the request layer per §6.11(c) `[MUST]`.**
+> Absent, the peer applies whatever it applies today — so a peer shipping the handler before this
+> section landed remains conformant until a probe sends the parameter. A value of `0`, or a
+> non-integer, is `400 invalid_params`: a zero deadline is degenerate, not a request to disable one.
+
+#### ⛔ No silent substitution — this is the half the negative control depends on
+
+> **A peer that cannot honour the requested `deadline_ms` MUST refuse the invocation with
+> `400 invalid_params`. It MUST NOT apply a different value `[MUST]`.**
+
+A check for this rule needs a **mandatory anti-vacuity control** — one call at deadline `D`, never
+answered, which MUST time out near `D` — because without it a peer that ignores the supplied deadline
+passes one half of the real arm and fails the other for a reason that has nothing to do with §6.11(c).
+**That control's verdict is SKIP (*deadline input not honoured*) and not FAIL**, and the two are only
+distinguishable if a peer that will not honour the value **says so**. A refusal is a fact the prober
+can read; a silently clamped value is indistinguishable from a broken deadline, and it turns a SKIP
+into a false FAIL against a peer whose §6.11(c) behaviour may be perfect.
+
+**A ceiling is still allowed. Announcing it by refusing is what is required**; nothing here obliges a
+peer to honour an arbitrarily large deadline.
+
+#### What an expired sub-dispatch surfaces — the code is pinned, the shape is not
+
+**Exactly §7a.1a's treatment, applied to the neighbouring outcome.** When the reentry sub-dispatch
+expires on its deadline rather than being refused, **the surfaced code is `recv_timeout`
+(`ENTITY-CORE-PROTOCOL` §6.12, status `503`)**. The status **shape** is not pinned — **relayed** (the
+handler propagates `503` as its own outer status) and **wrapped** (outer `200`, the timeout carried as
+the inner status) are both conformant, as §7a.1a already holds for refusals. **A generic or
+transport-catch-all code is non-conformant.**
+
+**Why a scaffold section pins a code §6.12 already owns.** §7a.1a's answer transfers verbatim: the
+scaffold is where the outcome is **caught and re-emitted**, and that re-emission is a code path
+§6.12's authors were not describing. **A handler that wraps every unsuccessful sub-dispatch in one
+generic failure launders a deadline expiry into a transport fault** — and the resulting observable is
+indistinguishable from *"the route was broken"*, which is the `connection_broken` row sitting one line
+below `recv_timeout` in §6.12's own table. ⭐ **The consequence for a check set is that the code stops
+being witness-only here.** In-process, §9.4 makes the representation implementation-defined; at the
+scaffold's wire boundary it is this code, so an arm may score it.
+
+#### ⛔ The handler does NOT report elapsed time, deliberately
+
+**The validator is the counterparty and already holds both endpoints of the interval** — it sends the
+invocation and receives the response the handler returns when the deadline fires, so time-to-outcome
+is measured **externally, on one clock, by the party that would be misled if the peer were wrong**,
+with the check's clock-tolerance axis absorbing the transit terms.
+
+**A self-reported duration would be the peer grading its own timing on the one axis under test**, and
+a peer whose request-layer deadline is broken is exactly the peer whose self-report cannot be trusted.
+The `result` shape is therefore unchanged: `{ status: uint, result: <downstream result entity> }`.
+
+#### ⭐ Why N concurrent invocations are a valid driver for §6.11(a), and which rule makes them one
+
+**§6.11(a)'s subject is the connection, not the invocation** — *"multiple outbound EXECUTE calls on
+the same pooled connection MUST be able to proceed concurrently"* — and §7a.2a pins every reentry
+origination to the caller's own inbound connection. So N concurrent invocations of `dispatch-outbound`
+place N outbound EXECUTEs on one pooled connection, which is the clause's own wording. **A fan-out
+form — N originations from one invocation — is not needed to measure it.**
+
+**The premise that needs holding up is in §4.8, not §6.11:** if a peer processed inbound EXECUTEs on
+one connection one at a time, the N invocations would be serialized before reaching the handler and
+the probe would measure nothing while the peer looked conformant. **§4.8 forbids that at MUST level**
+— while a handler is processing a frame, the peer MUST be able to read and dispatch further frames on
+that same connection — and its own reconciling sentence closes the apparent escape its permissions
+open: bounding concurrency is allowed, but *"inbound frame processing [must] not block on outbound
+dispatch from the same connection"*, and **a per-connection concurrency cap of one blocks inbound
+dispatch on a handler that is itself awaiting an outbound response.**
+
+⚠ **What N invocations cannot do is attribute a failure.** A peer serializing its **outbound** dispatch
+(§6.11(a)) and a peer serializing its **inbound** dispatch (§4.8) produce the **same observable** — the
+originations arrive one after another. The check correctly fails either way; **naming which rule broke
+is Stage 2 triage and needs a different input**, which is what a fan-out form would provide. It is not
+minted here: the evidence for it is a real run where the two cannot be told apart.
 
 ### §7a.2 Load mechanism — DECIDED (keystone's call, cross-impl)
 

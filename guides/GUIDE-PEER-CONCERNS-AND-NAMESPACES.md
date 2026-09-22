@@ -167,6 +167,23 @@ system/                          Protocol infrastructure
 
 ### 4.1 Reserved Prefixes
 
+> ⭐ **Read this before the table: `app/…` names TWO different namespaces and they are the same bytes.**
+>
+> - **A type-tag namespace.** `app/feed/entry` is a value in an entity's `type` field. It is not a
+>   location and nothing resolves it in a tree.
+> - **A tree-path namespace.** `/{peer}/app/…` is a location in a peer's tree.
+>
+> **They share a spelling, they are not the same space, and a document pinning one MUST say which**
+> (`GUIDE-APPLICATION-DEVELOPMENT.md` §2.3). This is stated because it is not a theoretical hazard:
+> a static analyzer written by the party that owns this vocabulary has confused the two in four
+> distinct shapes — a prefix with a trailing slash, a complete pinned path with none, a parametric
+> type family, and a comment *explaining the confusion*, parsed as an emission. **A heuristic is the
+> only available discriminator between them and it fails on exactly the case a convention pins.**
+>
+> **And inside the tree-path space there are two opposite purposes**, which §4.1b separates: an
+> application's **private** working state, and a convention's **published** index addressed to a
+> stranger.
+
 Each extension's own spec is the authority for the namespace it owns and the layout inside it; the rows below are the reserved prefixes an implementer meets first, not the whole set. **Installation** at `system/*` is governed by two different rules on two different paths: `ENTITY-CORE-PROTOCOL.md` §6.2 (the dispatch path — reserved, `403 forbidden_pattern`) and `SDK-OPERATIONS.md` §11.6 (the in-process path — how a peer's own standard extensions are installed, and not constrained by §6.2). The `(When EXTENSION-X registered.)` rows below are the output of that second path.
 
 | Prefix | Meaning | Who uses it |
@@ -179,7 +196,8 @@ Each extension's own spec is the authority for the namespace it owns and the lay
 | `system/group/` | (When EXTENSION-GROUP registered, v1.5 sweep landing post-substrate.) Group infrastructure. Member entities, subgroup entities, governance entities, acting-on-behalf-of attestations. Same write discipline as identity. | Group-extension-aware peers. |
 | `system/runtime/` | Runtime-instantiated machinery that doesn't fit any single extension's namespace. Per-call, ephemeral; system-privileged; unfitted-elsewhere. Parallel to `app/{app-id}/` for application content. Specs describing particular purposes enumerate sub-purposes. See `SDK-OPERATIONS.md` §11.6.7. | SDK / kernel runtime. |
 | `host/` | Machine resources. Filesystem, processes, network, hardware. | Peers exposing the local machine (device archetype). |
-| `app/{app-id}/` | Per-application state. Workspace, settings. | Peers running applications. Scoped by app ID so multiple apps can coexist. |
+| `app/{app-id}/` | **Private** per-application state. Workspace, settings. **Addressed to nobody** — not published, and a publisher's projection excludes it. | Peers running applications. Scoped by app ID so multiple apps can coexist. `{app-id}` is claimed by writing (`GUIDE-ENTITY-WORKBENCH-APP.md` §3), **subject to the closed exclusion set in `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1b (this guide, below)**. |
+| `app/{convention}/` | **Published** application-convention data — an index or well-known path a convention pins, **addressed to a stranger**. The declaring convention's own spec is the authority for the layout inside it. | Every peer publishing under that convention. **The set is closed and enumerated in §4.1b**; it is not open to an application. |
 | `local/` | Device-local data and handlers. Used by handlers like `local/files`, with associated config at `system/config/local-files/...` (or similar per the handler's convention). | Device-local extensions. |
 | `bridge/` | External system connections *reached across a boundary* — version control, mail, a package store, a third-party web origin. **Reserved; no occupants yet.** | Peers with external integrations. |
 | `storage/{identity}/` | Identity-scoped persistent data on a shared peer. | Peers providing multi-user storage (device archetype). |
@@ -197,6 +215,33 @@ Each extension's own spec is the authority for the namespace it owns and the lay
 2. **A name that asserts *locality* is falsified by a network-mounted filesystem**, which is reached through the same interface and is not local. A prefix naming *whose machine* survives that case; one naming *how near the bytes are* does not. The reconciliation is expected to be **additive** — a new namespace alongside the old — rather than a rename.
 3. **`bridge/` is reserved and empty while the corpus's forward references to bridges spell `system/bridge/...` and `app/bridge/...`.** See `GUIDE-BRIDGE-EXTENSION-DEVELOPMENT.md` §6.1 — **the first bridge specification authored decides this, and no precedent here is binding on it.**
 
+#### 4.1b The declared convention namespaces under `app/` — a closed set
+
+**A published application-convention namespace under `app/` is drawn from this set, and this set is
+the whole of it.** A convention that pins a tree path declares its namespace in its own specification
+(`GUIDE-APPLICATION-DEVELOPMENT.md` §2.3) and it is listed here.
+
+| Namespace | Declared by | What is under it |
+|---|---|---|
+| `app/feed/` | `APP-CONVENTION-FEED.md` §4.2 | the index head and its pages; any further well-known path that convention pins |
+
+**[MUST NOT] An application-chosen `{app-id}` is equal to a namespace in this table.** Everything else
+about claiming an app-id is unchanged: there is still no registry and no reservation step, because the
+forbidden set is small, closed and published, so an app can check it without asking anyone.
+
+**Why this rule and not a separate root for published data.** *Partition by root* — a reserved
+top-level segment for convention data, leaving `app/{app-id}/` unambiguously private — is the cleaner
+design, and it makes *"what does this peer publish"* answerable by looking rather than by rule.
+**It is rejected on cost and not on merit:** it moves both of the feed convention's pinned paths,
+which shipping implementations already publish *and* read, to buy a partition this table delivers
+without moving a byte. ⚠ **If this set ever grows past a handful, revisit that** — a rule scales by
+enumeration and a root scales by construction.
+
+**What the collision was, so the rule is not mistaken for tidiness.** `{app-id}` is claimed by
+writing, with no mechanism preventing any particular name. An application claiming the app-id of a
+convention writes its **private** workspace over that convention's **published** index path. Both
+documents were correct in isolation and neither acknowledged the other.
+
 ### 4.2 Content Domains
 
 Beyond the reserved prefixes, peers can use whatever top-level paths make sense. Common conventions:
@@ -207,6 +252,47 @@ Beyond the reserved prefixes, peers can use whatever top-level paths make sense.
 - `temp/` — ephemeral working state
 
 These are open. Applications define their own content domains.
+
+#### 4.2a The user-content domain — `files/` and `imports/`
+
+**Two content domains are named rather than open, because their whole value is that every host uses
+the same one.**
+
+| Domain | What is in it |
+|---|---|
+| `files/` | **A person's own content.** Documents, saves, working files — the things that belong to the person rather than to an application. |
+| `imports/` | **Staging for a subgraph that arrived from elsewhere.** `imports/{stamp}/`. |
+
+**[MUST] A person's own content is addressed under `files/`, not under an application namespace.**
+`app/{app-id}/` is *per-application* state by definition, and a person's documents are not an
+application's working state — they outlive any particular application and a second host should open
+the same ones. A person's save file living under one application's id is what this rule exists to
+stop.
+
+**[MUST NOT] A host projects `files/` into the published root as a side effect of a write to it.**
+A user-content domain is addressed to nobody until its owner addresses it to someone; publication of
+anything under it is a separate explicit act.
+
+> **This is a rule about publication and deliberately not about the grant table.** A deployment's
+> grant posture is the deployment's choice and is not a convention's to mandate. What this says is
+> what the domain **means** — and a deployment that wants its connections to exclude a person's
+> files now has a declared name to express that against, which is the half that did not exist.
+>
+> ⛔ **It is not privacy, and MUST NOT be described as privacy, while a content read resolves bytes
+> without regard to namespace.** A grant can withhold a file's *name* and not its *bytes*. That is a
+> substrate gap, it is open, and nothing in this section closes it.
+
+**[MUST] An imported subgraph lands under `imports/`, never directly in `files/`.** The reason is
+provenance: an import merges a subgraph somebody else authored, and once it is indistinguishable from
+the person's own content, no later act can recover the difference. Staging keeps *I made this* and
+*this arrived* separable until a person places it.
+
+**On a shared peer these nest inside the identity scope** — `storage/{identity}/files/…` — rather than
+sitting at the top level. One rule, two deployments. *(Derived; no implementation runs this today.)*
+
+⚠ **`local/` is not this.** That is the host-disk mount reached through its own handler — *the
+machine's* files. These are entities the peer is the authority for. Two different things with a
+similar-sounding name.
 
 ### 4.3 Naming Principles
 
@@ -225,14 +311,21 @@ All implementations currently run a single peer playing multiple roles. Use all 
     system/                      Protocol infrastructure
     host/                        Machine resources (if mounted)
     bridge/                      External systems (if connected)
-    app/{app-id}/                Application state
+    app/{app-id}/                Application state — PRIVATE, not published
         workspace/               UI state
         settings/                Config
+    app/{convention}/            Convention data — PUBLISHED (the §4.1b set)
+    files/                       The person's own content
+    imports/                     Staged arrivals, awaiting placement
     knowledge/                   Content
     projects/                    Content
     public/                      Shared
     temp/                        Ephemeral
 ```
+
+**The two `app/` lines are the ones to read twice.** They are adjacent in the tree, they are
+indistinguishable by shape, and one is addressed to a stranger while the other is addressed to
+nobody. §4.1b's table is what sorts them, and it is the only thing that does.
 
 As the system matures, these paths distribute across peers naturally. Same paths, different peers owning them.
 
@@ -251,7 +344,7 @@ As the system matures, these paths distribute across peers naturally. Same paths
 
 `app/state/` prefix is language-neutral. Not `rust_workspace/settings`. Not `go_workspace/state`.
 
-**`GUIDE-ENTITY-WORKBENCH-APP.md` §4.2 is the authority for this set**; the rows above are the common ones, not the whole table. An earlier `app/state/layout` row is **retired**: window *arrangement* — splits, ratios, sizing, stacking — is renderer decoration and stays per-implementation. What is portable is window *membership*, which `app/state/window-index` carries (§4.2a there).
+**`GUIDE-ENTITY-WORKBENCH-APP.md` §4.2 is the authority for this set**; the rows above are the common ones, not the whole table. An earlier `app/state/layout` row is **retired**: window *arrangement* — splits, ratios, sizing, stacking — is renderer decoration and stays per-implementation. What is portable is window *membership*, which `app/state/window-index` carries (`GUIDE-ENTITY-WORKBENCH-APP.md` §4.2a — **not** §4.2a of this guide, which is the user-content domain).
 
 ### 5.2 Path Convention
 
@@ -312,7 +405,7 @@ Same protocol, same operations, same capability model at every level.
 
 ## 10. Open Questions
 
-1. **Content domain organization.** Should there be a container for user content on session-archetype peers, or is the peer's tree implicitly "the user's space"?
+1. ~~**Content domain organization.** Should there be a container for user content on session-archetype peers, or is the peer's tree implicitly "the user's space"?~~ ✅ **ANSWERED — §4.2a.** There is a container and it is `files/`. *The peer's tree is implicitly the user's space* was the reading that let a person's documents sit under one application's id, which is how the question arrived back: from a shipping host that had to put them somewhere and had nothing declared to put them in.
 2. **Bridge placement.** Identity-bound bridges (my git repo) vs machine-bound bridges (git repo on disk). `bridge/` on application peer vs `host/` on device peer?
 3. **Session persistence.** How much state does a managing application cache between sessions?
 4. **Peer discovery.** How do peers in a user's network find each other? Bootstrap config, network discovery, or capability chain?

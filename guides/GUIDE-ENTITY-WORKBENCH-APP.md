@@ -66,6 +66,10 @@ Why the output struct is the convention (not the model interface): the model's *
 
 The `app/{app-id}/...` namespace is general-purpose. `{app-id}` is a **per-instance identifier** that the app claims by writing to it — there is no central registry, no reservation mechanism. Apps coexist by claiming different `{app-id}`s. Multiple instances of the same app type are also supported by giving each instance its own `{app-id}`.
 
+⛔ **One exclusion, and it is closed and published: `{app-id}` MUST NOT equal a declared convention namespace** — the set in `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1b. Those are **published** paths a convention pins for a stranger to read; this namespace is **private** application state. **Claim-by-writing is otherwise unchanged** — there is still nothing to ask and nobody to ask, because the forbidden set is small enough to check and is written down. Without this rule an app claiming the app-id of a convention writes its workspace over that convention's index, and nothing in either document says so.
+
+**This namespace is not published.** A publisher's projection of a peer's tree excludes it; if an application wants something readable by others, that is a convention's namespace or a content domain, not this one.
+
 Concrete examples on a single peer's tree:
 
 ```

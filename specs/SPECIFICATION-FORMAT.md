@@ -1,6 +1,6 @@
 # Entity System — Normative Specification Format
 
-**Version**: 1.4
+**Version**: 1.5
 **Status**: Active
 **Kind**: authoring-standard
 **Authority**: binding
@@ -233,7 +233,7 @@ Specs MAY include additional sections before Conformance:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| Version | Yes | Semantic version of this spec |
+| Version | Yes | Semantic version of this spec — **a claim about this document's content**, moved under §9.1 and exempted by nothing (§9.2) |
 | Status | Yes | Draft, Active, or Superseded |
 | Kind | Yes | One of §10.1's six values |
 | Authority | Yes | `binding` or `informative` (§10.2) |
@@ -748,9 +748,48 @@ spec that mints a container.
 | Active | Stable. Implementations should target this version. |
 | Superseded | Replaced by a newer version. Reference only. |
 
-Version bumps:
-- **Minor** (X.Y → X.Y+1): Additive changes (new optional fields, new MAY requirements)
-- **Major** (X.Y → X+1.0): Breaking changes (new required fields, changed algorithms, removed types)
+### 9.1 Version bumps
+
+**A document's version is a claim about that document's content.** The operative test is the
+consumer's question, and it is the same one for every arm below:
+
+> **The version moves when a conformant implementation of the previous text could be non-conformant
+> under the new text.**
+
+- **Minor** (X.Y → X.Y+1): **Additive** changes — new optional fields, new MAY requirements.
+- **Minor** (X.Y → X.Y+1): **Correction** — the text changes what an implementation must emit,
+  accept, refuse or compute, without adding a feature and without breaking a consumer that
+  implemented what the document *meant*. A rule stated more precisely, a restatement re-pointed at
+  its authority, a defect found by an implementation and fixed in place: all corrections, all bump.
+- **Major** (X.Y → X+1.0): **Breaking** changes — new required fields, changed algorithms, removed
+  types.
+- **No bump**: **editorial** changes — typography, reflow, a moved narrative section, or a citation
+  corrected to an authority whose rule is unchanged. **Nothing an implementation does could differ.**
+
+**Where a document's version carries a trailing component managed separately from its release
+number** — `ENTITY-CORE-PROTOCOL`'s fourth — the arms above apply to that component, and the
+components above it are not the author's to move.
+
+### 9.2 What may exempt a version bump: nothing
+
+**The cause of a change decides which commit trailer applies. It never decides whether the version
+moves.** A change discovered by an implementation rather than proposed by an author is a fact about
+how the work reached the document, and the process carve-outs that recognize it
+(`Spec-Change: cohort-finding`, `Spec-Change: hygiene`) exempt a **commit** from a **process**
+obligation — proposal-first — and nothing else.
+
+**A process carve-out can exempt a commit from a process obligation. It cannot exempt a claim from
+being true.** A version header that does not move while the obligations under it do is a false
+statement about content, and the reader it misleads is the one furthest away: a downstream consumer
+pinning the document sees nothing move and is wrong about a requirement.
+
+⚠ **The version answers one question and is not asked to answer two.** It says *the obligations in
+this document moved*; it does not say which, how far, or how many times. A consumer needing byte
+identity of a particular snapshot wants a digest, which is a different artifact answering a
+different question. **Which specific obligations moved belongs in `## Document History` and in the
+proposal it cites** — adding a second version-like field to carry it would give one fact two homes,
+and the boundary between two homes is what drifts (§10.3: a rule belongs in one place and nowhere
+else).
 
 ---
 

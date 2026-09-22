@@ -260,7 +260,7 @@ authoritative. `docs/ANTI-PATTERN-CASEBOOK.md` is the *why*, opened by trigger.
   as PSEUDOCODE where it is implemented and as PROSE where it is obliged, and a fold correcting one
   leaves the other contradicting it at MUST level. `K5` found 3 of 8 sites; three of the misses were
   `MUST` sentences the fold would have turned into MUSTs mandating what it forbids. This is the
-  pseudocode axis in the MIRROR, four days later, caught by the seat that filed the original**; **CONTROL-FLOW SHAPE 2026-09-12** — that sweep was ratified and then not
+  pseudocode axis in the MIRROR, four days later, caught by the seat that filed the original**; **CONFORMANCE-FLOOR AXIS 2026-09-16 — the home that shares the LEAST vocabulary with its rule and the one an implementer BUILDS FROM. `ENTITY-CORE-PROTOCOL` §9.1's authority row published the discriminator §6.8 corrected at `0.8.2.22`, positively, for EIGHT revisions — so building to the floor reproduces the confused-deputy hole that revision closed. The fixing proposal enumerated *"§6.3 … §6.8"* under the heading "three homes"; there were FOUR. A floor row is a BULLET IN A LIST, not a paragraph arguing the rule, so neither a token grep nor a by-subject sweep reaches it. ⇒ after changing a rule, CHECK THE FLOOR ROW THAT RESTATES IT. Enforcement: `spec pointers` + §9.1's standing MUST that a restating row names its authority (`0.8.2.31`). ⚠ And the naive gate was refuted BEFORE it was built — at section granularity §9 cites every section that gained a stamped MUST across 21 revisions, so it scores the founding incident CLEAN**; **CONTROL-FLOW SHAPE 2026-09-12** — that sweep was ratified and then not
   run on the very next fold, and the shape it needs is sharper than *find the blocks*: **read the
   control path TO the rule's site, never the line that states it.** `0.8.2.21`'s own census scored
   `check_resource_scope`'s pattern arm clean by quoting a fail-closed test that a `continue` two lines
@@ -441,15 +441,33 @@ to an internal path — a path that resolves only in our layout is not a referen
 
   Its trigger is **two-part** — version header changed **or** the file's normative-token count
   changed — because a version-header trigger alone would have been silent on both normative folds
-  landed 2026-08-15 (`80d3ca2`, `40586c5`: **six MUSTs added, zero version bumps**, correctly, under
-  the cohort-finding carve-out).
+  landed 2026-08-15 (`80d3ca2`, `40586c5`: **six MUSTs added, zero version bumps**, under the
+  cohort-finding carve-out **as it was then read**).
+
+  > ⚠ **`SPECIFICATION-FORMAT` §9.2 has since ruled that those two bumps were owed `[2026-09-16]`**,
+  > so the measurement stands as history and its conclusion does not transfer forward: under §9.1 a
+  > correction bumps, and a version-header trigger would no longer be structurally silent on this
+  > class. **The two-part trigger stays anyway**, and the reason is sharper than the original one:
+  > **a gate keyed on the bump is trusting the author to have done the thing the gate exists to
+  > check.** The token-count arm is the independent one. Both remain insufficient — see `CQ-47` and
+  > `spec pointers`.
 - **Two commit trailers are now the only way to claim an exemption**, because an exemption nobody
   can audit is not an exemption:
 
   ```
   Spec-Change: hygiene          wording-only; no normative change
-  Spec-Change: cohort-finding   an impl finding fixed in place, no rev bump
+  Spec-Change: cohort-finding   an impl finding fixed in place, no proposal
   ```
+
+  ⛔ **Both trailers exempt a COMMIT from the PROPOSAL obligation and nothing else. Neither exempts
+  a version bump, and `cohort-finding`'s description said *"no rev bump"* until 2026-09-16, which is
+  how it came to be read as granting one.** Measured across both corpora: **26 `(commit, spec file)`
+  pairs carry the trailer, 7 bumped a version and 19 did not** — one trailer, one author, both
+  readings live in the record. **`SPECIFICATION-FORMAT` §9.2 is the authority**; the root cause was
+  §9's bump ladder having two arms (*additive*, *breaking*) and no arm for a **correction**, which is
+  the change this corpus makes most often, so the trailer description was the nearest text to a
+  question the standard did not answer. **`L23`'s enumeration shape, in the standard that governs
+  the specifications the other two instances were found in.**
 
 The measured case for doing it: 50 commits touched `specs/` since 2026-08-01 and **34 carried
 no proposal**, 25 of those inside a six-day window — the ledger is
@@ -670,6 +688,53 @@ reconstruction pass.
   around: 47 of 51 are unpinned and a first run of 47 reds teaches people to skip the gate. Hold the
   debt, gate the delta. **The unpinned count is the number that ratchets down**, and the four pinned
   today are the blocks where SA-2/SA-3/SA-4 actually landed.
+
+- ⭐ **`spec pointers` — does a declared pointer still say what its authority says? Run it after
+  editing any section another document names as its normative home. ALWAYS pass `--namespace-root`.**
+  `sdksync`'s question asked across documents, which is where it actually bites.
+
+  ```bash
+  python3 <arch-tools>/spec-tool/cli.py pointers --namespace-root ../entity-core-protocol
+  SPEC_CORPUS=../entity-core-protocol python3 <arch-tools>/spec-tool/cli.py pointers \
+      --namespace-root ../entity-system-architecture          # the OTHER corpus — both, every time
+  python3 <arch-tools>/spec-tool/cli.py pointers --update      # AFTER re-reading the authority
+  ```
+
+  **Built 2026-09-16 for `CQ-47`.** `ENTITY-NATIVE-TYPE-SYSTEM` §10.2 restated a `[MUST]` whose home
+  is `ENTITY-CORE-PROTOCOL` §7.3, **drifted by one field from the authority named in its own
+  sentence**, and fired **neither** `provenance` trigger — version unchanged, normative-token count
+  unchanged, because the sentence is indicative prose. **Reported from outside this estate.**
+
+  ⛔ **`provenance` is the wrong home for that, on a UNIT MISMATCH and not a tuning problem.** Its
+  unit is a **commit**; this defect's unit is a **pair of documents**, and the side that moves is
+  usually the **authority**, in a commit that never touches the restating document. A third trigger
+  would catch the subset where both move together and report clean on the rest.
+
+  ⭐⭐ **The instrument already existed and was scoped to two constants.** `sdksync`'s docstring states
+  this class in the general — *"a copy that silently stops matching its source is invisible to all
+  three"* — and every sentence of it is true of §10.2. **Seventh scope-set-once in this toolkit**,
+  after `address`, `provenance`, `coverage`, `pins`, `inbound`, `check` and `deps`. **When a gate
+  takes a root, ask what it resolves to when you pass none; when a gate takes a SCOPE, ask what it
+  was set to and when anyone last re-read it.**
+
+  **Today: 12 declared pointers over 11 (document, authority) pairs — 2 arch, 10 core — all 12
+  hand-verified against their authority before pinning, 10 pinned, 0 drifted.** `pointer-unresolved`
+  and `pointer-ambiguous` are **UNKNOWN and never a pass**; `pointer-unpinned` is the ratchet.
+
+  ⛔ **Stated residue: it only sees restatements that DECLARE themselves.** An undeclared one — §10.2's
+  shape *before* `0.8.2.26` — is invisible to it and to everything else. **What changes is the
+  incentive: declaring a pointer now buys enforcement**, and register row `EN-4` is the controlled
+  measurement that naming the authority is also what keeps the restatement correct.
+
+  ⚠ **Its own build is the cautionary half, and three of its five defects were found by writing the
+  assertions or running against the live corpus rather than by reading the code** — an adjacency bug
+  that reported an authority in a document called `FETCHES`; an ERROR filed against correct text
+  because a bare `§N` was called *missing* instead of *ambiguous*; and **a scan unit of a LINE in a
+  corpus that hard-wraps prose**, silently dropping any declaration across a break, *found by the
+  selftest because the run's output was identical either way.* **And one near-miss the other way:**
+  `ENTITY-CBOR-ENCODING` §357 points at §7.3 for varint encoding and looks wrong because §7.3 is
+  *Signature Computation* — **opening the section showed it carries the varint rule in its last
+  paragraph.** A false finding was one un-opened section away (`L4`, `L8`).
 
 - **`spec expiry` — is a tracker row still asserting OPEN on evidence from a tree that moved? RUN IT
   AT SESSION START, beside `inbound`.** The enforcement point for this file's *"verify build state

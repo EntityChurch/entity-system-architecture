@@ -1,6 +1,6 @@
 # System History Extension
 
-**Version**: 1.10
+**Version**: 1.11
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.19+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
@@ -446,7 +446,7 @@ handle_query(ctx, params):
 
   ; Dual capability check
   if not check_history_access(ctx.capability, "query", path, ...):
-    return error(403, "access_denied")
+    return error(403, "capability_denied")
 
   head_hash = tree.get("system/history/head/" + path)
   if head_hash is null:
@@ -522,7 +522,7 @@ handle_rollback(ctx, params):
 
   ; Dual capability check (needs write access to target path)
   if not check_history_access(ctx.capability, "rollback", path, ...):
-    return error(403, "access_denied")
+    return error(403, "capability_denied")
 
   ; Verify target_hash is in this path's history (prevents restoring arbitrary content)
   if not is_in_history(path, target_hash):
@@ -954,7 +954,7 @@ does not own.
 | Operation | Error Code | Status | Description |
 |-----------|-----------|--------|-------------|
 | `rollback` | `not_in_history` | 404 | The `target_hash` does not appear in the chain for this path (§4.3.2). **A domain 404 — the handler is registered and the operation ran; the requested restore point is not in this path's history.** §3.3's 404 default is `handler_not_found`, which would be actively wrong here |
-| `query`, `rollback` | `access_denied` | 403 | Either half of the §4.2 dual capability check refused — the history handler grant or the target-path grant (§4.2, §7.1) |
+| `query`, `rollback` | `capability_denied` | 403 | Either half of the §4.2 dual capability check refused — the history handler grant or the target-path grant (§4.2, §7.1) |
 
 **Core codes this handler also emits, defined by `ENTITY-CORE-PROTOCOL` §3.3 and not by this table:** `path_required` (400, no `resource` on a directly-callable op) · `unexpected_params` (400) · `unsupported_operation` (501) · `storage_error` (500, a content-store or tree read/write failure). **They are named here so an implementer knows which arise, and defined there so there is one home.**
 
@@ -971,6 +971,8 @@ live there, because a conformant peer may omit the field entirely.
 ---
 
 ## Document History
+
+**v1.11:** §4.2's two emit sites and Appendix A answer a capability-check refusal with **`capability_denied`**, not `access_denied`. Both sites refuse on `check_history_access(ctx.capability, …)` — a request-time authorization DENY — and `ENTITY-CORE-PROTOCOL` §9.1 closes that code set to `capability_denied` plus three defined more-specific codes, of which `access_denied` is not one; the word occurs nowhere in the core protocol. **A 403 reporting a capability DENY belongs to the authorization layer, which is core's, so an extension-local synonym for it is not a richer diagnosis — it is a second spelling a caller cannot reason about.** A 403 reporting a *domain* refusal remains this extension's own to name. Reported by a peer that hit it while re-pinning this document for generation.
 
 **v1.10:** §2.2 gains `pattern_exclude` with a stated evaluation order, and §6.3's worked configuration uses it. A `pattern: "*"` config recorded the peer's own protocol bookkeeping — signature bindings, grant storage, peer status — as ordinary transitions, one or more per served request, permanently. A wildcard is a statement about scope, not consent to audit the machinery; naming such a path explicitly is how you ask for it. The exclusion list in §6.3 is an example for the recommended path convention and deliberately not a normative set. Also: the §2.2 specificity paragraph's peer-wildcard example is corrected to `/*/project/*`, the spelling v1.8 ruled.
 

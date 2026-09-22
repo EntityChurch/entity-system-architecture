@@ -441,7 +441,7 @@ Irreducible add-ons — a peer fundamentally needs these to run. Together with T
 | `EXTENSION-COMPUTE` | Draft v3.32 | Embedded expression language; programs-as-entities; the standard-IR floor (nav primitives, MUST collection stdlib, pinned integer model). Foundational for entity-native compute. |
 | `EXTENSION-QUERY` | Draft v1.8 | Query operations over the tree. |
 | `EXTENSION-REVISION` | Draft v3.14 | Versioning + three-way merge / cross-peer merge convergence. |
-| `EXTENSION-HISTORY` | Draft v1.10 | Path-level transition recording. |
+| `EXTENSION-HISTORY` | Draft v1.11 | Path-level transition recording. |
 | `EXTENSION-TYPE` | Draft v1.3 | Value-level constraints layered above the Tier 0 type system. Currently deferred in implementation because the team is close enough to the ground to enforce manually; the proper-form-of-types in the system needs it. |
 | `EXTENSION-CLOCK` | Draft v1.3 | System time — wall-clock primarily; logical / vector / HLC sub-pieces are reference research, kept in the spec. |
 | `EXTENSION-SUBSTITUTE` | Active v1.3 | Ordered substitute-source chain consulted on CONTENT's local-miss path, plus the HTTP-as-storage-transport convention. **Placement is the spec's own declaration** (*"Tier 1, CDN release v1 critical path"*) and is the looser fit in this tier: installing it is additive and not installing it leaves CONTENT's 404 unchanged, which is Tier-2 shaped. Its own header says *"Operational — Tier 1"*, which is the ambiguity rather than a resolution of it. |

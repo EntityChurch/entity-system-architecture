@@ -1,6 +1,6 @@
 # GUIDE-APPLICATION-DEVELOPMENT — what an L5 application convention must be
 
-**Version**: 2.0
+**Version**: 2.1
 **Status**: Active
 **Kind**: tier-standard
 **Authority**: binding
@@ -47,6 +47,23 @@ kernel features and **no** required SDK surface.
 **These two are the whole of what is distinctive about this tier.** Everything
 else a convention must do, it must do because it is a specification — see §3.
 
+### 2.3 If it pins a tree path, it declares the namespace and says which space
+
+Most conventions pin no tree path at all — the type vocabulary is the contract, and where an
+implementation stores an entity is its own business. **A convention that does pin one owes three
+rules**, because the alternative has already cost a collision:
+
+- **[MUST] Say which namespace you are pinning in.** `app/feed/entry` is a value in an entity's
+  `type` field; `/{peer}/app/feed/index` is a location in a tree. **They share a spelling and are not
+  the same namespace**, and a reader — human or analyzer — cannot tell which one you mean from the
+  bytes. See `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1.
+- **[MUST] Declare the published tree namespace you own**, in your own specification, so it can be
+  listed in `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1b's closed set. That set is what stops an application claiming an app-id
+  that lands on top of your index, and it is what a consumer dispatches on when it wants to know what
+  a peer publishes without probing one convention at a time.
+- **[MUST NOT] Pin a second top-level namespace for a further well-known path.** A convention that
+  needs another one pins it **inside** the namespace it already declared.
+
 ## 3. What binds a convention from the project tier
 
 **These are not restated here, and that is deliberate** — see
@@ -68,6 +85,8 @@ a second home.
 | **Removal from a tree is UNPUBLICATION, never erasure — a convention MUST NOT let an application present it as deletion** | `APP-CONVENTION-FEED.md` §7.5 |
 | **A type that requires no authorization has no revocation lever at all — for it, withdrawal is unlisting and the convention says so** | `APP-CONVENTION-SHARE.md` §2.5 |
 | **Where your type carves an exception out of a rule you otherwise satisfy, the exception needs its own refusal and its own named check — following the general rule launders exactly the shape the exception exists to exclude** | `APP-CONVENTION-SHARE.md` §2.5 + `SHARE-8` · `APP-CONVENTION-SEMANTIC-CONTENT-SITE.md` §4 + §9 |
+| **The tree-path namespace a convention pins is drawn from a closed declared set, and an application-chosen app-id may not equal one** | `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.1b (and §2.3 above, which is this tier's obligation to declare) |
+| **A person's own content is a top-level content domain, never an application namespace** | `GUIDE-PEER-CONCERNS-AND-NAMESPACES.md` §4.2a |
 
 > **The last two rows were added 2026-09-09, and why they were missing is the more useful half.**
 > **Both are tier-wide honesty rules and both were living inside a single member convention**, where
@@ -145,6 +164,14 @@ not on a missing section.
 | `APP-CONVENTION-FEED` | **A thing someone posted** — the entry, the key-addressed index, the bounded collection, and the mirror. The vocabulary that makes *following someone across independent hosts* a format two implementations can both produce and both read | Draft **v0.3** — **authored; the mirror half is now being exercised.** Thirteen required checks named in `APP-CONVENTION-FEED.md` §11.2, of which `FEED-3`/`-5`/`-6`/`-9`/`-13` are load-bearing. **v0.3 gives the mirror the head-plus-pages shape §4.2 already defines** — v0.2's widening to a timeline subject made it a view of an unbounded monotone set while its shape stayed one flat list — with pages filled in **gather** order and sealed. Its coordinate is `prefix_hash` (`EXTENSION-REVISION` §3.1), declared derive-to-meet; its live subject is the author's `app/feed/index`; §2.4's published `cursor` field is removed as local reader state. `SYSTEM-DATA-EXCHANGE.md` §2.5 is the authority for the paging rule and §2.3 for §6.1's four republication rules. `FEED-12` and `FEED-13` are unexercised |
 
 ## 6. Document history
+
+**v2.1** — §2.3 added: a convention that pins a tree path declares its namespace
+and says which of the two `app/…` namespaces it is pinning in. Two pointer rows
+added to §3. **The gap it closes is not hypothetical:** one member pins tree
+paths, the taxonomy reserved the same prefix for private application state, and
+neither document mentioned the other — so an application permitted to claim any
+app-id could claim that convention's, and write its workspace over a normative
+published index.
 
 **v2.0** — reclassed and rehomed. Four of the nine disciplines were general rules
 that happened to be discovered here, so the 26 extension specs were governed by

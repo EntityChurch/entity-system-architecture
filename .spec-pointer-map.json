@@ -1,0 +1,17 @@
+{
+  "meta": {
+    "pins": 2
+  },
+  "pins": {
+    "specs/extensions/EXTENSION-NETWORK.md::TREE\u00a73.3a": {
+      "digest": "sha256:d7f1cc0b76cfaf0d7db52a3e1da56362",
+      "doc": "TREE",
+      "section": "3.3a"
+    },
+    "specs/extensions/EXTENSION-TREE.md::\u00a73.3a": {
+      "digest": "sha256:d7f1cc0b76cfaf0d7db52a3e1da56362",
+      "doc": null,
+      "section": "3.3a"
+    }
+  }
+}
