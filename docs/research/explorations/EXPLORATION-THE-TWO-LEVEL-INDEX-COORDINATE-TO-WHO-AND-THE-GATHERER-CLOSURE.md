@@ -264,6 +264,19 @@ attributes a mirrored entry to the gatherer is non-conformant."*
 which is a statement about the reader, not a role in the system. The document keeps the word below for
 continuity with its own first draft; **the object is a published walk and the actor is a peer.**
 
+> **⚠ This section over-corrected, and the operator pushed back the same day.** *"I don't think the
+> noun goes — you're going too far in that too. It's not necessarily a required dedicated role, but
+> there may still be dedicated roles that do stuff."* **Right, and the distinction is between REQUIRED
+> and EXISTING.** What §4 proves is that no role is *required* and none is *privileged*; it proves
+> nothing against roles that people choose to run, and there is at least one job that **only an
+> always-on party can do at all**: *metering a non-publishing client's data into the tree.* **A peer
+> that cannot publish cannot participate in the write direction without one.**
+>
+> **So the corrected claim is narrow: do not name a role in the mechanism.** The object is a published
+> walk, the act is publishing, and any peer may do it — **and dedicated operators are a legitimate,
+> expected deployment shape rather than an architectural necessity.** Deleting the noun from the
+> vocabulary was the right move; deleting the *possibility* was not.
+
 ### §4.2 Organic and dedicated walking are the same mechanism at different intensities
 
 **Because publishing a walk is optional and continuous, there is no service commitment anywhere** — no
@@ -386,6 +399,51 @@ three merge by union with each other. **There is no separate "index format" and 
 - **"How do you distribute it?"** — **no new mechanism.** Signed entries in the gatherer's namespace on
   a static origin, pulled exactly like a person's stream. **That is what §4's type identity buys**, and
   it is why there is nothing to design here.
+
+## §5d What a firehose looks like when it is published instead of streamed
+
+`[operator: "when we view the firehose now, we're connecting to an API and it's streaming us all these
+events. If we had a firehose that publishes every 30 seconds or every minute in chunks of events that I
+can page through…"]`
+
+**That is the right shape and the corpus already specifies the structure — `FEED` §3.2.** A stream is a
+**key-addressed page chain**: a head at `/{peer}/app/feed/index` naming the current page number, and
+pages at `/{peer}/app/feed/index/{page}`. A reader polls the head and pages back to its cursor.
+
+**A published firehose is that chain with walks as the page contents instead of the author's own
+entries.** Nothing new: same head, same paging, same resume-at-cursor.
+
+> **And §3.3's reason for key-addressing rather than hash-chaining matters more here than it does for a
+> personal feed:** a hash back-chain makes page *N*'s identity depend on *N−1*, so **correcting one old
+> chunk republishes the entire archive.** For a high-volume firehose that is fatal. Key addressing makes
+> a correction O(tree depth).
+
+**What changes versus a streaming API, and the first one is the practical unlock:**
+
+| | streamed | published in chunks |
+|---|---|---|
+| **cacheable** | **no** — a socket cannot be cached | **yes — immutable content-addressed objects, ideal CDN objects** |
+| consumer must be online | yes (or the server buffers per-cursor) | **no** — resume at any time from your page number |
+| history re-servable | only by the origin | **by anyone who fetched the chunks** |
+| gaps | invisible | **visible** — page numbers are dense |
+| **latency** | sub-second | **the chunk period — the operator's 30–60 s** |
+
+> **The trade is latency for cacheability, offline operation, and replay-by-anyone** — and for the
+> stated use case (someone building an index or a search corpus) minute-latency is irrelevant, while
+> **cacheability is what makes serving a firehose nearly free instead of an operating cost.** A
+> streamed firehose is a per-consumer connection; a chunked one is a static object served identically
+> to everybody, which is the same economics that make the whole publishing model work.
+
+**Where the trade fails is where liveness is the product** — direct messaging, presence, typing
+indicators. **That is the honest place for a live tier**, and it is a much narrower claim than "you need
+a server to participate."
+
+**Staleness needs no new machinery, and the operator's instinct is the ruled position:** *"it doesn't
+really matter if someone's got an out-of-date view — you just see the out-of-date view."* Correct. A
+walk carries `walked_at` and a stream carries a page number, so **staleness is visible; and it is
+repairable by reading one more source.** What is *not* obtainable is proof of currency against a hostile
+origin — `TREE` §3.3a already says so, and it is rung 3 of the verification ladder, not a gap in this
+design.
 
 ## §6 What this costs, honestly
 

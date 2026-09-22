@@ -2319,6 +2319,20 @@ reconstruction pass.
   is the check `spec address` already performs on citations, so the file is gradeable by shipped
   machinery. **And a session that derives a conclusion adds the row in the same session, or it did not
   land** — the ratchet, pointed at design instead of process.
+
+  > **Measured 2026-09-07 and this is the gap that matters: the register cites 9 of 99 proposals.** It
+  > indexes `explorations/` well and `docs/proposals/` barely at all — and **the proposals are the
+  > expensive half**, because *a proposal's conclusion reads as SETTLED, so it is the last place anyone
+  > re-searches, while an exploration reads as an open question and gets re-opened.* **Six things were
+  > re-derived from scratch in one arc** — the reachability-record serving rule, the ownership rule, the
+  > entire build/supply-chain case, the refresh loop, static-route audience control, and the reader cost
+  > model — **and every one was sitting in `docs/proposals/`.** *(A seventh was caught mid-draft, and the
+  > cost-model one had already been routed to a seat before the correction.)*
+  > ***Enforcement point, and it is a BUILD not a habit — filed, not built:*** **`spec register`** —
+  > every `docs/proposals/**/PROPOSAL-*.md` is either **cited by a `DESIGN-REGISTER` row** or carries an
+  > explicit `Design-Conclusions: none` marker; same shape as `spec ledger`, ratchets to zero. **Until
+  > it exists the sweep is by hand and it is owed for ~90 documents.** **Do not answer this with another
+  > rule** — the sweep is the work (L0 rule 4).
 - **`spec coverage` — start here on any "do we already have X?" question.** The reader that maps
   each spec to its **guide · proposal · design record**, and lists what is missing on each axis.
   It is **L7's second enforcement point**, beside `docs/research/INDEX.md`: the index answers
