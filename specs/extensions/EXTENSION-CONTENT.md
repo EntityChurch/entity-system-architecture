@@ -25,6 +25,10 @@
 - `system/content:get` — hash-addressed retrieval (§6.2).
 - `system/content:ingest` — hash-addressed content-store write (§6.3).
 
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2). Its entities are discriminated by type and by
+path, not by a `properties` discriminator.
+
 **Owned entity types:**
 - `system/content/blob` (§2.1) — the chunk-list manifest.
 - `system/content/chunk` (§2.2) — a chunk payload.

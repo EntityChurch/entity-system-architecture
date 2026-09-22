@@ -195,14 +195,17 @@ name the behaviour. `EXPLORATION-THE-L5-CONTENT-TAXONOMY-AND-THE-FLOOR-THAT-STOP
 the derivation, including why a blog, a vlog, a photo post, a comment and a forum post are all the
 first row.
 
-### §2.1 Shared atoms
+### §2.1 Shared atoms — **IMPORTED, not defined here**
+
+**`APP-CONVENTION-REFERENCE` §2.1 is the single home for these.** Restated so this document reads
+standalone; on any disagreement that document is the authority.
 
 ```cddl
 ; Self-describing (format_code, digest) per V7 §1.2/§1.4 — the leading varint is the
 ; content_hash_format and THE DIGEST LENGTH FOLLOWS THE CODE. Never fixed-width (charter #6).
 content-hash = bstr
 
-peer-id      = tstr                  ; V7 §1.5 Base58 peer-id
+peer-id      = tstr                  ; V7 §1.5 Base58 peer-id — a TEXT string, not bytes
 tree-path    = tstr                  ; absolute or peer-relative per V7 §1.4
 ```
 
@@ -214,29 +217,49 @@ tree-path    = tstr                  ; absolute or peer-relative per V7 §1.4
 atoms.** An earlier draft had only the first, derived it from the reply case, and generalized it to a
 domain that contains a second case with the opposite requirement.
 
+**RE-CUT: these are now the tier's shared atom, imported rather than defined here.**
+`APP-CONVENTION-REFERENCE` §2.1 generalizes exactly these two shapes for the whole application tier;
+this document was where they were first derived, and it is no longer where they live.
+
 ```cddl
-reference = {                        ; "THIS EXACT THING" — the pin, and the default
-  peer: peer-id,                     ; WHO published it
-  hash: content-hash,                ; WHAT it is — the assertion
-  ? path: tree-path                  ; WHERE they put it — a hint, and OPTIONAL
-}
+; IMPORTED — APP-CONVENTION-REFERENCE §2.1. Reproduced for readability; that document is the authority.
+reference      = pinned-ref          ; "THIS EXACT THING" — the pin, and the default
+live-reference = live-ref            ; "WHATEVER IS AT THIS PLACE NOW"
+any-reference  = entity-ref          ; only where a site declares it takes both (§2.2.3)
 
-live-reference = {                   ; "WHATEVER IS AT THIS PLACE NOW"
-  peer: peer-id,                     ; WHO publishes there
-  path: tree-path,                   ; THE address of record — required
-  ? seen: content-hash               ; what the linker saw at link time — an EXPECTATION, not a requirement
-}
-
-any-reference = reference / live-reference   ; only where a site declares it takes both (§2.2.3)
+pinned-ref = { tag: "pin",  peer: peer-id, hash: content-hash, ? at: anchor, ? via: [* hint] }
+live-ref   = { tag: "live", peer: peer-id, path: tree-path, ? seen: content-hash,
+                                                            ? at: anchor, ? via: [* hint] }
 ```
+
+**Two changes from the shape this document first derived, and both are stated rather than absorbed:**
+
+1. **The discriminator is a `tag`, not the field name.** §2.2.3's argument is preserved in full and is
+   satisfied by a stronger mechanism — see the restatement at the end of that section.
+2. **`? path` on the pinned form becomes a `via` hint** — `{ tag: "path", value: … }`. **It was always
+   a hint** (this document's own words: *"a starting point, not an address of record"*), and it shared
+   a field name with the term that is *authoritative* on the live shape. **One field, one job:** `path`
+   is authoritative only where it is the identity term. The obligation not to read a `404` at that
+   location as absence is unchanged and is now normative at `APP-CONVENTION-REFERENCE` §2.3.
 
 #### §2.2.1 `reference` — the pin
 
 **The hash is the claim; the locator is a convenience.** A consumer holding the bytes fetches nothing.
-One that does not may obtain them **from anybody** — the author, a mirror, a cache, a stranger —
-because the hash validates them regardless of source. `path` is optional and a reader MUST NOT treat a
-failure to fetch at `path` as evidence the entry does not exist; it is a starting point, not an
-address of record.
+One that does not may obtain them **from the publisher's declared content origin, or from any source
+that has them and that the reader can already reach** — because the hash validates them regardless of
+source. The locator is a hint and a reader MUST NOT treat a failure to fetch at it as evidence the
+entry does not exist; it is a starting point, not an address of record.
+
+> **Scoped deliberately, and the earlier wording is the reason.** This read *"from anybody — the
+> author, a mirror, a cache, a stranger"*, which **names a mechanism the substrate does not have**:
+> there is no operation answering *who has this hash?*, and bare-hash substitution is explicitly out
+> of scope in the extension that would own it. **What DOES exist is the composition** — a reader
+> holding a publisher peer-id resolves that peer's transport profile, reads its content-origin prefix,
+> builds a URL, fetches and hash-verifies, with no preconfigured source. **That is a normative path
+> to the bytes and it is still ahead of the pull-based systems this is compared to**; it just is not
+> *anywhere*. Two narrow cases remain genuinely unanswered and are named rather than papered over: a
+> peer-id that resolves to no transport (which is what a hint slot is for), and a publisher who is
+> simply gone (the only case that would need content routing, an axis measured and declined).
 
 **This is derived from a split in the deployed field rather than invented.** One lineage references a
 reply by **location alone**, which makes a reply exactly as trustworthy as whatever currently answers
@@ -265,7 +288,7 @@ the entire content of the distinction:
 is what was there when I linked*. It is optional, and an author who omits it is saying they have no
 expectation to offer.
 
-#### §2.2.3 The discriminator is the field name, and each site declares what it accepts
+#### §2.2.3 The discriminator, and each site declares what it accepts
 
 **A reference carries `hash` or it carries `seen`; an atom carrying both is invalid and a conformant
 reader MUST reject it.** The distinction is therefore never a mode value a consumer might fail to
@@ -273,6 +296,16 @@ branch on — **which is the whole reason there are two shapes rather than one s
 optional.** Under an optional `hash`, a reference arriving without one is indistinguishable between
 *"the author wants the live version"*, *"the author's implementation did not populate it"* and *"the
 author only ever had a URL"*: one intent and two bugs, with no way for a reader to tell them apart.
+
+> **RESTATED against the tag, and nothing above is retracted.** The requirement this section sets is
+> that **a reader can always tell**, and the argument it makes is against an **optional field** — not
+> against a tag. A tag satisfies that requirement more directly than a field-presence rule does: the
+> discriminator becomes a **value the reader reads** rather than an **inference the reader computes**,
+> it is detectable at the first field rather than only by a reader that implemented the presence rule,
+> and a third intent later becomes a third tag instead of a third presence rule interacting with the
+> first two. **Two shapes, not one with an optional hash — that conclusion stands unchanged.** What
+> changes is only how a reader reaches the right one, and the tier's other two conventions already
+> discriminate this way.
 **That would degrade the guarantee §2.2.1 exists to provide into a convention.**
 
 **Each site that takes a reference declares which atom it accepts, and the pinned sites do not widen:**
@@ -293,7 +326,7 @@ outcomes, and **a reader MUST be able to tell which one it got.**
 |---|---|---|---|---|
 | 1 | resolves | matches, or `seen` absent | you are seeing what the linker saw, or they offered no expectation | render |
 | 2 | resolves | **differs** | **the document evolved** — the ordinary case | render current, **and surface that it moved**; the pinned version remains fetchable |
-| 3 | **404** | — | the path moved or was unpublished | **fall back to `seen`, fetched from anywhere** — author, mirror, cache, stranger |
+| 3 | **404** | — | the path moved or was unpublished | **fall back to `seen`, fetched from the publisher's declared content origin or any reachable source that has it** (§2.2.1) — the hash validates the bytes whoever serves them |
 | 4 | 404 | `seen` absent or unobtainable | genuinely dangling | the honest failure. Nothing to hide |
 
 **Row 3 is where the second naming layer earns its keep and it is the row the surveyed field does not

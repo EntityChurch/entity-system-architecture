@@ -10,6 +10,59 @@ rendering silently breaks it. The source proposal's 64-character examples are su
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-CONTENT.md (v3.6+) — this extension exists to be consulted on CONTENT's local-miss path and hooks it at §5; without CONTENT there is no miss to substitute for. (The dependency is one-directional: not installing this leaves CONTENT's 404 behavior unchanged, §1.)
 **Related**: convention extensions registering `system/substitute/<type>:try` (§6; the v1 `http` convention ships here as §7); EXTENSION-BRIDGE-HTTP (Mechanism B — structurally distinct from this spec's Mechanism A, see the disambiguation above)
 **Tier:** Operational — Tier 1 (CDN release v1 critical path).
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-NETWORK` — §2.2's endpoint shape is **deliberately shared** with the NETWORK
+  transport-profile shape (`EXTENSION-NETWORK` §6.5.3): the field name and role are identical, so a
+  reader holding `{peer, hash}` can reach bytes by either path.
+- **Convention extensions** registering `system/substitute/<type>:try` (§6) — the v1 `http`
+  convention ships inside this document as §7; `peer-to-peer` and `nix-cache` are named, unbuilt,
+  and each would ship in its own extension.
+
+**Owned namespaces:**
+- `system/substitute/` **(closed)** — `source` and `sources` (§2.1) · `endpoint` (§2.2) ·
+  `snapshot-manifest` · `try-request` · and the per-convention handler paths
+  `system/substitute/<type>` (§6), of which `system/substitute/http` is the only v1 occupant (§7).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops:**
+- `system/substitute/sources:consult` (§3, §8) — the chain-consultation handler.
+- **`system/substitute/<type>:try` is a CONTRACT this extension defines and other extensions
+  implement** (§6): `try(entry, hash) → bytes | not_found | error`.
+
+**Extension points exposed:**
+- **The convention-dispatch pattern (§6), and its design choice is the part to read: there is NO NEW
+  REGISTRY SURFACE.** Dispatch is ordinary core handler-URI dispatch — installing a convention makes
+  its handler discoverable, uninstalling makes it unavailable. A consumer determines dispatchable
+  types by enumerating installed handlers under `system/substitute/`, or preferably by tracking
+  extensions via their `system/handler` manifest declarations. **An entry whose `substitute_type`
+  has no installed handler yields `not_found` and the chain advances** — an uninstalled convention
+  degrades, it does not fail.
+
+**Extension points consumed:**
+- **`EXTENSION-CONTENT` (v3.6+) — a hard dependency, and this extension exists to hook it.** On a
+  local miss with the pending sidecar clear, `system/content:get` **MUST** invoke the
+  substitute-consultation hook before returning 404, when this extension is installed. **The
+  ordering is a MUST: `pending-check → substitute-consult → 404`** (§5). The chain is for the *miss*
+  case, never the *racing-sync* case — if bytes are already en route from the authoritative
+  publisher, `503 blob_pending_sync` wins and the chain is **not** consulted.
+- **The dependency is one-directional (§1):** not installing this leaves CONTENT's 404 behaviour
+  unchanged, and the CONTENT-side hook is ~10 lines, additive and conditional.
+- **`system/content:ingest`** — landing fetched bytes into a namespace (§8).
+
+> **Three capabilities compose here, checked cheapest-first (§8), and the first one fails closed.**
+> The consult-cap is **not a string-presence flag**: it is a grant on
+> `(handler = system/substitute/sources, operation = "consult", resource = ctx.resource_target)` —
+> **consume the triggering EXECUTE's target namespace, not a static path.** Absent a matching grant
+> the chain is **not** consulted and the answer is 404; *"the caller holds any token"* is not a
+> match. **That is what closes the arbitrary-caller-triggered outbound-fetch and forced-ingestion
+> hole**, and an installer that treats the cap as a boolean re-opens it.
 **Authors:** Architecture team.
 **Two-mechanism disambiguation (load-bearing, read first):** the HTTP convention here is **Mechanism A — HTTP-as-storage-transport**: an inline HTTP GET whose body bytes *are* entity-encoded content, verified by content hash, with the hash as the sole trust anchor. It is **NOT** `system/bridge/http:get` and does **NOT** use the `system/capability/bridge-http-fetch` cap — that is `EXTENSION-BRIDGE-HTTP` / **Mechanism B** (foreign content wrapped as `system/bridge/http/fetched`), a structurally distinct surface. See NETWORK §6.5.3/§6.5.5 and `GUIDE-EXTENSION-DEVELOPMENT.md §3.7`. (Earlier draft text in the source HTTP proposal conflated the two; that text is superseded by this spec.)
 

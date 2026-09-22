@@ -5,6 +5,62 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.31+), EXTENSION-INBOX.md (v5.0+)
 **Related**: EXTENSION-NETWORK.md (v1.0+) — subscription restoration after reconnection
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative)** — thirteen other extension specs cite this one, the widest consumer set in
+the family:
+- `EXTENSION-QUERY` — consumes the tree-change event semantics for index maintenance, **and is
+  consumed back**: subscription entities are tree-bound and therefore indexed. `EXTENSION-QUERY` §3.2
+  names that bootstrapping dependency and is why neither mandates the mechanism.
+- `EXTENSION-CLOCK` — `system/clock:tick` delegates to this handler, subscribing to
+  `system/clock/tick/latest`.
+- `EXTENSION-RELAY` · `EXTENSION-NETWORK` · `EXTENSION-REGISTRY` · `EXTENSION-SIGNALING` ·
+  `EXTENSION-COMPUTE` · `EXTENSION-REVISION` · `EXTENSION-CONTENT` · `EXTENSION-CONTINUATION` ·
+  `EXTENSION-TREE` · `EXTENSION-ROLE` — event delivery and change propagation.
+
+**Owned namespaces:**
+- `system/subscription/` **(closed)** — the whole subtree. Occupants: the subscription entity at
+  `system/subscription/{id}` (§2.1, **the source of truth — internal registries and indexes are
+  caches over these entities**) · `request` and `cancel` (§3) · `notification` (§4, **canonical
+  here, not in `EXTENSION-INBOX`, which carries it only as a received payload type**) · `limits`
+  (§2.7) · `redirect` (§8).
+- **`system/config/subscription` — outside this subtree**, the per-peer configuration site.
+- **`system/runtime/chain-errors/lost/{chain_id}/{subscription_id}/{reason}/{marker_hash}` — also
+  outside, and shared with `EXTENSION-CONTINUATION`**, which owns that namespace's shape. Delivery
+  losses surface as markers there rather than in this subtree.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/subscription`, name `subscriptions` (§3):
+- `system/subscription:subscribe` · `system/subscription:unsubscribe` (§3).
+- **No handler-internal access check exists or is needed** — a subscribe EXECUTE targets
+  `system/subscription` with `resource` carrying the watched paths, and standard dispatch
+  (`ENTITY-CORE-PROTOCOL.md` §6.5) enforces `handlers` scope for the operation and `resources` scope
+  for the data paths. **An installer must not add one.**
+
+**Extension points exposed:**
+- **The tree-change event semantics themselves** — the surface `EXTENSION-QUERY` builds index
+  maintenance on (§1). Consumed by hook or by protocol-level subscription; **the mechanism is
+  deliberately not mandated.**
+- **`system/subscription/notification` (§4)** as the payload type any deliverer constructs.
+- **Bounded fan-out and redirect (§2.7, §3.1 step 3a, §8)** — a peer at capacity redirects a
+  subscriber to peers already receiving the prefix, which is what forms a dissemination tree.
+  ⚠ **§8 is headed *Informative* and contains a load-bearing normative sentence about notification
+  data reaching the local tree.** Treat the obligation as binding and read §8 before implementing
+  fan-out; the heading is a known defect, not a licence.
+
+**Extension points consumed:**
+- **`EXTENSION-INBOX` (v5.0+) — a hard dependency, not a soft one.** Notifications are delivered as
+  an authenticated EXECUTE to a `deliver_uri` under `system/inbox/`, carrying a `deliver_token`
+  (§2.1, §4). **Installing this extension without inbox leaves every subscription undeliverable.**
+- **The core protocol's capability model** — `system/capability/token` for `deliver_token`, and
+  `system/capability/grants/system/inbox` for the delivery grant (§10 Write Authorization).
+- **The emit pathway**, at **position 8** — last of the standard consumers
+  (`SYSTEM-COMPOSITION.md` §2.2, and enumerated in `EXTENSION-TRANSACTION.md` §7.1).
 **Proposal**: PROPOSAL-SUBSCRIPTION-BOUNDED-FANOUT.md (S1-S3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (SB1-SB3, GR1)
 
 ---

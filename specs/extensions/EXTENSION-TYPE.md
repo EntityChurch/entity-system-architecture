@@ -28,6 +28,13 @@
 - `system/type:reconcile` (§7.6).
 - `system/type/constraint/*:validate` (§5.1) — dispatched per-constraint by `system/type:validate`.
 
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2). **Note the collision of terms:** the `kind`
+field on a `system/type/violation` (§8.5) is a *violation category* — `structural` · `constraint` ·
+`unknown_constraint` — and the `{kind}` in the constraint type path `system/type/constraint/{kind}`
+is a constraint-type name. **Neither is a `properties.kind` discriminator**, and neither is
+registered in the kind-ownership table.
+
 **Owned entity types:**
 - All 11 standard constraint types at `system/type/constraint/{kind}` (§4) and their request/result types.
 - `system/type/violation`, `system/type/field-comparison`, `system/type/field-incompatibility`, `system/type/compatibility-report`, `system/type/reconcile-result` (§8).

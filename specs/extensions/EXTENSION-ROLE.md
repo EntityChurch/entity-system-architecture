@@ -8,6 +8,57 @@
 **Related**: EXTENSION-GROUP.md — consumes role types for group membership permissions
 **Analysis**: REVIEW-GROUP-EXTENSION-ANALYSIS.md §§20, 22-27, 30, 34
 **Proposal**: PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (RL1, RL2, RL3)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-GROUP` — consumes role types for in-group authority, via multi-role and the reserved
+  role names.
+- `EXTENSION-IDENTITY` — this extension consumes the controller's authority through the local
+  peer→controller cap; identity is the source of that authority.
+- `EXTENSION-QUERY` · `EXTENSION-QUORUM` · `EXTENSION-SUBSCRIPTION` · `EXTENSION-CONTINUATION` ·
+  `EXTENSION-INBOX`.
+
+**Owned namespaces:**
+- `system/role/` **(closed)** — §3. `assignment` · `exclusion` · `derived-token-link` ·
+  `bootstrap-policy` · `initial-grant-policy` · the per-context subtree `system/role/{context}` ·
+  a params/result pair per §4 operation · and the **reserved context names** `admin`, `public`,
+  `group`, `service`, `social`, `trust`.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2) — role authority is carried by
+**capabilities**, not by attestations, which is the distinction §5 turns on.
+
+**Owned handler ops** — handler at pattern `system/role` (§4):
+- `system/role:define` · `:assign` · `:unassign` · `:exclude` · `:re-derive` · `:delegate` (§4).
+
+**Extension points exposed:**
+- **Role-derived capabilities as V7 ROOT caps** (§5) — `parent: null`, granter is the issuing peer.
+  **This is what makes revocation work by deletion**: exclusion, `unassign` and `re-derive` revoke by
+  removing the derived cap's tree binding, and the core's chain-root revocation then transitively
+  revokes everything rooted at it, with no role-specific tracking required or possible.
+- **The three-layer exclusion model (§6)** and the initial-grant convention (§7).
+
+**Extension points consumed:**
+- **`EXTENSION-IDENTITY`'s local peer→controller cap** — the authority derived grants are minted
+  under.
+- **`EXTENSION-SUBSCRIPTION` (v3.10+), OPTIONAL** — reactive grant lifecycle.
+- **`EXTENSION-CONTINUATION` (v1.7+), OPTIONAL** — automated grant issuance and the exclusion
+  cascade. **Absent either, grant lifecycle is manual rather than broken** (§3.4's graceful-absence
+  rule).
+
+> **`system/role:delegate` governs MEMBER-TO-MEMBER delegation of role authority — making another
+> peer act in the role, role-tracked and re-derivable.** It is **not** the route for a one-shot
+> scoped capability: a cross-peer continuation `dispatch_capability` is categorically different and
+> is plain core re-attenuation. An implementation **MUST NOT** require `system/role:delegate` for a
+> role-derived root, and **MUST NOT** treat raw re-attenuation of one as a delegation-policy bypass
+> (`EXTENSION-CONTINUATION.md` §4.3).
+
+> ⚠ **This spec has no `## N. Conformance` section — the only extension in the family without one.**
+> That is an open authoring gap, not an oversight of this header: deciding which of §5's grant
+> derivation and §6's exclusion behaviours bind is a design decision, not a formatting pass.
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
 ---

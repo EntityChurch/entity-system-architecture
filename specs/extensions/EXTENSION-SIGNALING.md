@@ -11,6 +11,54 @@
 > **v1.1 — `advertise` publishes the node's own reflection listener (§4.5, new §4.5.1).** §9.1 gives this service two listeners and §4.5 advertised only one, so **a node running §9.3 STUN could not say so and a peer could not ask.** Additive and MUST-ignore-safe: absent decodes to the already-legal no-reflection state, and no deployment window is needed. Conformance is conditional — reflection stays a MAY (§11.3), but a node that *does* serve it MUST now publish it, on **both** surfaces (§2.2). Every browser peer negotiates on host candidates only, because nothing in the ecosystem fills its ICE server list. **What v1.1 deliberately does not close** is the TURN half and the read-once-at-boot consumption model — those are design work, named as §13 item 5 and tracked in `PROPOSAL-SIGNALING-ICE-PROVISIONING-LIFETIME`, not silently folded here.
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- **`EXTENSION-DISCOVERY` — this extension's keyed mailbox is a discovery CARRIER**, and
+  `rendezvous` is the backend that rides it (`EXTENSION-DISCOVERY` §5.5).
+- `EXTENSION-NETWORK` · `EXTENSION-REGISTRY` · `EXTENSION-INBOX` · `EXTENSION-SUBSCRIPTION`.
+
+**Owned namespaces:**
+- `system/signaling/` **(closed)** — §12 Types Installed. `rendezvous-key` (§3) · `offer-request` /
+  `offer-result` · `collect-request` / `collect-result` · `connect-request` / `connect-response` ·
+  `advertise-result` · `punch-sync` (§7) · `signed-blob` · `webrtc` (§6.5) · `limits`.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/signaling` (§4):
+- `system/signaling:offer` · `:collect` · `:advertise` (§4.3–§4.5).
+
+**Extension points exposed:**
+- **The rendezvous key as an introduction primitive (§3)** — *"the key introduces; it never
+  authorizes"* (§1.2). Discovery's grant-prompt flow is the authority; this is the carrier.
+- **`advertise`, which publishes the node's own reflection listener (§4.5, §4.5.1).** Additive and
+  MUST-ignore-safe: absent decodes to the already-legal no-reflection state. **Conditional
+  conformance — reflection is a MAY (§11.3), but a node that DOES serve it MUST publish it, on both
+  surfaces** (§2.2).
+
+**Extension points consumed:**
+- **`EXTENSION-NETWORK` (v1.6+) — a hard dependency**: §6.7's reachability facts and §10.3's
+  live-establishment seam.
+- **`EXTENSION-REGISTRY` (v1.5+), OPTIONAL** — §3b service advertisement, the deployment-wide
+  reflector/signaling/relay pools that §4.5.1 complements **per-node**.
+- **`EXTENSION-RELAY` (v1.2+), OPTIONAL** — Mode F as an alternate carrier, Modes C and S as
+  fallbacks (§10).
+
+> **TWO SURFACES, and their error encodings deliberately differ (§2.2, §4.3, §9.2).** The wrapped
+> handler surface uses **`invalid_request`** — the core pins it as the generic malformed-request code
+> and forbids an extension minting a synonym. **§9's unwrapped non-entity protocol keeps
+> `bad_request`** in its closed `error: tstr` enum, because the core's rule does not reach it. §2.2
+> binds the three **verbs** to be semantically identical, **not their error encodings**, and the two
+> surfaces cannot share one. The class boundaries are identical on both; only the spelling and the
+> envelope differ.
+
+> **What is NOT closed, named rather than implied (§13 item 5):** the TURN half and the
+> read-once-at-boot ICE consumption model. Every browser peer currently negotiates on host
+> candidates only, because nothing in the ecosystem fills its ICE server list.
+
 ---
 
 > **Cross-reference notation.** A bare `§N` in this document refers to **this** specification. References to another spec always carry its filename (`EXTENSION-NETWORK.md §10.3`) — several of this document's section numbers collide with NETWORK's, so the qualifier is load-bearing, not decoration.

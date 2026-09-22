@@ -5,6 +5,69 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.2+); EXTENSION-QUORUM.md (v1.2+)
 **Related**: EXTENSION-ROLE.md (consumes the controller's authority via the local peer→controller cap), EXTENSION-NETWORK.md (sync conventions), EXTENSION-GROUP.md (consumes identity as a building block; group quorums use `signer_resolution: "identity-resolved"` mode registered by this extension), PLAN-REGISTRY-AND-DISCOVERY-LANDSCAPE.md (registry layer used for `public/` attestation broadcast)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-ROLE` — consumes the controller's authority via the **local peer→controller cap**.
+- `EXTENSION-GROUP` — consumes identity as a building block; group quorums use the
+  `signer_resolution: "identity-resolved"` mode **this extension registers**.
+- `EXTENSION-NETWORK` — sync conventions for the audience tiers below.
+
+**Owned namespaces:**
+- `system/identity/` **(closed)** — §5.1. **The layout is by AUDIENCE TIER, and the tier is what
+  scopes sync**, which is why it is worth reading before binding anything:
+  `internal/cert/{hash_hex}` (not handle-bearing) · `internal/proposals/{kind}-{id}` (informative
+  staging for async signature gathering, §8) · `public/cert/{hash_hex}` (handle-bearing) ·
+  `relationships/{contact_id_hex}/` · plus `contacts`, `events`, `peer-config`, `quorum`,
+  `identity-binding` (§3).
+- **`system/quorum/…` is NOT owned here** — the identity's quorum entity and its self-events live in
+  `EXTENSION-QUORUM`'s subtree under that extension's convention (§5.1, and
+  `EXTENSION-ATTESTATION.md` §7's closed-namespace rule).
+
+**Owned `properties.kind` values** — four, all namespaced `identity-` per
+`EXTENSION-ATTESTATION.md` §3.2 (§4.1's table is the authority):
+- **`"identity-cert"`** (§4.2) — the active certification primitive, carrying a `function` of
+  controller · agent · identifier · app-defined. **One kind, five rows in the table**: signature
+  topology and storage tier vary by function and by 3-key/4-key configuration.
+- **`"identity-rotation-handoff"`** (§4.3) — dual-sig, old + new.
+- **`"identity-rotation-recovery"`** (§4.4) — K-of-N from the quorum.
+- **`"identity-retirement"`** (§4.5) — K-of-N from the quorum.
+- `"revocation"` (§4.6) is **generic and owned by `EXTENSION-ATTESTATION`**; identity supplies only
+  the authority predicate (the authority chain).
+
+**Owned handler ops** — handler at pattern `system/identity` (§6):
+- `system/identity:configure` (§6.0a, ordered phases) · `:create_attestation` (§6.0c) ·
+  `:supersede_attestation` (§6.0b) · `:publish_attestation` (§6.0d, **MOVE semantics**) ·
+  `:revoke_attestation` (§6.4, with cap cascade).
+
+**Extension points exposed:**
+- **The `identity-resolved` signer-resolution mode**, registered against `EXTENSION-QUORUM` §5.2
+  (§6.1). This is what lets a group quorum name identities rather than concrete keys, and it
+  honours `as_of` by returning the controller live at that time.
+- **The local peer→controller cap** — the mechanism `EXTENSION-ROLE` builds on.
+- **The `IdentityBindingChecker` hook implementation** — see the boundary below.
+
+**Extension points consumed:**
+- **`EXTENSION-ATTESTATION` (v1.2+) and `EXTENSION-QUORUM` (v1.2+) — both hard dependencies.**
+  Identity certs *are* attestations; the identity's root of authority *is* a quorum. It calls
+  `system/quorum:create` / `:update` / `:publish` and `system/attestation:verify` directly.
+- **The registry layer** for `public/` attestation broadcast — named, and outside this document.
+
+> **Two cross-extension invariants (§12) that an installer can violate without any gate noticing:**
+>
+> - **§12.2 — controllers NEVER appear in cap chains.** Controllers sign attestations; they never
+>   sign V7 capabilities that enter cross-peer chains. A remote peer must never see a controller's
+>   key as a granter. V7 caps are signed by **agent** keys, and the controller authorizes the agent
+>   via the local peer→controller cap.
+> - **§12.3 — the `IdentityBindingChecker` is a Layer 2 post-gate** (`ENTITY-CORE-PROTOCOL.md`
+>   §5.10) and **MUST NOT modulate the Layer 1 verdict.** Its scope is caps whose grantee is a
+>   **local** identity. **It MUST NOT be applied to a cross-peer dispatch capability** whose grantee
+>   is a remote peer — that grantee's authenticity comes from the §4.1 handshake and the signed
+>   chain, so rejecting it for lacking a local identity-cert binding would defeat cross-peer
+>   dispatch and add no security.
 **Synthesis**: SYSTEM-IDENTITY-COMPOSITION.md (single-entry-point overview of the three-extension layering); EXPLORATION-IDENTITY-LENSES-AND-CONVERGENCE.md (the design path that drove the substrate split); EXPLORATION-IDENTITY-CONSOLIDATED-REVIEW.md (the v2.0 unified-attestation key-graph design that v3.2 carries forward)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 

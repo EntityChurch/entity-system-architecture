@@ -11,6 +11,60 @@
 **Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):** `EXTENSION-NETWORK` (bootstrap endpoints, and the peer→transport
+discovery NETWORK §6.5.4 defers here) · `EXTENSION-SIGNALING` (§3b service advertisement) ·
+`EXTENSION-RELAY` · `EXTENSION-SUBSTITUTE` · `EXTENSION-TREE` · `EXTENSION-TYPE` ·
+`EXTENSION-ENCRYPTION` · `EXTENSION-REVISION` · `EXTENSION-SUBSCRIPTION`.
+**`EXTENSION-DISCOVERY` is a SIBLING, not a consumer** — REGISTRY is *lookup* (given a name, find
+the peer), DISCOVERY is *find* (what peers are out there?).
+
+**Owned namespaces:**
+- `system/registry/` **(closed)** — `binding` (§3) and `binding-manifest` · `peer-issued` (§6a) ·
+  `local-name` and `local-name-config` (§6) · `resolver-config` (§4) · `resolution-result` and
+  `resolution-log` (§2) · `service-advertisement` (§3b) · `issuer-policy` · `pending` /
+  `pending-binding` · `conflict` · `revocation` · a request type per §5 operation.
+- **`system/signature/{hex(binding_hash)}` is where a binding's signature lives** — the core's
+  namespace, not this one. **`system/registry/binding` is the corpus's worked example of *make the
+  relation an entity, then sign the entity***, chosen because a name binding must be able to travel
+  alone.
+
+**Owned `properties.kind` values:** none of its own. It consumes `EXTENSION-ATTESTATION`'s universal
+`"revocation"` kind and the supersedes-chain discipline (§3, §6.5, §7).
+
+**Owned handler ops** — two, across all backends (§2.1):
+- `system/registry:resolve(name, [hints]) → ResolutionResult`
+- `system/registry:invalidate-cache(name | null) → ()` — null flushes all.
+
+**Extension points exposed:**
+- **The BACKEND slot (§2), which is the whole design.** Two ship in v1 — **local-name** (§6, the
+  petname backend) and **peer-issued** (§6a). Named and unbuilt: `did-web`, `dns-txt`, `dht`,
+  consensus-anchored.
+- **The resolver-config chain (§4)** — ordered backends with dispatch by name shape. ⚠ **It is
+  deliberately peer-local and NOT synced**, so nothing can install itself into another peer's
+  resolution order.
+- **`system/registry/service-advertisement` (§3b)** — deployment-wide reflector / signaling / relay
+  pools, which SIGNALING §4.5.1 complements per-node.
+
+**Extension points consumed:**
+- **`EXTENSION-ATTESTATION` (v1.3+) — a hard dependency**: the supersedes-chain discipline that
+  binding revocation and superseded-binding retention are defined against.
+- **`EXTENSION-TREE` §3.8's walk contract — and this is the one to read before implementing
+  browse.** §6a.3a's enumeration-completeness claim is delivered by TREE §3.8 R1; without it a
+  hostile origin's short answer verifies and is indistinguishable from an honest one. The keyed
+  index deliberately does **not** get the same guarantee.
+- **`EXTENSION-RELAY`** — Mode S can host a registry peer's tree; Mode A would gate cross-registry
+  federation and is deferred from v1 (§8.2).
+- **`EXTENSION-CONTENT`** — binding entities live in the content tree.
+
+> **§4.1's name-shape dispatch is a privacy mechanism, not an optimization.** A bare name MUST NOT
+> reach a name-transmitting backend; getting the default chain wrong leaks private names to a public
+> registry. And **`binding.name` MUST be compared to the queried name** (§6a.4) — a validly-signed
+> binding answering a *different* name is the substitution this check exists to stop.
+
 > ## ⚠ COMPLETENESS — this extension is **v1, NOT finished**
 > The substrate + the two concrete v1 backends are landed and implemented. Several pieces are **specified-and-deferred** or **not-yet-designed**. Do **not** read "Landed" as "complete."
 >

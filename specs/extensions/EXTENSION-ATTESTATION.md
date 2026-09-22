@@ -5,6 +5,64 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+)
 **Related**: EXTENSION-QUORUM.md (consumes; quorum self-events are attestations); EXTENSION-IDENTITY.md (consumes; identity certs are attestations); future consumers — group, VC, reputation, provenance, cluster, transaction, governance, audit
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-QUORUM` — quorum self-events are attestations (§7).
+- `EXTENSION-IDENTITY` — identity certs are attestations; it defines four kinds of its own (§4).
+- Named future consumers: group, VC, reputation, provenance, cluster, transaction, governance, audit.
+
+**Owned namespaces: NONE, and that is a design decision rather than an omission (§7).** ***"The
+attestation primitive does NOT mandate a storage path. Consumer extensions choose where attestations
+of their domain live."*** Identity stores under `system/identity/…` per audience tier, quorum under
+`system/quorum/{q}/event/{h}`, a future VC issuer under `system/vc/issued/{h}`. **The primitive
+provides the entity TYPE; the consumer provides the storage CONVENTION.** Forcing one canonical path
+would either constrain consumers or duplicate every write.
+
+- What this extension *does* own is the **entity type `system/attestation`** and the **handler at
+  pattern `system/attestation`** — not a subtree of bindings.
+- **Graph operations work regardless of storage path** because they index by entity *field*
+  (`attesting`, `attested`, `properties.kind`), not by location (§5, §10).
+
+**Owned `properties.kind` values:**
+- **`"revocation"` — and only this one.** It is **the universal substrate kind** and is the single
+  deliberate exception to the namespacing rule below: it stays unnamespaced because it is generic
+  across all consumers (§3.2). **All other kinds belong to consumer extensions.**
+
+**Owned handler ops** — handler at pattern `system/attestation` (§6):
+- `system/attestation:create` · `:supersede` · `:revoke` (§6) — **the proper authorized path for
+  instantiating attestation entities.** Direct `tree:put` to an attestation path is permitted (the
+  kernel exposes `tree:put` by design) but **bypasses this handler's validation**; application
+  grants SHOULD cover `system/attestation:*` rather than raw `tree:put` (§8).
+- `system/attestation:verify` · `:get` · `:list` (§6).
+
+**Extension points exposed** — this extension is mostly extension points; that is what a primitive is:
+- **The `properties.kind` convention and the kind-ownership table (§3.2).** A consumer registering a
+  kind **MUST namespace it with the extension domain** — `"identity-cert"` not `"cert"`,
+  `"quorum-update"` not `"update"` — and **unnamespaced kinds MUST be rejected at registration**,
+  the one exception being `"revocation"`. Within-extension internal kinds not in the table MAY be
+  unnamespaced. **There is no central kind registry**; consumers coordinate by convention and
+  path-scoping is the actual correctness mechanism.
+- **Closed-namespace ownership (§7, normative), which governs the WHOLE family and is stated here.**
+  When a consumer chooses paths under its own subtree, that subtree is **owned** by it, and other
+  extensions **MUST NOT** bind inside it. An extension tracking state derived from a quorum or
+  identity **MUST use its own top-level namespace**, never nest inside the source consumer's.
+- **The parameterized graph operations (§5)** and the **consumer-supplied authority predicate for
+  revocation (§4.4)** — the primitive does the lookup (`find_revocations_for`); the consumer applies
+  its own authority rule.
+- **The `IdentityBindingChecker` hook (§10)** — read-only, for grantee-binding lookup during
+  capability-chain verification.
+
+**Extension points consumed:** none. This is a substrate primitive over the core protocol.
+
+> **The three-parallel-mechanisms invariant (§10, normative) is the constraint an installer is most
+> likely to violate.** V7 capability tokens, `system/attestation` entities and `system/quorum`
+> entities are three structurally distinct validation classes with **no shared validator**.
+> Cap-chain verification **MUST NOT** validate attestations as caps; attestation validation and
+> quorum validation **MUST NOT** call `verify_capability_chain`.
 **Synthesis**: SYSTEM-IDENTITY-COMPOSITION.md (single-entry-point overview of the three-extension layering); EXPLORATION-IDENTITY-LENSES-AND-CONVERGENCE.md §4a.13–§4a.15 (the design path)
 
 ---

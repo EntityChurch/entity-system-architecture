@@ -5,6 +5,46 @@
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.26+), EXTENSION-TREE.md (v3.3+)
 **Optional**: EXTENSION-REVISION.md (v2.5+) — continuation-pipeline versioning (see §7)
 **Optional**: EXTENSION-CONTINUATION.md (v1.5+) — post-commit workflows (see §7)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):** none yet. **This spec is v0.1 Draft — initial design, pre-review** — and
+no other extension in the corpus consumes it. `EXTENSION-TREE` and `EXTENSION-CONTINUATION` mention
+it; neither depends on it.
+
+**Owned namespaces:**
+- `system/transaction/` **(closed)** — the whole subtree (§3 Tree Layout). Occupants: `intent` ·
+  `pending/{id}` · `committed/{id}` · `rolled-back` · `state` · `binding` · `binding-failure` ·
+  `cascade-warning` (§2), plus the params/result pair for each of the seven operations.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/transaction`, index entry at
+`system/handler/system/transaction`, grant at `system/capability/grants/system/transaction` (§4):
+- `system/transaction:execute` — the single-shot form, `intent` → `result`.
+- `system/transaction:begin` · `:write` · `:read` · `:commit` · `:rollback` · `:status` — the
+  interactive form (§5).
+
+**Extension points exposed:**
+- **`system/transaction/committed/*` as THE observation boundary (§7.2).** Consumers wanting
+  transactional observation — committed groups rather than individual bindings — subscribe to or
+  watch that prefix. The committed record's own write fires its own emit cascade, which is the
+  event.
+
+**Extension points consumed:**
+- **`EXTENSION-TREE` (v3.3+)** — a hard dependency; §3.4/§3.4.1a root tracking underpins commit.
+- **The emit pathway, and the notable fact is what this extension does NOT do (§7.1).** Each
+  `tree:put` during commit fires its own cascade and **the transaction layer does not suppress
+  per-binding emits** — persistence (0), query (1), clock (2), history (4), compute (5), structural
+  summaries (6), auto-version (7) and subscription (8) all run as usual. **That is deliberate**:
+  these are per-binding concerns that must run whether or not the binding is in a transaction.
+  **A consequence an implementer should expect rather than discover:** a transaction with N bindings
+  produces **N intermediate version entries** (§7.3), identical to merge's behaviour. Per-transaction
+  versioning is a continuation-pipeline composition, described in `GUIDE-TRANSACTION.md`, and is
+  explicitly **not** this extension's concern.
 **Source**: EXPLORATION-NORMALIZATION-TRANSACTIONS-AND-COORDINATION.md §4, §11
 
 ---

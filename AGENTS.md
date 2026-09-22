@@ -286,7 +286,7 @@ was scoped to one repository, and each reported clean while being narrow.**
 
 | Region | What is in it | How to search |
 |---|---|---|
-| **This corpus** | the folded result — `specs/` · `guides/` · and the workspace `docs/proposals/` (99) · `docs/research/` (97) | `spec coverage` first; then grep. `docs/DESIGN-REGISTER.md` answers *"is there an ANSWER"* — but it cites **9 of 99 proposals**, so a miss there means nothing |
+| **This corpus** | the folded result — `specs/` · `guides/` · and the workspace `docs/proposals/` · `docs/research/` (**203 design documents**; run `spec register` for the count rather than reading one here) | `spec coverage` first; then grep. **`docs/DESIGN-REGISTER.md` answers *"is there an ANSWER"*, and as of 2026-09-08 it is `203 of 203` with `--gate` green — so a miss there is now EVIDENCE, not silence.** Still a pointer, never an authority: open the document it names |
 | **The pre-split archive** | **1,068 documents**, core revisions v0.01 → v7.0 — the *reasoning* that produced this design. The split moved conclusions here and left derivations there. Frozen; last commit 2026-06-23 | **`docs/LEGACY-ARCHIVE-INDEX.md`** — internal title index of all 1,068, by revision. Grep it, then grep the archive full-text |
 
 ```bash
@@ -456,7 +456,7 @@ reconstruction pass.
   | *"What state is it in?"* | `spec ledger` · `docs/proposals/INDEX.md` §1–§4 |
   | ***"Does this question already have an ANSWER?"*** | **`docs/DESIGN-REGISTER.md`, and only that** — `spec register` measures the gap |
 
-  **`docs/proposals/INDEX.md` §0b is the content roster** — all 99 proposals with the H1 line as the
+  **`docs/proposals/INDEX.md` §0b is the content roster** — every proposal with the H1 line as the
   answer, generated, plus an `In register` column that is the backlog made visible. It works because
   this corpus's house style makes a title a conclusion in a sentence. **A title is a conclusion
   *claim*, not the conclusion** — open the document before citing it (L4).
@@ -482,8 +482,10 @@ reconstruction pass.
   `f629145`). Its first run said *"5 specs have no guide, 3 have no design record"* — a list holding a
   rulebook, a condensed working reference and a domain charter, **each already classed non-spec in
   `config.default.toml`, by a map `address.py` was reading and `coverage` was not.** A guide is not a
-  spec missing its guide; it *is* one. The worklist is now **2 and 1**, and the two are the live
-  app-tier conventions. Where a document's own text declares itself informative but the class map calls
+  spec missing its guide; it *is* one. The worklist is now **3 and 0** *(re-measured 2026-09-08; it was
+  2-and-1 when written, and `APP-CONVENTION-SHARE` has landed since)* — **all three are live app-tier
+  conventions, and zero canonical specs lack a design record.** Where a document's own text declares
+  itself informative but the class map calls
   it a canonical spec, that disagreement is reported as its own finding — the gap
   `PROPOSAL-DOCUMENT-CLASS-HEADER-FIELD` exists to close.
 

@@ -236,8 +236,19 @@ resolves to nothing.**
 
 - **In a canonical doc:** cite by content, a **release tag**, or a **content digest**
   (sha256, `core_gate_fingerprint`).
-- **In an internal doc:** cite SHAs freely. `docs/status/`, handoffs and proposals are not
-  a publication surface.
+- **In an internal doc:** cite SHAs freely. `docs/status/` and handoffs are not a publication
+  surface.
+- **"Internal" is set by your DECLARATION, not by the directory's name — check
+  `CANONICAL-DOCS.toml` before you assume `[2026-09-08]`.** A `[[keep_tree]]` puts a whole
+  **directory** on the published surface, and it does so silently: no file changes, nothing in the
+  documents says so, and a rule written when that directory was internal goes on reading as though
+  it still is. **This clause itself was the instance** — it said *"proposals are not a publication
+  surface"* while the repo that carries it declares `docs/proposals` as a keep_tree, so it licensed
+  `dev` SHAs in **106 documents that ship to a public reader**, where by [ADR-0027] they resolve to
+  nothing. Measured the same day: **694 of 699 short-SHA citations unreachable**, overwhelmingly in
+  the newly-published tree. **The tell generalizes past this rule: after declaring a keep_tree,
+  re-read every rule and re-scope every gate that keyed on the old boundary** — two gates in this
+  toolkit had already been caught by the same widening before the rule was.
 - **Check it:** `python3 <arch-tools>/spec-tool/cli.py pins --root .` — scoped to your
   `CANONICAL-DOCS.toml`, resolves cross-repo, never flags 64-hex content hashes. **Run it
   before a release cut and after adding any commit citation to a canonical doc.**

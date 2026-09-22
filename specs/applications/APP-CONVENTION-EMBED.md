@@ -110,7 +110,8 @@ An `Embed` is an ECF entity. **The type tag is the dispatch key** (`app/embed/{m
 `data.media_type` field** (it would be a redundant second source of truth — dropped per cross-team S-4).
 
 ```cddl
-; --- shared atoms (CDDL-complete; resolves workbench-go PF-1 / godot "define hex33") ---
+; --- shared atoms — IMPORTED from APP-CONVENTION-REFERENCE §2.1, which is the single home.
+;     Restated here so this document reads standalone; REFERENCE is the authority on a disagreement.
 content-hash = bstr                          ; self-describing (format_code, digest) per V7 §1.2 — the leading
                                              ; varint is the content_hash_format; DIGEST LENGTH FOLLOWS THE CODE.
                                              ; NOT fixed-width. (SHA-256 → 33 B is one instance, used in vectors;
@@ -130,8 +131,13 @@ embed-data = {
 
 embed-payload = inline-payload / pointer-payload / child-payload    ; TAGGED — no untagged ambiguity
 inline-payload  = { tag: "inline",  bytes: bstr .size (1..16384) }  ; ≤16 KiB (icons/SVG); in-tree (PF-2: .size pinned)
-pointer-payload = { tag: "pointer", hash: content-hash }           ; content-store blob (every real image/video)
-child-payload   = { tag: "child",   ref:  (path / content-hash) }  ; entity-native transclusion (a sibling Embed)
+pointer-payload = { tag: "pointer", hash: content-hash }           ; content-store blob (every real image/video).
+                                                                   ; SAME-PEER by design — the implied-authority
+                                                                   ; form of REFERENCE §2.1's pinned atom (§3.4).
+child-payload   = { tag: "child",   ref:  entity-ref }             ; entity-native transclusion (a sibling Embed).
+                                                                   ; REFERENCE §2.1 — the ONLY payload that may
+                                                                   ; cross a peer boundary, so it carries the
+                                                                   ; authority term. Was `(path / content-hash)`.
 
 rendition = { pointer: content-hash, media_type: tstr, capability_tags: [* tstr] }   ; see §5.3 selection
 
@@ -144,6 +150,14 @@ sandbox-constraint = {                       ; substrate-NEUTRAL (no "iframe"/"w
 **Normative notes:**
 - **`content-hash` is self-describing and variable-length** (V7 §1.2). The convention is **encoding-agnostic** —
   it never assumes SHA-256 or any fixed width. (The removed `hex33` was a SHA-256 lock-in; v0.2 fix.)
+- **`child-payload.ref` is an `entity-ref`** (`APP-CONVENTION-REFERENCE` §2.1). It previously read
+  `(path / content-hash)` — an **untagged** union discriminated by CBOR major type, which is the one
+  place this document's own tagged discipline was not applied. It is also the only payload that can
+  name something on **another peer**, so it is the only one that needs the authority term. **The other
+  three payloads are deliberately NOT converted:** `inline` carries bytes, and `pointer` and `img-src`
+  name a blob in the resolving peer's own content store, where there is no authority left to name.
+  **Those are the implied-authority form of the atom, exactly as REFERENCE §3.4's `site:` is** — adding
+  a required `peer` to them would restate a term that is already known and invite it to be wrong.
 - `payload` is a **tagged union** — the tag disambiguates inline vs pointer vs child. Decoders MUST reject an
   untagged/ambiguous payload (the silent-divergence risk G-PIN-2 closes).
 - `params` keys are **strings only**. `params`/`attrs` values are ECF values (canonical CBOR per V7 §1.3).
@@ -263,6 +277,8 @@ raw-output      = { kind: "raw",   format: tstr, body: bstr }   ; ESCAPE HATCH �
 fallback-output = { kind: "fallback", text: tstr }             ; the authored degradation (§6 step 2)
 
 img-src    = { tag: "hash", hash: content-hash } / { tag: "inline", bytes: bstr }   ; tagged (godot — a hash IS bytes)
+                                             ; SAME-PEER: an output is rendered where it was resolved, so there is
+                                             ; no authority left to name. Implied-authority form, REFERENCE §3.4.
 box-layout = "group" / "columns" / "card" / "figure"           ; minimal layout floor (NOT markdown structure)
 ```
 

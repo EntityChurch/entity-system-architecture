@@ -6,6 +6,42 @@
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+) — the only prerequisite; the grant-prompt flow (§2) is ordinary capability machinery.
 **Related**: EXTENSION-SIGNALING.md (the carrier the `rendezvous` backend rides, §5.5); EXTENSION-NETWORK.md (an admitted peer is dialed over whatever transport profiles it advertises, §6.5 — discovery hands off, it does not connect); EXTENSION-REGISTRY.md (the *sibling* mechanism, name→peer, not a prerequisite — §1, §10); EXTENSION-IDENTITY.md (identity verification is post-admission and out of scope, §10)
 **Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-RELAY` · `EXTENSION-ROUTE` · `EXTENSION-NETWORK` — an admitted peer becomes an ordinary
+  dial target; **discovery hands off, it does not connect** (§5.1).
+- `EXTENSION-REGISTRY` is a **sibling, not a consumer** (§5.4): REGISTRY is *lookup* (given a name,
+  find the peer), DISCOVERY is *find* (what peers are out there I do not know?). Registry-assisted
+  discovery is a later backend here, **not a coupling at the substrate layer.**
+
+**Owned namespaces:**
+- `system/discovery/` **(closed)** — `candidate` · `decision` · `identity-claim` (§2).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** (§2, §4):
+- `system/discovery:announce` · `system/discovery:announce-stop` · `system/discovery:scan`.
+
+**Extension points exposed:**
+- **The backend slot.** v1 ships **mDNS** (§3); §6 names the staged growth. **A backend is paired
+  with a CARRIER by name** — mDNS with WebRTC's `discovery:mdns` (§5.2), QR with `manual:qr` (§6),
+  `rendezvous` with `EXTENSION-SIGNALING`'s keyed mailbox (§5.5).
+
+**Extension points consumed:**
+- **`EXTENSION-SIGNALING`'s keyed mailbox, as the carrier the `rendezvous` backend rides** (§5.5).
+- **Ordinary core capability machinery** — the grant-prompt flow (§2) is not a new mechanism.
+- **`EXTENSION-IDENTITY`, post-admission and OUT OF SCOPE here** (§5.3, §10): IDENTIFY over the
+  admitted channel establishes who the peer is, and the grant is issued against that identity.
+
+> **The seam is stated from both sides and an installer must preserve it: *"discovery is the
+> INITIATOR of the grant, never the AUTHORITY"* (§2), matching SIGNALING §1.2's *"the key
+> introduces; it never authorizes."*** An identity-hint mismatch between what a candidate advertised
+> and what IDENTIFY returns **MUST fail closed** (§2.2).
 **Authors:** Architecture team.
 
 ---

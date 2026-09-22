@@ -4,6 +4,67 @@
 
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative)** — eleven of the other extension specs cite this one; it is the deferred-
+dispatch substrate the rest of the family composes through:
+- `EXTENSION-INBOX` — delivery is how a suspended chain resumes (`EXTENSION-INBOX.md` §3.3).
+- `EXTENSION-SUBSCRIPTION` · `EXTENSION-RELAY` · `EXTENSION-NETWORK` · `EXTENSION-COMPUTE` ·
+  `EXTENSION-CONTENT` · `EXTENSION-REVISION` · `EXTENSION-TRANSACTION` · `EXTENSION-TREE` ·
+  `EXTENSION-ROLE` · `EXTENSION-IDENTITY` — chain composition and deferred results.
+
+**Owned namespaces:**
+- `system/continuation/` **(closed)** — the whole subtree. Occupants: the forward continuation
+  itself and `join` (§2.1, §2.3) · `transform` and `transform-op` (§2.2) · `suspended` (§2.4) ·
+  `advance-request` (§2.5) · `resume-request` and `abandon-request` (§2.6) · `install-request` and
+  `install-result` (§2.7).
+- **`system/runtime/chain-errors/…` — OUTSIDE this extension's own subtree, and load-bearing.**
+  Chain-error markers are bound at
+  `system/runtime/chain-errors/{lost,rejected}/{chain_id}/{step_index}/{reason}/{marker_hash}`
+  (§3.4). **They are bound in the OBSERVING peer's own tree under its own authority**, which is why
+  collection is possible at all — *the authority answer and the actor answer are the same answer.*
+  **Collection is `MUST` for any peer that binds, and the collector is the binder**: a `MUST`-write
+  paired with a `MAY`-collect is a leak by construction.
+- **`system/config/chain-errors` → `retention_ms` — also outside**, default **24 hours** (§3.4
+  A.1). The retention window this extension's prose had long assumed now has a home.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/continuation`, name `continuations` (§3.1):
+- `system/continuation:install` (§3.2) — dispatched on `params.type`; accepts a forward
+  continuation **or** a `system/continuation/join`.
+- `system/continuation:advance` (§3.3, §3.1b) · `system/continuation:resume` ·
+  `system/continuation:abandon` (§2.6).
+
+**Extension points exposed:**
+- **The chain-error marker surface (§3.4)** — an **observation sink, not a control path.** Consumers
+  MAY aggregate markers for diagnostics; a marker **MUST NOT** trigger advancement, retry or any
+  reactive behaviour. It adds visibility, not delivery.
+- **The chain-trace anomaly invariant (§3.4)** — a forward dispatch completing with neither a
+  `remaining_executions` decrement nor a chain-error marker is anomalous, and tooling MAY treat it
+  as a `CAT-CHAIN-COMPLETION` conformance failure. **The substrate provides no behaviour on
+  detection**; it is an observability invariant that separates *"ran and completed"* from *"silently
+  dropped."*
+
+**Extension points consumed:**
+- **The core protocol's capability authority model** — §3.2 step 4 runs `check_creator_authority`
+  (`ENTITY-CORE-PROTOCOL.md` §5.5), which collects the full authority chain via
+  `collect_authority_chain`; §5.6 attenuation and §5.1 chain-root revocation are used as-is.
+- **The core protocol's envelope `included` map, with a stronger obligation than the general rule
+  (§4.3, normative).** At cross-peer advance/dispatch the **full** authority chain — every
+  capability entity up to the root, **and the signature entity for every link** — MUST be in the
+  dispatched envelope. §4.3's general rule guarantees only the *leaf*, because parent caps and
+  per-link signatures are referenced from *within* cap entities rather than from EXECUTE's `data`.
+  ***"The safe default is to bundle the whole chain — content-addressing makes over-inclusion
+  free."*** **This is the corpus's only surface where signature bundling is a MUST**, and it is
+  written here because no closure walker finds a signature by construction.
+- **The emit pathway's per-path serialization** (§2.3) — simultaneous join-slot arrivals are
+  serialized by it; CAS on `expected_hash` prevents lost slot results.
+
 **Proposal**: PROPOSAL-CONTINUATION-MODEL.md, PROPOSAL-CONTINUATION-SPEC-AMENDMENT.md (A1-A6), PROPOSAL-DELIVERY-AND-INBOX-RENAME.md (D5, D6), PROPOSAL-CONTINUATION-TRANSFORM-AND-ENVELOPE-AMENDMENTS.md (S1), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (CT1, CT2, CT3), PROPOSAL-CONTINUATION-STANDING-MODEL.md (v1.21: §3 advance authority — §3.1b/§6.1; §4 join completion policy — §2.3 fields + §3.5 round-identity guard + §3.5a deadline/abandon/fire-partial/sweep-all/round-id; §4.2 finite-exhaustion MUST-delete — §3.4/§3.5)
 
 ---

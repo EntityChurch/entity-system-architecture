@@ -1,6 +1,6 @@
 # entity-system-architecture — status
 
-_Updated: 2026-09-06 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
+_Updated: 2026-09-08 · public: **v0.8.0** (`master`) · **cutting as 0.8.2**, landed in the
 CHANGELOG heading._
 
 _**The release number is 0.8.2, following `entity-core-protocol` rather than the
@@ -9,12 +9,14 @@ spec's own header is authoritative for that document — so the repo-level numbe
 protocol it layers on, not py/rust/go's 0.9.0. Arch has never carried a release number before; the
 `v0.8.0` tag on this repo was a fleet-wide Genesis tag, not an arch release line._
 
-_**The proposal and exploration corpora publish.** 82 proposals, 35 explorations and the research
-index ship at 0.8.2. The mechanism is `[[keep_tree]]` in `CANONICAL-DOCS.toml` — a repo can declare
-a **directory** as product rather than dev history — built by devops on arch's ask after the
-per-file route (117 hand-written entries) was rejected as not being a mechanism. `ABSORPTION-*`
-reviews and the 251 dated status snapshots stay internal. **Filter-verified: 492 tracked → 217
-published / 277 dropped, all `.md`, zero code or data.**_
+_**The proposal and exploration corpora publish.** The mechanism is `[[keep_tree]]` in
+`CANONICAL-DOCS.toml` — a repo can declare a **directory** as product rather than dev history —
+built by devops on arch's ask after the per-file route (117 hand-written entries) was rejected as
+not being a mechanism. `ABSORPTION-*` reviews and the dated status snapshots stay internal.
+**The corpus grows every week, so this paragraph no longer carries the counts** — it stated
+"82 proposals, 35 explorations" for long enough to be wrong by a quarter. Run
+`spec register` for the design-document total and `spec ledger` for the per-directory counts, both
+of which are gated against the directories they name._
 
 _**Why they publish, and it is structural rather than a preference:** this repo's central authoring
 rule forbids rationale in spec text and sends it to the proposal. Shipping the specs without the
@@ -61,8 +63,13 @@ Uncut: **arch (next)** · workbench-go · formalization · browser-rust. **`v0.8
 public GitHub for all seven repos**; nothing cut in *this* release has been tagged, which is meta's
 B1 and is settled with browser-rust in the room._
 
-_Arch gates: `check` **exit 0** · `ledger` **0** · `sdksync` **0 err** (47 unpinned, held as
-backlog) · `pins` reader-mode. The spec corpus lives in `entity-core-protocol`; `spec corpus` is
+_**Arch gates — ten now, all green or reader-mode as of 2026-09-08.** `check` **exit 0** ·
+`ledger` **0** · `charter` **0** · `register` **203 of 203** · `sdksync` **0 err** (47 unpinned,
+held as backlog) · `inventory` **1 of 26 conformant, floor 1** · `declare` **1 of 26 complete,
+floor 1** · `inbound`, `pins` and `coverage` in reader mode. `provenance` runs before a `specs/`
+push. **Three of these ratchet rather than gate** — `inventory`, `declare` and the two narrative
+baselines hold existing debt and fail only on new debt, because a first run of two dozen reds
+teaches people to skip the gate. The spec corpus lives in `entity-core-protocol`; `spec corpus` is
 not applicable in this tree and reports so rather than passing over an empty set._
 
 _History: this log carried twelve dated entries and a 145-line July narrative. They are moved
@@ -139,11 +146,15 @@ ADR names: **61 of 75 unique commit citations sat in accumulated history**, all 
 [ADR-0027] have never resolved for a public reader. Moving the history out is the fix; sweeping the
 citations would have regenerated the problem the following week.
 
-**The residual pin backlog is arch-owed, finite, and now honest.** What remains after the move is
-concentrated in durable documents — `AGENTS.md` (the charter, newly canonical by operator ruling),
-`GUIDE-CONFORMANCE`, `EXTENSION-NETWORK` — where a citation sweep is a real once-per-repo job.
-`entity-core-protocol` has already completed its equivalent and sits at **0**, which is what proves
-it finishable.
+**The residual pin backlog is arch-owed and is larger than this log said, because the published
+surface grew and nothing re-read the rule that governs it.** Re-measured 2026-09-08: **694 of 699
+short-SHA citations are unreachable to a reader of `master`**, and they are **not** concentrated in
+the durable documents this paragraph used to name — they are overwhelmingly in the proposal
+corpus, which was declared publishable as a whole directory. **The guidance in force at the time
+said proposals were internal and SHAs could be cited freely there**, which was true when written
+and silently false from the day the directory was declared. The declaration is right and stays; the
+rule has been corrected, and the sweep is the work. The core-protocol corpus has completed its
+equivalent and sits at **0**, which is what proves it finishable.
 
 **The active design frontier is unchanged** and is the **network / resolution family** (Stage B in
 `ROADMAP-EXTENSIONS.md`): NETWORK / SIGNALING / RELAY / ROUTE / SUBSTITUTE / REGISTRY / DISCOVERY /
@@ -255,10 +266,15 @@ permitted but priced (restricted reach + no cross-format dedup).
 
 ## Waiting on
 
-- **`entity-core-keystone`** — fix the dead citation in their canonical `AGENTS-STANDARD.md` by
-  content rather than by a fresher commit. Release-blocking.
-- **`entity-browser-rust` + `entity-core-rust`** — repin `CORE_RUST_REF` to the tag `v0.8.2`, and
-  tag core-rust first. Release-blocking.
+- ~~**`entity-core-keystone`** — the dead citation in their canonical `AGENTS-STANDARD.md`~~
+  **CLOSED.** They shipped 0.8.2 on 08-24 and the dead commit appears nowhere in their public tree;
+  arch's finding is why it was caught pre-cut. *(This entry contradicted the header paragraph above,
+  which had recorded it closed, for two weeks — a **build-state claim expires like one**, and the
+  place it goes stale is the section nobody re-reads when they update the section that changed.)*
+- **`entity-browser-rust` + `entity-core-rust`** — repin `CORE_RUST_REF` to a **tag that exists**,
+  and tag core-rust first. Release-blocking, and note the shape: the fix arch asked for **was
+  applied** — the value is a tag name now — and `entity-core-rust` then shipped as **0.9.0 without
+  ever being tagged**, so the defect survived its own fix with a new value. Meta's B1.
 - **The implementation cohort, as always.** Converging network/resolution specs are not validated
   until exercised by a cross-impl (Go / Rust / Python) conformance run; prose review does not catch
   route/path/dedup defects. REGISTRY/DISCOVERY cohort impl and the ENCRYPTION end-to-end block are
@@ -268,6 +284,29 @@ permitted but priced (restricted reach + no cross-format dedup).
 
 ## Done recently
 
+- **The corpus learned to answer "does this question already have an answer" (2026-09-07/08).**
+  Every settled design conclusion now has a row in a single register, and a gate — `spec register`
+  — asserts that **every** design document in the workspace is either cited by a row or explicitly
+  marked as carrying no conclusion. **203 of 203, enforcing.** It exists because the same
+  conclusions were being re-derived from scratch, each time with a weaker argument than the
+  original: the process side of this repo had ratcheted for months and the *design* side had
+  nothing. **A row is a pointer and never an authority** — it names the document that owns the
+  answer, and that document is what you cite.
+- **The install seam and the walk contract landed, and both were the same class of gap** — a
+  normative claim that no check could drive. The tree-walk completeness contract now says what a
+  consumer does when an origin serves every node but one, which is the difference between *silently
+  hidden* and *visibly incomplete*; the registry-side consumer of that rule shipped with it.
+- **Two authoring gates shipped for the extension family (2026-09-08).** A conformance requirement
+  is now an **identified, citable row** rather than a section reference — a conformance section
+  routinely carries a dozen independently failable obligations, so *"which requirements does no
+  check drive"* could not previously be asked at all. And an extension spec now declares, in its
+  header, **what installing it touches**: namespaces, kinds, handler operations, and the extension
+  points it exposes and consumes. Both are ratchets: existing debt is held, new debt fails.
+- **A retired condensed reference, and the reasoning matters more than the document.** A summary
+  document had accumulated 49 citations, one of them from a normative `MUST`. **A document that was
+  never a citation target does not acquire authority by being cited** — 49 citations to a
+  non-authority are 49 wrong citations, and the fix for each is to cite the source. Archived with a
+  section→source map.
 - **The error-code arc closed, three-way green (2026-09-06).** An eight-cycle run that started as
   *"what is the default code at status 400"* and ended at `ENTITY-CORE-PROTOCOL` **0.8.2.11**. Its
   last leg was `system/tree:put`: the spec mandated a code when a submitted entity *"does not

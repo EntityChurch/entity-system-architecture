@@ -6,6 +6,38 @@
 **Related**: EXTENSION-RELAY.md (the *consumer* — reads this table per §3 when a `forward-request` has no source route); EXTENSION-DISCOVERY.md / gossip backends (*producers* — ROUTE accepts cap-gated writes and prescribes no route-computation algorithm, §1)
 **Tier:** Operational — Tier 2b (network), sibling of RELAY / NETWORK / REGISTRY / DISCOVERY, per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- **`EXTENSION-RELAY` — the consumer**, and the only one. It reads this table (§3) when a
+  `forward-request` carries no source route, under the precedence *source route > route table >
+  direct*.
+- `EXTENSION-DISCOVERY` and gossip backends are **producers** — they write cap-gated entries.
+- `EXTENSION-NETWORK` — the transports a matched next hop is dialed over.
+
+**Owned namespaces:**
+- `system/route/` **(closed)** — `system/route/{id}`, the route entity (§2). **That is the whole
+  extension**: v1's load-bearing deliverable is an entity type and a match rule, nothing more.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops: NONE, and this is the unusual entry — read it before building an installer.**
+There is no `system/route` handler and no operation to register. **The table is ordinary tree-bound,
+capability-scoped `system/route` entities** (§1, §5): a producer writes one with `tree:put` under a
+grant, a consumer reads it with `tree:get`. Installing this extension is registering a **type**, not
+a handler.
+
+**Extension points exposed:**
+- **The table itself, as a producer surface (§1, §4).** This extension **accepts cap-gated writes
+  and prescribes no route-computation algorithm** — who computes routes, and how, is deliberately
+  out of scope, with a named escape hatch for computed routing deferred in §4.
+
+**Extension points consumed:** none beyond the core protocol. §1 is explicit that the entities are
+ordinary tree-bound and cap-scoped.
 **Companion:** `EXTENSION-RELAY.md` v1.1 (the consumer — reads this table when a `forward-request` has no source route, §3.1.1 source 3); `proposals/PROPOSAL-RELAY-SOURCE-ROUTED-MULTIHOP-AND-ROUTING-BOUNDARY.md` (names the resolver seam this spec demotes to the deferred computed-routing escape hatch).
 
 ---

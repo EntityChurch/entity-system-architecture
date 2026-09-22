@@ -8,6 +8,64 @@
 **Synthesis**: EXPLORATION-DEPLOYMENT-SHAPES.md (validated the use cases this extension serves)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):** none yet — this is a consumer, not a substrate. `EXTENSION-QUORUM`,
+`EXTENSION-IDENTITY`, `EXTENSION-ROLE`, `EXTENSION-NETWORK` and `EXTENSION-ENCRYPTION` name it as a
+prospective consumer of theirs.
+
+**Owned namespaces:**
+- `system/group/` **(closed)** — §4. `system/group/{group_id}` and beneath it `members/{peer_id}`,
+  `subgroup`, `quorum`, `attestation`, and **`identity/…`, which reuses `EXTENSION-IDENTITY`'s
+  layout wholesale** (§7.1) · the five governance-pattern types (`governance-spec`,
+  `governance-admin-set`, `governance-all-members`, `governance-founder-k-of-n`,
+  `governance-hierarchical`, `governance-on-chain`, §5) · `acting-on-behalf-of-attestation` (§8) ·
+  a request type per §6 operation.
+- **`system/role/{group_id}/…` is NOT owned here** — a group is a role *context*, and those paths
+  belong to `EXTENSION-ROLE` (§7.2).
+
+**Owned `properties.kind` values:** **six attestation kinds under this extension's namespace** — one
+`cert` kind whose `function` field discriminates the standard and app-defined values, the cert
+lifecycle events, and the quorum events. They are group-namespaced per
+`EXTENSION-ATTESTATION.md` §3.2 and their authority is `EXTENSION-IDENTITY`'s kind table applied
+under `system/group/{group_id}/identity/` (§3, §7.1).
+
+**Owned handler ops** — handler at pattern `system/group`, **eleven operations** (§6.1):
+`form` · `dissolve` · `merge` · `split` · `add_member` · `remove_member` · `change_role` ·
+`add_subgroup` · `remove_subgroup` · `attest_acting_on_behalf` · `revoke_acting_on_behalf`.
+**All require dispatched EXECUTEs except `form`, which carries a bootstrap exemption** (§6.2) — the
+one asymmetry an installer must implement rather than normalize away.
+
+**Extension points exposed:**
+- **The governance-pattern slot (§5)** — five named patterns over one `governance-spec` type.
+- **`acting-on-behalf-of` attestations (§8)** as a delegation surface for external parties.
+
+**Extension points consumed:**
+- **`EXTENSION-IDENTITY` (v3.0+) — a hard dependency, reused DIRECTLY rather than re-specified**
+  (§7.1): all entity types, all publication modes and all rotation flows carry over under
+  `system/group/{group_id}/identity/…`.
+- **`EXTENSION-QUORUM`'s `signer_resolution` field**, which is what selects the dual-mode signature
+  dispatch of §5.6 — group quorums use the `identity-resolved` mode that `EXTENSION-IDENTITY`
+  registers.
+- **`EXTENSION-ROLE` (v1.5+)** — a group is a role context keyed by `group_id`; multi-role per peer
+  per context is what lets a member be admin *and* finance.
+- **Core multi-sig capabilities, OPTIONAL and with no compile-time dependency** — used only where a
+  deployment needs cap-level K-of-N joint authority.
+
+> **The two-mechanisms invariant holds inside the group namespace too, and it is the rule most
+> easily broken here (§7.1).** When the group's agent issues a capability to an external party, the
+> cap is signed by the group's **runtime-peer keypair**. **The group's quorum and its controller key
+> never sign capabilities** — they sign *attestation entities* at the entity level. A multi-sig
+> cap's `signers` field always holds **concrete keypair hashes regardless of `signer_resolution`
+> mode**, because the multi-sig verifier validates against keypairs.
+
+> **Member entry and role assignment overlap, and §7.2 pins which is which:** the **member entry**
+> records the member's PRIMARY role and *is* the membership record — revoking it removes the peer
+> from the group entirely — while role assignments carry additional roles. Do not derive one from
+> the other.
+
 ---
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/group/{group_id}` means `/{local_peer_id}/system/group/{group_id}`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.

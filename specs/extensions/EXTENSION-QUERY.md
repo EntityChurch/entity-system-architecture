@@ -4,6 +4,56 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.9+), ENTITY-NATIVE-TYPE-SYSTEM.md (v4.0+), EXTENSION-SUBSCRIPTION.md (v3.5+, for tree change event semantics)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-ATTESTATION` · `EXTENSION-IDENTITY` — the §2.1 type index and §2.4 field index are what
+  make `find_attestations_*` and `properties.kind` dispatch cheap rather than a full scan.
+- `EXTENSION-ROLE` — grant derivation reads over indexed paths.
+- `EXTENSION-COMPUTE` — bounded read-only subtree inspection.
+- `EXTENSION-TYPE` — shares the §2.4 field-index decode path.
+- **`EXTENSION-SUBSCRIPTION` appears on BOTH sides of this contract** and that is not an error: this
+  extension *consumes* its tree-change event semantics for index maintenance (§3.1), and
+  subscription entities are themselves tree-bound and therefore indexed. §3.2 names that
+  bootstrapping dependency outright and is why the mechanism is not mandated.
+
+**Owned namespaces:**
+- `system/query/` **(closed)** — the whole subtree. Occupants: `expression` (§4.1) ·
+  `field-predicate` (§4.2) · `result` (§4.3) · `match` · `allowances` and `constraints` (§5.5) ·
+  `index-config` and `index-promoted` (§2.4.1).
+- **The secondary indexes of §2 are implementation state, not a claimed namespace.** §2's four
+  indexes (type · reverse-hash · path-link · field) and §2.5's zone summaries are derived structures
+  an implementation maintains; this extension binds no entity at a path to represent them.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — system handler registered at pattern `system/query`, standard capability
+model (§5.1, §5.5):
+- `system/query:find` (§5.2) · `system/query:count` (§5.3).
+
+**Extension points exposed:**
+- **The indexes themselves, as a read surface other extensions build on** rather than as a
+  registration hook — §2.3's path-link index in particular is the primitive the app tier's backlink
+  work reaches for. There is no hook to register against.
+
+**Extension points consumed:**
+- **The emit pathway, at two positions, and this extension is unusual in occupying both** — it runs
+  as the **first** emit-pathway consumer for tree-change events, and at **position 1 on
+  content-store events after persistence**, both transparent and non-emitting
+  (`SYSTEM-COMPOSITION.md` §2.2; §3.1). That ordering is what guarantees indexes are current before
+  any later consumer queries them.
+- **Both a handler and a synchronous emit consumer** — `SYSTEM-COMPOSITION.md` §2.6. An installer
+  that wires only the handler gets correct `find`/`count` dispatch over **stale indexes**.
+- **`EXTENSION-SUBSCRIPTION`'s tree-change event semantics** (§3.1) — **consumed, but the mechanism
+  is deliberately not mandated**: an implementation-level hook in the emit pathway is sufficient and
+  typical, and protocol-level subscriptions carry the bootstrapping dependency named above.
+- **`ENTITY-NATIVE-TYPE-SYSTEM.md` §7's decode algorithm** — shared infrastructure for field-index
+  maintenance; the field index builder uses the same type-aware decoding the types handler uses for
+  validation.
+
 ---
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/tree` means `/{local_peer_id}/system/tree`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.

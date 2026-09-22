@@ -8,6 +8,52 @@
 **Tier:** Operational — Tier 2b (network), per `SYSTEM-ARCHITECTURE.md` §13.1.
 **Authors:** Architecture team.
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):** `EXTENSION-INBOX` · `EXTENSION-SUBSCRIPTION` · `EXTENSION-CONTINUATION` ·
+`EXTENSION-NETWORK` · `EXTENSION-REGISTRY` · `EXTENSION-DISCOVERY` · `EXTENSION-REVISION` — the
+composition surfaces named in §1 and §6. `EXTENSION-ENCRYPTION`'s peer-mode payloads ride here
+**opaquely** (§9).
+
+**Owned namespaces:**
+- `system/relay/` **(closed)** — §3. `forward-request` / `forward-result` · `poll-request` /
+  `poll-result` · `put-result` · `store` and `store-entry` (the Mode S mailbox) · `advertise` ·
+  `aggregate-subscription` (Mode A, **named but not normatively specified**) ·
+  `circuit-reservation` / `circuit-dial` (Mode C, likewise).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/relay` (§4):
+- **v1, specified:** `system/relay:forward` · `:poll` · `:put` · `:advertise`.
+- **Named for forward-compatibility, normative text DEFERRED:** `system/relay:subscribe` /
+  `:unsubscribe` (Mode A) and `:reserve-circuit` / `:dial-circuit` (Mode C) — §1, §3.3, §3.4,
+  §11.1a. **An installer must not infer semantics for these from their names.**
+
+**Extension points exposed:**
+- **The four-mode surface (§2)** — **v1 ships Mode F (forward) and Mode S (store-and-poll)**; A and
+  C are entity types and operation names only.
+- **The Mode S mailbox** as a delivery target for peers that cannot be dialed.
+
+**Extension points consumed:**
+- **`EXTENSION-ROUTE`'s table (§3.1.1)** — consulted for a next hop **only** when a
+  `forward-request` carries no source route. Precedence is *source route > route table > direct*,
+  and route is **one of three sources**, not the mechanism.
+- **The core capability chain, passed through UNCHANGED** (§1, §5). A relay peer is just a peer
+  running `system/relay`; it does not re-sign, re-scope or re-mint the origin's authority.
+
+> **Envelope opacity is THE transport invariant (§9), and it is what makes a relay safe to run.**
+> The relay envelope **is** decoded — that is how routing works — and the MUST NOT is scoped to the
+> **inner** payload. A relay MUST NOT decode, inspect or re-encode what it carries. This is also why
+> Mode A's aggregation is not a contradiction: an aggregator indexing **outer** routing fields is
+> conformant.
+
+> ⚠ **Mode S's *"serve the publisher's latest"* rests on a signed mutable pointer, and that pointer
+> EXISTS** — it is `EXTENSION-TREE` §3.3a's `system/peer/published-root`, landed and built. §7
+> tracks it as a blocker; the substrate half is not the blocker.
+
 **Two prior arch rulings are load-bearing and unchanged by this landing:**
 - `reviews/DESIGN-STATIC-TRANSPORT-AS-RELAY.md` — **static IS relay**: a static CDN is a passive intermediary; the protocol cannot tell it from active forward.
 - `reviews/ANALYSIS-RELAY-CAPABILITY-CHAIN.md` — **relay is transport, not authority**: Alice→Charlie's capability chain passes through relay Bob unchanged; Bob enforces only his own ordinary "may you relay through me" cap. **No V7 amendment.**

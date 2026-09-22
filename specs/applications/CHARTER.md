@@ -63,6 +63,7 @@ domain doesn't have to revisit it later.
 
 | Spec | Role | Status |
 |---|---|---|
+| `APP-CONVENTION-REFERENCE` | **Foundational — the reference atom (*"this points at that"*) and its string form.** The single home for the shared `content-hash` / `peer-id` / `tree-path` atoms; **imported by the other members rather than restated in them** | Draft v0.1 — **authored, NOT ratifiable**: ships zero vectors (charter #5). **Next: the ten-vector set in §6.2** |
 | `APP-CONVENTION-EMBED` | Foundational — the generic rich-content typed node + two-level registry + output shape | Draft v0.2.3 — spine locked 3-way; **next: vectors** |
 | `APP-CONVENTION-SEMANTIC-CONTENT-SITE` | First consumer — content sites built on Embed (document / content / compute anatomy) | Draft v0.4.2 — spine locked 3-way; `pages` cut; ordering floor pinned, semantic feeds open; v1 = manifest/page/nav/`.list`; **next: vectors** |
 | `APP-CONVENTION-SHARE` | The share record + audience binding — a share is a titled grant; the audience is the `grantee`, never the `peers` scope | Draft v0.1 — **authored, NOT ratifiable**: ships zero vectors (charter #5) and leaves the follow `strategy` vocabulary open. **Next: the six-vector set in §8** |

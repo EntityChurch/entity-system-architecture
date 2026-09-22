@@ -60,6 +60,49 @@ code-only per this §2.4, and a corpus vector that materializes an error *into a
 (This §2.4 is the canonical home for `compute/error`. `ENTITY-CORE-MACHINE-SPEC.md`, which carried a derived
 condensed restatement, is **retired** and is not a citable source.)
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.33+)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-TYPE` — the §2.2 constraint-handler dispatch surface admits a compute-backed constraint
+  handler; convergence semantics are deferred to a follow-on TYPE amendment.
+- `EXTENSION-HISTORY` · `EXTENSION-QUERY` — bounded read-only subtree inspection.
+- `EXTENSION-SUBSCRIPTION` · `EXTENSION-CONTINUATION` · `EXTENSION-INBOX` · `EXTENSION-REVISION` ·
+  `EXTENSION-REGISTRY`.
+
+**Owned namespaces:**
+- `system/compute/` **(closed)** — §2. The IR node families and their argument types (`map-args`,
+  `filter-args`, `fold-args`, `concat-args`, `assoc-args`, `group-by-args`, `range-args`,
+  `store-args`) · `builtins` · `group` and `subgraph` · `scope-binding` · `processes` (§7 reactive
+  mode) · `install-request` / `install-result` and `uninstall-request` (§3).
+- **`compute/error` is canonical HERE, in §2.4.** The condensed machine-spec restatement of it is
+  **retired and is not a citable source** — cite §2.4.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/compute/*` (§3):
+- `system/compute:eval` · `system/compute:install` (and the uninstall counterpart, §3).
+
+**Extension points exposed:**
+- **Alternate-engine admission (§11), and its framing is the load-bearing part.** The §4 reference
+  evaluator is the **conformance floor**, and the cross-impl LOCK is over reference evaluators. A
+  peer MAY add an alternate execution strategy for the same content-addressed IR — decode-once,
+  compiled or fused, memoizing, defunctionalized — governed by **one** admission rule (AE-1) plus
+  the invariants and evidence that make it hold (AE-2–AE-6). ***Stating the rule once, over "any
+  engine," is deliberate — an equivalence pinned per-engine-kind springs apart at the next kind
+  nobody wrote a rule for.*** An alternate engine is **optional and per-implementation, a
+  performance choice and never a conformance surface.**
+- **The builtins table (§2)** and the reactive-mode process surface (§7).
+
+**Extension points consumed:**
+- **Core protocol (v7.33+) — the only dependency.** The conformance surface is the **materialized**
+  boundary, and the IR is content-addressed; nothing else is required to install this.
+- **The optional `budget_consumed` field on EXECUTE_RESPONSE (§5).** Peers in trusted relationships
+  MAY exchange budget metadata; **when absent — the default — no cross-peer accounting occurs.**
+  Do not build a budget model that assumes it is present.
 **Source**: PROPOSAL-COMPUTE-AMENDMENTS.md (implemented — C1-C10), PROPOSAL-COMPUTE-AMENDMENTS-V2.md (implemented — V1-V32 + V6/V7/V7'), PROPOSAL-COMPUTE-AMENDMENTS-V3.md (implemented — C1-C4 core helpers + E1-E3 compute fixes), PROPOSAL-COMPUTE-SPEC-AMBIGUITIES.md (implemented — A1-A4, B1, C1, D1, D2), PROPOSAL-COMPUTE-CONTENT-STORE-SCOPING.md (implemented — D3-D6), PROPOSAL-COMPUTE-TAIL-CALL-OPTIMIZATION.md (implemented — T1-T3, R1-R2), PROPOSAL-ENTITY-NATIVE-HANDLER-DISPATCH.md (implemented — E1-E4), PROPOSAL-COMPUTE-APPLY-RESOURCE-CEILING.md (implemented — F1-F5, H2-H3), PROPOSAL-COHERENT-CAPABILITY-AUTHORITY.md (implemented — CP1, CP2), PROPOSAL-COMPUTE-LOOKUP-TREE-LOCAL-QUALIFICATION.md (implemented — S8), PROPOSAL-COMPUTE-CLOSURE-RESULT-POSITIONS-AND-CONCAT-ARGS-SHAPE.md (implemented — D1-D8)
 
 ---

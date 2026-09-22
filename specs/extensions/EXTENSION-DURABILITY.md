@@ -4,6 +4,28 @@
 
 **Status**: Draft
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3). **Read the provenance note
+below first: this is an exploratory reference design, not an active extension**, and the contract is
+recorded so the shape is legible rather than because anything installs it.
+
+**Used by (informative):** none, deliberately. `EXTENSION-INBOX` names this document only as the
+home of material extracted **out of** it; nothing depends on it and nothing should until a
+deployment driver exists.
+
+**Owned namespaces:**
+- `system/durability/` — `request` (§2) and `result` (§5). **Reserved by this design rather than
+  claimed by a landed extension.**
+
+**Owned `properties.kind` values:** none.
+
+**Owned handler ops: none.** The design is a request-side marker and a response field (§2, §5),
+carried on existing operations — it registers no handler and defines no operation.
+
+**Extension points exposed:** the optional supported-level advertisement (§3) — **and §7 pins the
+scope of that vocabulary: strength levels are ILLUSTRATIVE, reason codes are pinned.**
+
+**Extension points consumed:** the response envelope's status and fields (§5). Nothing else.
+
 **Provenance**: The content below is the EXTENSION-INBOX v5.7/v5.8 §10 material lifted verbatim into a standalone file. It was originally landed in EXTENSION-INBOX (v5.7 + Amendment 1 = v5.8), cross-impl validated against entity-core-go / entity-core-rust / entity-core-py, then extracted when the architecture team concluded the thread had broached too far into user-space semantics — it pattern-matched on log-system conventions (durability levels, response-status branching, supported-level advertisement) without an actual deployment driver, contradicting the project's minimize-to-bare-substrate posture. The material is preserved here as a reference design rather than discarded, because the cross-impl analysis behind it is real work and the question of whether anything in the durability shape eventually belongs as a system extension is left open.
 
 **No deployment is required to install this extension.** It is not normative for V7. It is not normative for any other extension. EXTENSION-INBOX does not depend on it. V7 v7.46 does not depend on it. The 412 and 202 reservations in V7 §3.3 were reverted along with the extraction (412 is unused at the V7 level; 202 remains in use by EXTENSION-INBOX §7.1 — the inbox-ack semantics — independently of this file).

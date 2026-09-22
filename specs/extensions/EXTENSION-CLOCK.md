@@ -4,6 +4,53 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-HISTORY` — the only reader of the **`clock` execution-context field** in the corpus.
+  It reads `ctx.clock` by name and MAY record the logical clock value on each transition for causal
+  ordering (§1.2). It also requires this extension's **scheduled tick paths to be history-excluded
+  by default**, since a periodic tick otherwise generates history at wall rate forever.
+- `EXTENSION-REVISION` — records `timestamp` via `system_clock_ms()`; with HLC its `lww` merge
+  strategy becomes causally meaningful rather than wall-clock dependent, and clock state merges
+  alongside version DAGs during sync (§1.2, §5).
+- `EXTENSION-SUBSCRIPTION` — **the direction is worth reading carefully: subscription is used BY
+  this extension, not the reverse** (see Extension points consumed). §1.2 lists it because tick
+  events surface as ordinary tree-change events on `system/clock/tick/` paths.
+
+**Owned namespaces:**
+- `system/clock/` **(closed)** — the whole subtree. Occupants: `timestamp` (§2.1) · `logical`
+  (§2.2) · `vector` (§2.3) · `hlc` (§2.4) · `config` (§2.5) · `state` (§2.6) · `compare-params` and
+  `compare-result` (§2.7) · `tick` and `tick/latest` (§2.8, §3.4).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/clock`, index entry at
+`system/handler/system/clock`, grant at `system/capability/grants/system/clock` (§3.1):
+- `system/clock:now` (§3.2) · `system/clock:compare` (§3.3) · `system/clock:tick` (§3.4).
+
+**Extension points exposed:**
+- **The extension-contributed execution-context field `clock`**, typed `system/clock/state`
+  (`SYSTEM-COMPOSITION.md` §1.5; §2.6). This extension is the owning extension: it registers the
+  field at peer initialization, advances it **only** during its own consumer position, and is the
+  authoritative source for clock state during a cascade. **Consumers MUST handle two absent cases** —
+  clock not installed (`ctx.clock` null) and clock in a mode that does not populate the requested
+  subfield.
+- **`system_clock_ms()`** — a host function that works **without this extension installed** (§1.3).
+  This extension formalizes its return as a `system/clock/timestamp` and layers causal clocks on
+  top; it does not make itself a precondition for timestamps.
+
+**Extension points consumed:**
+- **The emit pathway consumer ordering** — this extension is the **first emitting consumer, after
+  query indexes** (position 2), fixed by `SYSTEM-COMPOSITION.md` §2.2 (§4.1). Not an optional hook.
+- **`EXTENSION-SUBSCRIPTION`'s notification mechanism** — `tick` is a convenience operation that
+  **delegates to the subscription handler**, subscribing to `system/clock/tick/latest` with a
+  `system/subscription/request` (§3.4). **Installing this extension without subscription leaves
+  `tick` unsatisfiable**; `now` and `compare` are unaffected.
+
 ---
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/tree` means `/{local_peer_id}/system/tree`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.

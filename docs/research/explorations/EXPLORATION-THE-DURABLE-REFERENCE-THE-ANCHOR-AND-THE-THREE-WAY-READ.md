@@ -190,7 +190,7 @@ system should paper over.**
 | 2 | resolves | **differs** | present in current | **the document evolved** | render current, **say so**, offer the pinned version |
 | 3 | resolves | **differs** | absent in current, present in pinned | **the author moved or removed the anchor** | strongest available signal — render current at top, offer pinned-with-anchor |
 | 4 | resolves | **differs** | absent in both | evolved, and the anchor is gone or never existed | render current, note the anchor did not resolve |
-| 5 | **404** | — | — | path moved or was unpublished | **fall back to `target_hash`, fetched from anywhere** — the author, a mirror, a cache, a stranger |
+| 5 | **404** | — | — | path moved or was unpublished | **fall back to `target_hash`, fetched from the publisher's declared content origin or any reachable source that has it** — the hash validates the bytes whoever serves them. *(This read "fetched from anywhere — the author, a mirror, a cache, a stranger". There is no operation answering* who has this hash?*, so "a stranger" was unreachable; what exists is the transport-profile → content-origin composition, which is a real normative path and still the property the comparison below claims.)* |
 | 6 | 404 | pinned hash **also unobtainable** | — | genuinely dangling | the honest `404`. Nothing to do and nothing to hide |
 | 7 | resolves | matches | **anchor absent** | the linker's anchor was already wrong | render, note it |
 

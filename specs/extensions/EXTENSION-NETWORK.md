@@ -30,6 +30,61 @@
 **Optional**: EXTENSION-REVISION.md (v2.0+) — reconnection catch-up via revision pull
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative)** — thirteen other extension specs cite this one; it is the connectivity
+substrate the whole network tier stands on:
+- `EXTENSION-SIGNALING` — §6.7's reachability facts and §10.3's live-establishment seam are a hard
+  dependency of that spec.
+- `EXTENSION-SUBSTITUTE` — **§6.5.3's transport-profile shape is deliberately shared** with that
+  extension's endpoint type, so a reader holding `{peer, hash}` reaches bytes by either path.
+- `EXTENSION-TREE` — serves and fetches `system/peer/published-root`, whose normative home is TREE
+  §3.3a, not here.
+- `EXTENSION-DISCOVERY` · `EXTENSION-ROUTE` · `EXTENSION-RELAY` · `EXTENSION-REGISTRY` ·
+  `EXTENSION-GROUP` · `EXTENSION-IDENTITY` · `EXTENSION-REVISION` · `EXTENSION-SUBSCRIPTION` ·
+  `EXTENSION-CONTINUATION` · `EXTENSION-INBOX`.
+
+**Owned namespaces:**
+- `system/network/` **(closed)** — §13 Types Installed. `peers` and `peer-summary` · `status` ·
+  `candidate` · `maintain-request` / `maintain-result` · `release-request` / `release-result` ·
+  `close-request` · `observe-address-result` · `check-reachability-result` · `ping` / `pong` and
+  `keepalive-config` (§5) · `backoff-config` · `pending-delivery` (§8).
+- **`system/peer/transport/{peer_id}/*` — the transport profiles §6.5 resolves — and
+  `system/peer/published-root`, which this extension SERVES and FETCHES but does NOT own.** TREE
+  §3.3a is the normative home for the published root; treating this spec as its authority is the
+  mistake §6.5.3 exists to prevent.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/network`, name `network` (§3.1):
+- `system/network:maintain-peer` · `:release-peer` · `:status` · `:close` · `:observe-address` ·
+  `:check-reachability` (§4).
+
+**Extension points exposed:**
+- **The transport-profile family (§6.5)** — `http-poll`, `tcp`, `webrtc` and successors are selected
+  by profile entity, not by a compiled-in list.
+- **Mechanism A, the fetch path (§6.5.5)** — on a local content-store miss the dispatcher resolves
+  `system/peer/transport/{publisher_peer_id}/*`, finds the profile's `content_url_prefix`, builds
+  the URL, performs GET + hash-verify and ingests. **This is why a reader holding `{peer, hash}` has
+  a normative path to the bytes with no preconfigured substitute source.**
+- **The serving-peer projection (§6.5.6)** — a peer may publish a scoped projection of its local
+  view: its own authoritative namespace **and any cached or mirrored remote namespaces.**
+
+**Extension points consumed:**
+- **`EXTENSION-INBOX` (v5.0+), `EXTENSION-CONTINUATION` (v1.2+) and `EXTENSION-SUBSCRIPTION`
+  (v3.3+) — all three are HARD dependencies**, which makes this the most heavily-composed extension
+  in the family. `maintain-peer` **creates a continuation graph** (§4.1); subscription restoration
+  after reconnection is §7; pending delivery is §8.
+- **`EXTENSION-REVISION` (v2.0+), OPTIONAL** — reconnection catch-up via revision pull.
+- **`system/content:ingest`** — landing bytes fetched by Mechanism A.
+
+> **Peer→transport DISCOVERY is out of v1 scope and deferred to REGISTRY (§6.5.4).** A consumer that
+> resolves a peer-id and holds no profile for it **stops there**. That is a named gap, not an
+> omission, and it is the seam a routing hint on a reference is meant to close.
+
 ---
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/tree` means `/{local_peer_id}/system/tree`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.

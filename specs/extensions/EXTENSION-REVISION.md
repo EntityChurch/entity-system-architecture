@@ -8,6 +8,60 @@
 **Optional**: EXTENSION-HISTORY.md (v1.0+) — enriches versioning with per-path detail
 **Optional**: EXTENSION-SUBSCRIPTION.md (v3.4+) — cross-peer version following (see §6.3)
 **Optional**: EXTENSION-CONTINUATION.md (v1.2+) — cross-peer version following (see §6.3)
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative)** — eleven other extension specs cite this one:
+- `EXTENSION-TRANSACTION` — §7.3, and it is the interaction most likely to surprise: **a transaction
+  with N bindings produces N intermediate version entries**, because auto-version fires per write.
+- `EXTENSION-CLOCK` — with HLC the `lww` merge strategy (§5) becomes causally meaningful rather than
+  wall-clock dependent.
+- `EXTENSION-HISTORY` — the complement, not a competitor: **between two revision entries, history
+  shows every individual write.**
+- `EXTENSION-TREE` · `EXTENSION-CONTENT` · `EXTENSION-RELAY` · `EXTENSION-REGISTRY` ·
+  `EXTENSION-NETWORK` · `EXTENSION-SUBSCRIPTION` · `EXTENSION-CONTINUATION` ·
+  `EXTENSION-ENCRYPTION`.
+
+**Owned namespaces:**
+- `system/revision/` **(closed)** — the largest occupancy in the family. `entry` (the version
+  entity) · `head` and `{prefix_hash}/head` · `branches` and `active-branch` · `config` ·
+  `conflict` / `conflicts` · `merge-config` · `merge-request` / `merge-response` ·
+  `cascade-warning` · `status` · plus a params/result pair for each of the nineteen §4 operations.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — handler at pattern `system/revision` (§4), nineteen operations:
+`commit` · `log` · `status` · `diff` · `checkout` · `branch` · `tag` · `merge` · `merge-config` ·
+`revert` · `cherry-pick` · `resolve` · `find-ancestor` · `config` · `fetch` · `fetch-diff` ·
+`fetch-entities` · `push` · `pull`.
+
+**Extension points exposed:**
+- **The merge-strategy framework (§5)** — strategies are pluggable; `lww` is the built-in whose
+  quality depends on which clock is installed.
+- **The external-system bridge (§10)** and the transfer protocol (§7).
+
+**Extension points consumed:**
+- **`EXTENSION-TREE` (v3.3+) and `SYSTEM-COMPOSITION` (v1.5+) — both hard dependencies.** §6.1's
+  efficient path SHOULD use TREE §5's trie-diff primitive: the `removed` set is exactly the
+  deletion-marker candidate set, at O(changes × depth) rather than O(paths in scope).
+- **The emit pathway at POSITION 7, as auto-version, under the stable consumer name
+  `"revision/auto-version"`** (§6.1, §6.3; `SYSTEM-COMPOSITION.md` §2.7A). **The name is normative** —
+  implementations MUST use it in cascade-halt responses and peer audit.
+- **The cascade-halt contract, and its consequence is the one to design against (§6.3).** On
+  persistent infrastructure failure the auto-version consumer returns non-200, which **halts the
+  containing cascade**: subsequent Phase 1 consumers are skipped, **the binding update is NOT
+  reversed**, and the originating `tree:put` returns **207** with a `system/tree/partial-result`
+  naming the halting consumer. That is a deliberate consistency-over-availability trade.
+
+> **What an observer sees during a merge, stated because it is observable and expected (§3).**
+> Subscription fires at position 8, after auto-version has produced each intermediate version, so a
+> subscriber on `system/revision/{H}/head` watches head advance V_merge → V_1 → … → V_N. **In that
+> window `head.root` diverges from the tracked root** — `V_merge.root` equals `R_new` as a *claim*,
+> but the tree only reaches `R_new` after the final binding lands. External RPC callers never see
+> this; they observe settled state only.
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
 ---

@@ -6,6 +6,65 @@
 **Related**: EXTENSION-RELAY.md (peer-mode's transport case), EXTENSION-GROUP.md (group-mode membership), EXTENSION-CONTENT.md (encrypted content at rest)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+**Read the tier note above first: the optional dependencies are optional in the STRONG sense** — a
+lower tier is not a degraded configuration, and several entries below are tier-conditional.
+
+**Used by (informative):**
+- `EXTENSION-RELAY` — peer-mode's transport case; the relay carries `ciphertext` opaquely (§13.2).
+- `EXTENSION-INBOX` — an encrypted entity is matched by `recipient_key` against the receiver's cert
+  store, and **inbox does NOT need to know the encryption format** (§13.3).
+- `EXTENSION-GROUP` — group-mode membership. `EXTENSION-CONTENT` — encrypted content at rest.
+- `EXTENSION-REVISION` · `EXTENSION-IDENTITY`.
+
+**Owned namespaces:**
+- `system/encryption/` **(closed)** — `wrapped-key` · `kdf-params` (§3) · `key-share` ·
+  `key-backup` (§9) · `handoff` and `revocation` (§10, §11) · `attestation` (§4).
+- **`system/encrypted` — the encrypted-entity TYPE, and it is deliberately not under this
+  extension's subtree** (§5). Its **outer type and `recipient_key` are plaintext**, which is what
+  lets routing machinery and a relay do their jobs without decrypting anything.
+- **`system/encryption/handoff` and `system/encryption/revocation` exist ONLY because Tier A must
+  work without ATTESTATION** (§4.0). At Tier B and above the substrate `supersedes` chain and the
+  universal `revocation` kind carry the same meaning.
+
+**Owned `properties.kind` values:**
+- **`"encryption-key"`** (§4.2, Tier B and above) — carried on a `system/attestation` with
+  `attester = peer_id` and `attested = pubkey`. Namespaced per `EXTENSION-ATTESTATION.md` §3.2.
+- `"revocation"` is **not** ours (universal, attestation's) and `"identity-rotation-handoff"` is
+  **`EXTENSION-IDENTITY`'s**; this extension consumes both at the tiers where they apply.
+
+**Owned handler ops: none.** This extension defines entity types, algorithm registries and
+procedures — **the decryption bridge is a handler an installer wires, not an operation this
+document registers** (§13.3). There is no `system/encryption` handler manifest anywhere in this
+spec.
+
+**Extension points exposed:**
+- **The algorithm registries (§3)** — the extension surface for new AEAD / KEM / KDF choices.
+- **The decryption handler seam (§13.3)** — it unwraps and **re-injects the plaintext inner entity
+  into the receiving handler chain**, where the inner type determines onward routing.
+- **The three modes (§6 self · §7 peer · §8 group)**, of which self and peer are v1 PRIMARY and
+  group is v1 BEST-EFFORT.
+
+**Extension points consumed** — and each is tier-gated, which is the unusual part of this contract:
+- **Core protocol (v7.40+) — the only UNCONDITIONAL dependency** (Tier A, §4.0). Tier A is the V7
+  floor with neither ATTESTATION nor IDENTITY installed and is **the right shape** for headless
+  single-purpose peers; it keeps self-mode storage encryption and peer-mode sending, and loses only
+  multi-device convergence.
+- **`EXTENSION-ATTESTATION` (v1.3+) — OPTIONAL, Tier B and above.** Where a carrier *is* an
+  attestation, its entity shape, `is_attestation_live`, the universal `revocation` kind and
+  `find_revocations_for` are **normative** (§4.4).
+- **`EXTENSION-IDENTITY` (v3.10+) — OPTIONAL, Tier C only.** It owns `system/identity/`, its cert
+  path function, and the **temporal-validity MUST** (§9.3).
+
+> **Frame-level and entity-level encryption are ORTHOGONAL and both MAY be active (§13.1).** Frame
+> level secures the link against passive wire observation; entity level secures the entity against
+> everyone except the intended decryptor — **including the relay, the storage layer and any
+> intermediate handler.** Neither replaces the other. **Capability and encryption are likewise
+> independent** (§13.2): the cap protects access to forwarding, the encryption protects
+> comprehension of content.
+
 > **The optional dependencies are optional in the strong sense — a lower tier is not a degraded
 > configuration.** Tier A is the V7 floor with neither ATTESTATION nor IDENTITY installed, and is the *right*
 > shape for a headless peer (§1, §4.0). The declarations above bind conditionally: when a tier **is**

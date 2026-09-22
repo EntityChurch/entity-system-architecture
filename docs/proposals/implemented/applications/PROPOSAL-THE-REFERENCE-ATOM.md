@@ -1,6 +1,10 @@
 # PROPOSAL — the reference atom: one shape for "this points at that", and a string form for the half that is typed by a human
 
-**Status:** DRAFT (2026-09-08)
+**Status:** IMPLEMENTED (2026-09-08) — **FOLDED as `specs/applications/APP-CONVENTION-REFERENCE.md` v0.1**,
+the domain's fourth member. All eight deltas landed; **two were adjudicated differently from the text
+below and two defects were found in the fold — see §12, which is the authority on what actually
+shipped.** The convention is **authored and NOT ratifiable**: the §7 vectors are specified and not
+shipped (charter #5), and they are carried on the spec's own §6.2.
 **Target:** a new `specs/applications/APP-CONVENTION-REFERENCE.md` (the atom and its string projection,
 imported by the tier) · `specs/applications/APP-CONVENTION-SEMANTIC-CONTENT-SITE.md` §4 (`nav-node.target`
 gets a grammar instead of *"the renderer's classifier"*) · `specs/applications/APP-CONVENTION-EMBED.md` §3
@@ -471,3 +475,64 @@ atom's vocabulary at all. The three landed members each define `content-hash` an
   explorations in this arc are the study.
 - **No implementation's link-rendering surface was read** — only the classifiers. A claim about how either
   one *displays* a reference is not made anywhere in this document.
+
+---
+
+## §12 The fold record — what shipped, and where it differs from the text above
+
+**Folded to `specs/applications/APP-CONVENTION-REFERENCE.md` v0.1.** The atom (§3), the string
+projection (§4), the normalization rules and the vector set all landed substantially as written. **This
+section is the authority where it and the sections above disagree**, and it exists because two of the
+eight deltas were ruled differently and two defects were found by reading the target documents.
+
+### §12.1 Two deltas adjudicated differently — D5 narrowed, D6 declined
+
+**D5 and D6 said the pointer slots "take `entity-ref`". Applied literally that is wrong, and the
+delta table's own framing is what obscured it: it enumerated slots by their role in the census rather
+than by whether they can cross a peer boundary.**
+
+| Slot | Ruled | Why |
+|---|---|---|
+| `EMBED` `child-payload.ref` | **converted** to `entity-ref` | It was `(path / content-hash)` — an **untagged** union discriminated by CBOR major type, the one place EMBED's own tagged discipline was not applied. It is also the only payload that can name something on another peer |
+| `EMBED` `pointer-payload.hash` | **unchanged** | names a blob in the resolving peer's own content store |
+| `EMBED` `img-src` | **unchanged** | an output is rendered where it was resolved; no authority is left to name |
+| `SHARE` `blob-target` / `prefix-target` | **unchanged** | **already the pinned/live split, tagged, minus the authority** — because a share is over the sharer's own content on the sharer's own peer |
+
+**The general rule this fold states instead, and it is in the spec at §3.4:** the same-peer slots are
+the **implied-authority form** of the atom, exactly as `site:` is to `entity+ref://`. **Adding a
+required `peer` to them would restate a term that is already known and give it somewhere to be
+wrong** — and in `SHARE` specifically that is not hypothetical, since §1.1 of that document exists
+because the audience has twice been put in the wrong slot.
+
+### §12.2 Two defects found in the fold
+
+1. **`peer-id` was typed incompatibly across the tier, and nothing recorded it.**
+   `APP-CONVENTION-SEMANTIC-CONTENT-SITE` defined `peer-id = bstr` citing core §1.2 — **the CONTENT
+   HASH section** — while `APP-CONVENTION-SHARE` and the feed draft define it `tstr` citing §1.5.
+   **Core §1.5 settles it: `PeerID := Base58(...)`, so the encoding is part of the definition**, and
+   §1.4 uses it as a tree-path segment. Both deployed link classifiers carry it as a string.
+   **Ruled `tstr`; the site convention is corrected.** The field that used it has **no implementation
+   in any repository**, so the correction costs nothing — but a proposal making one document the
+   single home for an atom **must check that the members agree about it**, and this one asserted they
+   each defined it locally without noticing that two of them disagreed.
+2. **`via` could not express the thing it was said to replace.** §8's D7 folds the pinned form's
+   optional `path` into `via` — *"one field, one job"* — but the hint vocabulary as proposed was
+   `"origin" / "mirror" / "peer"`, none of which carries a tree path. **A `"path"` hint tag is added**,
+   with the *"a 404 here proves nothing"* obligation stated normatively (`REF-R21`, `REF-V11`).
+
+### §12.3 One ambiguity in the proposal, resolved in the spec
+
+**§4.3's dot-segment refusal and §4.4's directory-relative base rule contradict each other as
+written** — `..` cannot be both malformed and the mechanism of relative resolution. **The spec scopes
+the refusal to the absolute form** and states that relative resolution consumes the dot segments
+before producing an atom. `REF-V9` is the arm that catches over-application, because a reader that
+applies the refusal to an unresolved relative string rejects ordinary correct links.
+
+### §12.4 What is owed, and it is not owed by this proposal
+
+- **The ten vectors** (spec §6.2). The convention is not ratifiable until they ship — the same state
+  the share convention is in, and for the same charter rule.
+- **`anchor`'s field-path grammar** stays an opaque sequence of names, per §10 item 1's leaning: a
+  slot with no consumer does not mint a grammar.
+- **The deprecation horizon for the dispatch scheme in link position** is deliberately undated (§2.3),
+  and that is a decision for whoever holds the corpus of already-published documents.

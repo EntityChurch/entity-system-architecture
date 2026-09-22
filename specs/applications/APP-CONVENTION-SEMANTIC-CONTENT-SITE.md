@@ -117,7 +117,10 @@ site-root-pin = {                            ; type = app/site-root  (an ECF ent
                                              ; it did NOT author → names the origin peer. Rides the SIGNED pin so
                                              ; it cannot be stripped; downstream applies origin-trust policy (§8).
 }
-peer-id      = bstr                          ; a peer identity reference (V7 §1.2, self-describing)
+peer-id      = tstr                          ; IMPORTED from APP-CONVENTION-REFERENCE §2.1 — a PeerID in the
+                                             ; canonical Base58 form of V7 §1.5. A TEXT string, not bytes.
+                                             ; (This read `bstr`, citing V7 §1.2 — the CONTENT HASH section.
+                                             ;  A peer id is spelled, not hashed; see REFERENCE §2.1.1.)
 ```
 
 **Signing contract (the highest-priority invisible-failure surface — `G-PIN-3`):**
@@ -157,6 +160,14 @@ Prose (paragraphs, links, emphasis, lists, GFM tables, headings, code) is **base
 front-end's own base renderer (web→DOM, Godot→BBCode/`RichTextLabel`, terminal→text). It is **not** an embed and
 **not** `EmbedOutput` (EMBED §1.1, §4). The site convention adds **no** prose vocabulary — that's the base
 format's standard.
+
+> **One exception, and it is a scoping rather than an addition: a LINK in a page body has an
+> entity-native meaning.** It is a reference string and it resolves by `APP-CONVENTION-REFERENCE` §3.4
+> — directory-relative to the current page, root-absolute on a leading `/`, `site:` for a same-peer
+> cross-site target, `entity+ref://` when fully qualified. **The base format supplies the syntax; this
+> system supplies what the string denotes**, because a link is the one piece of prose that names
+> something outside the document and the base format's standard has nothing to say about an entity
+> tree. Everything else in the sentence above stands: no other prose vocabulary is added.
 
 ### 3.2 The inline-embed directive (this convention owns it; EMBED §10 deferred it here)
 Embeds enter a page body two ways:
@@ -201,10 +212,13 @@ site-manifest = {                            ; type = app/site-manifest
   ? params:   { * tstr => any },             ; open attribute bag; string keys only (EMBED §3 discipline)
 }
 nav-node  = { label: tstr, ? target: link-ref, ? children: [* nav-node] }   ; tree; cycle rule §4.1
-link-ref  = tstr                             ; F-2: optional (section headers have none); a link the renderer's
-                                             ; classifier resolves relative to the site root — relative ("./about"),
-                                             ; scheme ("site:labs/intro"), or absolute ("entity://…" / V7 §1.4 path).
-                                             ; NOT narrowed to absolute-only (that would regress real authoring).
+link-ref  = tstr                             ; F-2: optional (section headers have none). A reference string in
+                                             ; the form APP-CONVENTION-REFERENCE §3 defines: relative
+                                             ; ("./about"), same-peer scheme ("site:labs/intro"), or absolute
+                                             ; ("entity+ref://{peer}/…"). Resolution, the base-URI rule and the
+                                             ; refusal behaviour are that document's §3.1/§3.3/§3.4 — NORMATIVE,
+                                             ; not per-renderer. NOT narrowed to absolute-only (that would
+                                             ; regress real authoring).
 
 ; --- SitePage: one page ----------------------------------------------------------------
 site-page = {                                ; type = app/site-page

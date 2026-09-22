@@ -77,6 +77,9 @@ namespace and a convention adds no kernel surface (charter #2).
 
 ### 2.1 Shared atoms
 
+**IMPORTED from `APP-CONVENTION-REFERENCE` §2.1, which is the single home.** Restated here so this
+document reads standalone; on any disagreement `APP-CONVENTION-REFERENCE` is the authority.
+
 ```cddl
 ; Self-describing (format_code, digest) per V7 §1.2/§1.4 — the leading varint is the
 ; content_hash_format and THE DIGEST LENGTH FOLLOWS THE CODE. NOT fixed-width.
@@ -113,6 +116,14 @@ prefix-target = { tag: "prefix", path: tree-path }
 **`target` is what the grant's `resources` scope covers.** A `blob-target` shares one content-addressed
 object; a `prefix-target` shares a subtree. The record does not restate the scope — the grant is the
 authority and the record is the label. **A consumer MUST NOT infer authorization from the record.**
+
+> **`share-target` is deliberately NOT an `entity-ref`, and the reason is §1.1's reason.** The two
+> shapes are already the atom's pinned/live split — a hash and a path, tagged — **minus the authority
+> term, because a share is over the sharer's own content on the sharer's own peer**, so the publisher
+> is the sharer and naming it again would be restating a term that is already known. **This is the
+> implied-authority form described in `APP-CONVENTION-REFERENCE` §3.4**, the same rung `site:`
+> occupies. A `peer` slot here would be the third place in this document where someone could put the
+> wrong peer, and §1.1 exists because of the first two.
 
 ### 2.3 `app/share/audience-entry`
 

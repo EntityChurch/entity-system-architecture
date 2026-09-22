@@ -10,6 +10,55 @@
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.3+)
 **Encoding**: ENTITY-CBOR-ENCODING.md (ECF)
 
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-REVISION` — the deepest consumer; builds its version graph on §3 snapshots and §3.4.1
+  root tracking (cites §3, §3.3, §3.4.1, §3.4.1a, §11).
+- `EXTENSION-REGISTRY` — its enumeration-completeness claim rests on **§3.8's walk contract**, and
+  its signed-root browse path on §3.1 / §3.3a / §3.4.2.
+- `EXTENSION-NETWORK` — serves and fetches **`system/peer/published-root`** (§3.3a) as the anchor of
+  the walk-from-signed-root threat model.
+- `EXTENSION-TRANSACTION` — §3.4 / §3.4.1a root tracking for transactional consistency.
+- `EXTENSION-SUBSCRIPTION` — §2.2's two index operations as the event source.
+- `EXTENSION-CONTINUATION` — `system/tree/path` as a resumption anchor.
+
+**Owned namespaces:**
+- `system/tree/` **(closed)** — the whole subtree. Occupants are the §9 registered types: `snapshot`
+  and `snapshot/node` · `diff` and `diff/change` · `merge-result` and `merge-result/conflict` ·
+  `config` · `tracking-config` · the four operation request types.
+- **`system/peer/published-root` (§3.3a) — a single path OUTSIDE this extension's own subtree, and
+  the one entry an implementer will not predict.** §3.3a is its normative home and supersedes any
+  earlier definition. **The claim is that one path only; `system/peer/` is NOT owned by this
+  extension.** The head pointer is bound at `{peer_id}/system/peer/published-root` and nowhere else,
+  and it carries **no** peer-id segment — appending one double-qualifies (§3.3a `[MUST, v4.3]`).
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2).
+
+**Owned handler ops** — all six are added to the **core protocol's** tree handler, not to a handler
+this extension registers (§9):
+- `system/tree:snapshot` (§3.2) · `system/tree:diff` (§4.2) · `system/tree:merge` (§5.2) ·
+  `system/tree:extract` (§6.1) · `system/tree:create` (§7.2) · `system/tree:destroy` (§7.3).
+- `get` and `put` are **core's** (`ENTITY-CORE-PROTOCOL.md` §6.3), not this extension's.
+
+**Extension points exposed:** none. §10 is explicit that how tree writes interact with subscriptions,
+inbox delivery and compute is **not specified here** — those extensions define their own wiring, and
+this extension makes no requirements about event behaviour.
+
+**Extension points consumed:**
+- **The core protocol's tree handler at pattern `system/tree`** (§9) — this extension *extends* a
+  handler every conformant peer already bootstraps (`ENTITY-CORE-PROTOCOL.md` §6.2), rather than
+  registering its own. ⚠ **Installing it is therefore not an ordinary handler registration**, and
+  an installer that treats it as one meets `SDK-OPERATIONS.md` §11.6's pattern-collision refusal.
+  This is a known open seam, not a defect in this document.
+- **The core protocol's bootstrap type table** — `system/tree/snapshot/node` and
+  `system/tree/tracking-config` **require bootstrap type ID assignments in core** (§9). This is the
+  first instance of an extension reaching into the core type table, and it is stated in §9 rather
+  than assumed.
+
 ---
 
 > **Path notation.** Paths in this document use peer-relative notation (without leading `/{peer_id}/`). All peer-relative paths resolve to the local peer's namespace: `system/tree` means `/{local_peer_id}/system/tree`. Every path in the entity tree is absolute at rest — rooted at a peer identity. See ENTITY-CORE-PROTOCOL.md §1.4 for the path model. Cross-peer examples use absolute paths with explicit peer identities.

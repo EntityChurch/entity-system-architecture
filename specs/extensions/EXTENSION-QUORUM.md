@@ -4,6 +4,60 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.40+); EXTENSION-ATTESTATION.md (v1.2+)
 **Related**: EXTENSION-IDENTITY.md (consumes; identity quorums use the `concrete` mode by default; identity registers `identity-resolved` mode for group-style consumers); future consumers — group, cluster, transaction, governance, multi-sig committee
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative):**
+- `EXTENSION-IDENTITY` — identity quorums use the built-in `concrete` mode by default, **and
+  identity registers the `identity-resolved` mode** against this extension's §5.2 hook for
+  group-style consumers.
+- Named future consumers: group, cluster, transaction, governance, multi-sig committee.
+
+**Owned namespaces:**
+- `system/quorum/` **(closed)** — §7. Occupants: `system/quorum/{quorum_id_hex}`, the quorum entity
+  itself (**structural; not signed**), and `system/quorum/{quorum_id_hex}/event/{hash_hex}`, the
+  self-event attestations. **This subtree is the canonical location `current_signer_set` walks.**
+- **Both hash segments are `[hold-and-fetch]` — format-free** (§7, normative). A consumer reaches
+  this subtree already holding the hash. **Use them verbatim at whatever width their own format byte
+  implies**; do not re-derive under the local format and do not assume a width. A quorum running a
+  non-floor home format addresses its own events in its own space, coherently.
+
+**Owned `properties.kind` values** — two, both namespaced per `EXTENSION-ATTESTATION.md` §3.2:
+- **`"quorum-update"`** (§3) — signer-set change.
+- **`"quorum-publish"`** (§3) — the K-of-N-signed, supersede-chained binding of the quorum to its
+  current handle.
+- `"revocation"` is **not** ours; it is the universal substrate kind owned by
+  `EXTENSION-ATTESTATION`.
+
+**Owned handler ops** — handler at pattern `system/quorum` (§6):
+- `system/quorum:create` · `:update` · `:publish` · `:verify` (§6).
+- `system/quorum:register` / `register_resolver` (§5.2) — see below.
+
+**Extension points exposed:**
+- **The pluggable signer-resolution hook (§5.2) — the load-bearing one.**
+  `system/quorum:register_resolver(mode_name, resolver_handler)` makes `mode_name` a valid
+  `signer_resolution` value. **The resolver handler MUST be deterministic and side-effect-free**; it
+  is invoked at signature-verification time per signer, and its output participates in the K-of-N
+  count exactly as a `concrete` signer would. **It takes an optional `as_of`** — when set, the
+  resolver MUST return the signer that was live at that time, not the current one.
+- **Multi-registration is a refusal, not a merge (§5.2, normative).** Registering an already-
+  registered `mode_name` **MUST** return `resolver_already_registered`. Implementations **MUST NOT**
+  silently replace, override or stack handlers. Idempotent re-registration of the *same* handler is
+  implementation-defined and SHOULD be a no-op for hot reload. **There is no
+  `unregister_resolver`** — replacing a handler requires explicit unregistration, which is out of
+  scope for v2 because no consumer needs it.
+- **The built-in `concrete` mode requires no other extension** (§5.1) — this extension is usable
+  standalone, and rotation of a constituent's keypair invalidates that slot until an explicit
+  `quorum-update` swaps the hash.
+
+**Extension points consumed:**
+- **`EXTENSION-ATTESTATION` (v1.2+) — a hard dependency.** Quorum self-events *are* attestations;
+  this extension supplies only the storage convention, per `EXTENSION-ATTESTATION.md` §7's rule that
+  the primitive mandates no path.
+- **The `system/quorum:*` operations are the authorized path** for instantiating quorum entities;
+  direct `tree:put` bypasses validation (§8), the same Coherent Capability position attestation takes.
 **Synthesis**: SYSTEM-IDENTITY-COMPOSITION.md (single-entry-point overview of the three-extension layering); EXPLORATION-IDENTITY-LENSES-AND-CONVERGENCE.md §4a.11–§4a.15 (the design path)
 
 ---

@@ -5,6 +5,54 @@
 **Status**: Active
 **Depends**: ENTITY-CORE-PROTOCOL.md (v7.8+)
 **Supersedes**: EXTENSION-CALLBACK.md v4.0
+
+**The dependency contract** (per `GUIDE-EXTENSION-DEVELOPMENT.md` §3.3 — *"an implementer scanning
+the spec should be able to answer 'what does installing this extension touch' from the header
+alone"*). Every entry below is derived from this document's own sections, cited beside it.
+
+**Used by (informative)** — this is one of the most widely consumed extensions in the family,
+because it is the answer to *"where does an async result go":*
+- `EXTENSION-CONTINUATION` — delivery is how a suspended chain is resumed (§3.3).
+- `EXTENSION-SUBSCRIPTION` — notifications are delivered as `system/subscription/notification`
+  payloads to an inbox URI (§2.2; that type is canonical in subscription, not here).
+- `EXTENSION-CONTENT` — large payload delivery by content reference rather than inline params.
+- `EXTENSION-COMPUTE` · `EXTENSION-NETWORK` · `EXTENSION-RELAY` · `EXTENSION-SIGNALING` ·
+  `EXTENSION-ENCRYPTION` · `EXTENSION-ROLE` · `EXTENSION-DURABILITY` — each routes async results or
+  events to an inbox path.
+
+**Owned namespaces:**
+- `system/inbox/` **(closed)** — the whole subtree. Occupants: `system/inbox/delivery` (§2.1) ·
+  `system/inbox/watch` · `system/inbox/work` · and the per-destination paths
+  `system/inbox/{path}` / `system/inbox/{chain_id}` that callers name in `deliver_to`.
+- **Dispatch resolves ANY URI under `system/inbox/` to this handler by longest-prefix match**
+  (`ENTITY-CORE-PROTOCOL.md` §6.6; §3.1). **That is the reason the namespace must be closed** — a
+  second extension binding a handler inside this subtree would silently capture deliveries.
+
+**Owned `properties.kind` values:** none. This extension defines no `kind` and claims no row in the
+kind-ownership table (`EXTENSION-ATTESTATION.md` §3.2). **The discriminator here is the entity
+TYPE, not a `kind`** — §3.1 is explicit that the single `receive` operation accepts any typed
+entity and the type carries the semantics.
+
+**Owned handler ops** — handler entity at pattern path `system/inbox` (§3.1):
+- `system/inbox:receive` (§3.1) — **one operation, `input_type: primitive/any`.**
+
+**Extension points exposed:**
+- **The `deliver_to` destination surface.** Any handler, in any extension, may deliver an async
+  result to a `system/inbox/…` URI; nothing registers with this extension to do so. §1.1 is the
+  flow, §4.1 the construction algorithm.
+- **`system/inbox/delivery` (§2.1) as the envelope type** other extensions construct.
+
+**Extension points consumed:**
+- **The core protocol's `deliver_to` field on EXECUTE** (`ENTITY-CORE-PROTOCOL.md` §3.2) — the
+  trigger for the whole extension.
+- **The `deliver_token` extension field on EXECUTE** (§2.3) — a `system/hash` naming a
+  `system/capability/token` that authorizes the handler peer to deliver to the inbox URI. **This is
+  the field that makes there be no unsolicited inbox:** `deliver_to` present without
+  `deliver_token` MUST be rejected 400 `missing_deliver_token`. **Revocation needs nothing
+  inbox-specific** — dispatch-layer verification (`ENTITY-CORE-PROTOCOL.md` §5.2 step 4) fails a
+  revoked token when the handler re-dispatches.
+- **The emit pathway's per-path write serialization** (§3.4) — relied on for concurrency; no
+  locking, CAS resolves conflicts.
 **Proposal**: PROPOSAL-CONTINUATION-SPEC-AMENDMENT.md (A1), PROPOSAL-DELIVERY-AND-INBOX-RENAME.md (D3, D4, D7, D8)
 
 ---
